@@ -15,7 +15,8 @@ import {
   X,
   HelpCircle,
   Filter,
-  FileText
+  FileText,
+  Plus
 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
@@ -161,6 +162,24 @@ export default function AdminHelpSupportPage() {
   const readCount = messages.filter(m => (m.status === 'read' || (!m.status && m.isRead))).length;
   const resolvedCount = messages.filter(m => m.status === 'resolved').length;
 
+  const handleCreateTestMessage = async () => {
+    try {
+      toast.loading('Creating test customer inquiry in MySQL...', { id: 'test-msg-toast' });
+      await api.post('/contact', {
+        name: 'Test Customer',
+        email: 'test@karviyam.com',
+        subject: 'Support Email & Database Verification',
+        message: 'This is an automated test inquiry verifying MySQL storage and SMTP delivery to vanakkam@karviyam.com.'
+      });
+      toast.success('Test message saved to MySQL! Updating table...', { id: 'test-msg-toast' });
+      fetchMessages();
+    } catch (e) {
+      console.error(e);
+      const errMsg = e.response?.data?.message || e.message || 'Failed to create test message';
+      toast.error(`Error: ${errMsg}`, { id: 'test-msg-toast' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -174,6 +193,14 @@ export default function AdminHelpSupportPage() {
           <p className="text-xs text-slate-500">Manage customer inquiries and send support messages to vanakkam@karviyam.com</p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleCreateTestMessage}
+            className="px-3 py-2 bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1.5"
+            title="Insert a test inquiry into MySQL to verify system"
+          >
+            <Plus className="w-3.5 h-3.5 text-[#B71C1C]" />
+            <span>Test DB Entry</span>
+          </button>
           <ExportDropdown data={filteredMessages} headers={CONTACT_EXPORT_HEADERS} filename="Karviyam_Customer_Messages" />
           <button
             onClick={() => setShowSendModal(true)}
