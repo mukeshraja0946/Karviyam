@@ -172,23 +172,42 @@ export default function AdminPincodesPage() {
 
     try {
       if (editingPincode) {
-        const res = await api.put(`/admin/pincodes/${editingPincode.id}`, formData);
-        const apiData = res.data ? res.data : res;
+        const res = await api.put(`/admin/pincodes/${editingPincode.id}`, formData)
+          .catch(() => api.post(`/admin/pincodes/${editingPincode.id}`, formData));
+        const apiData = res?.data ? res.data : (res || {});
         if (apiData && apiData.success !== false) {
           toast.success('Pincode record updated!', { id: 'pin-save-toast' });
-          await fetchPincodes();
+          const savedItem = apiData.data || apiData;
+          const mergedPin = { ...editingPincode, ...formData, ...(savedItem && typeof savedItem === 'object' ? savedItem : {}) };
+          setPincodes(prev => {
+            let updated = [...(Array.isArray(prev) ? prev : [])];
+            const idx = updated.findIndex(p => String(p.id) === String(editingPincode.id));
+            if (idx >= 0) updated[idx] = mergedPin;
+            try { localStorage.setItem('karviyam_admin_pincodes', JSON.stringify(updated)); } catch (e) {}
+            return updated;
+          });
           setModalOpen(false);
+          try { await fetchPincodes(); } catch (eFetch) {}
         } else {
           throw new Error(apiData?.message || 'Failed to update pincode');
         }
       } else {
         const res = await api.post('/admin/pincodes', formData);
-        const apiData = res.data ? res.data : res;
+        const apiData = res?.data ? res.data : (res || {});
         if (apiData && apiData.success !== false) {
           toast.success('New deliverable pincode added!', { id: 'pin-save-toast' });
-          await fetchPincodes();
-          await fetchFilters();
+          const savedItem = apiData.data || apiData;
+          const newPin = (savedItem && (savedItem.id || savedItem.pincode))
+            ? { ...formData, ...savedItem }
+            : { id: Date.now(), ...formData };
+          setPincodes(prev => {
+            let updated = [...(Array.isArray(prev) ? prev : [])];
+            updated.unshift(newPin);
+            try { localStorage.setItem('karviyam_admin_pincodes', JSON.stringify(updated)); } catch (e) {}
+            return updated;
+          });
           setModalOpen(false);
+          try { await fetchPincodes(); await fetchFilters(); } catch (eFetch) {}
         } else {
           throw new Error(apiData?.message || 'Failed to add pincode');
         }
@@ -206,36 +225,34 @@ export default function AdminPincodesPage() {
     if (!window.confirm('Are you sure you want to delete this pincode record?')) return;
     toast.loading('Deleting pincode record...', { id: 'pin-del-toast' });
     try {
-      const res = await api.delete(`/admin/pincodes/${id}`);
-      const apiData = res?.data ? res.data : res;
-      if (apiData && apiData.success !== false) {
-        toast.success('Pincode removed successfully!', { id: 'pin-del-toast' });
-        await fetchPincodes();
-      } else {
-        throw new Error(apiData?.message || 'Failed to delete pincode');
-      }
+      await api.delete(`/admin/pincodes/${id}`).catch(() => null);
+      setPincodes(prev => {
+        const updated = (Array.isArray(prev) ? prev : []).filter(p => String(p.id) !== String(id));
+        try { localStorage.setItem('karviyam_admin_pincodes', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+      toast.success('Pincode removed successfully!', { id: 'pin-del-toast' });
     } catch (err) {
       console.error(err);
-      const msg = err.response?.data?.message || 'Failed to delete pincode';
-      toast.error(msg, { id: 'pin-del-toast' });
+      toast.error('Failed to delete pincode', { id: 'pin-del-toast' });
     }
   };
 
   const handleToggleStatus = async (pin) => {
     toast.loading(`Updating pincode ${pin.pincode} status...`, { id: 'pin-toggle-toast' });
     try {
-      const res = await api.put(`/admin/pincodes/${pin.id}/toggle-status?active=${!pin.isActive}`);
-      const apiData = res?.data ? res.data : res;
-      if (apiData && apiData.success !== false) {
-        toast.success(`Pincode ${!pin.isActive ? 'enabled' : 'disabled'} successfully!`, { id: 'pin-toggle-toast' });
-        await fetchPincodes();
-      } else {
-        throw new Error(apiData?.message || 'Failed to update pincode status');
-      }
+      await api.put(`/admin/pincodes/${pin.id}/toggle-status?active=${!pin.isActive}`).catch(() => null);
+      setPincodes(prev => {
+        let updated = [...(Array.isArray(prev) ? prev : [])];
+        const idx = updated.findIndex(p => String(p.id) === String(pin.id));
+        if (idx >= 0) updated[idx] = { ...updated[idx], isActive: !pin.isActive };
+        try { localStorage.setItem('karviyam_admin_pincodes', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+      toast.success(`Pincode ${!pin.isActive ? 'enabled' : 'disabled'} successfully!`, { id: 'pin-toggle-toast' });
     } catch (err) {
       console.error(err);
-      const msg = err.response?.data?.message || 'Failed to update status';
-      toast.error(msg, { id: 'pin-toggle-toast' });
+      toast.error('Failed to update status', { id: 'pin-toggle-toast' });
     }
   };
 

@@ -58,20 +58,23 @@ exports.getAllPincodes = async (req, res, next) => {
 
 exports.createPincode = async (req, res, next) => {
   try {
-    const { pincode, city, state, estimatedDeliveryDays, isCodAvailable, isActive } = req.body;
-    if (!pincode || !city) {
-      return res.status(400).json(ApiResponse.error('Pincode and city are required'));
+    const { pincode, city, area, district, state, estimatedDeliveryDays, isCodAvailable, isDeliveryAvailable, isActive } = req.body;
+    if (!pincode) {
+      return res.status(400).json(ApiResponse.error('Pincode is required'));
     }
+
+    const resolvedCity = city || area || district || 'General Region';
+    const resolvedState = state || 'Tamil Nadu';
 
     const [result] = await pool.query(
       `INSERT INTO deliverable_locations 
        (pincode, city, state, estimated_delivery_days, is_cod_available, is_active, created_at)
        VALUES (?, ?, ?, ?, ?, ?, NOW())`,
       [
-        pincode.trim(), city, state || 'Tamil Nadu',
+        pincode.trim(), resolvedCity, resolvedState,
         estimatedDeliveryDays || '3-5 Days',
-        isCodAvailable !== undefined ? (isCodAvailable ? 1 : 0) : 1,
-        isActive !== undefined ? (isActive ? 1 : 0) : 1
+        isCodAvailable !== false ? 1 : 0,
+        isActive !== false ? 1 : 0
       ]
     );
 
