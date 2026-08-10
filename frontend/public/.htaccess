@@ -1,4 +1,4 @@
-DirectoryIndex /frontend/dist/index.html /dist/index.html /index.html index.php
+DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
