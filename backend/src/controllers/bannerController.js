@@ -166,100 +166,40 @@ exports.saveBanner = async (req, res, next) => {
     }
 
     if (id) {
-      try {
-        await pool.query(
-          `UPDATE home_banners 
-           SET title = ?, subtitle = ?, image_url = ?, image_path = ?, button_text = ?, button_link = ?, link = ?, status = ?, is_active = ?, sort_order = ?, display_order = ? 
-           WHERE id = ?`,
-          [title || null, subtitle || null, finalImage, finalImage, finalBtnText, finalLink, finalLink, bannerStatus, activeBool, finalOrder, finalOrder, id]
-        );
-      } catch (e1) {
-        try {
-          await pool.query(
-            `UPDATE home_banners SET title = ?, subtitle = ?, image_path = ?, status = ?, is_active = ? WHERE id = ?`,
-            [title || null, subtitle || null, finalImage, bannerStatus, activeBool, id]
-          );
-        } catch (e2) {
-          try {
-            await pool.query(
-              `UPDATE home_banners SET title = ?, subtitle = ?, image = ?, status = ?, is_active = ? WHERE id = ?`,
-              [title || null, subtitle || null, finalImage, bannerStatus, activeBool, id]
-            );
-          } catch (e3) {
-            await pool.query(
-              `UPDATE home_banners SET title = ?, is_active = ? WHERE id = ?`,
-              [title || null, activeBool, id]
-            );
-          }
-        }
-      }
+      await pool.query(
+        `UPDATE home_banners 
+         SET title = ?, subtitle = ?, image_url = ?, image_path = ?, button_text = ?, button_link = ?, link = ?, status = ?, is_active = ?, sort_order = ?, display_order = ? 
+         WHERE id = ?`,
+        [title || null, subtitle || null, finalImage, finalImage, finalBtnText, finalLink, finalLink, bannerStatus, activeBool, finalOrder, finalOrder, id]
+      );
+
       const [rows] = await pool.query('SELECT * FROM home_banners WHERE id = ?', [id]);
-      const savedData = rows.length > 0 ? mapBannerRow(rows[0]) : { id, title, subtitle, imagePath: finalImage, imageUrl: finalImage, link: finalLink, status: bannerStatus, isActive: activeBool === 1 };
-      return res.status(200).json(ApiResponse.success(savedData, 'Banner updated successfully'));
+      if (rows.length === 0) {
+        return res.status(404).json(ApiResponse.error('Banner not found in database'));
+      }
+      return res.status(200).json(ApiResponse.success(mapBannerRow(rows[0]), 'Banner updated successfully'));
     } else {
-      let insertId;
-      try {
-        // Preferred insertion with all columns
-        const [r] = await pool.query(
-          `INSERT INTO home_banners (title, subtitle, image_url, image_path, button_text, button_link, link, status, is_active, sort_order, display_order, created_at) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-          [title || null, subtitle || null, finalImage, finalImage, finalBtnText, finalLink, finalLink, bannerStatus, activeBool, finalOrder, finalOrder]
-        );
-        insertId = r.insertId;
-      } catch (e1) {
-        try {
-          // Fallback 1: image_path column
-          const [r] = await pool.query(
-            `INSERT INTO home_banners (title, subtitle, image_path, button_text, button_link, link, status, is_active, sort_order, display_order, created_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-            [title || null, subtitle || null, finalImage, finalBtnText, finalLink, finalLink, bannerStatus, activeBool, finalOrder, finalOrder]
-          );
-          insertId = r.insertId;
-        } catch (e2) {
-          try {
-            // Fallback 2: image column
-            const [r] = await pool.query(
-              `INSERT INTO home_banners (title, subtitle, image, button_text, button_link, status, is_active, created_at) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-              [title || null, subtitle || null, finalImage, finalBtnText, finalLink, bannerStatus, activeBool]
-            );
-            insertId = r.insertId;
-          } catch (e3) {
-            // Fallback 3: minimal schema
-            const [r] = await pool.query(
-              `INSERT INTO home_banners (title, subtitle, is_active, created_at) VALUES (?, ?, ?, NOW())`,
-              [title || null, subtitle || null, activeBool]
-            );
-            insertId = r.insertId;
-          }
-        }
+      const [r] = await pool.query(
+        `INSERT INTO home_banners (title, subtitle, image_url, image_path, button_text, button_link, link, status, is_active, sort_order, display_order, created_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [title || null, subtitle || null, finalImage, finalImage, finalBtnText, finalLink, finalLink, bannerStatus, activeBool, finalOrder, finalOrder]
+      );
+      
+      const insertId = r.insertId;
+      if (!insertId) {
+        return res.status(500).json(ApiResponse.error('Failed to create banner record in MySQL database'));
       }
 
-      let savedBannerRow = null;
-      if (insertId) {
-        const [rows] = await pool.query('SELECT * FROM home_banners WHERE id = ?', [insertId]);
-        if (rows.length > 0) {
-          savedBannerRow = mapBannerRow(rows[0]);
-        }
+      const [rows] = await pool.query('SELECT * FROM home_banners WHERE id = ?', [insertId]);
+      if (rows.length === 0) {
+        return res.status(500).json(ApiResponse.error('Created banner record could not be retrieved from MySQL database'));
       }
 
-      // Fallback query if insertId returned 0
-      if (!savedBannerRow) {
-        const [latestRows] = await pool.query('SELECT * FROM home_banners ORDER BY id DESC LIMIT 1');
-        if (latestRows.length > 0) {
-          savedBannerRow = mapBannerRow(latestRows[0]);
-        }
-      }
-
-      if (!savedBannerRow) {
-        savedBannerRow = { id: insertId || Date.now(), title, subtitle, imagePath: finalImage, imageUrl: finalImage, link: finalLink, status: bannerStatus, isActive: activeBool === 1 };
-      }
-
-      return res.status(200).json(ApiResponse.success(savedBannerRow, 'Banner created successfully'));
+      return res.status(200).json(ApiResponse.success(mapBannerRow(rows[0]), 'Banner created successfully'));
     }
   } catch (err) {
     console.error('[saveBanner Error]:', err);
-    return res.status(500).json(ApiResponse.error(err.message || 'Server error while saving banner'));
+    return res.status(500).json(ApiResponse.error(err.message || 'Server database error while saving banner'));
   }
 };
 

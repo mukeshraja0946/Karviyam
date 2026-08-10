@@ -1,6 +1,35 @@
 const pool = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
 
+const ensureCategoryTableExists = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        parent_id BIGINT DEFAULT NULL,
+        name VARCHAR(100) NOT NULL,
+        slug VARCHAR(150),
+        type VARCHAR(50),
+        description TEXT,
+        image_url LONGTEXT,
+        icon_url LONGTEXT,
+        banner_url LONGTEXT,
+        order_index INT DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        seo_title VARCHAR(150),
+        meta_description TEXT,
+        meta_keywords VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE
+      )
+    `);
+    try { await pool.query("ALTER TABLE categories MODIFY COLUMN image_url LONGTEXT"); } catch (e) {}
+    try { await pool.query("ALTER TABLE categories MODIFY COLUMN icon_url LONGTEXT"); } catch (e) {}
+    try { await pool.query("ALTER TABLE categories MODIFY COLUMN banner_url LONGTEXT"); } catch (e) {}
+  } catch (e) {}
+};
+
 const mapCategoryRow = (c) => ({
   id: c.id,
   parentId: c.parent_id,
@@ -21,6 +50,7 @@ const mapCategoryRow = (c) => ({
 
 exports.getAllCategories = async (req, res, next) => {
   try {
+    await ensureCategoryTableExists();
     const [rows] = await pool.query('SELECT * FROM categories ORDER BY order_index ASC, id ASC');
     const categories = rows.map(mapCategoryRow);
     return res.status(200).json(ApiResponse.success(categories, 'Categories retrieved successfully'));
@@ -31,6 +61,7 @@ exports.getAllCategories = async (req, res, next) => {
 
 exports.getCategoryTree = async (req, res, next) => {
   try {
+    await ensureCategoryTableExists();
     const [rows] = await pool.query('SELECT * FROM categories ORDER BY order_index ASC, id ASC');
     const categories = rows.map(mapCategoryRow);
 
@@ -71,6 +102,7 @@ exports.getCategoryById = async (req, res, next) => {
 
 exports.createCategory = async (req, res, next) => {
   try {
+    await ensureCategoryTableExists();
     const dto = req.body;
     if (!dto.name) {
       return res.status(400).json(ApiResponse.error('Category name is required'));
@@ -106,6 +138,9 @@ exports.createCategory = async (req, res, next) => {
     );
 
     const [rows] = await pool.query('SELECT * FROM categories WHERE id = ?', [result.insertId]);
+    if (rows.length === 0) {
+      return res.status(500).json(ApiResponse.error('Category created but could not be retrieved from database'));
+    }
     return res.status(200).json(ApiResponse.success(mapCategoryRow(rows[0]), 'Category created successfully'));
   } catch (err) {
     next(err);

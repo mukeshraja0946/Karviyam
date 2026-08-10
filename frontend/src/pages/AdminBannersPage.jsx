@@ -234,24 +234,8 @@ export default function AdminBannersPage() {
       if (apiData && apiData.success !== false) {
         toast.success(editingBanner ? 'Banner updated successfully!' : 'Banner created successfully!', { id: 'banner-toast' });
         
-        // 1. Refetch from database
-        let freshList = [];
-        try {
-          const freshRes = await api.get('/banners/all');
-          const freshApiData = freshRes.data ? freshRes.data : freshRes;
-          freshList = Array.isArray(freshApiData.data) ? freshApiData.data : (Array.isArray(freshApiData) ? freshApiData : []);
-        } catch (err) {}
+        await fetchBanners();
 
-        // 2. Ensure newly created/updated banner object is in state
-        const savedItem = apiData.data || apiData;
-        if (savedItem && savedItem.id) {
-          const exists = freshList.some(b => String(b.id) === String(savedItem.id));
-          if (!exists) {
-            freshList.unshift(savedItem);
-          }
-        }
-
-        setBanners(freshList);
         setModalOpen(false);
         setEditingBanner(null);
         setFormData({ title: '', subtitle: '', imagePath: '', link: '/shop', status: 'active' });
