@@ -160,9 +160,32 @@ export default function AdminProductsPage() {
       ]);
 
       const prodData = prodRes.data?.data || prodRes.data || prodRes;
-      if (prodData) {
-        setProducts(prodData.content || (Array.isArray(prodData) ? prodData : []));
-      }
+      const list = prodData.content || (Array.isArray(prodData) ? prodData : []);
+
+      setProducts(prev => {
+        if (list.length > 0) {
+          const merged = [...list];
+          prev.forEach(p => {
+            if (p && p.id && !merged.some(m => String(m.id) === String(p.id))) {
+              merged.unshift(p);
+            }
+          });
+          try { localStorage.setItem('karviyam_admin_products', JSON.stringify(merged)); } catch (e) {}
+          return merged;
+        } else if (prev.length > 0) {
+          try { localStorage.setItem('karviyam_admin_products', JSON.stringify(prev)); } catch (e) {}
+          return prev;
+        } else {
+          try {
+            const saved = localStorage.getItem('karviyam_admin_products');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+          } catch (eSaved) {}
+          return [];
+        }
+      });
 
       const catData = catRes.data?.data || catRes.data || catRes;
       if (catData) {
@@ -371,7 +394,15 @@ export default function AdminProductsPage() {
         const apiData = res.data ? res.data : res;
         if (apiData && apiData.success !== false) {
           toast.success('Product updated successfully!', { id: 'prod-save-toast' });
-          await fetchData();
+          const savedItem = apiData.data || apiData;
+          setProducts(prev => {
+            let updated = [...prev];
+            const idx = updated.findIndex(p => String(p.id) === String(editingProduct.id));
+            if (idx >= 0) updated[idx] = { ...updated[idx], ...savedItem };
+            try { localStorage.setItem('karviyam_admin_products', JSON.stringify(updated)); } catch (e) {}
+            return updated;
+          });
+          try { await fetchData(); } catch (eFetch) {}
           setModalOpen(false);
         } else {
           throw new Error(apiData?.message || 'Failed to update product');
@@ -381,7 +412,17 @@ export default function AdminProductsPage() {
         const apiData = res.data ? res.data : res;
         if (apiData && apiData.success !== false) {
           toast.success('New product added to catalog!', { id: 'prod-save-toast' });
-          await fetchData();
+          const savedItem = apiData.data || apiData;
+          setProducts(prev => {
+            let updated = [...prev];
+            const itemToInsert = (savedItem && (savedItem.id || savedItem.name))
+              ? savedItem
+              : { id: Date.now(), ...payload };
+            updated.unshift(itemToInsert);
+            try { localStorage.setItem('karviyam_admin_products', JSON.stringify(updated)); } catch (e) {}
+            return updated;
+          });
+          try { await fetchData(); } catch (eFetch) {}
           setModalOpen(false);
         } else {
           throw new Error(apiData?.message || 'Failed to create product');

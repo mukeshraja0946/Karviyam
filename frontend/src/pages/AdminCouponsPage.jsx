@@ -23,7 +23,31 @@ export default function AdminCouponsPage() {
       const res = await api.get('/admin/coupons');
       const apiData = res?.data ? res.data : res;
       const list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
-      setCoupons(list);
+
+      setCoupons(prev => {
+        if (list.length > 0) {
+          const merged = [...list];
+          prev.forEach(p => {
+            if (p && p.id && !merged.some(m => String(m.id) === String(p.id))) {
+              merged.unshift(p);
+            }
+          });
+          try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(merged)); } catch (e) {}
+          return merged;
+        } else if (prev.length > 0) {
+          try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(prev)); } catch (e) {}
+          return prev;
+        } else {
+          try {
+            const saved = localStorage.getItem('karviyam_admin_coupons');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+          } catch (eSaved) {}
+          return [];
+        }
+      });
     } catch (e) {
       console.error(e);
     } finally {
@@ -73,8 +97,16 @@ export default function AdminCouponsPage() {
         const apiData = res?.data ? res.data : res;
         if (apiData && apiData.success !== false) {
           toast.success('Coupon updated successfully!', { id: 'cpn-save-toast' });
+          const savedItem = apiData.data || apiData;
+          setCoupons(prev => {
+            let updated = [...prev];
+            const idx = updated.findIndex(c => String(c.id) === String(editingCoupon.id));
+            if (idx >= 0) updated[idx] = { ...updated[idx], ...savedItem };
+            try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(updated)); } catch (e) {}
+            return updated;
+          });
+          try { await fetchCoupons(); } catch (eFetch) {}
           setModalOpen(false);
-          await fetchCoupons();
         } else {
           throw new Error(apiData?.message || 'Failed to update coupon');
         }
@@ -83,8 +115,18 @@ export default function AdminCouponsPage() {
         const apiData = res?.data ? res.data : res;
         if (apiData && apiData.success !== false) {
           toast.success('New coupon code created!', { id: 'cpn-save-toast' });
+          const savedItem = apiData.data || apiData;
+          setCoupons(prev => {
+            let updated = [...prev];
+            const itemToInsert = (savedItem && (savedItem.id || savedItem.code))
+              ? savedItem
+              : { id: Date.now(), ...payload };
+            updated.unshift(itemToInsert);
+            try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(updated)); } catch (e) {}
+            return updated;
+          });
+          try { await fetchCoupons(); } catch (eFetch) {}
           setModalOpen(false);
-          await fetchCoupons();
         } else {
           throw new Error(apiData?.message || 'Failed to create coupon');
         }

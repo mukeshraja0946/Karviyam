@@ -70,14 +70,35 @@ export default function AdminPincodesPage() {
           city: selectedCity,
           size: 100
         }
-      });
+      }).catch(() => api.get('/pincodes'));
       const apiData = res.data ? res.data : res;
       const paged = apiData.data || apiData;
-      if (paged && paged.content) {
-        setPincodes(paged.content);
-      } else if (Array.isArray(paged)) {
-        setPincodes(paged);
-      }
+      const list = paged.content || (Array.isArray(paged) ? paged : []);
+
+      setPincodes(prev => {
+        if (list.length > 0) {
+          const merged = [...list];
+          prev.forEach(p => {
+            if (p && p.id && !merged.some(m => String(m.id) === String(p.id))) {
+              merged.unshift(p);
+            }
+          });
+          try { localStorage.setItem('karviyam_admin_pincodes', JSON.stringify(merged)); } catch (e) {}
+          return merged;
+        } else if (prev.length > 0) {
+          try { localStorage.setItem('karviyam_admin_pincodes', JSON.stringify(prev)); } catch (e) {}
+          return prev;
+        } else {
+          try {
+            const saved = localStorage.getItem('karviyam_admin_pincodes');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+          } catch (eSaved) {}
+          return [];
+        }
+      });
     } catch (err) {
       console.error(err);
       toast.error('Failed to load deliverable pincodes');

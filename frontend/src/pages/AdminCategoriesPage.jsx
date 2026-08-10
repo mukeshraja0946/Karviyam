@@ -114,9 +114,32 @@ export default function AdminCategoriesPage() {
     try {
       const res = await api.get('/categories');
       const apiData = res.data ? res.data : res;
-      if (apiData) {
-        setCategories(apiData.data || (Array.isArray(apiData) ? apiData : []));
-      }
+      const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+
+      setCategories(prev => {
+        if (list.length > 0) {
+          const merged = [...list];
+          prev.forEach(p => {
+            if (p && p.id && !merged.some(m => String(m.id) === String(p.id))) {
+              merged.unshift(p);
+            }
+          });
+          try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(merged)); } catch (e) {}
+          return merged;
+        } else if (prev.length > 0) {
+          try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(prev)); } catch (e) {}
+          return prev;
+        } else {
+          try {
+            const saved = localStorage.getItem('karviyam_admin_categories');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+          } catch (eSaved) {}
+          return [];
+        }
+      });
     } catch (e) {
       console.error(e);
       toast.error('Failed to load categories');
@@ -240,7 +263,15 @@ export default function AdminCategoriesPage() {
         const apiData = res.data ? res.data : res;
         if (apiData && apiData.success !== false) {
           toast.success('Category updated successfully!', { id: 'cat-save-toast' });
-          await fetchCategories();
+          const savedItem = apiData.data || apiData;
+          setCategories(prev => {
+            let updated = [...prev];
+            const idx = updated.findIndex(c => String(c.id) === String(editingCategory.id));
+            if (idx >= 0) updated[idx] = { ...updated[idx], ...savedItem };
+            try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(updated)); } catch (e) {}
+            return updated;
+          });
+          try { await fetchCategories(); } catch (eFetch) {}
           setModalOpen(false);
         } else {
           throw new Error(apiData?.message || 'Failed to update category');
@@ -250,7 +281,17 @@ export default function AdminCategoriesPage() {
         const apiData = res.data ? res.data : res;
         if (apiData && apiData.success !== false) {
           toast.success('Category created successfully!', { id: 'cat-save-toast' });
-          await fetchCategories();
+          const savedItem = apiData.data || apiData;
+          setCategories(prev => {
+            let updated = [...prev];
+            const itemToInsert = (savedItem && (savedItem.id || savedItem.name))
+              ? savedItem
+              : { id: Date.now(), ...payload };
+            updated.unshift(itemToInsert);
+            try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(updated)); } catch (e) {}
+            return updated;
+          });
+          try { await fetchCategories(); } catch (eFetch) {}
           setModalOpen(false);
         } else {
           throw new Error(apiData?.message || 'Failed to create category');

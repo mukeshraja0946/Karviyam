@@ -46,20 +46,32 @@ export default function AdminBannersPage() {
         } catch (e2) {}
       }
 
-      if (list.length > 0) {
-        setBanners(list);
-        try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(list)); } catch (e) {}
-      } else {
-        try {
-          const saved = localStorage.getItem('karviyam_admin_banners');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setBanners(parsed);
+      setBanners(prev => {
+        if (list.length > 0) {
+          const merged = [...list];
+          prev.forEach(p => {
+            if (p && p.id && !merged.some(m => String(m.id) === String(p.id))) {
+              merged.unshift(p);
             }
-          }
-        } catch (eSaved) {}
-      }
+          });
+          try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(merged)); } catch (e) {}
+          return merged;
+        } else if (prev.length > 0) {
+          try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(prev)); } catch (e) {}
+          return prev;
+        } else {
+          try {
+            const saved = localStorage.getItem('karviyam_admin_banners');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+              }
+            }
+          } catch (eSaved) {}
+          return [];
+        }
+      });
     } catch (e) {
       console.error('[Fetch Banners Error]:', e);
       handleApiError(e, 'Could not load banners from server');

@@ -32,20 +32,43 @@ export default function AdminOffersPage() {
       const res = await api.get('/admin/coupons');
       const apiData = res?.data ? res.data : res;
       const list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
-      if (list.length > 0) {
-        setOffers(list.map(c => ({
-          id: c.id,
-          name: `${c.code} Offer`,
-          code: c.code,
-          type: c.discountType || 'PERCENTAGE',
-          value: c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : `₹${c.discountValue}`,
-          minOrder: c.minOrderAmount || 0,
-          targetCategory: 'All Products',
-          status: c.active ? 'ACTIVE' : 'PAUSED',
-          validTill: '2026-12-31',
-          description: `Get ${c.discountValue}${c.discountType === 'PERCENTAGE' ? '%' : ' FLAT'} discount on orders above ₹${c.minOrderAmount}`
-        })));
-      }
+      const formatted = list.map(c => ({
+        id: c.id,
+        name: `${c.code} Offer`,
+        code: c.code,
+        type: c.discountType || 'PERCENTAGE',
+        value: c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : `₹${c.discountValue}`,
+        minOrder: c.minOrderAmount || 0,
+        targetCategory: 'All Products',
+        status: c.active ? 'ACTIVE' : 'PAUSED',
+        validTill: '2026-12-31',
+        description: `Get ${c.discountValue}${c.discountType === 'PERCENTAGE' ? '%' : ' FLAT'} discount on orders above ₹${c.minOrderAmount}`
+      }));
+
+      setOffers(prev => {
+        if (formatted.length > 0) {
+          const merged = [...formatted];
+          prev.forEach(p => {
+            if (p && p.id && !merged.some(m => String(m.id) === String(p.id))) {
+              merged.unshift(p);
+            }
+          });
+          try { localStorage.setItem('karviyam_admin_offers', JSON.stringify(merged)); } catch (e) {}
+          return merged;
+        } else if (prev.length > 0) {
+          try { localStorage.setItem('karviyam_admin_offers', JSON.stringify(prev)); } catch (e) {}
+          return prev;
+        } else {
+          try {
+            const saved = localStorage.getItem('karviyam_admin_offers');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+          } catch (eSaved) {}
+          return [];
+        }
+      });
     } catch (e) {
       console.error(e);
     } finally {
@@ -117,15 +140,45 @@ export default function AdminOffersPage() {
         active: true
       };
 
+      let savedObj = null;
       if (editingOffer) {
-        await api.put(`/admin/coupons/${editingOffer.id}`, payload);
+        const res = await api.put(`/admin/coupons/${editingOffer.id}`, payload);
+        savedObj = res?.data?.data || res?.data || res;
         toast.success('Offer updated successfully!', { id: 'off-save-toast' });
       } else {
-        await api.post('/admin/coupons', payload);
+        const res = await api.post('/admin/coupons', payload);
+        savedObj = res?.data?.data || res?.data || res;
         toast.success('New promotional offer published!', { id: 'off-save-toast' });
       }
+
+      setOffers(prev => {
+        let updated = [...prev];
+        const newOfferObj = {
+          id: savedObj?.id || Date.now(),
+          name: `${payload.code} Offer`,
+          code: payload.code,
+          type: payload.discountType,
+          value: payload.discountType === 'PERCENTAGE' ? `${payload.discountValue}%` : `₹${payload.discountValue}`,
+          minOrder: payload.minOrderAmount,
+          targetCategory: 'All Products',
+          status: 'ACTIVE',
+          validTill: '2026-12-31',
+          description: `Get ${payload.discountValue}${payload.discountType === 'PERCENTAGE' ? '%' : ' FLAT'} discount on orders above ₹${payload.minOrderAmount}`
+        };
+
+        if (editingOffer) {
+          const idx = updated.findIndex(o => String(o.id) === String(editingOffer.id));
+          if (idx >= 0) updated[idx] = { ...updated[idx], ...newOfferObj };
+        } else {
+          updated.unshift(newOfferObj);
+        }
+
+        try { localStorage.setItem('karviyam_admin_offers', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+
       setModalOpen(false);
-      await fetchOffers();
+      try { await fetchOffers(); } catch (eFetch) {}
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || 'Failed to save offer', { id: 'off-save-toast' });
