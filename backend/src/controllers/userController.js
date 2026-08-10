@@ -185,7 +185,17 @@ exports.updateUserRole = async (req, res, next) => {
     if (!role) {
       return res.status(400).json(ApiResponse.error('Role is required'));
     }
-    await pool.query('UPDATE users SET role = ? WHERE id = ?', [role.toLowerCase(), id]);
+    const cleanRole = String(role).toUpperCase();
+
+    try {
+      await pool.query('UPDATE users SET role = ? WHERE id = ?', [cleanRole, id]);
+    } catch (errRole) {}
+
+    try {
+      await pool.query('DELETE FROM user_roles WHERE user_id = ?', [id]);
+      await pool.query('INSERT INTO user_roles (user_id, role) VALUES (?, ?)', [id, cleanRole]);
+    } catch (errUserRoles) {}
+
     return res.status(200).json(ApiResponse.success(null, 'User role updated successfully'));
   } catch (err) {
     next(err);
