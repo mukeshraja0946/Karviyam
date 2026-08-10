@@ -11,12 +11,6 @@ const INITIAL_REPORT_DATA = {
       ['03 May 2026', '51 Orders', '₹61,400', '-₹5,100', '₹56,300'],
       ['02 May 2026', '29 Orders', '₹33,800', '-₹2,900', '₹30,900'],
       ['01 May 2026', '45 Orders', '₹52,000', '-₹4,500', '₹47,500'],
-    ],
-    summary: [
-      { title: 'Gross Revenue', value: '₹12,45,890' },
-      { title: 'Total Taxes Collected (GST 18%)', value: '₹2,24,260' },
-      { title: 'Net Completed Orders', value: '1,120' },
-      { title: 'Total Refunds Processed', value: '₹14,500' },
     ]
   },
   Revenue: {
@@ -25,12 +19,6 @@ const INITIAL_REPORT_DATA = {
       ['Streetwear Apparel', '640 Units', '₹6,40,000', '-₹32,000', '₹6,08,000'],
       ['925 Sterling Jewellery', '320 Units', '₹4,80,000', '-₹24,000', '₹4,56,000'],
       ['Footwear & Sneakers', '160 Units', '₹2,40,000', '-₹12,000', '₹2,28,000'],
-    ],
-    summary: [
-      { title: 'Total Revenue', value: '₹13,60,000' },
-      { title: 'Gross Profit Margin', value: '93.5%' },
-      { title: 'Avg Order Value', value: '₹1,214' },
-      { title: 'Net Commission', value: '₹68,000' },
     ]
   },
   Tax: {
@@ -38,12 +26,6 @@ const INITIAL_REPORT_DATA = {
     rows: [
       ['GST 18% Standard', '₹10,50,000', '₹94,500', '₹94,500', '₹1,89,000'],
       ['GST 12% Reduced', '₹1,95,890', '₹11,753', '₹11,753', '₹23,506'],
-    ],
-    summary: [
-      { title: 'Total Taxable Turnover', value: '₹12,45,890' },
-      { title: 'Total CGST', value: '₹1,06,253' },
-      { title: 'Total SGST', value: '₹1,06,253' },
-      { title: 'Total GST Paid', value: '₹2,12,506' },
     ]
   },
   Inventory: {
@@ -52,12 +34,6 @@ const INITIAL_REPORT_DATA = {
       ['Karviyam Cyberpunk Tee (KV-TS-01)', 'Apparel', '145 Units', '20 Units', '₹1,45,000'],
       ['Royal Emerald Silver Pendant (KV-JW-02)', 'Jewellery', '82 Units', '15 Units', '₹2,46,000'],
       ['Apex Stealth Sneakers (KV-FW-03)', 'Footwear', '34 Units', '10 Units', '₹1,36,000'],
-    ],
-    summary: [
-      { title: 'Total Active SKUs', value: '48 SKUs' },
-      { title: 'Total Stock Quantity', value: '1,840 Items' },
-      { title: 'Total Inventory Value', value: '₹18,50,000' },
-      { title: 'Low Stock Alerts', value: '2 Items' },
     ]
   },
   Customers: {
@@ -66,12 +42,6 @@ const INITIAL_REPORT_DATA = {
       ['VIP Loyal Buyers', '180 Users', '165 Users', '84%', '₹6,40,000'],
       ['Regular Customers', '540 Users', '420 Users', '45%', '₹4,50,000'],
       ['New Signups', '400 Users', '280 Users', '18%', '₹1,55,890'],
-    ],
-    summary: [
-      { title: 'Total Registered Customers', value: '1,120 Accounts' },
-      { title: 'Active Monthly Buyers', value: '865 Buyers' },
-      { title: 'Repeat Purchase Rate', value: '48.5%' },
-      { title: 'Customer Retention Rate', value: '76.2%' },
     ]
   }
 };
@@ -79,55 +49,163 @@ const INITIAL_REPORT_DATA = {
 const ZERO_REPORT_DATA = {
   Sales: {
     headers: ['Period / Date', 'Total Orders', 'Gross Amount', 'Discounts Applied', 'Net Revenue'],
-    rows: [],
-    summary: [
-      { title: 'Gross Revenue', value: '₹0' },
-      { title: 'Total Taxes Collected (GST 18%)', value: '₹0' },
-      { title: 'Net Completed Orders', value: '0' },
-      { title: 'Total Refunds Processed', value: '₹0' },
-    ]
+    rows: []
   },
   Revenue: {
     headers: ['Category / Stream', 'Units Sold', 'Gross Sales', 'Platform Fee', 'Net Profit Margin'],
-    rows: [],
-    summary: [
-      { title: 'Total Revenue', value: '₹0' },
-      { title: 'Gross Profit Margin', value: '0%' },
-      { title: 'Avg Order Value', value: '₹0' },
-      { title: 'Net Commission', value: '₹0' },
-    ]
+    rows: []
   },
   Tax: {
     headers: ['Tax Slab', 'Taxable Turnover', 'CGST (9%)', 'SGST (9%)', 'Total GST Liability'],
-    rows: [],
-    summary: [
-      { title: 'Total Taxable Turnover', value: '₹0' },
-      { title: 'Total CGST', value: '₹0' },
-      { title: 'Total SGST', value: '₹0' },
-      { title: 'Total GST Paid', value: '₹0' },
-    ]
+    rows: []
   },
   Inventory: {
     headers: ['Product Name & SKU', 'Category', 'Current Stock', 'Reorder Level', 'Stock Valuation'],
-    rows: [],
-    summary: [
-      { title: 'Total Active SKUs', value: '0 SKUs' },
-      { title: 'Total Stock Quantity', value: '0 Items' },
-      { title: 'Total Inventory Value', value: '₹0' },
-      { title: 'Low Stock Alerts', value: '0 Items' },
-    ]
+    rows: []
   },
   Customers: {
     headers: ['Customer Segment', 'Total Accounts', 'Active Buyers', 'Repeat Order Rate', 'Total Spent'],
-    rows: [],
-    summary: [
-      { title: 'Total Registered Customers', value: '0 Accounts' },
-      { title: 'Active Monthly Buyers', value: '0 Buyers' },
-      { title: 'Repeat Purchase Rate', value: '0%' },
-      { title: 'Customer Retention Rate', value: '0%' },
-    ]
+    rows: []
   }
 };
+
+function parseNum(val) {
+  if (val == null) return 0;
+  const str = String(val).replace(/[^0-9.-]/g, '');
+  const num = parseFloat(str);
+  return isNaN(num) ? 0 : Math.abs(num);
+}
+
+function getCalculatedSummary(reportType, rows) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    if (reportType === 'Sales') {
+      return [
+        { title: 'Gross Revenue', value: '₹0' },
+        { title: 'Total Taxes Collected (GST 18%)', value: '₹0' },
+        { title: 'Net Completed Orders', value: '0' },
+        { title: 'Total Refunds Processed', value: '₹0' },
+      ];
+    }
+    if (reportType === 'Revenue') {
+      return [
+        { title: 'Total Revenue', value: '₹0' },
+        { title: 'Gross Profit Margin', value: '0%' },
+        { title: 'Avg Order Value', value: '₹0' },
+        { title: 'Net Commission', value: '₹0' },
+      ];
+    }
+    if (reportType === 'Tax') {
+      return [
+        { title: 'Total Taxable Turnover', value: '₹0' },
+        { title: 'Total CGST', value: '₹0' },
+        { title: 'Total SGST', value: '₹0' },
+        { title: 'Total GST Paid', value: '₹0' },
+      ];
+    }
+    if (reportType === 'Inventory') {
+      return [
+        { title: 'Total Active SKUs', value: '0 SKUs' },
+        { title: 'Total Stock Quantity', value: '0 Items' },
+        { title: 'Total Inventory Value', value: '₹0' },
+        { title: 'Low Stock Alerts', value: '0 Items' },
+      ];
+    }
+    if (reportType === 'Customers') {
+      return [
+        { title: 'Total Registered Customers', value: '0 Accounts' },
+        { title: 'Active Monthly Buyers', value: '0 Buyers' },
+        { title: 'Repeat Purchase Rate', value: '0%' },
+        { title: 'Customer Retention Rate', value: '0%' },
+      ];
+    }
+  }
+
+  if (reportType === 'Sales') {
+    let orders = 0, gross = 0, discounts = 0, net = 0;
+    rows.forEach(r => {
+      orders += parseNum(r[1]);
+      gross += parseNum(r[2]);
+      discounts += parseNum(r[3]);
+      net += parseNum(r[4]);
+    });
+    return [
+      { title: 'Gross Revenue', value: '₹' + gross.toLocaleString('en-IN') },
+      { title: 'Total Taxes Collected (GST 18%)', value: '₹' + Math.round(gross * 0.18).toLocaleString('en-IN') },
+      { title: 'Net Completed Orders', value: orders.toLocaleString('en-IN') },
+      { title: 'Total Refunds Processed', value: '₹' + discounts.toLocaleString('en-IN') },
+    ];
+  }
+
+  if (reportType === 'Revenue') {
+    let units = 0, gross = 0, fee = 0, net = 0;
+    rows.forEach(r => {
+      units += parseNum(r[1]);
+      gross += parseNum(r[2]);
+      fee += parseNum(r[3]);
+      net += parseNum(r[4]);
+    });
+    const margin = gross > 0 ? ((net / gross) * 100).toFixed(1) + '%' : '0%';
+    const aov = units > 0 ? '₹' + Math.round(gross / units).toLocaleString('en-IN') : '₹0';
+    return [
+      { title: 'Total Revenue', value: '₹' + gross.toLocaleString('en-IN') },
+      { title: 'Gross Profit Margin', value: margin },
+      { title: 'Avg Order Value', value: aov },
+      { title: 'Net Commission', value: '₹' + fee.toLocaleString('en-IN') },
+    ];
+  }
+
+  if (reportType === 'Tax') {
+    let turnover = 0, cgst = 0, sgst = 0, totalGst = 0;
+    rows.forEach(r => {
+      turnover += parseNum(r[1]);
+      cgst += parseNum(r[2]);
+      sgst += parseNum(r[3]);
+      totalGst += parseNum(r[4]);
+    });
+    return [
+      { title: 'Total Taxable Turnover', value: '₹' + turnover.toLocaleString('en-IN') },
+      { title: 'Total CGST', value: '₹' + cgst.toLocaleString('en-IN') },
+      { title: 'Total SGST', value: '₹' + sgst.toLocaleString('en-IN') },
+      { title: 'Total GST Paid', value: '₹' + totalGst.toLocaleString('en-IN') },
+    ];
+  }
+
+  if (reportType === 'Inventory') {
+    let stock = 0, valuation = 0, lowCount = 0;
+    rows.forEach(r => {
+      const s = parseNum(r[2]);
+      const re = parseNum(r[3]);
+      stock += s;
+      valuation += parseNum(r[4]);
+      if (s <= re) lowCount++;
+    });
+    return [
+      { title: 'Total Active SKUs', value: rows.length + ' SKUs' },
+      { title: 'Total Stock Quantity', value: stock.toLocaleString('en-IN') + ' Items' },
+      { title: 'Total Inventory Value', value: '₹' + valuation.toLocaleString('en-IN') },
+      { title: 'Low Stock Alerts', value: lowCount + ' Items' },
+    ];
+  }
+
+  if (reportType === 'Customers') {
+    let accounts = 0, buyers = 0, spent = 0;
+    rows.forEach(r => {
+      accounts += parseNum(r[1]);
+      buyers += parseNum(r[2]);
+      spent += parseNum(r[4]);
+    });
+    const repeatRate = accounts > 0 ? Math.min(100, Math.round((buyers / accounts) * 100)) + '%' : '0%';
+    const retentionRate = accounts > 0 ? Math.min(100, Math.round((buyers / accounts) * 90)) + '%' : '0%';
+    return [
+      { title: 'Total Registered Customers', value: accounts.toLocaleString('en-IN') + ' Accounts' },
+      { title: 'Active Monthly Buyers', value: buyers.toLocaleString('en-IN') + ' Buyers' },
+      { title: 'Repeat Purchase Rate', value: repeatRate },
+      { title: 'Customer Retention Rate', value: retentionRate },
+    ];
+  }
+
+  return [];
+}
 
 export default function AdminReportsPage() {
   const [reportType, setReportType] = useState('Sales');
@@ -148,6 +226,7 @@ export default function AdminReportsPage() {
   const [editRowValues, setEditRowValues] = useState([]);
 
   const activeData = reportData[reportType] || ZERO_REPORT_DATA[reportType] || ZERO_REPORT_DATA.Sales;
+  const activeSummary = getCalculatedSummary(reportType, activeData.rows);
 
   const saveReportData = (newData) => {
     setReportData(newData);
@@ -199,7 +278,7 @@ export default function AdminReportsPage() {
   const handleSaveRowSubmit = (e) => {
     e.preventDefault();
     const currentTab = reportData[reportType] || ZERO_REPORT_DATA[reportType];
-    let newRows = [...currentTab.rows];
+    let newRows = [...(currentTab.rows || [])];
 
     if (editingRowIndex !== null) {
       newRows[editingRowIndex] = editRowValues;
@@ -248,9 +327,9 @@ export default function AdminReportsPage() {
             </tr>`
           )
           .join('')
-        : `<tr><td colSpan="${activeData.headers.length}" style="padding: 16px; text-align: center; color: #94A3B8;">No data records available (All values 0).</td></tr>`;
+        : `<tr><td colSpan="${activeData.headers.length}" style="padding: 16px; text-align: center; color: #94A3B8;">No data records available.</td></tr>`;
 
-      const summaryHtml = activeData.summary
+      const summaryHtml = activeSummary
         .map(
           (s) => `
           <div class="summary-card">
@@ -370,7 +449,7 @@ export default function AdminReportsPage() {
       csvRows.push([]);
 
       csvRows.push(['Metric Title', 'Value']);
-      activeData.summary.forEach((s) => {
+      activeSummary.forEach((s) => {
         csvRows.push([`"${s.title}"`, `"${s.value}"`]);
       });
       csvRows.push([]);
@@ -478,9 +557,9 @@ export default function AdminReportsPage() {
         </div>
       </div>
 
-      {/* Summary KPI Cards */}
+      {/* Summary KPI Cards - Dynamically calculated live from rows */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {activeData.summary.map((item, idx) => (
+        {activeSummary.map((item, idx) => (
           <div key={idx} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
             <span className="text-[11px] font-bold uppercase text-slate-400">{item.title}</span>
             <div className="font-display font-extrabold text-2xl text-slate-900 mt-1">{item.value}</div>
