@@ -5,6 +5,7 @@ const productController = require('../controllers/productController');
 const categoryController = require('../controllers/categoryController');
 const pincodeController = require('../controllers/pincodeController');
 const settingController = require('../controllers/settingController');
+const contactController = require('../controllers/contactController');
 const { optionalToken } = require('../middleware/authMiddleware');
 const { requireAdmin } = require('../middleware/adminMiddleware');
 
@@ -69,7 +70,8 @@ router.delete('/pincodes/:id', pincodeController.deletePincode);
 router.put('/pincodes/:id/toggle-status', pincodeController.togglePincodeStatus);
 router.post('/pincodes/bulk-import', pincodeController.bulkImportPincodes);
 
-// Company settings & General settings
+// Admin Help & General settings
+router.post('/help', contactController.submitAdminHelp);
 router.get('/company-settings', settingController.getCompanySettings);
 router.post('/company-settings', settingController.updateCompanySettings);
 router.put('/company-settings', settingController.updateCompanySettings);

@@ -34,25 +34,36 @@ export default function ContactPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.message) {
-      toast.error('Please fill in all required fields');
+    if (loading) return;
+
+    if (!formData.name || !formData.name.trim()) {
+      toast.error('Please enter your full name');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email || !emailRegex.test(formData.email.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    if (!formData.message || !formData.message.trim()) {
+      toast.error('Please enter your message');
       return;
     }
 
     try {
       setLoading(true);
+      toast.loading('Sending message to vanakkam@karviyam.com...', { id: 'contact-toast' });
       const res = await contactService.submitContact(formData);
-      toast.success(res?.message || 'Thank you! Your message has been sent to vanakkam@karviyam.com');
-
-      // Direct mailto trigger to ensure email client opens with pre-filled details to vanakkam@karviyam.com
-      const mailtoUrl = `mailto:vanakkam@karviyam.com?subject=${encodeURIComponent(formData.subject || 'Message from ' + formData.name)}&body=${encodeURIComponent(formData.message + '\n\nFrom: ' + formData.name + ' (' + formData.email + ')')}`;
-      window.open(mailtoUrl, '_blank');
-
+      
+      const msg = res?.message || 'Thank you! Your message has been sent to vanakkam@karviyam.com.';
+      toast.success(msg, { id: 'contact-toast' });
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (err) {
-      toast.error('Sending via email client to vanakkam@karviyam.com...');
-      const mailtoUrl = `mailto:vanakkam@karviyam.com?subject=${encodeURIComponent(formData.subject || 'Message from ' + formData.name)}&body=${encodeURIComponent(formData.message + '\n\nFrom: ' + formData.name + ' (' + formData.email + ')')}`;
-      window.open(mailtoUrl, '_blank');
+      console.error(err);
+      const errMsg = err.response?.data?.message || err.message || 'Failed to send message. Please try again later.';
+      toast.error(errMsg, { id: 'contact-toast' });
     } finally {
       setLoading(false);
     }
