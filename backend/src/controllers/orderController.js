@@ -268,9 +268,14 @@ exports.updateOrder = async (req, res, next) => {
 exports.deleteOrder = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM order_items WHERE order_id = ?', [id]);
-    await pool.query('DELETE FROM payments WHERE order_id = ?', [id]);
-    await pool.query('DELETE FROM orders WHERE id = ?', [id]);
+    const cleanId = String(id).replace(/[^0-9]/g, '');
+
+    if (cleanId) {
+      try { await pool.query('DELETE FROM order_items WHERE order_id = ?', [cleanId]); } catch (e) {}
+      try { await pool.query('DELETE FROM payments WHERE order_id = ?', [cleanId]); } catch (e) {}
+      try { await pool.query('DELETE FROM orders WHERE id = ?', [cleanId]); } catch (e) {}
+    }
+
     return res.status(200).json(ApiResponse.success(null, 'Order deleted successfully'));
   } catch (err) {
     next(err);

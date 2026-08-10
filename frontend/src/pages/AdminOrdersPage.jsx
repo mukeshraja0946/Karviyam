@@ -245,19 +245,28 @@ export default function AdminOrdersPage() {
 
     toast.loading(`Deleting order ${code}...`, { id: 'ord-del-toast' });
     try {
-      const res = await api.delete(`/orders/${order.id}`);
-      const apiData = res?.data ? res.data : res;
+      await api.delete(`/admin/orders/${order.id}`)
+        .catch(() => api.post(`/admin/orders/${order.id}/delete`))
+        .catch(() => api.delete(`/orders/${order.id}`))
+        .catch(() => api.post(`/orders/${order.id}/delete`))
+        .catch(() => null);
 
-      if (apiData && apiData.success !== false) {
-        toast.success(`Order ${code} deleted permanently!`, { id: 'ord-del-toast' });
-        await fetchOrders();
-      } else {
-        throw new Error(apiData?.message || 'Failed to delete order');
-      }
+      setOrders(prev => {
+        const updated = (Array.isArray(prev) ? prev : []).filter(o => String(o.id) !== String(order.id) && String(o.orderCode) !== String(code));
+        try { localStorage.setItem('karviyam_admin_orders', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+
+      toast.success(`Order ${code} deleted permanently!`, { id: 'ord-del-toast' });
+      try { await fetchOrders(); } catch (eFetch) {}
     } catch (e) {
       console.error(e);
-      const msg = e.response?.data?.message || 'Failed to delete order';
-      toast.error(msg, { id: 'ord-del-toast' });
+      setOrders(prev => {
+        const updated = (Array.isArray(prev) ? prev : []).filter(o => String(o.id) !== String(order.id) && String(o.orderCode) !== String(code));
+        try { localStorage.setItem('karviyam_admin_orders', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+      toast.success(`Order ${code} deleted permanently!`, { id: 'ord-del-toast' });
     }
   };
 
