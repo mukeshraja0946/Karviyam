@@ -42,6 +42,17 @@ export default function CheckoutPage() {
   useEffect(() => {
     fetchSettings();
     fetchCustomerAddresses();
+
+    const handleSettingsUpdate = () => {
+      fetchSettings();
+    };
+
+    window.addEventListener('storage', handleSettingsUpdate);
+    window.addEventListener('karviyam_settings_updated', handleSettingsUpdate);
+    return () => {
+      window.removeEventListener('storage', handleSettingsUpdate);
+      window.removeEventListener('karviyam_settings_updated', handleSettingsUpdate);
+    };
   }, []);
 
   const fetchCustomerAddresses = async () => {
@@ -115,7 +126,7 @@ export default function CheckoutPage() {
 
       const combined = { ...(dataMap || {}), ...(localSettings || {}) };
 
-      const checkBool = (val, defaultVal = true) => {
+      const checkBool = (val, defaultVal = false) => {
         if (val === undefined || val === null) return defaultVal;
         if (typeof val === 'boolean') return val;
         if (typeof val === 'number') return val === 1;
