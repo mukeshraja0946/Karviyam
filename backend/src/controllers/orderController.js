@@ -226,3 +226,53 @@ exports.getInvoice = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.updateOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const dto = req.body;
+    const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
+    if (orders.length === 0) {
+      return res.status(404).json(ApiResponse.error('Order not found'));
+    }
+
+    let updates = [];
+    let params = [];
+
+    if (dto.status !== undefined) { updates.push('status = ?'); params.push(dto.status); }
+    if (dto.fullName !== undefined) { updates.push('full_name = ?'); params.push(dto.fullName); }
+    if (dto.email !== undefined) { updates.push('email = ?'); params.push(dto.email); }
+    if (dto.phone !== undefined) { updates.push('phone = ?'); params.push(dto.phone); }
+    if (dto.address !== undefined) { updates.push('address = ?'); params.push(dto.address); }
+    if (dto.city !== undefined) { updates.push('city = ?'); params.push(dto.city); }
+    if (dto.pincode !== undefined) { updates.push('pincode = ?'); params.push(dto.pincode); }
+    if (dto.trackingNumber !== undefined) { updates.push('tracking_number = ?'); params.push(dto.trackingNumber); }
+
+    if (updates.length > 0) {
+      params.push(id);
+      await pool.query(`UPDATE orders SET ${updates.join(', ')} WHERE id = ?`, params);
+    }
+
+    if (dto.paymentStatus !== undefined) {
+      await pool.query('UPDATE payments SET payment_status = ? WHERE order_id = ?', [dto.paymentStatus, id]);
+    }
+
+    const [updated] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
+    const dtoRes = await mapOrderRowToDTO(updated[0]);
+    return res.status(200).json(ApiResponse.success(dtoRes, 'Order updated successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM order_items WHERE order_id = ?', [id]);
+    await pool.query('DELETE FROM payments WHERE order_id = ?', [id]);
+    await pool.query('DELETE FROM orders WHERE id = ?', [id]);
+    return res.status(200).json(ApiResponse.success(null, 'Order deleted successfully'));
+  } catch (err) {
+    next(err);
+  }
+};

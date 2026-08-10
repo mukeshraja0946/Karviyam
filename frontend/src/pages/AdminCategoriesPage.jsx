@@ -206,77 +206,99 @@ export default function AdminCategoriesPage() {
     }
   };
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+
     if (!formData.name || !formData.name.trim()) {
       toast.error('Category name is required');
       return;
     }
 
-    const compressedImage = await compressBase64Url(formData.imageUrl);
-    const compressedIcon = await compressBase64Url(formData.iconUrl);
-    const compressedBanner = await compressBase64Url(formData.bannerUrl);
-
-    const payload = {
-      ...formData,
-      name: formData.name.trim(),
-      imageUrl: compressedImage || null,
-      iconUrl: compressedIcon || null,
-      bannerUrl: compressedBanner || null,
-      parentId: formData.parentId ? parseInt(formData.parentId, 10) : null,
-      orderIndex: parseInt(formData.orderIndex, 10) || 0,
-    };
+    setSubmitting(true);
+    toast.loading(editingCategory ? 'Updating category...' : 'Saving new category...', { id: 'cat-save-toast' });
 
     try {
+      const compressedImage = await compressBase64Url(formData.imageUrl);
+      const compressedIcon = await compressBase64Url(formData.iconUrl);
+      const compressedBanner = await compressBase64Url(formData.bannerUrl);
+
+      const payload = {
+        ...formData,
+        name: formData.name.trim(),
+        imageUrl: compressedImage || null,
+        iconUrl: compressedIcon || null,
+        bannerUrl: compressedBanner || null,
+        parentId: formData.parentId ? parseInt(formData.parentId, 10) : null,
+        orderIndex: parseInt(formData.orderIndex, 10) || 0,
+      };
+
       if (editingCategory) {
         const res = await api.put(`/categories/${editingCategory.id}`, payload);
         const apiData = res.data ? res.data : res;
-        if (apiData && (apiData.success || apiData.id)) {
-          toast.success('Category updated successfully!');
-          fetchCategories();
+        if (apiData && apiData.success !== false) {
+          toast.success('Category updated successfully!', { id: 'cat-save-toast' });
+          await fetchCategories();
           setModalOpen(false);
+        } else {
+          throw new Error(apiData?.message || 'Failed to update category');
         }
       } else {
         const res = await api.post('/categories', payload);
         const apiData = res.data ? res.data : res;
-        if (apiData && (apiData.success || apiData.id)) {
-          toast.success('Category created successfully!');
-          fetchCategories();
+        if (apiData && apiData.success !== false) {
+          toast.success('Category created successfully!', { id: 'cat-save-toast' });
+          await fetchCategories();
           setModalOpen(false);
+        } else {
+          throw new Error(apiData?.message || 'Failed to create category');
         }
       }
     } catch (e) {
       console.error(e);
       const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to save category';
-      toast.error(msg);
+      toast.error(msg, { id: 'cat-save-toast' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this category?')) return;
+    toast.loading('Deleting category...', { id: 'cat-del-toast' });
     try {
       const res = await api.delete(`/categories/${id}`);
       const apiData = res.data ? res.data : res;
-      if (apiData && (apiData.success || apiData.status === 200)) {
-        toast.success('Category deleted');
-        fetchCategories();
+      if (apiData && apiData.success !== false) {
+        toast.success('Category deleted successfully!', { id: 'cat-del-toast' });
+        await fetchCategories();
+      } else {
+        throw new Error(apiData?.message || 'Failed to delete category');
       }
     } catch (e) {
       console.error(e);
-      toast.error('Failed to delete category');
+      const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to delete category';
+      toast.error(msg, { id: 'cat-del-toast' });
     }
   };
 
   const handleToggleStatus = async (cat) => {
+    toast.loading(`Updating ${cat.name} status...`, { id: 'cat-toggle-toast' });
     try {
       const res = await api.put(`/categories/${cat.id}/toggle-status?active=${!cat.isActive}`);
       const apiData = res.data ? res.data : res;
-      if (apiData) {
-        toast.success(`Category ${!cat.isActive ? 'enabled' : 'disabled'}`);
-        fetchCategories();
+      if (apiData && apiData.success !== false) {
+        toast.success(`Category ${!cat.isActive ? 'enabled' : 'disabled'} successfully!`, { id: 'cat-toggle-toast' });
+        await fetchCategories();
+      } else {
+        throw new Error(apiData?.message || 'Failed to toggle category status');
       }
     } catch (e) {
       console.error(e);
+      const msg = e.response?.data?.message || 'Failed to toggle status';
+      toast.error(msg, { id: 'cat-toggle-toast' });
     }
   };
 

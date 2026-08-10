@@ -110,13 +110,20 @@ export default function AdminOrdersPage() {
   };
 
   const handleUpdateStatus = async (orderId, newStatus) => {
+    toast.loading(`Updating order status to ${newStatus}...`, { id: 'ord-status-toast' });
     try {
-      await api.put(`/orders/${orderId}`, { status: newStatus });
-      toast.success(`Order #${orderId} status updated to ${newStatus}!`);
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      const res = await api.put(`/orders/${orderId}`, { status: newStatus });
+      const apiData = res?.data ? res.data : res;
+      if (apiData && apiData.success !== false) {
+        toast.success(`Order #${orderId} status updated to ${newStatus}!`, { id: 'ord-status-toast' });
+        await fetchOrders();
+      } else {
+        throw new Error(apiData?.message || 'Failed to update order status');
+      }
     } catch (e) {
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-      toast.success(`Order status updated to ${newStatus}!`);
+      console.error(e);
+      const msg = e.response?.data?.message || 'Failed to update order status';
+      toast.error(msg, { id: 'ord-status-toast' });
     }
   };
 
@@ -142,52 +149,44 @@ export default function AdminOrdersPage() {
     e.preventDefault();
     if (!editingOrder) return;
 
+    toast.loading(`Saving changes for Order #${editingOrder.id}...`, { id: 'ord-edit-toast' });
     try {
       const res = await api.put(`/orders/${editingOrder.id}`, editFormData);
       const apiData = res?.data ? res.data : res;
-      toast.success(`Order #${editingOrder.id} updated successfully!`);
 
-      setOrders(prev => {
-        const updated = prev.map(o => o.id === editingOrder.id ? { ...o, ...editFormData } : o);
-        localStorage.setItem('karviyam_admin_orders', JSON.stringify(updated));
-        return updated;
-      });
-      setEditModalOpen(false);
-      fetchOrders();
+      if (apiData && apiData.success !== false) {
+        toast.success(`Order #${editingOrder.id} updated successfully!`, { id: 'ord-edit-toast' });
+        setEditModalOpen(false);
+        await fetchOrders();
+      } else {
+        throw new Error(apiData?.message || 'Failed to update order');
+      }
     } catch (e) {
       console.error(e);
-      // Local fallback save
-      setOrders(prev => {
-        const updated = prev.map(o => o.id === editingOrder.id ? { ...o, ...editFormData } : o);
-        localStorage.setItem('karviyam_admin_orders', JSON.stringify(updated));
-        return updated;
-      });
-      toast.success(`Order #${editingOrder.id} updated!`);
-      setEditModalOpen(false);
+      const msg = e.response?.data?.message || 'Failed to save order details';
+      toast.error(msg, { id: 'ord-edit-toast' });
     }
   };
 
   const handleDeleteOrder = async (order) => {
     const code = order.orderCode || `#ORD${order.id}`;
+    if (!window.confirm(`Are you sure you want to delete order ${code}?`)) return;
 
+    toast.loading(`Deleting order ${code}...`, { id: 'ord-del-toast' });
     try {
-      await api.delete(`/orders/${order.id}`);
-      toast.success(`Order ${code} deleted permanently!`);
-      setOrders(prev => {
-        const updated = prev.filter(o => o.id !== order.id);
-        localStorage.setItem('karviyam_admin_orders', JSON.stringify(updated));
-        return updated;
-      });
-      window.dispatchEvent(new Event('karviyam_products_updated'));
-      fetchOrders();
+      const res = await api.delete(`/orders/${order.id}`);
+      const apiData = res?.data ? res.data : res;
+
+      if (apiData && apiData.success !== false) {
+        toast.success(`Order ${code} deleted permanently!`, { id: 'ord-del-toast' });
+        await fetchOrders();
+      } else {
+        throw new Error(apiData?.message || 'Failed to delete order');
+      }
     } catch (e) {
       console.error(e);
-      setOrders(prev => {
-        const updated = prev.filter(o => o.id !== order.id);
-        localStorage.setItem('karviyam_admin_orders', JSON.stringify(updated));
-        return updated;
-      });
-      toast.success(`Order ${code} deleted!`);
+      const msg = e.response?.data?.message || 'Failed to delete order';
+      toast.error(msg, { id: 'ord-del-toast' });
     }
   };
 

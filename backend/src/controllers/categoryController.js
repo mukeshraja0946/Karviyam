@@ -205,11 +205,27 @@ exports.updateCategory = async (req, res, next) => {
   }
 };
 
+const ensureCategoryTableExists = async () => {
+  try {
+    await pool.query("ALTER TABLE categories MODIFY COLUMN image_url LONGTEXT");
+    await pool.query("ALTER TABLE categories MODIFY COLUMN icon_url LONGTEXT");
+    await pool.query("ALTER TABLE categories MODIFY COLUMN banner_url LONGTEXT");
+  } catch (e) {}
+};
+
 exports.deleteCategory = async (req, res, next) => {
   try {
+    await ensureCategoryTableExists();
     const { id } = req.params;
-    await pool.query('DELETE FROM categories WHERE id = ?', [id]);
-    return res.status(200).json(ApiResponse.success(null, 'Category deleted successfully'));
+    try {
+      await pool.query('DELETE FROM categories WHERE id = ?', [id]);
+      return res.status(200).json(ApiResponse.success(null, 'Category deleted successfully'));
+    } catch (dbErr) {
+      if (dbErr.code === 'ER_ROW_IS_REFERENCED_2' || dbErr.errno === 1451) {
+        return res.status(400).json(ApiResponse.error('Cannot delete category because existing products are assigned to it. Please reassign or delete those products first.'));
+      }
+      throw dbErr;
+    }
   } catch (err) {
     next(err);
   }

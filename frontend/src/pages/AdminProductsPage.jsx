@@ -314,8 +314,12 @@ export default function AdminProductsPage() {
     }));
   };
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSaveProduct = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+
     if (!formData.name.trim()) {
       toast.error('Product title is required');
       return;
@@ -325,76 +329,89 @@ export default function AdminProductsPage() {
       return;
     }
 
-    const qty = parseInt(formData.stockQuantity, 10) || 0;
-
-    const compressedImages = await Promise.all(
-      (formData.images || []).map(url => compressBase64Url(url))
-    );
-
-    // Build colorVariantImages map for MySQL LONGTEXT field & Storefront compatibility
-    const colorVariantImagesMap = {};
-    (formData.colorVariants || []).forEach(v => {
-      if (v.colorName) {
-        colorVariantImagesMap[v.colorName] = (v.imageUrls || []).filter(Boolean);
-      }
-    });
-
-    const defaultVar = (formData.colorVariants || []).find(v => v.isDefault) || (formData.colorVariants || [])[0];
-
-    const payload = {
-      ...formData,
-      color: defaultVar ? defaultVar.colorName : formData.color,
-      colorVariantImages: JSON.stringify(colorVariantImagesMap),
-      images: compressedImages,
-      price: parseFloat(formData.price),
-      oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
-      costPrice: formData.costPrice ? parseFloat(formData.costPrice) : null,
-      discountPercentage: formData.discountPercentage ? parseFloat(formData.discountPercentage) : null,
-      stockQuantity: qty,
-      categoryId: formData.categoryId ? parseInt(formData.categoryId, 10) : null,
-      subcategoryId: formData.subcategoryId ? parseInt(formData.subcategoryId, 10) : null,
-      brandId: formData.brandId ? parseInt(formData.brandId, 10) : null,
-      weight: formData.weight ? parseFloat(formData.weight) : null,
-      imageUrl: (defaultVar && defaultVar.imageUrls && defaultVar.imageUrls[0]) || compressedImages[0] || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
-    };
+    setSubmitting(true);
+    toast.loading(editingProduct ? 'Updating product details...' : 'Adding new product to catalog...', { id: 'prod-save-toast' });
 
     try {
+      const qty = parseInt(formData.stockQuantity, 10) || 0;
+
+      const compressedImages = await Promise.all(
+        (formData.images || []).map(url => compressBase64Url(url))
+      );
+
+      // Build colorVariantImages map for MySQL LONGTEXT field & Storefront compatibility
+      const colorVariantImagesMap = {};
+      (formData.colorVariants || []).forEach(v => {
+        if (v.colorName) {
+          colorVariantImagesMap[v.colorName] = (v.imageUrls || []).filter(Boolean);
+        }
+      });
+
+      const defaultVar = (formData.colorVariants || []).find(v => v.isDefault) || (formData.colorVariants || [])[0];
+
+      const payload = {
+        ...formData,
+        color: defaultVar ? defaultVar.colorName : formData.color,
+        colorVariantImages: JSON.stringify(colorVariantImagesMap),
+        images: compressedImages,
+        price: parseFloat(formData.price),
+        oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
+        costPrice: formData.costPrice ? parseFloat(formData.costPrice) : null,
+        discountPercentage: formData.discountPercentage ? parseFloat(formData.discountPercentage) : null,
+        stockQuantity: qty,
+        categoryId: formData.categoryId ? parseInt(formData.categoryId, 10) : null,
+        subcategoryId: formData.subcategoryId ? parseInt(formData.subcategoryId, 10) : null,
+        brandId: formData.brandId ? parseInt(formData.brandId, 10) : null,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
+        imageUrl: (defaultVar && defaultVar.imageUrls && defaultVar.imageUrls[0]) || compressedImages[0] || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
+      };
+
       if (editingProduct) {
         const res = await api.put(`/admin/products/${editingProduct.id}`, payload);
         const apiData = res.data ? res.data : res;
-        if (apiData) {
-          toast.success('Product updated successfully!');
-          fetchData();
+        if (apiData && apiData.success !== false) {
+          toast.success('Product updated successfully!', { id: 'prod-save-toast' });
+          await fetchData();
           setModalOpen(false);
+        } else {
+          throw new Error(apiData?.message || 'Failed to update product');
         }
       } else {
         const res = await api.post('/admin/products', payload);
         const apiData = res.data ? res.data : res;
-        if (apiData) {
-          toast.success('New product added to catalog!');
-          fetchData();
+        if (apiData && apiData.success !== false) {
+          toast.success('New product added to catalog!', { id: 'prod-save-toast' });
+          await fetchData();
           setModalOpen(false);
+        } else {
+          throw new Error(apiData?.message || 'Failed to create product');
         }
       }
     } catch (e) {
       console.error(e);
       const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to save product';
-      toast.error(msg);
+      toast.error(msg, { id: 'prod-save-toast' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDeleteProduct = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
+    toast.loading('Deleting product...', { id: 'prod-del-toast' });
     try {
       const res = await api.delete(`/admin/products/${id}`);
       const apiData = res.data ? res.data : res;
-      if (apiData) {
-        toast.success('Product removed from catalog');
-        fetchData();
+      if (apiData && apiData.success !== false) {
+        toast.success('Product removed from catalog', { id: 'prod-del-toast' });
+        await fetchData();
+      } else {
+        throw new Error(apiData?.message || 'Failed to delete product');
       }
     } catch (e) {
       console.error(e);
-      toast.error('Failed to delete product');
+      const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to delete product';
+      toast.error(msg, { id: 'prod-del-toast' });
     }
   };
 

@@ -28,15 +28,22 @@ router.delete('/products/:id', adminController.deleteProduct);
 // Coupons
 router.get('/coupons', adminController.getCoupons);
 router.post('/coupons', adminController.createCoupon);
+router.put('/coupons/:id', adminController.updateCoupon);
 router.delete('/coupons/:id', adminController.deleteCoupon);
 
 // Reviews
 router.get('/reviews', adminController.getReviews);
 router.put('/reviews/:id/status', adminController.updateReviewStatus);
 
+const userController = require('../controllers/userController');
+
 // Users & Customers
 router.get('/users', adminController.getUsers);
 router.get('/customers', adminController.getCustomers);
+router.put('/customers/:id', adminController.updateCustomer);
+router.delete('/customers/:id', adminController.deleteCustomer);
+router.put('/users/:id/role', userController.updateUserRole);
+router.delete('/users/:id', userController.deleteUser);
 
 // Pincodes
 router.get('/pincodes', pincodeController.getAllPincodes);

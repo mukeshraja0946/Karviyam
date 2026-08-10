@@ -2,57 +2,11 @@ import React, { useState } from 'react';
 import { Tag, Plus, Trash2, Edit2, X, Percent, Gift, Zap, ShieldCheck, Calendar, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import api from '../utils/api';
+
 export default function AdminOffersPage() {
-  const [offers, setOffers] = useState([
-    {
-      id: 1,
-      name: 'Festive High-Street Drop',
-      code: 'FESTIVE60',
-      type: 'PERCENTAGE',
-      value: '60%',
-      minOrder: 1499,
-      targetCategory: 'All Products',
-      status: 'ACTIVE',
-      validTill: '2026-12-31',
-      description: 'Up to 60% OFF on Oversized Tees, Hoodies & Fine Jewellery'
-    },
-    {
-      id: 2,
-      name: 'Welcome VIP Cashback',
-      code: 'WELCOME200',
-      type: 'FLAT',
-      value: '₹200 FLAT',
-      minOrder: 999,
-      targetCategory: 'New Customers',
-      status: 'ACTIVE',
-      validTill: '2026-11-30',
-      description: 'Instant ₹200 discount for newly registered Karviyam members'
-    },
-    {
-      id: 3,
-      name: 'Express Free Delivery Deal',
-      code: 'FREESHIP499',
-      type: 'FREE_SHIPPING',
-      value: 'FREE SHIPPING',
-      minOrder: 499,
-      targetCategory: 'All Orders',
-      status: 'ACTIVE',
-      validTill: '2026-10-15',
-      description: 'Zero shipping fee automatically applied on orders above ₹499'
-    },
-    {
-      id: 4,
-      name: 'Streetwear BOGO Festival',
-      code: 'BOGO2026',
-      type: 'BUY_X_GET_Y',
-      value: 'BUY 2 GET 1',
-      minOrder: 1999,
-      targetCategory: 'Clothing',
-      status: 'SCHEDULED',
-      validTill: '2026-09-01',
-      description: 'Buy 2 Heavy French Terry Tees or Shirts & Get 1 Accessory Free'
-    }
-  ]);
+  const [offers, setOffers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState(null);
@@ -66,6 +20,38 @@ export default function AdminOffersPage() {
     validTill: '',
     description: ''
   });
+  const [submitting, setSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    fetchOffers();
+  }, []);
+
+  const fetchOffers = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/admin/coupons');
+      const apiData = res?.data ? res.data : res;
+      const list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      if (list.length > 0) {
+        setOffers(list.map(c => ({
+          id: c.id,
+          name: `${c.code} Offer`,
+          code: c.code,
+          type: c.discountType || 'PERCENTAGE',
+          value: c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : `₹${c.discountValue}`,
+          minOrder: c.minOrderAmount || 0,
+          targetCategory: 'All Products',
+          status: c.active ? 'ACTIVE' : 'PAUSED',
+          validTill: '2026-12-31',
+          description: `Get ${c.discountValue}${c.discountType === 'PERCENTAGE' ? '%' : ' FLAT'} discount on orders above ₹${c.minOrderAmount}`
+        })));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenAddModal = () => {
     setEditingOffer(null);
@@ -73,7 +59,7 @@ export default function AdminOffersPage() {
       name: '',
       code: '',
       type: 'PERCENTAGE',
-      value: '15%',
+      value: '15',
       minOrder: '499',
       targetCategory: 'All Products',
       validTill: '2026-12-31',
@@ -88,7 +74,7 @@ export default function AdminOffersPage() {
       name: off.name,
       code: off.code,
       type: off.type,
-      value: off.value,
+      value: String(off.value).replace(/[^0-9.]/g, ''),
       minOrder: off.minOrder,
       targetCategory: off.targetCategory,
       validTill: off.validTill,
@@ -97,32 +83,73 @@ export default function AdminOffersPage() {
     setModalOpen(true);
   };
 
-  const handleToggleStatus = (id) => {
-    setOffers(offers.map(o => {
-      if (o.id === id) {
-        const nextStatus = o.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
-        toast.success(`Offer campaign set to ${nextStatus}!`);
-        return { ...o, status: nextStatus };
-      }
-      return o;
-    }));
-  };
-
-  const handleSaveOffer = (e) => {
-    e.preventDefault();
-    if (editingOffer) {
-      setOffers(offers.map(o => o.id === editingOffer.id ? { ...o, ...formData } : o));
-      toast.success('Offer updated successfully!');
-    } else {
-      setOffers([...offers, { id: Date.now(), status: 'ACTIVE', ...formData }]);
-      toast.success('New promotional offer published!');
+  const handleToggleStatus = async (off) => {
+    const nextActive = off.status !== 'ACTIVE';
+    toast.loading(`Updating offer status...`, { id: 'off-toggle-toast' });
+    try {
+      await api.put(`/admin/coupons/${off.id}`, { active: nextActive });
+      toast.success(`Offer campaign set to ${nextActive ? 'ACTIVE' : 'PAUSED'}!`, { id: 'off-toggle-toast' });
+      await fetchOffers();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to update status', { id: 'off-toggle-toast' });
     }
-    setModalOpen(false);
   };
 
-  const handleDeleteOffer = (id) => {
-    setOffers(offers.filter(o => o.id !== id));
-    toast.success('Offer campaign deleted');
+  const handleSaveOffer = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+
+    if (!formData.code || !formData.code.trim()) {
+      toast.error('Offer code is required');
+      return;
+    }
+
+    setSubmitting(true);
+    toast.loading(editingOffer ? 'Updating offer...' : 'Publishing offer...', { id: 'off-save-toast' });
+
+    try {
+      const payload = {
+        code: formData.code.trim().toUpperCase(),
+        discountType: formData.type === 'FLAT' ? 'FIXED' : 'PERCENTAGE',
+        discountValue: parseFloat(formData.value) || 10,
+        minOrderAmount: parseFloat(formData.minOrder) || 0,
+        active: true
+      };
+
+      if (editingOffer) {
+        await api.put(`/admin/coupons/${editingOffer.id}`, payload);
+        toast.success('Offer updated successfully!', { id: 'off-save-toast' });
+      } else {
+        await api.post('/admin/coupons', payload);
+        toast.success('New promotional offer published!', { id: 'off-save-toast' });
+      }
+      setModalOpen(false);
+      await fetchOffers();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Failed to save offer', { id: 'off-save-toast' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteOffer = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this offer?')) return;
+    toast.loading('Deleting offer campaign...', { id: 'off-del-toast' });
+    try {
+      const res = await api.delete(`/admin/coupons/${id}`);
+      const apiData = res?.data ? res.data : res;
+      if (apiData && apiData.success !== false) {
+        toast.success('Offer deleted successfully!', { id: 'off-del-toast' });
+        await fetchOffers();
+      } else {
+        throw new Error(apiData?.message || 'Failed to delete offer');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Failed to delete offer', { id: 'off-del-toast' });
+    }
   };
 
   return (

@@ -65,31 +65,16 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const saved = localStorage.getItem('karviyam_admin_staff_users');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setUsers(parsed);
-          setLoading(false);
-          return;
-        }
-      }
       const res = await api.get('/admin/users');
-      const data = res?.data || res || [];
+      const apiData = res?.data ? res.data : res;
+      const data = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
       if (Array.isArray(data) && data.length > 0) {
-        const staffOnly = data.filter((u) =>
-          (u.roles || []).some((r) => r.includes('ADMIN') || r.includes('MANAGER') || r.includes('STAFF'))
-        );
-        if (staffOnly.length > 0) {
-          setUsers(staffOnly);
-          localStorage.setItem('karviyam_admin_staff_users', JSON.stringify(staffOnly));
-        } else {
-          loadStoredOrFallback();
-        }
+        setUsers(data);
       } else {
         loadStoredOrFallback();
       }
     } catch (err) {
+      console.error(err);
       loadStoredOrFallback();
     } finally {
       setLoading(false);
@@ -125,7 +110,7 @@ export default function AdminUsersPage() {
 
   const handleOpenEditModal = (u) => {
     setEditingUser(u);
-    const mainRole = (u.roles && u.roles.length > 0) ? u.roles[0] : 'ROLE_ADMIN';
+    const mainRole = (u.roles && u.roles.length > 0) ? u.roles[0] : (u.role || 'ROLE_ADMIN');
     setFormData({
       fullName: u.fullName || '',
       email: u.email || '',
@@ -136,30 +121,31 @@ export default function AdminUsersPage() {
     setModalOpen(true);
   };
 
-  const handleSaveUser = (e) => {
+  const handleSaveUser = async (e) => {
     e.preventDefault();
     if (!formData.fullName || !formData.email) {
       toast.error('Please fill in required name and email fields');
       return;
     }
 
-    let updatedList;
     if (editingUser) {
-      updatedList = users.map((u) =>
-        u.id === editingUser.id
-          ? {
-              ...u,
-              fullName: formData.fullName,
-              email: formData.email,
-              phone: formData.phone,
-              roles: [formData.role],
-              status: formData.status
-            }
-          : u
-      );
-      toast.success('Staff account updated successfully!');
+      toast.loading('Updating staff user role...', { id: 'usr-save-toast' });
+      try {
+        const res = await api.put(`/admin/users/${editingUser.id}/role`, { role: formData.role });
+        const apiData = res?.data ? res.data : res;
+        if (apiData && apiData.success !== false) {
+          toast.success('Staff role updated successfully!', { id: 'usr-save-toast' });
+          setModalOpen(false);
+          await fetchUsers();
+        } else {
+          throw new Error(apiData?.message || 'Failed to update user role');
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error(err.response?.data?.message || 'Failed to update user role', { id: 'usr-save-toast' });
+      }
     } else {
-      const newUser = {
+      let updatedList = [...users, {
         id: Date.now(),
         fullName: formData.fullName,
         email: formData.email,
@@ -167,23 +153,34 @@ export default function AdminUsersPage() {
         roles: [formData.role],
         status: formData.status,
         createdAt: new Date().toISOString()
-      };
-      updatedList = [...users, newUser];
-      toast.success('New staff member added successfully!');
+      }];
+      saveUsersToStorage(updatedList);
+      toast.success('New staff member added!');
+      setModalOpen(false);
     }
-
-    saveUsersToStorage(updatedList);
-    setModalOpen(false);
   };
 
-  const handleDeleteUser = (id) => {
+  const handleDeleteUser = async (id) => {
     if (users.length <= 1) {
       toast.error('Cannot remove the last super admin account');
       return;
     }
-    const updated = users.filter((u) => u.id !== id);
-    saveUsersToStorage(updated);
-    toast.success('Staff user removed!');
+    if (!window.confirm('Are you sure you want to remove this user account?')) return;
+
+    toast.loading('Removing user...', { id: 'usr-del-toast' });
+    try {
+      const res = await api.delete(`/admin/users/${id}`);
+      const apiData = res?.data ? res.data : res;
+      if (apiData && apiData.success !== false) {
+        toast.success('User removed successfully!', { id: 'usr-del-toast' });
+        await fetchUsers();
+      } else {
+        throw new Error(apiData?.message || 'Failed to remove user');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Failed to remove user', { id: 'usr-del-toast' });
+    }
   };
 
   // Exclude users whose ONLY role is ROLE_CUSTOMER

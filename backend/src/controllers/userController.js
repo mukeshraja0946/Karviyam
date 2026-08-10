@@ -177,3 +177,30 @@ exports.deleteAddress = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.updateUserRole = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    if (!role) {
+      return res.status(400).json(ApiResponse.error('Role is required'));
+    }
+    await pool.query('UPDATE users SET role = ? WHERE id = ?', [role.toLowerCase(), id]);
+    return res.status(200).json(ApiResponse.success(null, 'User role updated successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (String(id) === String(req.user.id)) {
+      return res.status(400).json(ApiResponse.error('You cannot delete your own admin account'));
+    }
+    await pool.query('DELETE FROM users WHERE id = ?', [id]);
+    return res.status(200).json(ApiResponse.success(null, 'User deleted successfully'));
+  } catch (err) {
+    next(err);
+  }
+};

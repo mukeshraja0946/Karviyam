@@ -332,6 +332,30 @@ exports.deleteCoupon = async (req, res, next) => {
   }
 };
 
+exports.updateCoupon = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { code, discountType, discountValue, minOrderAmount, active } = req.body;
+    let updates = [];
+    let params = [];
+
+    if (code !== undefined) { updates.push('code = ?'); params.push(code.trim().toUpperCase()); }
+    if (discountType !== undefined) { updates.push('discount_type = ?'); params.push(discountType); }
+    if (discountValue !== undefined) { updates.push('discount_value = ?'); params.push(parseFloat(discountValue)); }
+    if (minOrderAmount !== undefined) { updates.push('min_order_amount = ?'); params.push(parseFloat(minOrderAmount)); }
+    if (active !== undefined) { updates.push('active = ?'); params.push(active ? 1 : 0); }
+
+    if (updates.length > 0) {
+      params.push(id);
+      await pool.query(`UPDATE coupons SET ${updates.join(', ')} WHERE id = ?`, params);
+    }
+    const [rows] = await pool.query('SELECT * FROM coupons WHERE id = ?', [id]);
+    return res.status(200).json(ApiResponse.success(rows[0], 'Coupon updated successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.getReviews = async (req, res, next) => {
   try {
     const [rows] = await pool.query(
@@ -389,6 +413,38 @@ exports.getCustomers = async (req, res, next) => {
       createdAt: u.created_at
     }));
     return res.status(200).json(ApiResponse.success(customers, 'Customers fetched successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateCustomer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { fullName, email, phone, address, role } = req.body;
+    let updates = [];
+    let params = [];
+    if (fullName !== undefined) { updates.push('full_name = ?'); params.push(fullName); }
+    if (email !== undefined) { updates.push('email = ?'); params.push(email); }
+    if (phone !== undefined) { updates.push('phone = ?'); params.push(phone); }
+    if (address !== undefined) { updates.push('address = ?'); params.push(address); }
+    if (role !== undefined) { updates.push('role = ?'); params.push(role); }
+
+    if (updates.length > 0) {
+      params.push(id);
+      await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+    }
+    return res.status(200).json(ApiResponse.success(null, 'Customer updated successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteCustomer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM users WHERE id = ?', [id]);
+    return res.status(200).json(ApiResponse.success(null, 'Customer deleted successfully'));
   } catch (err) {
     next(err);
   }

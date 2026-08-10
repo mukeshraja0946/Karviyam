@@ -2,16 +2,34 @@ import React, { useState } from 'react';
 import { Ticket, Plus, Trash2, Edit2, X, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import api from '../utils/api';
+
 export default function AdminCouponsPage() {
-  const [coupons, setCoupons] = useState([
-    { id: 1, code: 'KARVIYAM10', discountType: 'PERCENTAGE', discountValue: 10, minOrderAmount: 499, active: true },
-    { id: 2, code: 'WELCOME200', discountType: 'FIXED', discountValue: 200, minOrderAmount: 999, active: true },
-    { id: 3, code: 'FESTIVE500', discountType: 'FIXED', discountValue: 500, minOrderAmount: 2499, active: true },
-  ]);
+  const [coupons, setCoupons] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState(null);
   const [formData, setFormData] = useState({ code: '', discountType: 'PERCENTAGE', discountValue: '', minOrderAmount: '' });
+  const [submitting, setSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    fetchCoupons();
+  }, []);
+
+  const fetchCoupons = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/admin/coupons');
+      const apiData = res?.data ? res.data : res;
+      const list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      setCoupons(list);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenAddModal = () => {
     setEditingCoupon(null);
@@ -25,21 +43,77 @@ export default function AdminCouponsPage() {
     setModalOpen(true);
   };
 
-  const handleSaveCoupon = (e) => {
+  const handleSaveCoupon = async (e) => {
     e.preventDefault();
-    if (editingCoupon) {
-      setCoupons(coupons.map(c => c.id === editingCoupon.id ? { ...c, ...formData, active: true } : c));
-      toast.success('Coupon updated successfully!');
-    } else {
-      setCoupons([...coupons, { id: Date.now(), ...formData, active: true }]);
-      toast.success('New coupon code created!');
+    if (submitting) return;
+
+    if (!formData.code || !formData.code.trim()) {
+      toast.error('Coupon code is required');
+      return;
     }
-    setModalOpen(false);
+    if (!formData.discountValue) {
+      toast.error('Discount value is required');
+      return;
+    }
+
+    setSubmitting(true);
+    toast.loading(editingCoupon ? 'Updating coupon...' : 'Creating new coupon...', { id: 'cpn-save-toast' });
+
+    try {
+      const payload = {
+        code: formData.code.trim().toUpperCase(),
+        discountType: formData.discountType,
+        discountValue: parseFloat(formData.discountValue),
+        minOrderAmount: formData.minOrderAmount ? parseFloat(formData.minOrderAmount) : 0,
+        active: true
+      };
+
+      if (editingCoupon) {
+        const res = await api.put(`/admin/coupons/${editingCoupon.id}`, payload);
+        const apiData = res?.data ? res.data : res;
+        if (apiData && apiData.success !== false) {
+          toast.success('Coupon updated successfully!', { id: 'cpn-save-toast' });
+          setModalOpen(false);
+          await fetchCoupons();
+        } else {
+          throw new Error(apiData?.message || 'Failed to update coupon');
+        }
+      } else {
+        const res = await api.post('/admin/coupons', payload);
+        const apiData = res?.data ? res.data : res;
+        if (apiData && apiData.success !== false) {
+          toast.success('New coupon code created!', { id: 'cpn-save-toast' });
+          setModalOpen(false);
+          await fetchCoupons();
+        } else {
+          throw new Error(apiData?.message || 'Failed to create coupon');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Failed to save coupon', { id: 'cpn-save-toast' });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDeleteCoupon = (id) => {
-    setCoupons(coupons.filter(c => c.id !== id));
-    toast.success('Coupon deleted');
+  const handleDeleteCoupon = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this coupon?')) return;
+    toast.loading('Deleting coupon...', { id: 'cpn-del-toast' });
+
+    try {
+      const res = await api.delete(`/admin/coupons/${id}`);
+      const apiData = res?.data ? res.data : res;
+      if (apiData && apiData.success !== false) {
+        toast.success('Coupon deleted successfully!', { id: 'cpn-del-toast' });
+        await fetchCoupons();
+      } else {
+        throw new Error(apiData?.message || 'Failed to delete coupon');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Failed to delete coupon', { id: 'cpn-del-toast' });
+    }
   };
 
   return (

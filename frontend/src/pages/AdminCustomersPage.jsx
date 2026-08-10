@@ -155,43 +155,22 @@ export default function AdminCustomersPage() {
       return;
     }
 
-    // Duplicate check in existing list
-    const dupEmail = customers.find(c => c.id !== editingCustomer.id && c.email.toLowerCase() === formData.email.toLowerCase().trim());
-    if (dupEmail) {
-      toast.error(`Email address ${formData.email} is already assigned to another customer!`);
-      return;
-    }
-
-    if (formData.phone.trim()) {
-      const dupPhone = customers.find(c => c.id !== editingCustomer.id && c.phone === formData.phone.trim());
-      if (dupPhone) {
-        toast.error(`Mobile number ${formData.phone} is already assigned to another customer!`);
-        return;
-      }
-    }
-
+    toast.loading(`Updating customer ${formData.fullName}...`, { id: 'cust-save-toast' });
     try {
-      const res = await api.put(`/customers/${editingCustomer.id}`, formData);
-      toast.success(`Customer ${formData.fullName} updated successfully!`);
+      const res = await api.put(`/admin/customers/${editingCustomer.id}`, formData).catch(() => api.put(`/customers/${editingCustomer.id}`, formData));
+      const apiData = res?.data ? res.data : res;
 
-      setCustomers(prev => {
-        const updated = prev.map(c => c.id === editingCustomer.id ? { ...c, ...formData, name: formData.fullName } : c);
-        localStorage.setItem('karviyam_admin_customers', JSON.stringify(updated));
-        return updated;
-      });
-      setEditModalOpen(false);
-      fetchCustomers();
+      if (apiData && apiData.success !== false) {
+        toast.success(`Customer ${formData.fullName} updated successfully!`, { id: 'cust-save-toast' });
+        setEditModalOpen(false);
+        await fetchCustomers();
+      } else {
+        throw new Error(apiData?.message || 'Failed to update customer');
+      }
     } catch (e) {
-      const errMsg = e.response?.data?.message || 'Failed to update customer in database';
       console.error(e);
-      // Fallback local update
-      setCustomers(prev => {
-        const updated = prev.map(c => c.id === editingCustomer.id ? { ...c, ...formData, name: formData.fullName } : c);
-        localStorage.setItem('karviyam_admin_customers', JSON.stringify(updated));
-        return updated;
-      });
-      toast.success(`Customer ${formData.fullName} profile updated!`);
-      setEditModalOpen(false);
+      const msg = e.response?.data?.message || 'Failed to update customer in database';
+      toast.error(msg, { id: 'cust-save-toast' });
     }
   };
 
@@ -203,34 +182,23 @@ export default function AdminCustomersPage() {
   const handleConfirmDelete = async (softDelete) => {
     if (!deletingCustomer) return;
 
+    toast.loading(`Deleting customer ${deletingCustomer.fullName}...`, { id: 'cust-del-toast' });
     try {
-      await api.delete(`/customers/${deletingCustomer.id}?softDelete=${softDelete}`);
-      toast.success(softDelete ? `Customer ${deletingCustomer.fullName} marked as Soft Deleted!` : `Customer ${deletingCustomer.fullName} permanently deleted!`);
+      const res = await api.delete(`/admin/customers/${deletingCustomer.id}`).catch(() => api.delete(`/customers/${deletingCustomer.id}`));
+      const apiData = res?.data ? res.data : res;
 
-      setCustomers(prev => {
-        const updated = softDelete
-          ? prev.map(c => c.id === deletingCustomer.id ? { ...c, status: 'DELETED' } : c)
-          : prev.filter(c => c.id !== deletingCustomer.id);
-        localStorage.setItem('karviyam_admin_customers', JSON.stringify(updated));
-        return updated;
-      });
-
-      setDeleteModalOpen(false);
-      setDeletingCustomer(null);
-      window.dispatchEvent(new Event('karviyam_products_updated'));
-      fetchCustomers();
+      if (apiData && apiData.success !== false) {
+        toast.success(`Customer ${deletingCustomer.fullName} deleted permanently!`, { id: 'cust-del-toast' });
+        setDeleteModalOpen(false);
+        setDeletingCustomer(null);
+        await fetchCustomers();
+      } else {
+        throw new Error(apiData?.message || 'Failed to delete customer');
+      }
     } catch (e) {
       console.error(e);
-      setCustomers(prev => {
-        const updated = softDelete
-          ? prev.map(c => c.id === deletingCustomer.id ? { ...c, status: 'DELETED' } : c)
-          : prev.filter(c => c.id !== deletingCustomer.id);
-        localStorage.setItem('karviyam_admin_customers', JSON.stringify(updated));
-        return updated;
-      });
-      toast.success(softDelete ? 'Customer Soft Deleted!' : 'Customer Permanently Deleted!');
-      setDeleteModalOpen(false);
-      setDeletingCustomer(null);
+      const msg = e.response?.data?.message || 'Failed to delete customer';
+      toast.error(msg, { id: 'cust-del-toast' });
     }
   };
 

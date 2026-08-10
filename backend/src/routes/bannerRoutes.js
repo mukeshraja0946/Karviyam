@@ -7,6 +7,7 @@ const { requireAdmin } = require('../middleware/adminMiddleware');
 router.get('/', bannerController.getActiveBanners);
 router.get('/all', optionalToken, requireAdmin, bannerController.getAllBanners);
 router.post('/', optionalToken, requireAdmin, bannerController.saveBanner);
+router.put('/:id', optionalToken, requireAdmin, bannerController.saveBanner);
 router.delete('/:id', optionalToken, requireAdmin, bannerController.deleteBanner);
 
 module.exports = router;
