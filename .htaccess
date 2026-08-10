@@ -1,3 +1,5 @@
+DirectoryIndex /frontend/dist/index.html /dist/index.html /index.html index.php
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
@@ -6,9 +8,11 @@
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 2. ALLOW PHYSICAL FILES AND DIRECTORIES TO PASS THROUGH DIRECTLY
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
+  # 2. ALLOW PHYSICAL FILES AND STATIC ASSET DIRECTORIES TO PASS THROUGH DIRECTLY
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
   RewriteRule ^ - [L]
 
   # 3. PRODUCTION SPA FALLBACK FOR REACT ROUTES (/maintenance, /shop, /product/*, /admin/*, /wishlist, /cart)
@@ -20,5 +24,3 @@
 
   RewriteRule ^ /index.html [L]
 </IfModule>
-
-
