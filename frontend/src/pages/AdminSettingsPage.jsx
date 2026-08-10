@@ -260,6 +260,7 @@ export default function AdminSettingsPage() {
       await api.post('/settings', generalPayload);
 
       // Cache locally for offline UI synchronization
+      localStorage.setItem('karviyam_system_settings', JSON.stringify(settings));
       localStorage.setItem('karviyam_logo', settings.logoUrl || '');
       localStorage.setItem('karviyam_store_name', settings.storeName);
       localStorage.setItem('karviyam_legal_company_name', settings.legalCompanyName);
@@ -274,6 +275,7 @@ export default function AdminSettingsPage() {
       localStorage.setItem('karviyam_maintenance_mode', String(settings.maintenanceMode));
       localStorage.setItem('karviyam_maintenance_message', settings.maintenanceMessage);
 
+      window.dispatchEvent(new Event('karviyam_settings_updated'));
       notifyChanges();
       toast.success('Settings saved successfully.');
     } catch (e) {

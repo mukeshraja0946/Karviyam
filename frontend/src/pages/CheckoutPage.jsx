@@ -100,30 +100,53 @@ export default function CheckoutPage() {
 
   const fetchSettings = async () => {
     try {
-      const res = await api.get('/settings');
-      const apiData = res.data ? res.data : res;
-      const dataMap = apiData.data !== undefined ? apiData.data : apiData;
+      let dataMap = {};
+      try {
+        const res = await api.get('/settings');
+        const apiData = res?.data ? res.data : (res || {});
+        dataMap = apiData.data !== undefined ? apiData.data : apiData;
+      } catch (eApi) {}
 
-      if (dataMap && typeof dataMap === 'object') {
-        const cod = dataMap.codEnabled !== 'false';
-        const online = dataMap.onlinePaymentEnabled !== 'false';
-        const rzp = dataMap.razorpayEnabled !== 'false' && online;
-        const stp = dataMap.stripeEnabled !== 'false' && online;
-        const def = dataMap.defaultPaymentMethod || (cod ? 'COD' : (rzp ? 'Razorpay' : 'Stripe'));
+      let localSettings = {};
+      try {
+        const saved = localStorage.getItem('karviyam_system_settings');
+        if (saved) localSettings = JSON.parse(saved);
+      } catch (eSaved) {}
 
-        setPaymentSettings({
-          codEnabled: cod,
-          razorpayEnabled: rzp,
-          stripeEnabled: stp,
-          onlinePaymentEnabled: online,
-          defaultPaymentMethod: def
-        });
+      const combined = { ...(dataMap || {}), ...(localSettings || {}) };
 
-        setFormData(prev => ({
-          ...prev,
-          paymentMethod: def
-        }));
-      }
+      const checkBool = (val, defaultVal = true) => {
+        if (val === undefined || val === null) return defaultVal;
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'number') return val === 1;
+        if (typeof val === 'string') {
+          const lower = val.trim().toLowerCase();
+          if (lower === 'true' || lower === '1') return true;
+          if (lower === 'false' || lower === '0') return false;
+        }
+        return defaultVal;
+      };
+
+      const cod = checkBool(combined.codEnabled, true);
+      const online = checkBool(combined.onlinePaymentEnabled, true);
+      const rzp = online && checkBool(combined.razorpayEnabled, false);
+      const stp = online && checkBool(combined.stripeEnabled, false);
+      const def = combined.defaultPaymentMethod || (cod ? 'COD' : (rzp ? 'Razorpay' : (stp ? 'Stripe' : 'COD')));
+
+      const settingsObj = {
+        codEnabled: cod,
+        razorpayEnabled: rzp,
+        stripeEnabled: stp,
+        onlinePaymentEnabled: online,
+        defaultPaymentMethod: def
+      };
+
+      setPaymentSettings(settingsObj);
+
+      setFormData(prev => ({
+        ...prev,
+        paymentMethod: (def === 'Razorpay' && !rzp) || (def === 'Stripe' && !stp) ? (cod ? 'COD' : '') : def
+      }));
     } catch (e) {
       console.error(e);
     }
