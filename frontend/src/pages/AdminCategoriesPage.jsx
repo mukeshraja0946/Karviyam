@@ -259,7 +259,8 @@ export default function AdminCategoriesPage() {
       };
 
       if (editingCategory) {
-        const res = await api.put(`/categories/${editingCategory.id}`, payload);
+        const res = await api.put(`/categories/${editingCategory.id}`, payload)
+          .catch(() => api.post(`/categories/${editingCategory.id}`, payload));
         const apiData = res.data ? res.data : res;
         if (apiData && apiData.success !== false) {
           toast.success('Category updated successfully!', { id: 'cat-save-toast' });

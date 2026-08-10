@@ -14,6 +14,7 @@ router.post('/bulk-import', optionalToken, requireAdmin, productController.bulkI
 
 router.post('/', optionalToken, requireAdmin, adminController.createProduct);
 router.put('/:id', optionalToken, requireAdmin, adminController.updateProduct);
+router.post('/:id', optionalToken, requireAdmin, adminController.updateProduct);
 router.delete('/:id', optionalToken, requireAdmin, adminController.deleteProduct);
 
 module.exports = router;

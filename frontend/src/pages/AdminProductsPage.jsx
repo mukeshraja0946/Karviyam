@@ -412,7 +412,9 @@ export default function AdminProductsPage() {
       };
 
       if (editingProduct) {
-        const res = await api.put(`/admin/products/${editingProduct.id}`, payload);
+        const res = await api.put(`/admin/products/${editingProduct.id}`, payload)
+          .catch(() => api.post(`/admin/products/${editingProduct.id}`, payload))
+          .catch(() => api.post(`/products/${editingProduct.id}`, payload));
         const apiData = res.data ? res.data : res;
         if (apiData && apiData.success !== false) {
           toast.success('Product updated successfully!', { id: 'prod-save-toast' });

@@ -23,12 +23,14 @@ router.get('/products', adminController.getAdminProducts);
 router.post('/products', adminController.createProduct);
 router.post('/products/bulk-import', productController.bulkImportProducts);
 router.put('/products/:id', adminController.updateProduct);
+router.post('/products/:id', adminController.updateProduct);
 router.delete('/products/:id', adminController.deleteProduct);
 
 // Coupons
 router.get('/coupons', adminController.getCoupons);
 router.post('/coupons', adminController.createCoupon);
 router.put('/coupons/:id', adminController.updateCoupon);
+router.post('/coupons/:id', adminController.updateCoupon);
 router.delete('/coupons/:id', adminController.deleteCoupon);
 
 // Reviews

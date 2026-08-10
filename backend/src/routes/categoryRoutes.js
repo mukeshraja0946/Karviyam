@@ -11,6 +11,7 @@ router.get('/:id', categoryController.getCategoryById);
 router.post('/', optionalToken, requireAdmin, categoryController.createCategory);
 router.post('/bulk-import', optionalToken, requireAdmin, categoryController.bulkImportCategories);
 router.put('/:id', optionalToken, requireAdmin, categoryController.updateCategory);
+router.post('/:id', optionalToken, requireAdmin, categoryController.updateCategory);
 router.delete('/:id', optionalToken, requireAdmin, categoryController.deleteCategory);
 router.post('/reorder', optionalToken, requireAdmin, categoryController.reorderCategories);
 router.put('/:id/toggle-status', optionalToken, requireAdmin, categoryController.toggleStatus);
