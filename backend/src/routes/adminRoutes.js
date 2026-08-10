@@ -70,7 +70,12 @@ router.delete('/pincodes/:id', pincodeController.deletePincode);
 router.put('/pincodes/:id/toggle-status', pincodeController.togglePincodeStatus);
 router.post('/pincodes/bulk-import', pincodeController.bulkImportPincodes);
 
-// Admin Help & General settings
+// Admin Help & Contact Messages
+router.get('/contact-messages', contactController.getContactMessages);
+router.put('/contact-messages/:id/status', contactController.updateMessageStatus);
+router.post('/contact-messages/:id/status', contactController.updateMessageStatus);
+router.delete('/contact-messages/:id', contactController.deleteMessage);
+router.post('/contact-messages/:id/delete', contactController.deleteMessage);
 router.post('/help', contactController.submitAdminHelp);
 router.get('/company-settings', settingController.getCompanySettings);
 router.post('/company-settings', settingController.updateCompanySettings);

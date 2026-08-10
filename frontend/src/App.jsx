@@ -40,6 +40,7 @@ import AdminInventoryPage from './pages/AdminInventoryPage';
 import AdminReportsPage from './pages/AdminReportsPage';
 import AdminPincodesPage from './pages/AdminPincodesPage';
 import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
+import AdminHelpSupportPage from './pages/AdminHelpSupportPage';
 
 export default function App() {
   return (
@@ -94,6 +95,8 @@ export default function App() {
                     <Route path="/admin/settings" element={<AdminSettingsPage />} />
                     <Route path="/admin/website-settings" element={<AdminSettingsPage />} />
                     <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
+                    <Route path="/admin/help-support" element={<AdminHelpSupportPage />} />
+                    <Route path="/admin/help" element={<AdminHelpSupportPage />} />
                     <Route path="/admin/admins" element={<AdminUsersPage />} />
                   </Route>
                 </Route>

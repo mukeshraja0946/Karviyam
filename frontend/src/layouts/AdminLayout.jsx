@@ -152,6 +152,12 @@ export default function AdminLayout() {
       path: '/admin/pincodes',
     },
     {
+      id: 'help-support',
+      title: 'Help & Support',
+      icon: MessageSquare,
+      path: '/admin/help-support',
+    },
+    {
       id: 'settings',
       title: 'Settings',
       icon: Settings,
