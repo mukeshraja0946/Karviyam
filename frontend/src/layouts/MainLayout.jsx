@@ -49,8 +49,8 @@ export default function MainLayout() {
     }
   };
 
-  // When Maintenance Mode is ON for non-admin visitors:
-  if (maintenanceMode && !isAdmin) {
+  // When Maintenance Mode is ON for non-admin visitors OR explicit /maintenance route:
+  if ((maintenanceMode && !isAdmin) || location.pathname === '/maintenance' || location.pathname === '/maintenance.php') {
     // If on /login, display ONLY the login box without Navbar or Footer!
     if (location.pathname === '/login') {
       return (

@@ -14,4 +14,3 @@
   # 3. PRODUCTION SPA FALLBACK FOR REACT ROUTES (/maintenance, /shop, /product/*, /admin/*, /wishlist, /cart)
   RewriteRule ^ index.html [L]
 </IfModule>
-

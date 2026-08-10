@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
@@ -22,6 +22,7 @@ import CustomerSettingsPage from './pages/CustomerSettingsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ContactPage from './pages/ContactPage';
+import MaintenancePage from './pages/MaintenancePage';
 
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminProductsPage from './pages/AdminProductsPage';
@@ -53,6 +54,8 @@ export default function App() {
                 {/* Main Customer App Routes */}
                 <Route element={<MainLayout />}>
                   <Route path="/" element={<HomePage />} />
+                  <Route path="/maintenance" element={<MaintenancePage />} />
+                  <Route path="/maintenance.php" element={<Navigate to="/maintenance" replace />} />
                   <Route path="/shop" element={<ShopPage />} />
                   <Route path="/product/:id" element={<ProductDetailPage />} />
                   <Route path="/cart" element={<CartPage />} />
