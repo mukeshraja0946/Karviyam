@@ -1,8 +1,22 @@
 const pool = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
 
+const ensureSettingsTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        setting_key VARCHAR(100) UNIQUE NOT NULL,
+        setting_value TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+  } catch (e) {}
+};
+
 exports.getSettings = async (req, res, next) => {
   try {
+    await ensureSettingsTable();
     const [rows] = await pool.query('SELECT setting_key, setting_value FROM settings');
     const settingsObj = {};
 
@@ -41,8 +55,80 @@ exports.getSettings = async (req, res, next) => {
   }
 };
 
+exports.getPaymentSettings = async (req, res, next) => {
+  try {
+    await ensureSettingsTable();
+    const [rows] = await pool.query('SELECT setting_key, setting_value FROM settings');
+    const settingsObj = {};
+
+    rows.forEach(r => {
+      let val = r.setting_value;
+      if (val === 'true') val = true;
+      else if (val === 'false') val = false;
+      settingsObj[r.setting_key] = val;
+    });
+
+    const cod = settingsObj.codEnabled !== false && settingsObj.codEnabled !== 'false';
+    const online = settingsObj.onlinePaymentEnabled !== false && settingsObj.onlinePaymentEnabled !== 'false';
+    const rzp = online && settingsObj.razorpayEnabled !== false && settingsObj.razorpayEnabled !== 'false';
+    const stp = online && settingsObj.stripeEnabled !== false && settingsObj.stripeEnabled !== 'false';
+    const def = settingsObj.defaultPaymentMethod || (cod ? 'COD' : (rzp ? 'Razorpay' : (stp ? 'Stripe' : 'COD')));
+
+    const data = {
+      cod_enabled: cod,
+      online_payment_enabled: online,
+      razorpay_enabled: rzp,
+      stripe_enabled: stp,
+      default_payment_method: def,
+
+      codEnabled: cod,
+      onlinePaymentEnabled: online,
+      razorpayEnabled: rzp,
+      stripeEnabled: stp,
+      defaultPaymentMethod: def
+    };
+
+    return res.status(200).json(ApiResponse.success(data, 'Payment settings retrieved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updatePaymentSettings = async (req, res, next) => {
+  try {
+    await ensureSettingsTable();
+    const body = req.body || {};
+
+    const codVal = body.codEnabled !== undefined ? body.codEnabled : body.cod_enabled;
+    const onlineVal = body.onlinePaymentEnabled !== undefined ? body.onlinePaymentEnabled : body.online_payment_enabled;
+    const rzpVal = body.razorpayEnabled !== undefined ? body.razorpayEnabled : body.razorpay_enabled;
+    const stpVal = body.stripeEnabled !== undefined ? body.stripeEnabled : body.stripe_enabled;
+    const defVal = body.defaultPaymentMethod !== undefined ? body.defaultPaymentMethod : body.default_payment_method;
+
+    const updates = {};
+    if (codVal !== undefined) updates['codEnabled'] = String(codVal);
+    if (onlineVal !== undefined) updates['onlinePaymentEnabled'] = String(onlineVal);
+    if (rzpVal !== undefined) updates['razorpayEnabled'] = String(rzpVal);
+    if (stpVal !== undefined) updates['stripeEnabled'] = String(stpVal);
+    if (defVal !== undefined) updates['defaultPaymentMethod'] = String(defVal);
+
+    for (const [key, value] of Object.entries(updates)) {
+      await pool.query(
+        `INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
+        [key, value]
+      );
+    }
+
+    return exports.getPaymentSettings(req, res, next);
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.updateSettings = async (req, res, next) => {
   try {
+    await ensureSettingsTable();
     const settingsData = req.body || {};
 
     if (settingsData.maintenanceMode !== undefined) {

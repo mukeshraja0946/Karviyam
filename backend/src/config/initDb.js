@@ -399,12 +399,34 @@ async function initDb() {
       );
     `);
 
-    // 19. Company Settings table
+    // 19. General Settings table
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS company_settings (
+      CREATE TABLE IF NOT EXISTS settings (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
         setting_key VARCHAR(100) UNIQUE NOT NULL,
         setting_value TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 19b. Company Settings table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS company_settings (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        company_display_name VARCHAR(255),
+        legal_company_name VARCHAR(255),
+        gst_number VARCHAR(100),
+        pan_number VARCHAR(100),
+        cin_number VARCHAR(100),
+        state VARCHAR(100),
+        state_code VARCHAR(50),
+        registered_address TEXT,
+        warehouse_address TEXT,
+        support_email VARCHAR(100),
+        support_phone VARCHAR(50),
+        website VARCHAR(255),
+        authorized_signatory VARCHAR(100),
+        designation VARCHAR(100),
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);

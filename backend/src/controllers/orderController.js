@@ -68,6 +68,35 @@ exports.checkout = async (req, res, next) => {
       paymentMethod = 'COD', discountAmount = 0, shippingCost = 0
     } = req.body;
 
+    const normalizedMethod = String(paymentMethod || 'COD').trim().toUpperCase();
+
+    // 1. Validate payment method against MySQL database settings
+    try {
+      const [settingRows] = await pool.query('SELECT setting_key, setting_value FROM settings');
+      const settingsMap = {};
+      settingRows.forEach(r => {
+        let val = r.setting_value;
+        if (val === 'true') val = true;
+        else if (val === 'false') val = false;
+        settingsMap[r.setting_key] = val;
+      });
+
+      const cod = settingsMap.codEnabled !== false && settingsMap.codEnabled !== 'false';
+      const online = settingsMap.onlinePaymentEnabled !== false && settingsMap.onlinePaymentEnabled !== 'false';
+      const rzp = online && settingsMap.razorpayEnabled !== false && settingsMap.razorpayEnabled !== 'false';
+      const stp = online && settingsMap.stripeEnabled !== false && settingsMap.stripeEnabled !== 'false';
+
+      if (normalizedMethod === 'COD' && !cod) {
+        return res.status(400).json(ApiResponse.error('Cash on Delivery (COD) is currently disabled by administrator.'));
+      }
+      if ((normalizedMethod === 'RAZORPAY' || normalizedMethod === 'UPI') && (!online || !rzp)) {
+        return res.status(400).json(ApiResponse.error('Razorpay payment gateway is currently disabled by administrator.'));
+      }
+      if ((normalizedMethod === 'STRIPE' || normalizedMethod === 'CARD') && (!online || !stp)) {
+        return res.status(400).json(ApiResponse.error('Stripe payment gateway is currently disabled by administrator.'));
+      }
+    } catch (eSettings) {}
+
     let orderItemsData = items;
 
     // If items not directly supplied, fetch from cart

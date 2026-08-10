@@ -81,11 +81,32 @@ export default function AdminSettingsPage() {
       const compRes = await api.get('/settings/company').catch(() => null);
       const compData = compRes?.data?.data || compRes?.data;
 
+      const payRes = await api.get('/settings/payment').catch(() => null);
+      const payData = payRes?.data?.data || payRes?.data || {};
+
       const res = await api.get('/settings').catch(() => null);
       const apiData = res?.data ? res.data : (res || {});
       const dataMap = apiData.data || apiData;
 
       if (dataMap && typeof dataMap === 'object') {
+        const checkB = (val, defaultVal = true) => {
+          if (val === undefined || val === null) return defaultVal;
+          if (typeof val === 'boolean') return val;
+          if (typeof val === 'number') return val === 1;
+          if (typeof val === 'string') {
+            const l = val.trim().toLowerCase();
+            if (l === 'true' || l === '1') return true;
+            if (l === 'false' || l === '0') return false;
+          }
+          return defaultVal;
+        };
+
+        const codVal = payData.codEnabled !== undefined ? payData.codEnabled : (dataMap.codEnabled !== undefined ? dataMap.codEnabled : payData.cod_enabled);
+        const onlineVal = payData.onlinePaymentEnabled !== undefined ? payData.onlinePaymentEnabled : (dataMap.onlinePaymentEnabled !== undefined ? dataMap.onlinePaymentEnabled : payData.online_payment_enabled);
+        const rzpVal = payData.razorpayEnabled !== undefined ? payData.razorpayEnabled : (dataMap.razorpayEnabled !== undefined ? dataMap.razorpayEnabled : payData.razorpay_enabled);
+        const stpVal = payData.stripeEnabled !== undefined ? payData.stripeEnabled : (dataMap.stripeEnabled !== undefined ? dataMap.stripeEnabled : payData.stripe_enabled);
+        const defVal = payData.defaultPaymentMethod || dataMap.defaultPaymentMethod || payData.default_payment_method;
+
         setSettings(prev => ({
           ...prev,
           storeName: compData?.companyDisplayName || dataMap.storeName || prev.storeName,
@@ -106,16 +127,18 @@ export default function AdminSettingsPage() {
           orderNextSeq: dataMap.orderNextSeq || prev.orderNextSeq,
           invoicePrefix: dataMap.invoicePrefix || prev.invoicePrefix,
           invoiceNextSeq: dataMap.invoiceNextSeq || prev.invoiceNextSeq,
-          codEnabled: dataMap.codEnabled !== 'false',
-          razorpayEnabled: dataMap.razorpayEnabled !== 'false',
-          stripeEnabled: dataMap.stripeEnabled !== 'false',
-          onlinePaymentEnabled: dataMap.onlinePaymentEnabled !== 'false',
-          defaultPaymentMethod: dataMap.defaultPaymentMethod || prev.defaultPaymentMethod,
+
+          codEnabled: checkB(codVal, true),
+          razorpayEnabled: checkB(rzpVal, true),
+          stripeEnabled: checkB(stpVal, true),
+          onlinePaymentEnabled: checkB(onlineVal, true),
+          defaultPaymentMethod: defVal || prev.defaultPaymentMethod,
+
           footerAbout: dataMap.footerAbout || prev.footerAbout,
           announcementText: dataMap.announcementText || prev.announcementText,
           logoUrl: dataMap.logoUrl || prev.logoUrl,
           maxProductImages: dataMap.maxProductImages || prev.maxProductImages,
-          maintenanceMode: dataMap.maintenanceMode === 'true',
+          maintenanceMode: dataMap.maintenanceMode === 'true' || dataMap.maintenanceMode === true,
           maintenanceTitle: dataMap.maintenanceTitle || prev.maintenanceTitle,
           maintenanceSubtitle: dataMap.maintenanceSubtitle || prev.maintenanceSubtitle,
           maintenanceMessage: dataMap.maintenanceMessage || prev.maintenanceMessage,
@@ -258,6 +281,13 @@ export default function AdminSettingsPage() {
       };
 
       await api.post('/settings', generalPayload);
+      await api.post('/settings/payment', {
+        codEnabled: settings.codEnabled,
+        onlinePaymentEnabled: settings.onlinePaymentEnabled,
+        razorpayEnabled: settings.razorpayEnabled,
+        stripeEnabled: settings.stripeEnabled,
+        defaultPaymentMethod: settings.defaultPaymentMethod
+      }).catch(() => null);
 
       // Cache locally for offline UI synchronization
       localStorage.setItem('karviyam_system_settings', JSON.stringify(settings));

@@ -113,7 +113,7 @@ export default function CheckoutPage() {
     try {
       let dataMap = {};
       try {
-        const res = await api.get('/settings');
+        const res = await api.get('/settings/payment').catch(() => api.get('/settings'));
         const apiData = res?.data ? res.data : (res || {});
         dataMap = apiData.data !== undefined ? apiData.data : apiData;
       } catch (eApi) {}
@@ -126,7 +126,7 @@ export default function CheckoutPage() {
 
       const combined = { ...(dataMap || {}), ...(localSettings || {}) };
 
-      const checkBool = (val, defaultVal = false) => {
+      const checkBool = (val, defaultVal = true) => {
         if (val === undefined || val === null) return defaultVal;
         if (typeof val === 'boolean') return val;
         if (typeof val === 'number') return val === 1;
@@ -138,25 +138,45 @@ export default function CheckoutPage() {
         return defaultVal;
       };
 
-      const cod = checkBool(combined.codEnabled, true);
-      const online = checkBool(combined.onlinePaymentEnabled, true);
-      const rzp = online && checkBool(combined.razorpayEnabled, true);
-      const stp = online && checkBool(combined.stripeEnabled, true);
-      const def = combined.defaultPaymentMethod || (cod ? 'COD' : (rzp ? 'Razorpay' : (stp ? 'Stripe' : 'COD')));
+      const codVal = combined.codEnabled !== undefined ? combined.codEnabled : combined.cod_enabled;
+      const onlineVal = combined.onlinePaymentEnabled !== undefined ? combined.onlinePaymentEnabled : combined.online_payment_enabled;
+      const rzpVal = combined.razorpayEnabled !== undefined ? combined.razorpayEnabled : combined.razorpay_enabled;
+      const stpVal = combined.stripeEnabled !== undefined ? combined.stripeEnabled : combined.stripe_enabled;
+      const defVal = combined.defaultPaymentMethod || combined.default_payment_method;
 
-      const settingsObj = {
+      const cod = checkBool(codVal, true);
+      const online = checkBool(onlineVal, true);
+      const rzp = online && checkBool(rzpVal, true);
+      const stp = online && checkBool(stpVal, true);
+
+      // Determine valid default payment method
+      let rawDefault = String(defVal || 'COD').toUpperCase();
+      let finalDefault = 'COD';
+      if ((rawDefault === 'RAZORPAY' || rawDefault === 'UPI') && rzp) {
+        finalDefault = 'Razorpay';
+      } else if ((rawDefault === 'STRIPE' || rawDefault === 'CARD') && stp) {
+        finalDefault = 'Stripe';
+      } else if (rawDefault === 'COD' && cod) {
+        finalDefault = 'COD';
+      } else {
+        // Fallback to first available enabled method
+        if (cod) finalDefault = 'COD';
+        else if (rzp) finalDefault = 'Razorpay';
+        else if (stp) finalDefault = 'Stripe';
+        else finalDefault = '';
+      }
+
+      setPaymentSettings({
         codEnabled: cod,
         razorpayEnabled: rzp,
         stripeEnabled: stp,
         onlinePaymentEnabled: online,
-        defaultPaymentMethod: def
-      };
-
-      setPaymentSettings(settingsObj);
+        defaultPaymentMethod: finalDefault
+      });
 
       setFormData(prev => ({
         ...prev,
-        paymentMethod: (def === 'Razorpay' && !rzp) || (def === 'Stripe' && !stp) ? (cod ? 'COD' : '') : def
+        paymentMethod: finalDefault
       }));
     } catch (e) {
       console.error(e);

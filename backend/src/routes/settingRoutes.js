@@ -10,6 +10,11 @@ router.get('/maintenance-status', settingController.getSettings);
 router.post('/', optionalToken, requireAdmin, settingController.updateSettings);
 router.put('/', optionalToken, requireAdmin, settingController.updateSettings);
 
+// Payment settings
+router.get('/payment', settingController.getPaymentSettings);
+router.post('/payment', optionalToken, requireAdmin, settingController.updatePaymentSettings);
+router.put('/payment', optionalToken, requireAdmin, settingController.updatePaymentSettings);
+
 // Company settings
 router.get('/company', settingController.getCompanySettings);
 router.post('/company', optionalToken, requireAdmin, settingController.updateCompanySettings);
