@@ -69,7 +69,7 @@ export default function AdminOrdersPage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/orders');
+      const res = await api.get('/admin/orders').catch(() => api.get('/orders'));
       const apiData = res?.data ? res.data : res;
       const list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
 

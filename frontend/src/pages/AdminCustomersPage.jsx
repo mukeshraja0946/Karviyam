@@ -61,7 +61,7 @@ export default function AdminCustomersPage() {
 
     // 1. Fetch from MySQL Backend REST API
     try {
-      const res = await api.get('/customers');
+      const res = await api.get('/admin/customers').catch(() => api.get('/customers'));
       const apiData = res.data ? res.data : res;
       const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
 

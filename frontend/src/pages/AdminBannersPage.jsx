@@ -33,9 +33,16 @@ export default function AdminBannersPage() {
   const fetchBanners = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/banners/all');
-      const apiData = res.data ? res.data : res;
-      const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      let list = [];
+      try {
+        const res = await api.get('/banners/all');
+        const apiData = res.data ? res.data : res;
+        list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      } catch (e1) {
+        const res = await api.get('/banners');
+        const apiData = res.data ? res.data : res;
+        list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      }
       setBanners(list);
     } catch (e) {
       console.error('[Fetch Banners Error]:', e);

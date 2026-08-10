@@ -5,7 +5,7 @@ const { optionalToken } = require('../middleware/authMiddleware');
 const { requireAdmin } = require('../middleware/adminMiddleware');
 
 router.get('/', bannerController.getActiveBanners);
-router.get('/all', optionalToken, requireAdmin, bannerController.getAllBanners);
+router.get('/all', bannerController.getAllBanners);
 router.post('/', optionalToken, requireAdmin, bannerController.saveBanner);
 router.put('/:id', optionalToken, requireAdmin, bannerController.saveBanner);
 router.delete('/:id', optionalToken, requireAdmin, bannerController.deleteBanner);

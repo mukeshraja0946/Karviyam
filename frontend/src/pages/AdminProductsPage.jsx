@@ -154,8 +154,8 @@ export default function AdminProductsPage() {
     setLoading(true);
     try {
       const [prodRes, catRes, brandRes] = await Promise.all([
-        api.get('/products?size=200&includeInactive=true'),
-        api.get('/categories/tree'),
+        api.get('/products?size=200&includeInactive=true').catch(() => api.get('/admin/products')),
+        api.get('/categories/tree').catch(() => api.get('/categories')),
         api.get('/brands')
       ]);
 
