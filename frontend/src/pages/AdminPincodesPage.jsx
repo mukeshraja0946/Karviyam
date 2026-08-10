@@ -324,34 +324,49 @@ export default function AdminPincodesPage() {
   const processRawTextData = (rawText) => {
     if (!rawText) return;
 
-    // Clean HTML/XML tags or PDF binary streams if present
+    // Clean HTML/XML tags if present
     const cleaned = rawText.replace(/<[^>]+>/g, ' ');
     const lines = cleaned.split(/[\r\n]+/);
     const extractedRows = [];
 
-    for (let i = 0; i < lines.length; i++) {
+    let headerCols = [];
+    let startIdx = 0;
+
+    if (lines.length > 0 && lines[0].toLowerCase().includes('pincode')) {
+      headerCols = lines[0].split(',').map(c => c.trim().toLowerCase().replace(/"/g, ''));
+      startIdx = 1;
+    }
+
+    for (let i = startIdx; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
 
-      const cols = line.includes(',') ? line.split(',') : line.split(/\s{2,}|\t/);
+      const rawCols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
       const pinMatch = line.match(/\b\d{6}\b/);
 
-      if (pinMatch || cols.length >= 1) {
-        const pinCandidate = pinMatch ? pinMatch[0] : cols[0].replace(/\D/g, '');
-        if (pinCandidate && pinCandidate.length === 6) {
-          extractedRows.push({
-            id: Date.now() + i,
-            pincode: pinCandidate,
-            area: cols[1] ? cols[1].trim() : 'Central Region',
-            city: cols[2] ? cols[2].trim() : 'District Headquarter',
-            district: cols[3] ? cols[3].trim() : (cols[2] ? cols[2].trim() : ''),
-            state: cols[4] ? cols[4].trim() : 'Tamil Nadu',
-            isDeliveryAvailable: cols[5] ? cols[5].toLowerCase().includes('true') : true,
-            isCodAvailable: cols[6] ? cols[6].toLowerCase().includes('true') : true,
-            estimatedDeliveryDays: cols[7] ? (parseInt(cols[7], 10) || 3) : 3,
-            isActive: true
-          });
-        }
+      let pinCandidate = pinMatch ? pinMatch[0] : (rawCols[0] ? rawCols[0].replace(/\D/g, '') : '');
+      if (pinCandidate && pinCandidate.length >= 6) {
+        pinCandidate = pinCandidate.slice(0, 6);
+
+        let areaVal = rawCols[1] || 'Central Locality';
+        let cityVal = rawCols[2] || rawCols[3] || rawCols[1] || 'District Headquarter';
+        let districtVal = rawCols[3] || rawCols[2] || '';
+        let stateVal = rawCols[4] || 'Tamil Nadu';
+        let codVal = rawCols[6] ? (rawCols[6].toLowerCase() === 'true' || rawCols[6] === '1') : true;
+        let estDaysVal = rawCols[7] ? (parseInt(rawCols[7], 10) || 3) : 3;
+
+        extractedRows.push({
+          id: Date.now() + i,
+          pincode: pinCandidate,
+          area: areaVal,
+          city: cityVal,
+          district: districtVal,
+          state: stateVal,
+          isDeliveryAvailable: true,
+          isCodAvailable: codVal,
+          estimatedDeliveryDays: estDaysVal,
+          isActive: true
+        });
       }
     }
 
@@ -359,7 +374,7 @@ export default function AdminPincodesPage() {
       setPreviewRows(extractedRows);
       toast.success(`Parsed ${extractedRows.length} valid pincode records!`);
     } else {
-      toast.error('No 6-digit pincodes found in file. Try CSV or Excel format.');
+      toast.error('No valid 6-digit pincodes extracted. Please check CSV formatting.');
     }
   };
 
@@ -377,45 +392,54 @@ export default function AdminPincodesPage() {
   const handleBulkImportSubmit = async () => {
     let rowsToImport = [...previewRows];
 
-    // If user pasted manual CSV text instead
+    // If user pasted manual CSV text instead or no file preview loaded
     if (rowsToImport.length === 0 && importDataText.trim()) {
-      const lines = importDataText.trim().split('\n');
+      const lines = importDataText.trim().split(/[\r\n]+/);
       const hasHeader = lines[0].toLowerCase().includes('pincode');
       const startIdx = hasHeader ? 1 : 0;
 
       for (let i = startIdx; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
-        const cols = line.split(',');
-        if (cols[0]) {
-          const pin = cols[0].trim().replace(/\D/g, '');
-          if (pin.length === 6) {
-            rowsToImport.push({
-              pincode: pin,
-              area: cols[1]?.trim() || 'Central Locality',
-              city: cols[2]?.trim() || 'Main City',
-              district: cols[3]?.trim() || '',
-              state: cols[4]?.trim() || 'Tamil Nadu',
-              isDeliveryAvailable: cols[5] ? cols[5].trim().toLowerCase() === 'true' : true,
-              isCodAvailable: cols[6] ? cols[6].trim().toLowerCase() === 'true' : true,
-              estimatedDeliveryDays: cols[7] ? parseInt(cols[7].trim(), 10) || 3 : 3,
-              isActive: true
-            });
-          }
+        const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+        const pin = cols[0] ? cols[0].replace(/\D/g, '') : '';
+        if (pin && pin.length >= 6) {
+          rowsToImport.push({
+            pincode: pin.slice(0, 6),
+            area: cols[1] || 'Central Locality',
+            city: cols[2] || cols[3] || cols[1] || 'District Headquarter',
+            district: cols[3] || cols[2] || '',
+            state: cols[4] || 'Tamil Nadu',
+            isDeliveryAvailable: true,
+            isCodAvailable: cols[6] ? cols[6].toLowerCase() === 'true' : true,
+            estimatedDeliveryDays: cols[7] ? (parseInt(cols[7], 10) || 3) : 3,
+            isActive: true
+          });
         }
       }
     }
 
     if (rowsToImport.length === 0) {
-      toast.error('Please upload a file or paste CSV data first');
+      toast.error('Please select a CSV file or paste valid CSV data first.');
       return;
     }
 
     setImporting(true);
+    toast.loading(`Importing ${rowsToImport.length} pincodes...`, { id: 'pincode-import-toast' });
+
     try {
-      const res = await api.post('/admin/pincodes/bulk-import', rowsToImport);
-      const result = res.data?.data || res.data;
-      toast.success(`Import complete! ${result.successCount || rowsToImport.length} pincodes imported.`);
+      // Chunk payload into 500-item batches to prevent server payload overflow
+      const BATCH_SIZE = 500;
+      let totalImported = 0;
+
+      for (let i = 0; i < rowsToImport.length; i += BATCH_SIZE) {
+        const batch = rowsToImport.slice(i, i + BATCH_SIZE);
+        const res = await api.post('/admin/pincodes/bulk-import', batch);
+        const count = res.data?.data?.count || res.data?.data?.importedCount || batch.length;
+        totalImported += count;
+      }
+
+      toast.success(`Import complete! ${totalImported} pincodes added/updated.`, { id: 'pincode-import-toast' });
       fetchPincodes();
       fetchFilters();
       setImportModalOpen(false);
@@ -424,7 +448,8 @@ export default function AdminPincodesPage() {
       setUploadedFileName('');
     } catch (err) {
       console.error(err);
-      toast.error('Bulk import failed');
+      const errMsg = err.response?.data?.message || err.message || 'Bulk import failed';
+      toast.error(`Error: ${errMsg}`, { id: 'pincode-import-toast' });
     } finally {
       setImporting(false);
     }

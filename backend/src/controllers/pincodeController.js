@@ -148,22 +148,63 @@ exports.togglePincodeStatus = async (req, res, next) => {
   }
 };
 
+const ensurePincodesTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS deliverable_locations (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        pincode VARCHAR(20) UNIQUE NOT NULL,
+        city VARCHAR(100),
+        state VARCHAR(100),
+        estimated_delivery_days VARCHAR(50) DEFAULT '3-5 Days',
+        is_cod_available BOOLEAN DEFAULT TRUE,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  } catch (e) {}
+};
+
 exports.bulkImportPincodes = async (req, res, next) => {
   try {
+    await ensurePincodesTable();
     const dtos = Array.isArray(req.body) ? req.body : (req.body.pincodes || []);
     let count = 0;
+
     for (const item of dtos) {
-      if (item.pincode && item.city) {
+      if (!item) continue;
+      const rawPin = String(item.pincode || item.Pincode || item.PINCODE || item.pin || '').trim().replace(/\D/g, '');
+      if (!rawPin || rawPin.length < 6) continue;
+
+      const cleanPin = rawPin.slice(0, 6);
+      const cleanCity = String(item.city || item.City || item.area || item.Area || item.district || item.District || 'Serviceable Region').trim();
+      const cleanState = String(item.state || item.State || 'India').trim();
+      const estDays = String(item.estimatedDeliveryDays || item.estimated_delivery_days || '3-5 Days').trim();
+      const codOpt = item.isCodAvailable !== false && item.is_cod_available !== false && String(item.isCodAvailable) !== 'false';
+      const actOpt = item.isActive !== false && item.is_active !== false && String(item.isActive) !== 'false';
+
+      try {
         await pool.query(
           `INSERT INTO deliverable_locations (pincode, city, state, estimated_delivery_days, is_cod_available, is_active, created_at)
-           VALUES (?, ?, ?, ?, ?, 1, NOW())
-           ON DUPLICATE KEY UPDATE city = VALUES(city), state = VALUES(state)`,
-          [item.pincode.toString().trim(), item.city, item.state || 'Tamil Nadu', item.estimatedDeliveryDays || '3-5 Days', item.isCodAvailable !== false ? 1 : 0]
+           VALUES (?, ?, ?, ?, ?, ?, NOW())
+           ON DUPLICATE KEY UPDATE 
+             city = VALUES(city), 
+             state = VALUES(state), 
+             estimated_delivery_days = VALUES(estimated_delivery_days), 
+             is_cod_available = VALUES(is_cod_available),
+             is_active = VALUES(is_active)`,
+          [cleanPin, cleanCity, cleanState, estDays, codOpt ? 1 : 0, actOpt ? 1 : 0]
         );
         count++;
+      } catch (errInsert) {
+        console.error(`[Pincode Insert Error]: ${cleanPin}`, errInsert.message);
       }
     }
-    return res.status(200).json(ApiResponse.success({ importedCount: count }, 'Pincodes bulk imported successfully'));
+
+    return res.status(200).json(ApiResponse.success(
+      { count, successCount: count, importedCount: count },
+      `Successfully imported ${count} deliverable location pincodes!`
+    ));
   } catch (err) {
     next(err);
   }
