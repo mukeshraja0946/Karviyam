@@ -34,6 +34,9 @@ exports.submitContact = async (req, res, next) => {
     await ensureContactMessagesTable();
     const { name, email, subject, message } = req.body || {};
 
+    console.log(`\n---------------- CONTACT FORM SUBMISSION ----------------`);
+    console.log(`[Input]: Name=${name}, Email=${email}, Subject=${subject}`);
+
     if (!name || !String(name).trim()) {
       return res.status(400).json(ApiResponse.error('Full name is required.'));
     }
@@ -58,8 +61,10 @@ exports.submitContact = async (req, res, next) => {
         [cleanName, cleanEmail, cleanSubject, cleanMessage]
       );
       insertedId = result.insertId;
+      console.log(`✅ [Database Success] Contact message saved to MySQL! Insert ID: ${insertedId}`);
     } catch (dbErr) {
-      console.error('[Database Error] Failed to insert contact message:', dbErr.message);
+      console.error('❌ [Database Error] Failed to insert contact message:', dbErr.message);
+      return res.status(500).json(ApiResponse.error(`Database error: Could not save message (${dbErr.message})`));
     }
 
     // 2. Send Email via SMTP Transporter to vanakkam@karviyam.com
@@ -70,6 +75,8 @@ exports.submitContact = async (req, res, next) => {
       message: cleanMessage,
       source: 'Customer Contact'
     });
+
+    console.log(`--------------------------------------------------------\n`);
 
     return res.status(200).json(ApiResponse.success(
       { id: insertedId, name: cleanName, email: cleanEmail, subject: cleanSubject, message: cleanMessage, emailSent },

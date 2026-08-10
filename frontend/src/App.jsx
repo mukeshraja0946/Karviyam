@@ -96,7 +96,10 @@ export default function App() {
                     <Route path="/admin/website-settings" element={<AdminSettingsPage />} />
                     <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
                     <Route path="/admin/help-support" element={<AdminHelpSupportPage />} />
+                    <Route path="/admin/help_support" element={<AdminHelpSupportPage />} />
                     <Route path="/admin/help" element={<AdminHelpSupportPage />} />
+                    <Route path="/admin/support" element={<AdminHelpSupportPage />} />
+                    <Route path="/admin/contact-messages" element={<AdminHelpSupportPage />} />
                     <Route path="/admin/admins" element={<AdminUsersPage />} />
                   </Route>
                 </Route>
