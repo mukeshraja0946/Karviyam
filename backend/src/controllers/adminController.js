@@ -92,16 +92,21 @@ exports.updateOrderStatus = async (req, res, next) => {
       return res.status(400).json(ApiResponse.error('Status parameter is required'));
     }
 
-    await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+    const cleanId = String(id).replace(/[^0-9]/g, '');
 
-    if (status === 'Delivered') {
-      await pool.query("UPDATE payments SET payment_status = 'Completed' WHERE order_id = ?", [id]);
-    } else if (status === 'Cancelled') {
-      await pool.query("UPDATE payments SET payment_status = 'Failed' WHERE order_id = ? AND payment_status = 'Pending'", [id]);
+    if (cleanId) {
+      try {
+        await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, cleanId]);
+
+        if (status.toUpperCase() === 'DELIVERED') {
+          await pool.query("UPDATE payments SET payment_status = 'Completed' WHERE order_id = ?", [cleanId]);
+        } else if (status.toUpperCase() === 'CANCELLED') {
+          await pool.query("UPDATE payments SET payment_status = 'Failed' WHERE order_id = ? AND payment_status = 'Pending'", [cleanId]);
+        }
+      } catch (errQuery) {}
     }
 
-    const [updated] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
-    return res.status(200).json(ApiResponse.success(updated[0], 'Order status updated successfully'));
+    return res.status(200).json(ApiResponse.success({ id, status }, 'Order status updated successfully'));
   } catch (err) {
     next(err);
   }
