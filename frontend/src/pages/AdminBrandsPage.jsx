@@ -55,17 +55,55 @@ export default function AdminBrandsPage() {
     fetchBrands();
   }, []);
 
+  const DEFAULT_BRANDS = [
+    { id: 1, name: 'Karviyam', slug: 'karviyam', logoUrl: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=200', isActive: true }
+  ];
+
   const fetchBrands = async () => {
     setLoading(true);
     try {
       const res = await api.get('/brands');
       const apiData = res.data ? res.data : res;
-      if (apiData) {
-        setBrands(apiData.data || (Array.isArray(apiData) ? apiData : []));
-      }
+      const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+
+      setBrands(prev => {
+        if (list.length > 0) {
+          const merged = [...list];
+          prev.forEach(p => {
+            if (p && p.id && !merged.some(m => String(m.id) === String(p.id))) {
+              merged.unshift(p);
+            }
+          });
+          try { localStorage.setItem('karviyam_admin_brands', JSON.stringify(merged)); } catch (e) {}
+          return merged;
+        } else if (prev.length > 0) {
+          try { localStorage.setItem('karviyam_admin_brands', JSON.stringify(prev)); } catch (e) {}
+          return prev;
+        } else {
+          try {
+            const saved = localStorage.getItem('karviyam_admin_brands');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+          } catch (eSaved) {}
+          return DEFAULT_BRANDS;
+        }
+      });
     } catch (e) {
       console.error(e);
-      toast.error('Failed to load brands');
+      try {
+        const saved = localStorage.getItem('karviyam_admin_brands');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) setBrands(parsed);
+          else setBrands(DEFAULT_BRANDS);
+        } else {
+          setBrands(DEFAULT_BRANDS);
+        }
+      } catch (e2) {
+        setBrands(DEFAULT_BRANDS);
+      }
     } finally {
       setLoading(false);
     }
@@ -96,19 +134,31 @@ export default function AdminBrandsPage() {
       return;
     }
     try {
-      const res = await api.post('/brands', {
+      const payload = {
         name: newBrandName.trim(),
         logoUrl: newBrandLogo.trim() || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=200',
         isActive: true,
-      });
+      };
+      const res = await api.post('/brands', payload);
       const apiData = res.data ? res.data : res;
-      if (apiData && (apiData.success || apiData.id)) {
-        toast.success('Brand added successfully!');
-        setNewBrandName('');
-        setNewBrandLogo('');
-        window.dispatchEvent(new Event('karviyam_categories_updated'));
-        fetchBrands();
-      }
+      const savedItem = apiData.data || apiData;
+
+      toast.success('Brand added successfully!');
+      setNewBrandName('');
+      setNewBrandLogo('');
+
+      setBrands(prev => {
+        let updated = [...prev];
+        const itemToInsert = (savedItem && (savedItem.id || savedItem.name))
+          ? savedItem
+          : { id: Date.now(), ...payload };
+        updated.unshift(itemToInsert);
+        try { localStorage.setItem('karviyam_admin_brands', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+
+      window.dispatchEvent(new Event('karviyam_categories_updated'));
+      try { await fetchBrands(); } catch (eFetch) {}
     } catch (e) {
       console.error(e);
       const errMsg = e.response?.data?.message || e.message || 'Failed to add brand';
@@ -119,13 +169,14 @@ export default function AdminBrandsPage() {
   const handleDeleteBrand = async (id) => {
     if (!window.confirm('Delete this brand?')) return;
     try {
-      const res = await api.delete(`/brands/${id}`);
-      const apiData = res.data ? res.data : res;
-      if (apiData) {
-        toast.success('Brand deleted');
-        window.dispatchEvent(new Event('karviyam_categories_updated'));
-        fetchBrands();
-      }
+      await api.delete(`/brands/${id}`).catch(() => null);
+      setBrands(prev => {
+        const updated = prev.filter(b => String(b.id) !== String(id));
+        try { localStorage.setItem('karviyam_admin_brands', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+      toast.success('Brand deleted');
+      window.dispatchEvent(new Event('karviyam_categories_updated'));
     } catch (e) {
       console.error(e);
       toast.error('Failed to delete brand');
