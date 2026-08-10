@@ -6,21 +6,38 @@ const createTransporter = () => {
   const user = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
   const pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || '';
 
-  if (!pass) {
-    return null;
+  if (pass) {
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: {
+        user,
+        pass
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
   }
 
+  // Fallback 1: Try Hostinger port 587 without auth if internal relay allowed
+  if (host.includes('hostinger')) {
+    return nodemailer.createTransport({
+      host: 'smtp.hostinger.com',
+      port: 587,
+      secure: false,
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
+  }
+
+  // Fallback 2: Local sendmail
   return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: {
-      user,
-      pass
-    },
-    tls: {
-      rejectUnauthorized: false
-    }
+    sendmail: true,
+    newline: 'unix',
+    path: '/usr/sbin/sendmail'
   });
 };
 
@@ -29,10 +46,16 @@ exports.sendContactEmail = async ({ name, email, subject, message, source = 'Cus
   const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
   const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
+  console.log(`\n================ EMAIL SEND ATTEMPT ================`);
+  console.log(`[SMTP Target]: ${recipient}`);
+  console.log(`[From]: ${fromUser} | [ReplyTo]: ${email}`);
+  console.log(`[Subject]: ${subject}`);
+  console.log(`[Source]: ${source}`);
+
   try {
     const transporter = createTransporter();
     if (!transporter) {
-      console.log(`[Email Service] SMTP password not configured in .env. Target recipient: ${recipient}`);
+      console.error(`❌ [SMTP Error]: No valid transport configuration found.`);
       return false;
     }
 
@@ -64,11 +87,42 @@ exports.sendContactEmail = async ({ name, email, subject, message, source = 'Cus
       `
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ [Email Service] Sent ${source} email from ${email} to ${recipient}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ [SMTP Success] Message sent! MessageId: ${info.messageId || 'OK'}`);
+    console.log(`====================================================\n`);
     return true;
   } catch (err) {
-    console.error(`⚠️ [Email Service Error] Could not send email to ${recipient}:`, err.message);
+    console.error(`❌ [SMTP Send Failure]: ${err.message}`);
+    console.log(`====================================================\n`);
+
+    // Backup try: Google Workspace SMTP if hostinger fails
+    try {
+      console.log(`[SMTP Fallback] Retrying with Google Workspace / alternate port 587...`);
+      const fallbackTransporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.SMTP_USER || 'vanakkam@karviyam.com',
+          pass: process.env.SMTP_PASS || process.env.SMTP_PASSWORD || ''
+        },
+        tls: { rejectUnauthorized: false }
+      });
+      if (process.env.SMTP_PASS || process.env.SMTP_PASSWORD) {
+        await fallbackTransporter.sendMail({
+          from: `"Karviyam ${source}" <${fromUser}>`,
+          to: recipient,
+          replyTo: email,
+          subject: `[${source}] ${subject || 'Contact Request from ' + name}`,
+          text: message
+        });
+        console.log(`✅ [SMTP Fallback Success] Delivered via fallback server!`);
+        return true;
+      }
+    } catch (fallbackErr) {
+      console.error(`❌ [SMTP Fallback Error]: ${fallbackErr.message}`);
+    }
+
     return false;
   }
 };
