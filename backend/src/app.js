@@ -202,7 +202,12 @@ const potentialDistDirs = [
   path.join(process.cwd(), 'frontend/dist'),
   path.join(process.cwd(), 'dist'),
   path.join(process.cwd(), '../frontend/dist'),
-  path.join(process.cwd(), '../dist')
+  path.join(process.cwd(), '../dist'),
+  path.join(process.cwd(), 'public_html/frontend/dist'),
+  path.join(process.cwd(), 'public_html/dist'),
+  path.join(process.cwd(), 'public_html'),
+  path.join(process.cwd(), '../public_html/frontend/dist'),
+  path.join(process.cwd(), '../public_html')
 ];
 
 let frontendDistDir = null;

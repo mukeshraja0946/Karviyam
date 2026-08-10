@@ -12,6 +12,13 @@
   RewriteRule ^ - [L]
 
   # 3. PRODUCTION SPA FALLBACK FOR REACT ROUTES (/maintenance, /shop, /product/*, /admin/*, /wishlist, /cart)
-  RewriteRule ^ index.html [L]
+  RewriteCond %{DOCUMENT_ROOT}/frontend/dist/index.html -f
+  RewriteRule ^ /frontend/dist/index.html [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/dist/index.html -f
+  RewriteRule ^ /dist/index.html [L]
+
+  RewriteRule ^ /index.html [L]
 </IfModule>
+
 
