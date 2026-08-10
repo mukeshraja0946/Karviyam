@@ -27,10 +27,20 @@ export default function AdminInventoryPage() {
   const fetchInventory = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/products?size=100&includeInactive=true');
-      const apiData = res.data ? res.data : res;
-      const pageObj = apiData.data !== undefined ? apiData.data : apiData;
-      const items = Array.isArray(pageObj?.content) ? pageObj.content : (Array.isArray(pageObj) ? pageObj : []);
+      const res = await api.get('/products?size=100&includeInactive=true').catch(() => null);
+      const apiData = res?.data ? res.data : (res || {});
+      const pageObj = apiData?.data !== undefined ? apiData.data : apiData;
+      let items = Array.isArray(pageObj?.content) ? pageObj.content : (Array.isArray(pageObj) ? pageObj : []);
+
+      if (items.length === 0) {
+        try {
+          const savedAdmin = localStorage.getItem('karviyam_admin_products');
+          if (savedAdmin) {
+            const parsed = JSON.parse(savedAdmin);
+            if (Array.isArray(parsed) && parsed.length > 0) items = parsed;
+          }
+        } catch (eLocal) {}
+      }
 
       const formatted = items.map(p => {
         const stock = p.stockQuantity !== undefined ? p.stockQuantity : (p.stock !== undefined ? p.stock : 10);

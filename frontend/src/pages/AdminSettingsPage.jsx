@@ -81,8 +81,8 @@ export default function AdminSettingsPage() {
       const compRes = await api.get('/settings/company').catch(() => null);
       const compData = compRes?.data?.data || compRes?.data;
 
-      const res = await api.get('/settings');
-      const apiData = res.data ? res.data : res;
+      const res = await api.get('/settings').catch(() => null);
+      const apiData = res?.data ? res.data : (res || {});
       const dataMap = apiData.data || apiData;
 
       if (dataMap && typeof dataMap === 'object') {

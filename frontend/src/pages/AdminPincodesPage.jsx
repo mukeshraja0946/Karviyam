@@ -70,10 +70,10 @@ export default function AdminPincodesPage() {
           city: selectedCity,
           size: 100
         }
-      }).catch(() => api.get('/pincodes'));
-      const apiData = res.data ? res.data : res;
-      const paged = apiData.data || apiData;
-      const list = paged.content || (Array.isArray(paged) ? paged : []);
+      }).catch(() => api.get('/pincodes')).catch(() => null);
+      const apiData = res?.data ? res.data : (res || {});
+      const paged = apiData?.data || apiData;
+      const list = paged?.content || (Array.isArray(paged) ? paged : []);
 
       setPincodes(prev => {
         if (list.length > 0) {
