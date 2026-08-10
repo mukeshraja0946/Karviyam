@@ -45,7 +45,10 @@ router.get('/customers', adminController.getCustomers);
 router.put('/customers/:id', adminController.updateCustomer);
 router.delete('/customers/:id', adminController.deleteCustomer);
 router.put('/users/:id/role', userController.updateUserRole);
+router.post('/users/:id/role', userController.updateUserRole);
 router.delete('/users/:id', userController.deleteUser);
+router.post('/users/:id/delete', userController.deleteUser);
+router.post('/users/:id', userController.deleteUser);
 
 // Pincodes
 router.get('/pincodes', pincodeController.getAllPincodes);

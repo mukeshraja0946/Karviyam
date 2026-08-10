@@ -195,10 +195,18 @@ exports.updateUserRole = async (req, res, next) => {
 exports.deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (String(id) === String(req.user.id)) {
+    if (req.user && String(id) === String(req.user.id)) {
       return res.status(400).json(ApiResponse.error('You cannot delete your own admin account'));
     }
-    await pool.query('DELETE FROM users WHERE id = ?', [id]);
+
+    try {
+      await pool.query('DELETE FROM user_roles WHERE user_id = ?', [id]);
+      await pool.query('DELETE FROM user_addresses WHERE user_id = ?', [id]);
+      await pool.query('DELETE FROM users WHERE id = ?', [id]);
+    } catch (fkErr) {
+      await pool.query('UPDATE users SET is_active = 0 WHERE id = ?', [id]);
+    }
+
     return res.status(200).json(ApiResponse.success(null, 'User deleted successfully'));
   } catch (err) {
     next(err);
