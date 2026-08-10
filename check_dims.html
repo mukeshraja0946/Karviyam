@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <img src="assets/images/GOLD_LOGO.png" id="img1">
+    <img src="assets/images/logo-gold.png" id="img2">
+    <img src="assets/images/logo-red.png" id="img3">
+    <img src="assets/images/logo.png" id="img4">
+    <script>
+        window.onload = () => {
+            const imgs = document.querySelectorAll('img');
+            imgs.forEach(img => {
+                console.log(`${img.id}: ${img.src} - ${img.naturalWidth}x${img.naturalHeight}`);
+            });
+        }
+    </script>
+</body>
+</html>

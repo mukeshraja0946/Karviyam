@@ -1,0 +1,20 @@
+# Karviyam - Temporary Maintenance Mode Redirection
+RewriteEngine On
+
+# 1. ALLOW ASSETS
+# Ensure that the maintenance page can still load CSS, JS, and Images
+RewriteCond %{REQUEST_URI} ^/assets/ [OR]
+RewriteCond %{REQUEST_URI} \.(jpe?g?|png|gif|ico|css|js|woff2?|ttf|svg)$ [NC]
+RewriteRule ^ - [L]
+
+# 2. ALLOW MAINTENANCE PAGE ITSELF
+# Avoid a redirect loop
+RewriteCond %{REQUEST_URI} !/maintenance\.php$
+
+# 3. OPTIONAL: IP WHITELIST
+# Uncomment and replace with your IP to access the site during maintenance
+# RewriteCond %{REMOTE_ADDR} !^123\.123\.123\.123$
+
+# 4. REDIRECT EVERYTHING ELSE
+# Temporarily redirect all traffic to maintenance.php (302)
+RewriteRule ^(.*)$ /maintenance.php [R=302,L]

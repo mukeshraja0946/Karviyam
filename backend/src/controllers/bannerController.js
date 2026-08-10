@@ -1,0 +1,275 @@
+const pool = require('../config/db');
+const ApiResponse = require('../utils/apiResponse');
+const fs = require('fs');
+const path = require('path');
+
+const mapBannerRow = (b) => {
+  if (!b) return null;
+  const isAct = b.status 
+    ? String(b.status).toLowerCase() === 'active' 
+    : (b.is_active !== undefined && b.is_active !== null ? Boolean(b.is_active) : true);
+  const statusStr = isAct ? 'active' : 'inactive';
+  const imgUrl = b.image_url || b.image_path || b.image || '';
+
+  return {
+    id: b.id,
+    title: b.title || '',
+    subtitle: b.subtitle || '',
+    imageUrl: imgUrl,
+    imagePath: imgUrl,
+    image: imgUrl,
+    buttonText: b.button_text || 'Shop Now',
+    buttonLink: b.button_link || b.link || '/shop',
+    link: b.button_link || b.link || '/shop',
+    isActive: isAct,
+    status: statusStr,
+    sortOrder: b.sort_order || b.display_order || 0,
+    displayOrder: b.display_order || b.sort_order || 0
+  };
+};
+
+const ensureTableExists = async () => {
+  try {
+    // 1. Ensure table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS home_banners (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255),
+        subtitle VARCHAR(255),
+        image_url LONGTEXT,
+        image_path LONGTEXT,
+        button_text VARCHAR(100),
+        button_link VARCHAR(255),
+        link VARCHAR(255),
+        is_active BOOLEAN DEFAULT TRUE,
+        status VARCHAR(50) DEFAULT 'active',
+        sort_order INT DEFAULT 0,
+        display_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 2. Safe migrations for existing tables missing specific columns
+    try { await pool.query("ALTER TABLE home_banners MODIFY id BIGINT AUTO_INCREMENT"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN image_url LONGTEXT"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN image_path LONGTEXT"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN image LONGTEXT"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN title VARCHAR(255)"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN subtitle VARCHAR(255)"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN button_text VARCHAR(100)"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN button_link VARCHAR(255)"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN link VARCHAR(255)"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN status VARCHAR(50) DEFAULT 'active'"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN is_active BOOLEAN DEFAULT TRUE"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN sort_order INT DEFAULT 0"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners ADD COLUMN display_order INT DEFAULT 0"); } catch (e) {}
+
+    // 3. Ensure image columns are LONGTEXT (to allow base64 or long paths)
+    try { await pool.query("ALTER TABLE home_banners MODIFY COLUMN image_url LONGTEXT"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners MODIFY COLUMN image_path LONGTEXT"); } catch (e) {}
+    try { await pool.query("ALTER TABLE home_banners MODIFY COLUMN image LONGTEXT"); } catch (e) {}
+  } catch (err) {
+    console.error('[Banner DB Table Ensure Error]:', err.message);
+  }
+};
+
+exports.getActiveBanners = async (req, res, next) => {
+  try {
+    await ensureTableExists();
+    let rows = [];
+    try {
+      const [r] = await pool.query(
+        "SELECT * FROM home_banners WHERE (status = 'active' OR is_active = 1) AND status != 'inactive' AND is_active != 0 ORDER BY display_order ASC, sort_order ASC, id DESC"
+      );
+      rows = r;
+    } catch (e) {
+      const [r] = await pool.query('SELECT * FROM home_banners WHERE status = "active" ORDER BY id DESC');
+      rows = r;
+    }
+    const banners = rows.map(mapBannerRow).filter(Boolean);
+    return res.status(200).json(ApiResponse.success(banners, 'Active banners retrieved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getAllBanners = async (req, res, next) => {
+  try {
+    await ensureTableExists();
+    let rows = [];
+    try {
+      const [r] = await pool.query('SELECT * FROM home_banners ORDER BY display_order ASC, sort_order ASC, id DESC');
+      rows = r;
+    } catch (e) {
+      const [r] = await pool.query('SELECT * FROM home_banners ORDER BY id DESC');
+      rows = r;
+    }
+    const banners = rows.map(mapBannerRow).filter(Boolean);
+    return res.status(200).json(ApiResponse.success(banners, 'All banners retrieved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.saveBanner = async (req, res, next) => {
+  try {
+    await ensureTableExists();
+
+    const { id, title, subtitle, imageUrl, imagePath, buttonText, buttonLink, link, isActive, status, sortOrder, displayOrder } = req.body;
+    let finalImage = imageUrl || imagePath || req.body.image;
+    const finalLink = buttonLink || link || '/shop';
+    const finalBtnText = buttonText || 'Shop Now';
+    const finalOrder = displayOrder || sortOrder || 0;
+    const bannerStatus = (status || (isActive !== false ? 'active' : 'inactive')).toLowerCase();
+    const activeBool = bannerStatus === 'active' ? 1 : 0;
+
+    if (!finalImage) {
+      return res.status(400).json(ApiResponse.error('Banner image URL or file is required'));
+    }
+
+    // Convert Base64 data URL to static file in uploads folder if possible
+    if (typeof finalImage === 'string' && finalImage.startsWith('data:image/')) {
+      try {
+        const matches = finalImage.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+        if (matches) {
+          const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+          const base64Data = matches[2];
+          const fileName = `banner-${Date.now()}-${Math.floor(Math.random() * 1000)}.${ext}`;
+          
+          const possibleDirs = [
+            path.join(__dirname, '../../uploads'),
+            path.join(__dirname, '../uploads'),
+            path.join(process.cwd(), 'uploads'),
+            path.join(process.cwd(), 'backend/uploads')
+          ];
+          
+          let savedPath = null;
+          for (const uDir of possibleDirs) {
+            try {
+              if (!fs.existsSync(uDir)) {
+                fs.mkdirSync(uDir, { recursive: true });
+              }
+              const filePath = path.join(uDir, fileName);
+              fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+              savedPath = `/uploads/${fileName}`;
+              break;
+            } catch (eWrite) {}
+          }
+
+          if (savedPath) {
+            finalImage = savedPath;
+          }
+        }
+      } catch (e) {
+        console.error('[Banner Save] Error writing base64 image file:', e);
+      }
+    }
+
+    if (id) {
+      try {
+        await pool.query(
+          `UPDATE home_banners 
+           SET title = ?, subtitle = ?, image_url = ?, image_path = ?, button_text = ?, button_link = ?, link = ?, status = ?, is_active = ?, sort_order = ?, display_order = ? 
+           WHERE id = ?`,
+          [title || null, subtitle || null, finalImage, finalImage, finalBtnText, finalLink, finalLink, bannerStatus, activeBool, finalOrder, finalOrder, id]
+        );
+      } catch (e1) {
+        try {
+          await pool.query(
+            `UPDATE home_banners SET title = ?, subtitle = ?, image_path = ?, status = ?, is_active = ? WHERE id = ?`,
+            [title || null, subtitle || null, finalImage, bannerStatus, activeBool, id]
+          );
+        } catch (e2) {
+          try {
+            await pool.query(
+              `UPDATE home_banners SET title = ?, subtitle = ?, image = ?, status = ?, is_active = ? WHERE id = ?`,
+              [title || null, subtitle || null, finalImage, bannerStatus, activeBool, id]
+            );
+          } catch (e3) {
+            await pool.query(
+              `UPDATE home_banners SET title = ?, is_active = ? WHERE id = ?`,
+              [title || null, activeBool, id]
+            );
+          }
+        }
+      }
+      const [rows] = await pool.query('SELECT * FROM home_banners WHERE id = ?', [id]);
+      const savedData = rows.length > 0 ? mapBannerRow(rows[0]) : { id, title, subtitle, imagePath: finalImage, imageUrl: finalImage, link: finalLink, status: bannerStatus, isActive: activeBool === 1 };
+      return res.status(200).json(ApiResponse.success(savedData, 'Banner updated successfully'));
+    } else {
+      let insertId;
+      try {
+        // Preferred insertion with all columns
+        const [r] = await pool.query(
+          `INSERT INTO home_banners (title, subtitle, image_url, image_path, button_text, button_link, link, status, is_active, sort_order, display_order, created_at) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+          [title || null, subtitle || null, finalImage, finalImage, finalBtnText, finalLink, finalLink, bannerStatus, activeBool, finalOrder, finalOrder]
+        );
+        insertId = r.insertId;
+      } catch (e1) {
+        try {
+          // Fallback 1: image_path column
+          const [r] = await pool.query(
+            `INSERT INTO home_banners (title, subtitle, image_path, button_text, button_link, link, status, is_active, sort_order, display_order, created_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            [title || null, subtitle || null, finalImage, finalBtnText, finalLink, finalLink, bannerStatus, activeBool, finalOrder, finalOrder]
+          );
+          insertId = r.insertId;
+        } catch (e2) {
+          try {
+            // Fallback 2: image column
+            const [r] = await pool.query(
+              `INSERT INTO home_banners (title, subtitle, image, button_text, button_link, status, is_active, created_at) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+              [title || null, subtitle || null, finalImage, finalBtnText, finalLink, bannerStatus, activeBool]
+            );
+            insertId = r.insertId;
+          } catch (e3) {
+            // Fallback 3: minimal schema
+            const [r] = await pool.query(
+              `INSERT INTO home_banners (title, subtitle, is_active, created_at) VALUES (?, ?, ?, NOW())`,
+              [title || null, subtitle || null, activeBool]
+            );
+            insertId = r.insertId;
+          }
+        }
+      }
+
+      let savedBannerRow = null;
+      if (insertId) {
+        const [rows] = await pool.query('SELECT * FROM home_banners WHERE id = ?', [insertId]);
+        if (rows.length > 0) {
+          savedBannerRow = mapBannerRow(rows[0]);
+        }
+      }
+
+      // Fallback query if insertId returned 0
+      if (!savedBannerRow) {
+        const [latestRows] = await pool.query('SELECT * FROM home_banners ORDER BY id DESC LIMIT 1');
+        if (latestRows.length > 0) {
+          savedBannerRow = mapBannerRow(latestRows[0]);
+        }
+      }
+
+      if (!savedBannerRow) {
+        savedBannerRow = { id: insertId || Date.now(), title, subtitle, imagePath: finalImage, imageUrl: finalImage, link: finalLink, status: bannerStatus, isActive: activeBool === 1 };
+      }
+
+      return res.status(200).json(ApiResponse.success(savedBannerRow, 'Banner created successfully'));
+    }
+  } catch (err) {
+    console.error('[saveBanner Error]:', err);
+    return res.status(500).json(ApiResponse.error(err.message || 'Server error while saving banner'));
+  }
+};
+
+exports.deleteBanner = async (req, res, next) => {
+  try {
+    await ensureTableExists();
+    const { id } = req.params;
+    await pool.query('DELETE FROM home_banners WHERE id = ?', [id]);
+    return res.status(200).json(ApiResponse.success(null, 'Banner deleted successfully'));
+  } catch (err) {
+    next(err);
+  }
+};

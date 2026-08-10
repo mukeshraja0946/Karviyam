@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+@theme {
+  --color-karviyam-red: #B71C1C;
+  --color-karviyam-primary: #B71C1C;
+  --color-karviyam-hover: #D32F2F;
+  --color-karviyam-darkred: #8E0000;
+  --color-karviyam-lightred: #FFEBEE;
+  --color-karviyam-[#B71C1C]: #B71C1C;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'Montserrat', sans-serif;
+}
+
+@layer base {
+  html, body {
+    background-color: #F8FAFC !important;
+    color: #111827 !important;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+/* Custom Light Card Glassmorphism */
+.glass-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #E5E7EB;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B71C1C;
+}
+
+/* Print-specific layout rules for clean A4 Invoice print */
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide navigation, headers, sidebars, and non-printable UI */
+  header, footer, nav, sidebar, aside, main, .no-print, .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset modal backdrop so it doesn't block printing */
+  .fixed.inset-0 {
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Printable Invoice Container */
+  #printable-invoice-wrapper {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important;
+    margin: 20px auto !important;
+    width: 100% !important;
+    max-width: 800px !important;
+    box-shadow: none !important;
+    border: 1px solid #000000 !important;
+    background: #ffffff !important;
+  }
+}

@@ -1,0 +1,105 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
+import { WishlistProvider } from './context/WishlistContext';
+import { ThemeProvider } from './context/ThemeContext';
+
+import MainLayout from './layouts/MainLayout';
+import AdminLayout from './layouts/AdminLayout';
+import { ProtectedRoute, AdminRoute } from './routes/ProtectedRoute';
+
+import HomePage from './pages/HomePage';
+import ShopPage from './pages/ShopPage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import CartPage from './pages/CartPage';
+import WishlistPage from './pages/WishlistPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
+import UserProfilePage from './pages/UserProfilePage';
+import CustomerSettingsPage from './pages/CustomerSettingsPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ContactPage from './pages/ContactPage';
+
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminProductsPage from './pages/AdminProductsPage';
+import AdminOrdersPage from './pages/AdminOrdersPage';
+import AdminCouponsPage from './pages/AdminCouponsPage';
+import AdminBannersPage from './pages/AdminBannersPage';
+import AdminOffersPage from './pages/AdminOffersPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import AdminReviewsPage from './pages/AdminReviewsPage';
+import AdminCategoriesPage from './pages/AdminCategoriesPage';
+import AdminBrandsPage from './pages/AdminBrandsPage';
+import AdminSettingsPage from './pages/AdminSettingsPage';
+import AdminCustomersPage from './pages/AdminCustomersPage';
+import AdminInventoryPage from './pages/AdminInventoryPage';
+import AdminReportsPage from './pages/AdminReportsPage';
+import AdminPincodesPage from './pages/AdminPincodesPage';
+import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <BrowserRouter>
+              <Toaster position="top-right" />
+              <Routes>
+                
+                {/* Main Customer App Routes */}
+                <Route element={<MainLayout />}>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/shop" element={<ShopPage />} />
+                  <Route path="/product/:id" element={<ProductDetailPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/wishlist" element={<WishlistPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
+
+                  {/* Protected Customer Routes */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/checkout" element={<CheckoutPage />} />
+                    <Route path="/order-success" element={<OrderSuccessPage />} />
+                    <Route path="/profile" element={<UserProfilePage />} />
+                    <Route path="/settings" element={<CustomerSettingsPage />} />
+                  </Route>
+                </Route>
+
+                {/* Protected Admin Control Center Routes */}
+                <Route element={<AdminRoute />}>
+                  <Route element={<AdminLayout />}>
+                    <Route path="/admin" element={<AdminDashboardPage />} />
+                    <Route path="/admin/products" element={<AdminProductsPage />} />
+                    <Route path="/admin/orders" element={<AdminOrdersPage />} />
+                    <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+                    <Route path="/admin/brands" element={<AdminBrandsPage />} />
+                    <Route path="/admin/inventory" element={<AdminInventoryPage />} />
+                    <Route path="/admin/customers" element={<AdminCustomersPage />} />
+                    <Route path="/admin/coupons" element={<AdminCouponsPage />} />
+                    <Route path="/admin/banners" element={<AdminBannersPage />} />
+                    <Route path="/admin/pincodes" element={<AdminPincodesPage />} />
+                    <Route path="/admin/offers" element={<AdminOffersPage />} />
+                    <Route path="/admin/users" element={<AdminUsersPage />} />
+                    <Route path="/admin/reviews" element={<AdminReviewsPage />} />
+                    <Route path="/admin/payments" element={<AdminOrdersPage />} />
+                    <Route path="/admin/reports" element={<AdminReportsPage />} />
+                    <Route path="/admin/settings" element={<AdminSettingsPage />} />
+                    <Route path="/admin/website-settings" element={<AdminSettingsPage />} />
+                    <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
+                    <Route path="/admin/admins" element={<AdminUsersPage />} />
+                  </Route>
+                </Route>
+
+              </Routes>
+            </BrowserRouter>
+          </WishlistProvider>
+        </CartProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}

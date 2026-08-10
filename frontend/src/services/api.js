@@ -1,0 +1,88 @@
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('karviyam_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // Disable browser HTTP caching for all API calls
+    config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    config.headers['Pragma'] = 'no-cache';
+    config.headers['Expires'] = '0';
+
+    if (config.method === 'get') {
+      config.params = {
+        ...config.params,
+        _t: Date.now()
+      };
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+  (response) => {
+    const method = response.config?.method?.toLowerCase();
+    const url = response.config?.url || '';
+
+    // Automatically trigger global data synchronization events on any CUD mutation
+    if (['post', 'put', 'patch', 'delete'].includes(method)) {
+      window.dispatchEvent(new CustomEvent('karviyam_data_mutated', { detail: { url, method } }));
+
+      if (url.includes('/settings')) {
+        window.dispatchEvent(new Event('karviyam_settings_updated'));
+        window.dispatchEvent(new Event('karviyam_logo_updated'));
+        window.dispatchEvent(new Event('karviyam_footer_updated'));
+      }
+      if (url.includes('/categories')) {
+        window.dispatchEvent(new Event('karviyam_categories_updated'));
+      }
+      if (url.includes('/products')) {
+        window.dispatchEvent(new Event('karviyam_products_updated'));
+      }
+      if (url.includes('/banners')) {
+        window.dispatchEvent(new Event('karviyam_banners_updated'));
+      }
+      if (url.includes('/coupons')) {
+        window.dispatchEvent(new Event('karviyam_coupons_updated'));
+      }
+      if (url.includes('/pincodes')) {
+        window.dispatchEvent(new Event('karviyam_pincodes_updated'));
+      }
+      if (url.includes('/reviews')) {
+        window.dispatchEvent(new Event('karviyam_reviews_updated'));
+      }
+      if (url.includes('/orders')) {
+        window.dispatchEvent(new Event('karviyam_orders_updated'));
+      }
+      if (url.includes('/cart')) {
+        window.dispatchEvent(new Event('karviyam_cart_updated'));
+      }
+      if (url.includes('/wishlist')) {
+        window.dispatchEvent(new Event('karviyam_wishlist_updated'));
+      }
+    }
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Optional authentication session handling
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
