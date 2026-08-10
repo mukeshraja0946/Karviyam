@@ -17,6 +17,12 @@ router.get('/dashboard/stats', adminController.getDashboardStats);
 // Orders
 router.get('/orders', adminController.getAllOrders);
 router.put('/orders/:id/status', adminController.updateOrderStatus);
+router.post('/orders/:id/status', adminController.updateOrderStatus);
+router.put('/orders/:id', orderController.updateOrder);
+router.post('/orders/:id', orderController.updateOrder);
+router.post('/orders/:id/update', orderController.updateOrder);
+router.delete('/orders/:id', orderController.deleteOrder);
+router.post('/orders/:id/delete', orderController.deleteOrder);
 
 // Products
 router.get('/products', adminController.getAdminProducts);

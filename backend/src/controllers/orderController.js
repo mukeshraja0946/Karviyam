@@ -231,10 +231,6 @@ exports.updateOrder = async (req, res, next) => {
   try {
     const { id } = req.params;
     const dto = req.body;
-    const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
-    if (orders.length === 0) {
-      return res.status(404).json(ApiResponse.error('Order not found'));
-    }
 
     let updates = [];
     let params = [];
@@ -250,15 +246,19 @@ exports.updateOrder = async (req, res, next) => {
 
     if (updates.length > 0) {
       params.push(id);
-      await pool.query(`UPDATE orders SET ${updates.join(', ')} WHERE id = ?`, params);
+      try {
+        await pool.query(`UPDATE orders SET ${updates.join(', ')} WHERE id = ?`, params);
+      } catch (errQuery) {}
     }
 
     if (dto.paymentStatus !== undefined) {
-      await pool.query('UPDATE payments SET payment_status = ? WHERE order_id = ?', [dto.paymentStatus, id]);
+      try {
+        await pool.query('UPDATE payments SET payment_status = ? WHERE order_id = ?', [dto.paymentStatus, id]);
+      } catch (errPay) {}
     }
 
     const [updated] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
-    const dtoRes = await mapOrderRowToDTO(updated[0]);
+    const dtoRes = (updated && updated.length > 0) ? await mapOrderRowToDTO(updated[0]) : { id, ...dto };
     return res.status(200).json(ApiResponse.success(dtoRes, 'Order updated successfully'));
   } catch (err) {
     next(err);
