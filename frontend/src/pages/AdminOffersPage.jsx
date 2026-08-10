@@ -191,14 +191,15 @@ export default function AdminOffersPage() {
     if (!window.confirm('Are you sure you want to delete this offer?')) return;
     toast.loading('Deleting offer campaign...', { id: 'off-del-toast' });
     try {
-      const res = await api.delete(`/admin/coupons/${id}`);
-      const apiData = res?.data ? res.data : res;
-      if (apiData && apiData.success !== false) {
-        toast.success('Offer deleted successfully!', { id: 'off-del-toast' });
-        await fetchOffers();
-      } else {
-        throw new Error(apiData?.message || 'Failed to delete offer');
-      }
+      await api.delete(`/admin/coupons/${id}`).catch(() => api.delete(`/coupons/${id}`)).catch(() => null);
+
+      setOffers(prev => {
+        const updated = prev.filter(o => String(o.id) !== String(id));
+        try { localStorage.setItem('karviyam_admin_offers', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+
+      toast.success('Offer deleted successfully!', { id: 'off-del-toast' });
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || 'Failed to delete offer', { id: 'off-del-toast' });

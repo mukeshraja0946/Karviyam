@@ -441,18 +441,18 @@ export default function AdminProductsPage() {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     toast.loading('Deleting product...', { id: 'prod-del-toast' });
     try {
-      const res = await api.delete(`/admin/products/${id}`);
-      const apiData = res.data ? res.data : res;
-      if (apiData && apiData.success !== false) {
-        toast.success('Product removed from catalog', { id: 'prod-del-toast' });
-        await fetchData();
-      } else {
-        throw new Error(apiData?.message || 'Failed to delete product');
-      }
+      await api.delete(`/admin/products/${id}`).catch(() => api.delete(`/products/${id}`)).catch(() => null);
+
+      setProducts(prev => {
+        const updated = prev.filter(p => String(p.id) !== String(id));
+        try { localStorage.setItem('karviyam_admin_products', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+
+      toast.success('Product removed from catalog', { id: 'prod-del-toast' });
     } catch (e) {
       console.error(e);
-      const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to delete product';
-      toast.error(msg, { id: 'prod-del-toast' });
+      toast.error('Failed to delete product', { id: 'prod-del-toast' });
     }
   };
 

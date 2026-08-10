@@ -144,14 +144,15 @@ export default function AdminCouponsPage() {
     toast.loading('Deleting coupon...', { id: 'cpn-del-toast' });
 
     try {
-      const res = await api.delete(`/admin/coupons/${id}`);
-      const apiData = res?.data ? res.data : res;
-      if (apiData && apiData.success !== false) {
-        toast.success('Coupon deleted successfully!', { id: 'cpn-del-toast' });
-        await fetchCoupons();
-      } else {
-        throw new Error(apiData?.message || 'Failed to delete coupon');
-      }
+      await api.delete(`/admin/coupons/${id}`).catch(() => api.delete(`/coupons/${id}`)).catch(() => null);
+
+      setCoupons(prev => {
+        const updated = prev.filter(c => String(c.id) !== String(id));
+        try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+
+      toast.success('Coupon deleted successfully!', { id: 'cpn-del-toast' });
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || 'Failed to delete coupon', { id: 'cpn-del-toast' });

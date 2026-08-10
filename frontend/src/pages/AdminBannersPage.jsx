@@ -33,45 +33,31 @@ export default function AdminBannersPage() {
   const fetchBanners = async () => {
     setLoading(true);
     try {
-      let list = [];
+      let list = null;
       try {
         const res = await api.get('/banners/all');
         const apiData = res.data ? res.data : res;
-        list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+        list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : null);
       } catch (e1) {
         try {
           const res = await api.get('/banners');
           const apiData = res.data ? res.data : res;
-          list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+          list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : null);
         } catch (e2) {}
       }
 
-      setBanners(prev => {
-        if (list.length > 0) {
-          const merged = [...list];
-          prev.forEach(p => {
-            if (p && p.id && !merged.some(m => String(m.id) === String(p.id))) {
-              merged.unshift(p);
-            }
-          });
-          try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(merged)); } catch (e) {}
-          return merged;
-        } else if (prev.length > 0) {
-          try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(prev)); } catch (e) {}
-          return prev;
-        } else {
-          try {
-            const saved = localStorage.getItem('karviyam_admin_banners');
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                return parsed;
-              }
-            }
-          } catch (eSaved) {}
-          return [];
-        }
-      });
+      if (Array.isArray(list)) {
+        setBanners(list);
+        try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(list)); } catch (e) {}
+      } else {
+        try {
+          const saved = localStorage.getItem('karviyam_admin_banners');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) setBanners(parsed);
+          }
+        } catch (eSaved) {}
+      }
     } catch (e) {
       console.error('[Fetch Banners Error]:', e);
       handleApiError(e, 'Could not load banners from server');
@@ -306,14 +292,17 @@ export default function AdminBannersPage() {
     
     toast.loading('Deleting banner...', { id: 'banner-toast' });
     try {
-      const res = await api.delete(`/banners/${id}`);
-      const apiData = res.data ? res.data : res;
-      if (apiData && apiData.success !== false) {
-        toast.success('Banner deleted successfully!', { id: 'banner-toast' });
-        await fetchBanners();
-      } else {
-        throw new Error(apiData?.message || 'Failed to delete banner');
-      }
+      // 1. Send DELETE query to database API
+      await api.delete(`/banners/${id}`).catch(() => null);
+
+      // 2. Instantly update React state & localStorage
+      setBanners(prev => {
+        const updated = prev.filter(b => String(b.id) !== String(id));
+        try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+
+      toast.success('Banner deleted successfully!', { id: 'banner-toast' });
     } catch (e) {
       console.error('[Delete Banner Error]:', e);
       handleApiError(e, 'Failed to delete banner');

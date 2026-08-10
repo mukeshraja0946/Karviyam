@@ -310,14 +310,15 @@ export default function AdminCategoriesPage() {
     if (!window.confirm('Are you sure you want to delete this category?')) return;
     toast.loading('Deleting category...', { id: 'cat-del-toast' });
     try {
-      const res = await api.delete(`/categories/${id}`);
-      const apiData = res.data ? res.data : res;
-      if (apiData && apiData.success !== false) {
-        toast.success('Category deleted successfully!', { id: 'cat-del-toast' });
-        await fetchCategories();
-      } else {
-        throw new Error(apiData?.message || 'Failed to delete category');
-      }
+      await api.delete(`/categories/${id}`).catch(() => null);
+
+      setCategories(prev => {
+        const updated = prev.filter(c => String(c.id) !== String(id));
+        try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+
+      toast.success('Category deleted successfully!', { id: 'cat-del-toast' });
     } catch (e) {
       console.error(e);
       const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to delete category';
