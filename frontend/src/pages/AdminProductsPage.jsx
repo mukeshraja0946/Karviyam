@@ -297,14 +297,45 @@ export default function AdminProductsPage() {
       ];
     }
 
+    // Resolve Category ID
+    let catId = p.categoryId || p.category_id || '';
+    if (!catId && (p.categoryName || p.type)) {
+      const catMatch = allCategories.find(c => 
+        (p.categoryName && c.name?.toLowerCase() === p.categoryName?.toLowerCase()) ||
+        (p.type && (c.name?.toLowerCase() === p.type?.toLowerCase() || c.type?.toLowerCase() === p.type?.toLowerCase()))
+      );
+      if (catMatch) catId = catMatch.id;
+    }
+
+    // Resolve Subcategory ID
+    let subcatId = p.subcategoryId || p.subcategory_id || '';
+    if (!subcatId && p.subcategoryName) {
+      const parentCat = allCategories.find(c => String(c.id) === String(catId));
+      if (parentCat && Array.isArray(parentCat.subcategories)) {
+        const subMatch = parentCat.subcategories.find(s => s.name?.toLowerCase() === p.subcategoryName?.toLowerCase());
+        if (subMatch) subcatId = subMatch.id;
+      }
+    }
+
+    // Resolve Brand ID & Name
+    let bId = p.brandId || p.brand_id || '';
+    let bName = p.brand || 'Karviyam';
+    if (!bId && bName) {
+      const brandMatch = brands.find(b => b.name?.toLowerCase() === bName?.toLowerCase());
+      if (brandMatch) bId = brandMatch.id;
+    } else if (bId && !bName) {
+      const brandMatch = brands.find(b => String(b.id) === String(bId));
+      if (brandMatch) bName = brandMatch.name;
+    }
+
     setFormData({
       name: p.name || '',
       sku: p.sku || '',
       barcode: p.barcode || '',
-      categoryId: p.categoryId || '',
-      subcategoryId: p.subcategoryId || '',
-      brandId: p.brandId || '',
-      brand: p.brand || 'Karviyam',
+      categoryId: catId,
+      subcategoryId: subcatId,
+      brandId: bId,
+      brand: bName,
       price: p.price || '',
       oldPrice: p.oldPrice || '',
       costPrice: p.costPrice || '',
@@ -394,6 +425,17 @@ export default function AdminProductsPage() {
 
       const defaultVar = (formData.colorVariants || []).find(v => v.isDefault) || (formData.colorVariants || [])[0];
 
+      const selCat = allCategories.find(c => String(c.id) === String(formData.categoryId));
+      const selSub = selCat?.subcategories?.find(s => String(s.id) === String(formData.subcategoryId));
+      const selBrand = brands.find(b => String(b.id) === String(formData.brandId));
+
+      const finalCatId = formData.categoryId ? parseInt(formData.categoryId, 10) : (selCat ? selCat.id : null);
+      const finalSubcatId = formData.subcategoryId ? parseInt(formData.subcategoryId, 10) : (selSub ? selSub.id : null);
+      const finalBrandId = formData.brandId ? parseInt(formData.brandId, 10) : (selBrand ? selBrand.id : null);
+      const finalBrandName = selBrand ? selBrand.name : (formData.brand || 'Karviyam');
+      const finalCatName = selCat ? selCat.name : (formData.categoryName || formData.type || 'Clothing');
+      const finalSubcatName = selSub ? selSub.name : formData.subcategoryName;
+
       const payload = {
         ...formData,
         color: defaultVar ? defaultVar.colorName : formData.color,
@@ -404,9 +446,16 @@ export default function AdminProductsPage() {
         costPrice: formData.costPrice ? parseFloat(formData.costPrice) : null,
         discountPercentage: formData.discountPercentage ? parseFloat(formData.discountPercentage) : null,
         stockQuantity: qty,
-        categoryId: formData.categoryId ? parseInt(formData.categoryId, 10) : null,
-        subcategoryId: formData.subcategoryId ? parseInt(formData.subcategoryId, 10) : null,
-        brandId: formData.brandId ? parseInt(formData.brandId, 10) : null,
+        categoryId: finalCatId,
+        category_id: finalCatId,
+        categoryName: finalCatName,
+        subcategoryId: finalSubcatId,
+        subcategory_id: finalSubcatId,
+        subcategoryName: finalSubcatName,
+        brandId: finalBrandId,
+        brand_id: finalBrandId,
+        brand: finalBrandName,
+        type: finalCatName,
         weight: formData.weight ? parseFloat(formData.weight) : null,
         imageUrl: (defaultVar && defaultVar.imageUrls && defaultVar.imageUrls[0]) || compressedImages[0] || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
       };
@@ -422,7 +471,22 @@ export default function AdminProductsPage() {
           setProducts(prev => {
             let updated = [...prev];
             const idx = updated.findIndex(p => String(p.id) === String(editingProduct.id));
-            if (idx >= 0) updated[idx] = { ...updated[idx], ...savedItem };
+            const mergedItem = {
+              ...updated[idx],
+              ...savedItem,
+              ...payload,
+              id: editingProduct.id,
+              categoryId: finalCatId,
+              category_id: finalCatId,
+              categoryName: finalCatName,
+              subcategoryId: finalSubcatId,
+              subcategory_id: finalSubcatId,
+              subcategoryName: finalSubcatName,
+              brandId: finalBrandId,
+              brand_id: finalBrandId,
+              brand: finalBrandName
+            };
+            if (idx >= 0) updated[idx] = mergedItem;
             try { localStorage.setItem('karviyam_admin_products', JSON.stringify(updated)); } catch (e) {}
             return updated;
           });
