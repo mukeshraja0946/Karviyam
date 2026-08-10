@@ -92,6 +92,28 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
+  const DEFAULT_CATEGORIES = React.useMemo(() => [
+    { id: 1, name: 'WOMEN', type: 'WOMEN', subcategories: [{ id: 6, name: 'Sarees' }, { id: 7, name: 'Lehengas' }, { id: 8, name: 'Salwar Suits' }] },
+    { id: 2, name: 'MEN', type: 'MEN', subcategories: [{ id: 9, name: 'Kurtas & Pyjamas' }, { id: 10, name: 'Sherwanis' }, { id: 11, name: 'Shirts & Trousers' }] },
+    { id: 3, name: 'KIDS & BABY', type: 'KIDS & BABY', subcategories: [{ id: 12, name: 'Boys Ethnic' }, { id: 13, name: 'Girls Dresses' }] },
+    { id: 4, name: 'ACCESSORIES', type: 'ACCESSORIES', subcategories: [{ id: 14, name: 'Jewellery' }, { id: 15, name: 'Bags & Clutches' }] },
+    { id: 5, name: 'KITCHEN & HOME', type: 'KITCHEN & HOME', subcategories: [{ id: 16, name: 'Traditional Cookware' }, { id: 17, name: 'Home Decor' }] }
+  ], []);
+
+  const allCategories = React.useMemo(() => {
+    if (Array.isArray(categoriesTree) && categoriesTree.length > 0) {
+      return categoriesTree;
+    }
+    try {
+      const saved = localStorage.getItem('karviyam_admin_categories');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_CATEGORIES;
+  }, [categoriesTree, DEFAULT_CATEGORIES]);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -639,7 +661,7 @@ export default function AdminProductsPage() {
                     className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none"
                   >
                     <option value="">Select Category</option>
-                    {categoriesTree.map((c) => (
+                    {allCategories.map((c) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
@@ -653,7 +675,7 @@ export default function AdminProductsPage() {
                     className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none"
                   >
                     <option value="">Select Subcategory</option>
-                    {availableSubcategories.map((s) => (
+                    {((allCategories.find(c => String(c.id) === String(formData.categoryId))?.subcategories) || []).map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
