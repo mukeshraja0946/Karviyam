@@ -76,6 +76,59 @@ const INITIAL_REPORT_DATA = {
   }
 };
 
+const ZERO_REPORT_DATA = {
+  Sales: {
+    headers: ['Period / Date', 'Total Orders', 'Gross Amount', 'Discounts Applied', 'Net Revenue'],
+    rows: [],
+    summary: [
+      { title: 'Gross Revenue', value: '₹0' },
+      { title: 'Total Taxes Collected (GST 18%)', value: '₹0' },
+      { title: 'Net Completed Orders', value: '0' },
+      { title: 'Total Refunds Processed', value: '₹0' },
+    ]
+  },
+  Revenue: {
+    headers: ['Category / Stream', 'Units Sold', 'Gross Sales', 'Platform Fee', 'Net Profit Margin'],
+    rows: [],
+    summary: [
+      { title: 'Total Revenue', value: '₹0' },
+      { title: 'Gross Profit Margin', value: '0%' },
+      { title: 'Avg Order Value', value: '₹0' },
+      { title: 'Net Commission', value: '₹0' },
+    ]
+  },
+  Tax: {
+    headers: ['Tax Slab', 'Taxable Turnover', 'CGST (9%)', 'SGST (9%)', 'Total GST Liability'],
+    rows: [],
+    summary: [
+      { title: 'Total Taxable Turnover', value: '₹0' },
+      { title: 'Total CGST', value: '₹0' },
+      { title: 'Total SGST', value: '₹0' },
+      { title: 'Total GST Paid', value: '₹0' },
+    ]
+  },
+  Inventory: {
+    headers: ['Product Name & SKU', 'Category', 'Current Stock', 'Reorder Level', 'Stock Valuation'],
+    rows: [],
+    summary: [
+      { title: 'Total Active SKUs', value: '0 SKUs' },
+      { title: 'Total Stock Quantity', value: '0 Items' },
+      { title: 'Total Inventory Value', value: '₹0' },
+      { title: 'Low Stock Alerts', value: '0 Items' },
+    ]
+  },
+  Customers: {
+    headers: ['Customer Segment', 'Total Accounts', 'Active Buyers', 'Repeat Order Rate', 'Total Spent'],
+    rows: [],
+    summary: [
+      { title: 'Total Registered Customers', value: '0 Accounts' },
+      { title: 'Active Monthly Buyers', value: '0 Buyers' },
+      { title: 'Repeat Purchase Rate', value: '0%' },
+      { title: 'Customer Retention Rate', value: '0%' },
+    ]
+  }
+};
+
 export default function AdminReportsPage() {
   const [reportType, setReportType] = useState('Sales');
   const [dateRange, setDateRange] = useState('This Month');
@@ -94,7 +147,7 @@ export default function AdminReportsPage() {
   const [editingRowIndex, setEditingRowIndex] = useState(null);
   const [editRowValues, setEditRowValues] = useState([]);
 
-  const activeData = reportData[reportType] || INITIAL_REPORT_DATA[reportType] || INITIAL_REPORT_DATA.Sales;
+  const activeData = reportData[reportType] || ZERO_REPORT_DATA[reportType] || ZERO_REPORT_DATA.Sales;
 
   const saveReportData = (newData) => {
     setReportData(newData);
@@ -104,9 +157,15 @@ export default function AdminReportsPage() {
   };
 
   const handleResetData = () => {
-    if (!window.confirm('Reset all reports and analytics data back to initial defaults?')) return;
+    if (!window.confirm('Reset all reports metrics to 0 and clear all data entries?')) return;
+    saveReportData(ZERO_REPORT_DATA);
+    toast.success('Reports reset! All metrics cleared to 0.');
+  };
+
+  const handleRestoreInitialDefaults = () => {
+    if (!window.confirm('Restore initial sample report metrics and sample data?')) return;
     saveReportData(INITIAL_REPORT_DATA);
-    toast.success('Reports reset to initial default state!');
+    toast.success('Sample report data restored!');
   };
 
   const handleOpenAddRow = () => {
@@ -123,7 +182,7 @@ export default function AdminReportsPage() {
 
   const handleDeleteRow = (rIdx) => {
     if (!window.confirm('Are you sure you want to delete this report row?')) return;
-    const currentTab = reportData[reportType] || INITIAL_REPORT_DATA[reportType];
+    const currentTab = reportData[reportType] || ZERO_REPORT_DATA[reportType];
     const newRows = currentTab.rows.filter((_, idx) => idx !== rIdx);
     
     const updated = {
@@ -139,7 +198,7 @@ export default function AdminReportsPage() {
 
   const handleSaveRowSubmit = (e) => {
     e.preventDefault();
-    const currentTab = reportData[reportType] || INITIAL_REPORT_DATA[reportType];
+    const currentTab = reportData[reportType] || ZERO_REPORT_DATA[reportType];
     let newRows = [...currentTab.rows];
 
     if (editingRowIndex !== null) {
@@ -180,14 +239,16 @@ export default function AdminReportsPage() {
         return;
       }
 
-      const rowsHtml = activeData.rows
-        .map(
-          (row) => `
-          <tr>
-            ${row.map((cell) => `<td style="padding: 10px; border-bottom: 1px solid #E2E8F0;">${cell}</td>`).join('')}
-          </tr>`
-        )
-        .join('');
+      const rowsHtml = activeData.rows.length > 0
+        ? activeData.rows
+          .map(
+            (row) => `
+            <tr>
+              ${row.map((cell) => `<td style="padding: 10px; border-bottom: 1px solid #E2E8F0;">${cell}</td>`).join('')}
+            </tr>`
+          )
+          .join('')
+        : `<tr><td colSpan="${activeData.headers.length}" style="padding: 16px; text-align: center; color: #94A3B8;">No data records available (All values 0).</td></tr>`;
 
       const summaryHtml = activeData.summary
         .map(
@@ -199,7 +260,7 @@ export default function AdminReportsPage() {
         )
         .join('');
 
-      toast.success("Opening Print Preview... (Tip: Uncheck 'Headers and footers' for a clean PDF)", { duration: 4000 });
+      toast.success("Opening Print Preview...", { duration: 3000 });
 
       printWin.document.open();
       printWin.document.write(`
@@ -315,9 +376,13 @@ export default function AdminReportsPage() {
       csvRows.push([]);
 
       csvRows.push(activeData.headers.map((h) => `"${h}"`));
-      activeData.rows.forEach((r) => {
-        csvRows.push(r.map((cell) => `"${cell}"`));
-      });
+      if (activeData.rows.length > 0) {
+        activeData.rows.forEach((r) => {
+          csvRows.push(r.map((cell) => `"${cell}"`));
+        });
+      } else {
+        csvRows.push(['No data rows available']);
+      }
 
       const csvString = csvRows.map((e) => e.join(',')).join('\n');
       const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
@@ -352,11 +417,11 @@ export default function AdminReportsPage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={handleResetData}
-            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border border-slate-200 cursor-pointer"
-            title="Reset All Reports to Defaults"
+            className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-[#B71C1C] px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border border-red-200 cursor-pointer shadow-xs"
+            title="Reset All Metrics and Rows to 0"
           >
-            <RotateCcw className="w-4 h-4 text-slate-500" />
-            <span>Reset Defaults</span>
+            <RotateCcw className="w-4 h-4 text-[#B71C1C]" />
+            <span>Reset All to 0</span>
           </button>
           <button
             onClick={handleExportPDF}
@@ -393,6 +458,12 @@ export default function AdminReportsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleRestoreInitialDefaults}
+            className="text-[11px] font-bold text-slate-500 hover:text-slate-800 underline underline-offset-2 mr-2 cursor-pointer"
+          >
+            Restore Sample Data
+          </button>
           <Calendar className="w-4 h-4 text-slate-400" />
           <select
             value={dateRange}
@@ -446,7 +517,7 @@ export default function AdminReportsPage() {
               {activeData.rows.length === 0 ? (
                 <tr>
                   <td colSpan={activeData.headers.length + 1} className="p-8 text-center text-slate-400 italic font-medium">
-                    No data rows available for this report. Click "Add Report Entry" or "Reset Defaults".
+                    All metrics reset to 0. Click "Add Report Entry" to create a new record.
                   </td>
                 </tr>
               ) : (
