@@ -55,15 +55,34 @@ export default function ProductDetailPage() {
   const fetchProduct = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/products/${id}`);
-      const apiData = res.data ? res.data : res;
-      const item = apiData.data || apiData;
+      let item = null;
+      try {
+        const res = await api.get(`/products/${id}`);
+        const apiData = res.data ? res.data : res;
+        item = apiData.data || apiData;
+      } catch (e1) {}
+
+      // Fallback: Check local admin products if not found by API ID directly
+      if (!item || !item.id) {
+        try {
+          const savedAdmin = localStorage.getItem('karviyam_admin_products');
+          if (savedAdmin) {
+            const parsed = JSON.parse(savedAdmin);
+            if (Array.isArray(parsed)) {
+              item = parsed.find(p => String(p.id) === String(id) || String(p.sku) === String(id) || String(p.name) === String(id));
+            }
+          }
+        } catch (eSaved) {}
+      }
+
       if (item && item.id) {
         setProduct(item);
-        setSelectedImage(item.imageUrl);
+        setSelectedImage(item.imageUrl || (Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800'));
         if (item.color) {
           setSelectedColor(item.color);
         }
+      } else {
+        setProduct(null);
       }
     } catch (e) {
       console.error(e);
