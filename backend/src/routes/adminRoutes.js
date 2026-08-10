@@ -37,7 +37,9 @@ router.get('/coupons', adminController.getCoupons);
 router.post('/coupons', adminController.createCoupon);
 router.put('/coupons/:id', adminController.updateCoupon);
 router.post('/coupons/:id', adminController.updateCoupon);
+router.post('/coupons/:id/update', adminController.updateCoupon);
 router.delete('/coupons/:id', adminController.deleteCoupon);
+router.post('/coupons/:id/delete', adminController.deleteCoupon);
 
 // Reviews
 router.get('/reviews', adminController.getReviews);

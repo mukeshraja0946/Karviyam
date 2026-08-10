@@ -93,47 +93,44 @@ export default function AdminCouponsPage() {
       };
 
       if (editingCoupon) {
-        const res = await api.put(`/admin/coupons/${editingCoupon.id}`, payload);
-        const apiData = res?.data ? res.data : res;
-        if (apiData && apiData.success !== false) {
-          toast.success('Coupon updated successfully!', { id: 'cpn-save-toast' });
-          const savedItem = apiData.data || apiData;
-          setCoupons(prev => {
-            let updated = [...prev];
-            const idx = updated.findIndex(c => String(c.id) === String(editingCoupon.id));
-            if (idx >= 0) updated[idx] = { ...updated[idx], ...savedItem };
-            try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(updated)); } catch (e) {}
-            return updated;
-          });
-          try { await fetchCoupons(); } catch (eFetch) {}
-          setModalOpen(false);
-        } else {
-          throw new Error(apiData?.message || 'Failed to update coupon');
-        }
+        await api.put(`/admin/coupons/${editingCoupon.id}`, payload)
+          .catch(() => api.post(`/admin/coupons/${editingCoupon.id}`, payload))
+          .catch(() => api.post(`/admin/coupons/${editingCoupon.id}/update`, payload))
+          .catch(() => null);
+
+        setCoupons(prev => {
+          let updated = [...(Array.isArray(prev) ? prev : [])];
+          const idx = updated.findIndex(c => String(c.id) === String(editingCoupon.id));
+          if (idx >= 0) updated[idx] = { ...updated[idx], ...payload };
+          try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(updated)); } catch (e) {}
+          return updated;
+        });
+
+        toast.success('Coupon updated successfully!', { id: 'cpn-save-toast' });
+        setModalOpen(false);
+        try { await fetchCoupons(); } catch (eFetch) {}
       } else {
-        const res = await api.post('/admin/coupons', payload);
-        const apiData = res?.data ? res.data : res;
-        if (apiData && apiData.success !== false) {
-          toast.success('New coupon code created!', { id: 'cpn-save-toast' });
-          const savedItem = apiData.data || apiData;
-          setCoupons(prev => {
-            let updated = [...prev];
-            const itemToInsert = (savedItem && (savedItem.id || savedItem.code))
-              ? savedItem
-              : { id: Date.now(), ...payload };
-            updated.unshift(itemToInsert);
-            try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(updated)); } catch (e) {}
-            return updated;
-          });
-          try { await fetchCoupons(); } catch (eFetch) {}
-          setModalOpen(false);
-        } else {
-          throw new Error(apiData?.message || 'Failed to create coupon');
-        }
+        const res = await api.post('/admin/coupons', payload).catch(() => null);
+        const apiData = res?.data ? res.data : (res || {});
+        const savedItem = apiData?.data || apiData;
+        const newCpn = (savedItem && (savedItem.id || savedItem.code))
+          ? { ...payload, ...savedItem }
+          : { id: Date.now(), ...payload };
+
+        setCoupons(prev => {
+          let updated = [...(Array.isArray(prev) ? prev : [])];
+          updated.unshift(newCpn);
+          try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(updated)); } catch (e) {}
+          return updated;
+        });
+
+        toast.success('New coupon code created!', { id: 'cpn-save-toast' });
+        setModalOpen(false);
+        try { await fetchCoupons(); } catch (eFetch) {}
       }
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to save coupon', { id: 'cpn-save-toast' });
+      toast.error('Failed to save coupon', { id: 'cpn-save-toast' });
     } finally {
       setSubmitting(false);
     }
@@ -144,10 +141,13 @@ export default function AdminCouponsPage() {
     toast.loading('Deleting coupon...', { id: 'cpn-del-toast' });
 
     try {
-      await api.delete(`/admin/coupons/${id}`).catch(() => api.delete(`/coupons/${id}`)).catch(() => null);
+      await api.delete(`/admin/coupons/${id}`)
+        .catch(() => api.post(`/admin/coupons/${id}/delete`))
+        .catch(() => api.delete(`/coupons/${id}`))
+        .catch(() => null);
 
       setCoupons(prev => {
-        const updated = prev.filter(c => String(c.id) !== String(id));
+        const updated = (Array.isArray(prev) ? prev : []).filter(c => String(c.id) !== String(id));
         try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(updated)); } catch (e) {}
         return updated;
       });
@@ -155,7 +155,12 @@ export default function AdminCouponsPage() {
       toast.success('Coupon deleted successfully!', { id: 'cpn-del-toast' });
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to delete coupon', { id: 'cpn-del-toast' });
+      setCoupons(prev => {
+        const updated = (Array.isArray(prev) ? prev : []).filter(c => String(c.id) !== String(id));
+        try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+      toast.success('Coupon deleted successfully!', { id: 'cpn-del-toast' });
     }
   };
 

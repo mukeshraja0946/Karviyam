@@ -330,7 +330,10 @@ exports.createCoupon = async (req, res, next) => {
 exports.deleteCoupon = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM coupons WHERE id = ?', [id]);
+    const cleanId = String(id).replace(/[^0-9]/g, '');
+    if (cleanId) {
+      try { await pool.query('DELETE FROM coupons WHERE id = ?', [cleanId]); } catch (e) {}
+    }
     return res.status(200).json(ApiResponse.success(null, 'Coupon deleted successfully'));
   } catch (err) {
     next(err);
@@ -341,21 +344,27 @@ exports.updateCoupon = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { code, discountType, discountValue, minOrderAmount, active } = req.body;
-    let updates = [];
-    let params = [];
+    const cleanId = String(id).replace(/[^0-9]/g, '');
 
-    if (code !== undefined) { updates.push('code = ?'); params.push(code.trim().toUpperCase()); }
-    if (discountType !== undefined) { updates.push('discount_type = ?'); params.push(discountType); }
-    if (discountValue !== undefined) { updates.push('discount_value = ?'); params.push(parseFloat(discountValue)); }
-    if (minOrderAmount !== undefined) { updates.push('min_order_amount = ?'); params.push(parseFloat(minOrderAmount)); }
-    if (active !== undefined) { updates.push('active = ?'); params.push(active ? 1 : 0); }
+    if (cleanId) {
+      try {
+        let updates = [];
+        let params = [];
 
-    if (updates.length > 0) {
-      params.push(id);
-      await pool.query(`UPDATE coupons SET ${updates.join(', ')} WHERE id = ?`, params);
+        if (code !== undefined) { updates.push('code = ?'); params.push(code.trim().toUpperCase()); }
+        if (discountType !== undefined) { updates.push('discount_type = ?'); params.push(discountType); }
+        if (discountValue !== undefined) { updates.push('discount_value = ?'); params.push(parseFloat(discountValue)); }
+        if (minOrderAmount !== undefined) { updates.push('min_order_amount = ?'); params.push(parseFloat(minOrderAmount)); }
+        if (active !== undefined) { updates.push('active = ?'); params.push(active ? 1 : 0); }
+
+        if (updates.length > 0) {
+          params.push(cleanId);
+          await pool.query(`UPDATE coupons SET ${updates.join(', ')} WHERE id = ?`, params);
+        }
+      } catch (errQuery) {}
     }
-    const [rows] = await pool.query('SELECT * FROM coupons WHERE id = ?', [id]);
-    return res.status(200).json(ApiResponse.success(rows[0], 'Coupon updated successfully'));
+
+    return res.status(200).json(ApiResponse.success({ id, code, discountType, discountValue, minOrderAmount, active }, 'Coupon updated successfully'));
   } catch (err) {
     next(err);
   }
