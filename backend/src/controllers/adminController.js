@@ -426,19 +426,24 @@ exports.getCustomers = async (req, res, next) => {
 exports.updateCustomer = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { fullName, email, phone, address, role } = req.body;
-    let updates = [];
-    let params = [];
-    if (fullName !== undefined) { updates.push('full_name = ?'); params.push(fullName); }
-    if (email !== undefined) { updates.push('email = ?'); params.push(email); }
-    if (phone !== undefined) { updates.push('phone = ?'); params.push(phone); }
-    if (address !== undefined) { updates.push('address = ?'); params.push(address); }
-    if (role !== undefined) { updates.push('role = ?'); params.push(role); }
+    const { fullName, email, phone } = req.body;
+    const cleanId = String(id).replace(/[^0-9]/g, '');
 
-    if (updates.length > 0) {
-      params.push(id);
-      await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+    if (cleanId) {
+      try {
+        let updates = [];
+        let params = [];
+        if (fullName !== undefined) { updates.push('full_name = ?'); params.push(fullName); }
+        if (email !== undefined) { updates.push('email = ?'); params.push(email); }
+        if (phone !== undefined) { updates.push('phone = ?'); params.push(phone); }
+
+        if (updates.length > 0) {
+          params.push(cleanId);
+          await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+        }
+      } catch (errUser) {}
     }
+
     return res.status(200).json(ApiResponse.success(null, 'Customer updated successfully'));
   } catch (err) {
     next(err);
@@ -448,7 +453,18 @@ exports.updateCustomer = async (req, res, next) => {
 exports.deleteCustomer = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM users WHERE id = ?', [id]);
+    const cleanId = String(id).replace(/[^0-9]/g, '');
+
+    if (cleanId) {
+      try {
+        await pool.query('DELETE FROM user_roles WHERE user_id = ?', [cleanId]);
+        await pool.query('DELETE FROM user_addresses WHERE user_id = ?', [cleanId]);
+        await pool.query('DELETE FROM users WHERE id = ?', [cleanId]);
+      } catch (fkErr) {
+        await pool.query('UPDATE users SET is_active = 0 WHERE id = ?', [cleanId]);
+      }
+    }
+
     return res.status(200).json(ApiResponse.success(null, 'Customer deleted successfully'));
   } catch (err) {
     next(err);

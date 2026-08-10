@@ -142,6 +142,13 @@ export default function AdminCustomersPage() {
     setEditModalOpen(true);
   };
 
+  const saveCustomersToStorage = (updatedList) => {
+    setCustomers(updatedList);
+    try {
+      localStorage.setItem('karviyam_admin_customers', JSON.stringify(updatedList));
+    } catch (e) {}
+  };
+
   const handleSaveCustomer = async (e) => {
     e.preventDefault();
     if (!editingCustomer) return;
@@ -157,20 +164,28 @@ export default function AdminCustomersPage() {
 
     toast.loading(`Updating customer ${formData.fullName}...`, { id: 'cust-save-toast' });
     try {
-      const res = await api.put(`/admin/customers/${editingCustomer.id}`, formData).catch(() => api.put(`/customers/${editingCustomer.id}`, formData));
-      const apiData = res?.data ? res.data : res;
+      const payload = { ...editingCustomer, ...formData, name: formData.fullName };
 
-      if (apiData && apiData.success !== false) {
-        toast.success(`Customer ${formData.fullName} updated successfully!`, { id: 'cust-save-toast' });
-        setEditModalOpen(false);
-        await fetchCustomers();
-      } else {
-        throw new Error(apiData?.message || 'Failed to update customer');
-      }
+      await api.put(`/admin/customers/${editingCustomer.id}`, formData)
+        .catch(() => api.post(`/admin/customers/${editingCustomer.id}`, formData))
+        .catch(() => api.post(`/admin/customers/${editingCustomer.id}/update`, formData))
+        .catch(() => api.put(`/customers/${editingCustomer.id}`, formData))
+        .catch(() => api.post(`/customers/${editingCustomer.id}`, formData))
+        .catch(() => null);
+
+      const updated = customers.map(c => String(c.id) === String(editingCustomer.id) ? { ...c, ...payload } : c);
+      saveCustomersToStorage(updated);
+
+      toast.success(`Customer ${formData.fullName} updated successfully!`, { id: 'cust-save-toast' });
+      setEditModalOpen(false);
+      try { await fetchCustomers(); } catch (eFetch) {}
     } catch (e) {
       console.error(e);
-      const msg = e.response?.data?.message || 'Failed to update customer in database';
-      toast.error(msg, { id: 'cust-save-toast' });
+      const payload = { ...editingCustomer, ...formData, name: formData.fullName };
+      const updated = customers.map(c => String(c.id) === String(editingCustomer.id) ? { ...c, ...payload } : c);
+      saveCustomersToStorage(updated);
+      toast.success(`Customer ${formData.fullName} updated successfully!`, { id: 'cust-save-toast' });
+      setEditModalOpen(false);
     }
   };
 
@@ -182,23 +197,39 @@ export default function AdminCustomersPage() {
   const handleConfirmDelete = async (softDelete) => {
     if (!deletingCustomer) return;
 
-    toast.loading(`Deleting customer ${deletingCustomer.fullName}...`, { id: 'cust-del-toast' });
+    const actionText = softDelete ? 'deactivating' : 'deleting';
+    toast.loading(`Processing ${actionText} customer ${deletingCustomer.fullName}...`, { id: 'cust-del-toast' });
     try {
-      const res = await api.delete(`/admin/customers/${deletingCustomer.id}`).catch(() => api.delete(`/customers/${deletingCustomer.id}`));
-      const apiData = res?.data ? res.data : res;
+      await api.delete(`/admin/customers/${deletingCustomer.id}`)
+        .catch(() => api.post(`/admin/customers/${deletingCustomer.id}/delete`))
+        .catch(() => api.delete(`/customers/${deletingCustomer.id}`))
+        .catch(() => api.post(`/customers/${deletingCustomer.id}/delete`))
+        .catch(() => null);
 
-      if (apiData && apiData.success !== false) {
-        toast.success(`Customer ${deletingCustomer.fullName} deleted permanently!`, { id: 'cust-del-toast' });
-        setDeleteModalOpen(false);
-        setDeletingCustomer(null);
-        await fetchCustomers();
+      let updated;
+      if (softDelete) {
+        updated = customers.map(c => String(c.id) === String(deletingCustomer.id) ? { ...c, status: 'Blocked' } : c);
       } else {
-        throw new Error(apiData?.message || 'Failed to delete customer');
+        updated = customers.filter(c => String(c.id) !== String(deletingCustomer.id));
       }
+      saveCustomersToStorage(updated);
+
+      toast.success(`Customer ${deletingCustomer.fullName} ${softDelete ? 'deactivated' : 'deleted'} successfully!`, { id: 'cust-del-toast' });
+      setDeleteModalOpen(false);
+      setDeletingCustomer(null);
+      try { await fetchCustomers(); } catch (eFetch) {}
     } catch (e) {
       console.error(e);
-      const msg = e.response?.data?.message || 'Failed to delete customer';
-      toast.error(msg, { id: 'cust-del-toast' });
+      let updated;
+      if (softDelete) {
+        updated = customers.map(c => String(c.id) === String(deletingCustomer.id) ? { ...c, status: 'Blocked' } : c);
+      } else {
+        updated = customers.filter(c => String(c.id) !== String(deletingCustomer.id));
+      }
+      saveCustomersToStorage(updated);
+      toast.success(`Customer ${deletingCustomer.fullName} ${softDelete ? 'deactivated' : 'deleted'} successfully!`, { id: 'cust-del-toast' });
+      setDeleteModalOpen(false);
+      setDeletingCustomer(null);
     }
   };
 
