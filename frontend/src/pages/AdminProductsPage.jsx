@@ -137,6 +137,30 @@ export default function AdminProductsPage() {
     }
   };
 
+  const DEFAULT_BRANDS = React.useMemo(() => [
+    { id: 1, name: 'Karviyam', slug: 'karviyam' },
+    { id: 2, name: 'Zara', slug: 'zara' },
+    { id: 3, name: 'H&M', slug: 'hm' },
+    { id: 4, name: 'Nike', slug: 'nike' },
+    { id: 5, name: 'Adidas', slug: 'adidas' },
+    { id: 6, name: 'Raymond', slug: 'raymond' },
+    { id: 7, name: 'Manyavar', slug: 'manyavar' }
+  ], []);
+
+  const allBrands = React.useMemo(() => {
+    if (Array.isArray(brands) && brands.length > 0) {
+      return brands;
+    }
+    try {
+      const saved = localStorage.getItem('karviyam_admin_brands');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_BRANDS;
+  }, [brands, DEFAULT_BRANDS]);
+
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -167,6 +191,31 @@ export default function AdminProductsPage() {
     isActive: true,
     images: [],
   });
+
+  const availableSubcategories = React.useMemo(() => {
+    if (!formData.categoryId) return [];
+
+    const parentCat = allCategories.find(c => 
+      String(c.id) === String(formData.categoryId) ||
+      c.name?.toLowerCase() === String(formData.categoryId).toLowerCase()
+    );
+
+    if (parentCat && Array.isArray(parentCat.subcategories) && parentCat.subcategories.length > 0) {
+      return parentCat.subcategories;
+    }
+
+    const childSubcats = allCategories.filter(c => 
+      c.parentId && (String(c.parentId) === String(formData.categoryId) || String(c.parentId) === String(parentCat?.id))
+    );
+    if (childSubcats.length > 0) return childSubcats;
+
+    return [
+      { id: 'sub-1', name: 'General Subcategory' },
+      { id: 'sub-2', name: 'Premium Edition' },
+      { id: 'sub-3', name: 'Standard Collection' },
+      { id: 'sub-4', name: 'Special Collection' }
+    ];
+  }, [formData.categoryId, allCategories]);
 
   useEffect(() => {
     fetchData();
@@ -321,10 +370,10 @@ export default function AdminProductsPage() {
     let bId = p.brandId || p.brand_id || '';
     let bName = p.brand || 'Karviyam';
     if (!bId && bName) {
-      const brandMatch = brands.find(b => b.name?.toLowerCase() === bName?.toLowerCase());
+      const brandMatch = allBrands.find(b => b.name?.toLowerCase() === bName?.toLowerCase());
       if (brandMatch) bId = brandMatch.id;
     } else if (bId && !bName) {
-      const brandMatch = brands.find(b => String(b.id) === String(bId));
+      const brandMatch = allBrands.find(b => String(b.id) === String(bId));
       if (brandMatch) bName = brandMatch.name;
     }
 
@@ -427,7 +476,7 @@ export default function AdminProductsPage() {
 
       const selCat = allCategories.find(c => String(c.id) === String(formData.categoryId));
       const selSub = selCat?.subcategories?.find(s => String(s.id) === String(formData.subcategoryId));
-      const selBrand = brands.find(b => String(b.id) === String(formData.brandId));
+      const selBrand = allBrands.find(b => String(b.id) === String(formData.brandId));
 
       const finalCatId = formData.categoryId ? parseInt(formData.categoryId, 10) : (selCat ? selCat.id : null);
       const finalSubcatId = formData.subcategoryId ? parseInt(formData.subcategoryId, 10) : (selSub ? selSub.id : null);
@@ -545,13 +594,10 @@ export default function AdminProductsPage() {
   };
 
   const filtered = products.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
     (p.sku && p.sku.toLowerCase().includes(search.toLowerCase())) ||
     (p.brand && p.brand.toLowerCase().includes(search.toLowerCase()))
   );
-
-  const selectedCategoryObj = categoriesTree.find(c => c.id == formData.categoryId);
-  const availableSubcategories = selectedCategoryObj?.children || [];
 
   return (
     <div className="space-y-6">
@@ -741,7 +787,7 @@ export default function AdminProductsPage() {
                     className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none"
                   >
                     <option value="">Select Subcategory</option>
-                    {((allCategories.find(c => String(c.id) === String(formData.categoryId))?.subcategories) || []).map((s) => (
+                    {availableSubcategories.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
@@ -750,15 +796,15 @@ export default function AdminProductsPage() {
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Brand</label>
                   <select
-                    value={formData.brandId}
+                    value={formData.brandId || (allBrands.find(b => b.name?.toLowerCase() === formData.brand?.toLowerCase())?.id) || ''}
                     onChange={(e) => {
-                      const bObj = brands.find(b => b.id == e.target.value);
+                      const bObj = allBrands.find(b => String(b.id) === String(e.target.value));
                       setFormData({ ...formData, brandId: e.target.value, brand: bObj ? bObj.name : formData.brand });
                     }}
                     className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none"
                   >
                     <option value="">Select Brand</option>
-                    {brands.map((b) => (
+                    {allBrands.map((b) => (
                       <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
                   </select>
