@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { BarChart3, FileText, Download, Calendar, DollarSign, Table } from 'lucide-react';
+import { BarChart3, FileText, Download, Calendar, RotateCcw, Edit2, Trash2, Plus, X, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const REPORT_DATA = {
+const INITIAL_REPORT_DATA = {
   Sales: {
     headers: ['Period / Date', 'Total Orders', 'Gross Amount', 'Discounts Applied', 'Net Revenue'],
     rows: [
@@ -80,9 +80,88 @@ export default function AdminReportsPage() {
   const [reportType, setReportType] = useState('Sales');
   const [dateRange, setDateRange] = useState('This Month');
 
-  const activeData = REPORT_DATA[reportType] || REPORT_DATA.Sales;
+  const [reportData, setReportData] = useState(() => {
+    try {
+      const saved = localStorage.getItem('karviyam_admin_reports_data');
+      return saved ? JSON.parse(saved) : INITIAL_REPORT_DATA;
+    } catch (e) {
+      return INITIAL_REPORT_DATA;
+    }
+  });
 
-  // Export PDF functionality via clean printable print document
+  // Modal State for Adding/Editing Rows
+  const [rowModalOpen, setRowModalOpen] = useState(false);
+  const [editingRowIndex, setEditingRowIndex] = useState(null);
+  const [editRowValues, setEditRowValues] = useState([]);
+
+  const activeData = reportData[reportType] || INITIAL_REPORT_DATA[reportType] || INITIAL_REPORT_DATA.Sales;
+
+  const saveReportData = (newData) => {
+    setReportData(newData);
+    try {
+      localStorage.setItem('karviyam_admin_reports_data', JSON.stringify(newData));
+    } catch (e) {}
+  };
+
+  const handleResetData = () => {
+    if (!window.confirm('Reset all reports and analytics data back to initial defaults?')) return;
+    saveReportData(INITIAL_REPORT_DATA);
+    toast.success('Reports reset to initial default state!');
+  };
+
+  const handleOpenAddRow = () => {
+    setEditingRowIndex(null);
+    setEditRowValues(new Array(activeData.headers.length).fill(''));
+    setRowModalOpen(true);
+  };
+
+  const handleOpenEditRow = (rIdx, rowValues) => {
+    setEditingRowIndex(rIdx);
+    setEditRowValues([...rowValues]);
+    setRowModalOpen(true);
+  };
+
+  const handleDeleteRow = (rIdx) => {
+    if (!window.confirm('Are you sure you want to delete this report row?')) return;
+    const currentTab = reportData[reportType] || INITIAL_REPORT_DATA[reportType];
+    const newRows = currentTab.rows.filter((_, idx) => idx !== rIdx);
+    
+    const updated = {
+      ...reportData,
+      [reportType]: {
+        ...currentTab,
+        rows: newRows
+      }
+    };
+    saveReportData(updated);
+    toast.success('Report row deleted successfully!');
+  };
+
+  const handleSaveRowSubmit = (e) => {
+    e.preventDefault();
+    const currentTab = reportData[reportType] || INITIAL_REPORT_DATA[reportType];
+    let newRows = [...currentTab.rows];
+
+    if (editingRowIndex !== null) {
+      newRows[editingRowIndex] = editRowValues;
+    } else {
+      newRows.unshift(editRowValues);
+    }
+
+    const updated = {
+      ...reportData,
+      [reportType]: {
+        ...currentTab,
+        rows: newRows
+      }
+    };
+
+    saveReportData(updated);
+    toast.success(editingRowIndex !== null ? 'Report entry updated successfully!' : 'New report entry added successfully!');
+    setRowModalOpen(false);
+  };
+
+  // Export PDF functionality via printable document
   const handleExportPDF = () => {
     try {
       const customLogo = localStorage.getItem('karviyam_logo');
@@ -120,7 +199,7 @@ export default function AdminReportsPage() {
         )
         .join('');
 
-      toast.success("Opening Print Preview... (Tip: Uncheck 'Headers and footers' under More settings for a clean PDF)", { duration: 4000 });
+      toast.success("Opening Print Preview... (Tip: Uncheck 'Headers and footers' for a clean PDF)", { duration: 4000 });
 
       printWin.document.open();
       printWin.document.write(`
@@ -129,13 +208,8 @@ export default function AdminReportsPage() {
           <head>
             <title>Karviyam ${reportType} Report (${dateRange})</title>
             <style>
-              @page {
-                margin: 0;
-                size: A4 portrait;
-              }
-              *, *:before, *:after {
-                box-sizing: border-box;
-              }
+              @page { margin: 0; size: A4 portrait; }
+              *, *:before, *:after { box-sizing: border-box; }
               html, body {
                 margin: 0 !important;
                 padding: 0 !important;
@@ -230,19 +304,16 @@ export default function AdminReportsPage() {
   const handleExportExcel = () => {
     try {
       const csvRows = [];
-      // Title Row
       csvRows.push([`Karviyam Enterprise ${reportType} Report (${dateRange})`]);
       csvRows.push([`Generated On: ${new Date().toLocaleString()}`]);
       csvRows.push([]);
 
-      // KPI Summary
       csvRows.push(['Metric Title', 'Value']);
       activeData.summary.forEach((s) => {
         csvRows.push([`"${s.title}"`, `"${s.value}"`]);
       });
       csvRows.push([]);
 
-      // Data Headers & Rows
       csvRows.push(activeData.headers.map((h) => `"${h}"`));
       activeData.rows.forEach((r) => {
         csvRows.push(r.map((cell) => `"${cell}"`));
@@ -275,10 +346,18 @@ export default function AdminReportsPage() {
             <BarChart3 className="w-7 h-7 text-[#B71C1C]" />
             <span>Reports & Analytics Center</span>
           </h1>
-          <p className="text-xs text-slate-500">Generate and export financial, tax, inventory, and sales performance reports</p>
+          <p className="text-xs text-slate-500">Generate, customize, and export financial, tax, inventory, and sales performance reports</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleResetData}
+            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border border-slate-200 cursor-pointer"
+            title="Reset All Reports to Defaults"
+          >
+            <RotateCcw className="w-4 h-4 text-slate-500" />
+            <span>Reset Defaults</span>
+          </button>
           <button
             onClick={handleExportPDF}
             className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
@@ -338,44 +417,131 @@ export default function AdminReportsPage() {
         ))}
       </div>
 
-      {/* Sample Data Report Table */}
+      {/* Breakdown Report Data Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <h3 className="font-bold text-slate-900 text-base">{reportType} Breakdown ({dateRange})</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-slate-900 text-base">{reportType} Breakdown ({dateRange})</h3>
+          <button
+            onClick={handleOpenAddRow}
+            className="flex items-center gap-1.5 bg-slate-900 hover:bg-black text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+          >
+            <Plus className="w-4 h-4 text-emerald-400" />
+            <span>Add Report Entry</span>
+          </button>
+        </div>
         
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
               <tr>
                 {activeData.headers.map((h, i) => (
-                  <th key={i} className={`p-3 ${i === activeData.headers.length - 1 ? 'text-right' : ''}`}>
+                  <th key={i} className="p-3">
                     {h}
                   </th>
                 ))}
+                <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {activeData.rows.map((row, rIdx) => (
-                <tr key={rIdx} className="hover:bg-slate-50/80 transition-colors">
-                  {row.map((cell, cIdx) => (
-                    <td
-                      key={cIdx}
-                      className={`p-3 ${
-                        cIdx === 0
-                          ? 'font-bold text-slate-900'
-                          : cIdx === row.length - 1
-                          ? 'text-right font-black text-[#B71C1C]'
-                          : 'text-slate-700'
-                      }`}
-                    >
-                      {cell}
-                    </td>
-                  ))}
+              {activeData.rows.length === 0 ? (
+                <tr>
+                  <td colSpan={activeData.headers.length + 1} className="p-8 text-center text-slate-400 italic font-medium">
+                    No data rows available for this report. Click "Add Report Entry" or "Reset Defaults".
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                activeData.rows.map((row, rIdx) => (
+                  <tr key={rIdx} className="hover:bg-slate-50/80 transition-colors">
+                    {row.map((cell, cIdx) => (
+                      <td
+                        key={cIdx}
+                        className={`p-3 ${
+                          cIdx === 0
+                            ? 'font-bold text-slate-900'
+                            : cIdx === row.length - 1
+                            ? 'font-black text-[#B71C1C]'
+                            : 'text-slate-700'
+                        }`}
+                      >
+                        {cell}
+                      </td>
+                    ))}
+                    <td className="p-3 text-right whitespace-nowrap space-x-1">
+                      <button
+                        onClick={() => handleOpenEditRow(rIdx, row)}
+                        className="p-1.5 text-slate-500 hover:text-[#B71C1C] hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        title="Edit Row"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRow(rIdx)}
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete Row"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Add / Edit Report Row Modal */}
+      {rowModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-lg p-6 rounded-3xl shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="font-bold text-slate-900 text-sm">
+                {editingRowIndex !== null ? `Edit ${reportType} Entry` : `Add New ${reportType} Entry`}
+              </h3>
+              <button onClick={() => setRowModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveRowSubmit} className="space-y-3.5 text-xs">
+              {activeData.headers.map((h, i) => (
+                <div key={i}>
+                  <label className="block font-bold text-slate-700 mb-1">{h} *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editRowValues[i] || ''}
+                    onChange={(e) => {
+                      const updated = [...editRowValues];
+                      updated[i] = e.target.value;
+                      setEditRowValues(updated);
+                    }}
+                    placeholder={`Enter ${h}`}
+                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none focus:border-[#B71C1C] font-medium text-slate-800"
+                  />
+                </div>
+              ))}
+
+              <div className="flex gap-3 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setRowModalOpen(false)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#B71C1C] hover:bg-[#900C0C] text-white py-2.5 rounded-xl font-bold transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>{editingRowIndex !== null ? 'Save Changes' : 'Add Entry'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
