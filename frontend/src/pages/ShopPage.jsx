@@ -176,10 +176,34 @@ export default function ShopPage() {
         }
       }
 
-      setProducts(items);
+      setProducts(prev => {
+        let merged = [...items];
+        try {
+          const savedAdmin = localStorage.getItem('karviyam_admin_products');
+          if (savedAdmin) {
+            const parsedAdmin = JSON.parse(savedAdmin);
+            if (Array.isArray(parsedAdmin)) {
+              parsedAdmin.forEach(ap => {
+                if (ap && ap.id && !merged.some(m => String(m.id) === String(ap.id))) {
+                  merged.unshift(ap);
+                }
+              });
+            }
+          }
+        } catch (eLocal) {}
+
+        if (merged.length === 0 && prev.length > 0) return prev;
+        return merged;
+      });
     } catch (e) {
       console.error('Error fetching shop products:', e);
-      setProducts([]);
+      try {
+        const savedAdmin = localStorage.getItem('karviyam_admin_products');
+        if (savedAdmin) {
+          const parsedAdmin = JSON.parse(savedAdmin);
+          if (Array.isArray(parsedAdmin) && parsedAdmin.length > 0) setProducts(parsedAdmin);
+        }
+      } catch (eLocal) {}
     } finally {
       setLoading(false);
     }

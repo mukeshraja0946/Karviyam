@@ -121,8 +121,14 @@ exports.getProducts = async (req, res, next) => {
     }
 
     if (categoryId) {
-      conditions.push('(p.category_id = ? OR p.subcategory_id = ?)');
-      params.push(categoryId, categoryId);
+      if (!isNaN(categoryId)) {
+        conditions.push('(p.category_id = ? OR p.subcategory_id = ?)');
+        params.push(categoryId, categoryId);
+      } else {
+        conditions.push('(c.name LIKE ? OR p.type LIKE ? OR p.brand LIKE ?)');
+        const catTerm = `%${categoryId}%`;
+        params.push(catTerm, catTerm, catTerm);
+      }
     }
 
     if (subcategoryId) {
