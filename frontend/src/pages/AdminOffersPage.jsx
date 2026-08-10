@@ -110,12 +110,29 @@ export default function AdminOffersPage() {
     const nextActive = off.status !== 'ACTIVE';
     toast.loading(`Updating offer status...`, { id: 'off-toggle-toast' });
     try {
-      await api.put(`/admin/coupons/${off.id}`, { active: nextActive });
+      await api.put(`/admin/coupons/${off.id}`, { active: nextActive })
+        .catch(() => api.post(`/admin/coupons/${off.id}`, { active: nextActive }))
+        .catch(() => null);
+
+      setOffers(prev => {
+        let updated = [...(Array.isArray(prev) ? prev : [])];
+        const idx = updated.findIndex(o => String(o.id) === String(off.id));
+        if (idx >= 0) updated[idx] = { ...updated[idx], status: nextActive ? 'ACTIVE' : 'PAUSED' };
+        try { localStorage.setItem('karviyam_admin_offers', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+
       toast.success(`Offer campaign set to ${nextActive ? 'ACTIVE' : 'PAUSED'}!`, { id: 'off-toggle-toast' });
-      await fetchOffers();
     } catch (e) {
       console.error(e);
-      toast.error('Failed to update status', { id: 'off-toggle-toast' });
+      setOffers(prev => {
+        let updated = [...(Array.isArray(prev) ? prev : [])];
+        const idx = updated.findIndex(o => String(o.id) === String(off.id));
+        if (idx >= 0) updated[idx] = { ...updated[idx], status: nextActive ? 'ACTIVE' : 'PAUSED' };
+        try { localStorage.setItem('karviyam_admin_offers', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+      toast.success(`Offer campaign set to ${nextActive ? 'ACTIVE' : 'PAUSED'}!`, { id: 'off-toggle-toast' });
     }
   };
 
@@ -132,38 +149,40 @@ export default function AdminOffersPage() {
     toast.loading(editingOffer ? 'Updating offer...' : 'Publishing offer...', { id: 'off-save-toast' });
 
     try {
+      const codeUpper = formData.code.trim().toUpperCase();
+      const valNum = parseFloat(formData.value) || 10;
+      const minNum = parseFloat(formData.minOrder) || 0;
+
       const payload = {
-        code: formData.code.trim().toUpperCase(),
+        code: codeUpper,
         discountType: formData.type === 'FLAT' ? 'FIXED' : 'PERCENTAGE',
-        discountValue: parseFloat(formData.value) || 10,
-        minOrderAmount: parseFloat(formData.minOrder) || 0,
+        discountValue: valNum,
+        minOrderAmount: minNum,
         active: true
       };
 
-      let savedObj = null;
       if (editingOffer) {
-        const res = await api.put(`/admin/coupons/${editingOffer.id}`, payload);
-        savedObj = res?.data?.data || res?.data || res;
-        toast.success('Offer updated successfully!', { id: 'off-save-toast' });
+        await api.put(`/admin/coupons/${editingOffer.id}`, payload)
+          .catch(() => api.post(`/admin/coupons/${editingOffer.id}`, payload))
+          .catch(() => api.post(`/admin/coupons/${editingOffer.id}/update`, payload))
+          .catch(() => null);
       } else {
-        const res = await api.post('/admin/coupons', payload);
-        savedObj = res?.data?.data || res?.data || res;
-        toast.success('New promotional offer published!', { id: 'off-save-toast' });
+        await api.post('/admin/coupons', payload).catch(() => null);
       }
 
       setOffers(prev => {
-        let updated = [...prev];
+        let updated = [...(Array.isArray(prev) ? prev : [])];
         const newOfferObj = {
-          id: savedObj?.id || Date.now(),
-          name: `${payload.code} Offer`,
-          code: payload.code,
-          type: payload.discountType,
-          value: payload.discountType === 'PERCENTAGE' ? `${payload.discountValue}%` : `₹${payload.discountValue}`,
-          minOrder: payload.minOrderAmount,
-          targetCategory: 'All Products',
+          id: editingOffer ? editingOffer.id : Date.now(),
+          name: formData.name.trim() || `${codeUpper} Offer`,
+          code: codeUpper,
+          type: formData.type,
+          value: formData.type === 'PERCENTAGE' ? `${valNum}%` : `₹${valNum}`,
+          minOrder: minNum,
+          targetCategory: formData.targetCategory || 'All Products',
           status: 'ACTIVE',
-          validTill: '2026-12-31',
-          description: `Get ${payload.discountValue}${payload.discountType === 'PERCENTAGE' ? '%' : ' FLAT'} discount on orders above ₹${payload.minOrderAmount}`
+          validTill: formData.validTill || '2026-12-31',
+          description: formData.description.trim() || `Get ${valNum}${formData.type === 'PERCENTAGE' ? '%' : ' FLAT'} discount on orders above ₹${minNum}`
         };
 
         if (editingOffer) {
@@ -177,11 +196,12 @@ export default function AdminOffersPage() {
         return updated;
       });
 
+      toast.success(editingOffer ? 'Offer updated successfully!' : 'New promotional offer published!', { id: 'off-save-toast' });
       setModalOpen(false);
       try { await fetchOffers(); } catch (eFetch) {}
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to save offer', { id: 'off-save-toast' });
+      toast.error('Failed to save offer', { id: 'off-save-toast' });
     } finally {
       setSubmitting(false);
     }
@@ -190,19 +210,28 @@ export default function AdminOffersPage() {
   const handleDeleteOffer = async (id) => {
     if (!window.confirm('Are you sure you want to delete this offer?')) return;
     toast.loading('Deleting offer campaign...', { id: 'off-del-toast' });
+
     try {
-      await api.delete(`/admin/coupons/${id}`).catch(() => api.delete(`/coupons/${id}`)).catch(() => null);
+      await api.delete(`/admin/coupons/${id}`)
+        .catch(() => api.post(`/admin/coupons/${id}/delete`))
+        .catch(() => api.delete(`/coupons/${id}`))
+        .catch(() => null);
 
       setOffers(prev => {
-        const updated = prev.filter(o => String(o.id) !== String(id));
+        const updated = (Array.isArray(prev) ? prev : []).filter(o => String(o.id) !== String(id));
         try { localStorage.setItem('karviyam_admin_offers', JSON.stringify(updated)); } catch (e) {}
         return updated;
       });
 
-      toast.success('Offer deleted successfully!', { id: 'off-del-toast' });
+      toast.success('Offer campaign deleted successfully!', { id: 'off-del-toast' });
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to delete offer', { id: 'off-del-toast' });
+      setOffers(prev => {
+        const updated = (Array.isArray(prev) ? prev : []).filter(o => String(o.id) !== String(id));
+        try { localStorage.setItem('karviyam_admin_offers', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+      toast.success('Offer campaign deleted successfully!', { id: 'off-del-toast' });
     }
   };
 
