@@ -415,10 +415,10 @@ export default function ShopPage() {
 
       <div className="flex flex-col lg:flex-row gap-5 items-start">
         
-        {/* Desktop Sidebar Filters (Hidden on Mobile) */}
-        <div className="hidden lg:block w-64 xl:w-72 shrink-0 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs sticky top-28 self-start max-h-[calc(100vh-130px)] overflow-y-auto">
+        {/* Desktop Sidebar Filters (Fixed / Sticky while product grid scrolls) */}
+        <aside className="hidden lg:block w-64 xl:w-72 shrink-0 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs sticky top-24 self-start max-h-[calc(100vh-110px)] overflow-y-auto z-20">
           <FilterContent />
-        </div>
+        </aside>
 
         {/* Mobile Filter Drawer / Bottom Sheet */}
         {mobileFilterOpen && (
