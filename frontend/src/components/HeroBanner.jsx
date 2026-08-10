@@ -52,16 +52,48 @@ export default function HeroBanner() {
           id: b.id,
           title: b.title,
           subtitle: b.subtitle,
-          image: b.imagePath || b.image,
+          image: b.imagePath || b.imageUrl || b.image,
           cta: 'EXPLORE COLLECTION',
           link: b.link || '/shop'
         }));
         setBanners(formatted);
       } else {
+        const saved = localStorage.getItem('karviyam_admin_banners');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setBanners(parsed.map(b => ({
+              id: b.id,
+              title: b.title,
+              subtitle: b.subtitle,
+              image: b.imagePath || b.imageUrl || b.image,
+              cta: 'EXPLORE COLLECTION',
+              link: b.link || '/shop'
+            })));
+            return;
+          }
+        }
         setBanners(DEFAULT_BANNERS);
       }
     } catch (e) {
       console.error(e);
+      const saved = localStorage.getItem('karviyam_admin_banners');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setBanners(parsed.map(b => ({
+              id: b.id,
+              title: b.title,
+              subtitle: b.subtitle,
+              image: b.imagePath || b.imageUrl || b.image,
+              cta: 'EXPLORE COLLECTION',
+              link: b.link || '/shop'
+            })));
+            return;
+          }
+        } catch (errSaved) {}
+      }
       setBanners(DEFAULT_BANNERS);
     }
   };

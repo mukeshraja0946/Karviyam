@@ -39,11 +39,27 @@ export default function AdminBannersPage() {
         const apiData = res.data ? res.data : res;
         list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
       } catch (e1) {
-        const res = await api.get('/banners');
-        const apiData = res.data ? res.data : res;
-        list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+        try {
+          const res = await api.get('/banners');
+          const apiData = res.data ? res.data : res;
+          list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+        } catch (e2) {}
       }
-      setBanners(list);
+
+      if (list.length > 0) {
+        setBanners(list);
+        try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(list)); } catch (e) {}
+      } else {
+        try {
+          const saved = localStorage.getItem('karviyam_admin_banners');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setBanners(parsed);
+            }
+          }
+        } catch (eSaved) {}
+      }
     } catch (e) {
       console.error('[Fetch Banners Error]:', e);
       handleApiError(e, 'Could not load banners from server');
@@ -234,7 +250,30 @@ export default function AdminBannersPage() {
       if (apiData && apiData.success !== false) {
         toast.success(editingBanner ? 'Banner updated successfully!' : 'Banner created successfully!', { id: 'banner-toast' });
         
-        await fetchBanners();
+        const savedItem = apiData.data || apiData;
+
+        // 1. Immediately update local state & backup storage
+        setBanners(prev => {
+          let updated = [...prev];
+          const itemToInsert = (savedItem && (savedItem.id || savedItem.title))
+            ? savedItem
+            : { id: Date.now(), title: payload.title, subtitle: payload.subtitle, imageUrl: payload.imageUrl, imagePath: payload.imagePath, link: payload.link, status: payload.status, isActive: payload.isActive };
+
+          const idx = updated.findIndex(b => String(b.id) === String(itemToInsert.id));
+          if (idx >= 0) {
+            updated[idx] = { ...updated[idx], ...itemToInsert };
+          } else {
+            updated.unshift(itemToInsert);
+          }
+
+          try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(updated)); } catch (e) {}
+          return updated;
+        });
+
+        // 2. Refetch in background from MySQL database
+        try {
+          await fetchBanners();
+        } catch (eFetch) {}
 
         setModalOpen(false);
         setEditingBanner(null);
