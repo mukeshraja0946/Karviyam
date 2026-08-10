@@ -60,6 +60,7 @@ export default function ContactPage() {
       const msg = res?.message || 'Thank you! Your message has been sent to vanakkam@karviyam.com.';
       toast.success(msg, { id: 'contact-toast' });
       setFormData({ name: '', email: '', subject: '', message: '' });
+      window.dispatchEvent(new Event('karviyam_contact_updated'));
     } catch (err) {
       console.error(err);
       const errMsg = err.response?.data?.message || err.message || 'Failed to send message. Please try again later.';

@@ -47,6 +47,17 @@ export default function AdminHelpSupportPage() {
 
   useEffect(() => {
     fetchMessages();
+
+    const handleUpdate = () => {
+      fetchMessages();
+    };
+
+    window.addEventListener('karviyam_contact_updated', handleUpdate);
+    window.addEventListener('karviyam_data_mutated', handleUpdate);
+    return () => {
+      window.removeEventListener('karviyam_contact_updated', handleUpdate);
+      window.removeEventListener('karviyam_data_mutated', handleUpdate);
+    };
   }, []);
 
   const fetchMessages = async () => {
