@@ -541,7 +541,12 @@ export default function AdminSettingsPage() {
                   <input
                     type="checkbox"
                     checked={settings.codEnabled}
-                    onChange={(e) => setSettings({ ...settings, codEnabled: e.target.checked })}
+                    onChange={(e) => {
+                      const updated = { ...settings, codEnabled: e.target.checked };
+                      setSettings(updated);
+                      localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
+                      window.dispatchEvent(new Event('karviyam_settings_updated'));
+                    }}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#B71C1C]" />
@@ -557,7 +562,12 @@ export default function AdminSettingsPage() {
                   <input
                     type="checkbox"
                     checked={settings.onlinePaymentEnabled}
-                    onChange={(e) => setSettings({ ...settings, onlinePaymentEnabled: e.target.checked })}
+                    onChange={(e) => {
+                      const updated = { ...settings, onlinePaymentEnabled: e.target.checked };
+                      setSettings(updated);
+                      localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
+                      window.dispatchEvent(new Event('karviyam_settings_updated'));
+                    }}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#B71C1C]" />
@@ -571,8 +581,13 @@ export default function AdminSettingsPage() {
                     <input
                       type="checkbox"
                       checked={settings.razorpayEnabled}
-                      onChange={(e) => setSettings({ ...settings, razorpayEnabled: e.target.checked })}
-                      className="w-4 h-4 accent-[#B71C1C]"
+                      onChange={(e) => {
+                        const updated = { ...settings, razorpayEnabled: e.target.checked };
+                        setSettings(updated);
+                        localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
+                        window.dispatchEvent(new Event('karviyam_settings_updated'));
+                      }}
+                      className="w-4 h-4 accent-[#B71C1C] cursor-pointer"
                     />
                   </div>
                   <p className="text-[11px] text-slate-500">Supports GPay, PhonePe, Paytm & NetBanking</p>
@@ -584,8 +599,13 @@ export default function AdminSettingsPage() {
                     <input
                       type="checkbox"
                       checked={settings.stripeEnabled}
-                      onChange={(e) => setSettings({ ...settings, stripeEnabled: e.target.checked })}
-                      className="w-4 h-4 accent-[#B71C1C]"
+                      onChange={(e) => {
+                        const updated = { ...settings, stripeEnabled: e.target.checked };
+                        setSettings(updated);
+                        localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
+                        window.dispatchEvent(new Event('karviyam_settings_updated'));
+                      }}
+                      className="w-4 h-4 accent-[#B71C1C] cursor-pointer"
                     />
                   </div>
                   <p className="text-[11px] text-slate-500">Supports domestic & international credit cards</p>
@@ -596,8 +616,13 @@ export default function AdminSettingsPage() {
                 <label className="block font-bold text-slate-700 mb-1">Default Payment Method at Checkout</label>
                 <select
                   value={settings.defaultPaymentMethod}
-                  onChange={(e) => setSettings({ ...settings, defaultPaymentMethod: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl outline-none font-bold text-xs"
+                  onChange={(e) => {
+                    const updated = { ...settings, defaultPaymentMethod: e.target.value };
+                    setSettings(updated);
+                    localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
+                    window.dispatchEvent(new Event('karviyam_settings_updated'));
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl outline-none font-bold text-xs cursor-pointer"
                 >
                   <option value="COD">Cash on Delivery (COD)</option>
                   <option value="Razorpay">Razorpay (UPI, NetBanking)</option>
