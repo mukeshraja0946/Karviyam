@@ -140,8 +140,8 @@ export default function CheckoutPage() {
 
       const cod = checkBool(combined.codEnabled, true);
       const online = checkBool(combined.onlinePaymentEnabled, true);
-      const rzp = online && checkBool(combined.razorpayEnabled, false);
-      const stp = online && checkBool(combined.stripeEnabled, false);
+      const rzp = online && checkBool(combined.razorpayEnabled, true);
+      const stp = online && checkBool(combined.stripeEnabled, true);
       const def = combined.defaultPaymentMethod || (cod ? 'COD' : (rzp ? 'Razorpay' : (stp ? 'Stripe' : 'COD')));
 
       const settingsObj = {
