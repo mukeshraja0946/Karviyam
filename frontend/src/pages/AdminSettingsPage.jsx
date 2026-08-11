@@ -281,6 +281,13 @@ export default function AdminSettingsPage() {
       };
 
       await api.post('/settings', generalPayload);
+      await api.post('/settings/footer', {
+        footerAbout: settings.footerAbout,
+        address: settings.address,
+        supportPhone: settings.supportPhone,
+        supportEmail: settings.supportEmail,
+        logoUrl: settings.logoUrl || ''
+      }).catch(() => null);
       await api.post('/settings/payment', {
         codEnabled: settings.codEnabled,
         onlinePaymentEnabled: settings.onlinePaymentEnabled,

@@ -10,6 +10,14 @@ router.get('/maintenance-status', settingController.getSettings);
 router.post('/', optionalToken, requireAdmin, settingController.updateSettings);
 router.put('/', optionalToken, requireAdmin, settingController.updateSettings);
 
+// Footer settings
+router.get('/footer', settingController.getFooterSettings);
+router.get('/footer-settings', settingController.getFooterSettings);
+router.post('/footer', optionalToken, requireAdmin, settingController.updateFooterSettings);
+router.put('/footer', optionalToken, requireAdmin, settingController.updateFooterSettings);
+router.post('/footer-settings', optionalToken, requireAdmin, settingController.updateFooterSettings);
+router.put('/footer-settings', optionalToken, requireAdmin, settingController.updateFooterSettings);
+
 // Payment settings
 router.get('/payment', settingController.getPaymentSettings);
 router.post('/payment', optionalToken, requireAdmin, settingController.updatePaymentSettings);

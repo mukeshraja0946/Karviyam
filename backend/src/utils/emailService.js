@@ -126,3 +126,92 @@ exports.sendContactEmail = async ({ name, email, subject, message, source = 'Cus
     return false;
   }
 };
+
+exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMessage, originalMessage = '' }) => {
+  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+  const supportEmail = process.env.SUPPORT_EMAIL || 'vanakkam@karviyam.com';
+  const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+  console.log(`\n================ ADMIN REPLY EMAIL SEND ATTEMPT ================`);
+  console.log(`[From]: ${fromUser}`);
+  console.log(`[To]: ${toEmail}`);
+  console.log(`[Reply-To]: ${supportEmail}`);
+  console.log(`[Subject]: Re: ${subject}`);
+
+  try {
+    const transporter = createTransporter();
+    if (!transporter) {
+      console.error(`❌ [SMTP Error]: No valid transport configuration found.`);
+      return false;
+    }
+
+    const mailOptions = {
+      from: `"Karviyam Support" <${fromUser}>`,
+      to: toEmail,
+      replyTo: supportEmail,
+      subject: `Re: ${subject || 'Karviyam Support Request'}`,
+      text: `Hello ${customerName || 'Customer'},\n\n${replyMessage}\n\n----------------------------\nOriginal Message:\n${originalMessage}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px;">
+          <div style="background-color: #B71C1C; padding: 15px 20px; border-radius: 12px 12px 0 0; color: #ffffff;">
+            <h2 style="margin: 0; font-size: 18px;">Karviyam Customer Support</h2>
+          </div>
+          <div style="padding: 20px 10px;">
+            <p>Hello <strong>${customerName || 'Valued Customer'}</strong>,</p>
+            <div style="background-color: #f8fafc; padding: 15px; border-radius: 12px; border-left: 4px solid #B71C1C; font-size: 14px; line-height: 1.6; color: #1e293b; margin: 15px 0;">
+              ${String(replyMessage || '').replace(/\n/g, '<br/>')}
+            </div>
+            ${originalMessage ? `
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+              <p style="font-size: 12px; color: #64748b; font-weight: bold; margin-bottom: 6px;">Your Previous Message:</p>
+              <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; font-size: 12px; color: #475569; line-height: 1.5;">
+                ${String(originalMessage).replace(/\n/g, '<br/>')}
+              </div>
+            ` : ''}
+          </div>
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; font-size: 11px; color: #64748b; text-align: center;">
+            Sent by Karviyam Support Team | Reply to: <strong>${supportEmail}</strong>
+          </div>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ [SMTP Success] Admin reply sent to ${toEmail}! MessageId: ${info.messageId || 'OK'}`);
+    console.log(`================================================================\n`);
+    return true;
+  } catch (err) {
+    console.error(`❌ [SMTP Send Failure]: ${err.message}`);
+    console.log(`================================================================\n`);
+
+    try {
+      console.log(`[SMTP Fallback] Retrying reply via fallback server...`);
+      const fallbackTransporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.SMTP_USER || 'vanakkam@karviyam.com',
+          pass: process.env.SMTP_PASS || process.env.SMTP_PASSWORD || ''
+        },
+        tls: { rejectUnauthorized: false }
+      });
+      if (process.env.SMTP_PASS || process.env.SMTP_PASSWORD) {
+        await fallbackTransporter.sendMail({
+          from: `"Karviyam Support" <${fromUser}>`,
+          to: toEmail,
+          replyTo: supportEmail,
+          subject: `Re: ${subject || 'Karviyam Support Request'}`,
+          text: replyMessage
+        });
+        console.log(`✅ [SMTP Fallback Success] Delivered reply via fallback server!`);
+        return true;
+      }
+    } catch (fallbackErr) {
+      console.error(`❌ [SMTP Fallback Error]: ${fallbackErr.message}`);
+    }
+
+    return false;
+  }
+};
+

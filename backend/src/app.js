@@ -169,6 +169,8 @@ app.use('/api/notifications', notificationRoutes);
 
 app.use('/api/settings', settingRoutes);
 
+app.get('/api/footer-settings', settingController.getFooterSettings);
+
 app.use('/api/pincodes', pincodeRoutes);
 
 app.use('/api/admin/audit-logs', auditLogRoutes);

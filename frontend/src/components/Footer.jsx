@@ -36,33 +36,11 @@ export default function Footer() {
   }, []);
 
   const fetchPublicSettings = async () => {
-    // Read from localStorage first for instant UI response
-    const localLogo = localStorage.getItem('karviyam_logo');
-    if (localLogo) setCustomLogo(localLogo);
-
-    const localAbout = localStorage.getItem('karviyam_footer_about');
-    let localAddr = localStorage.getItem('karviyam_address');
-    if (localAddr === 'ABC00123') {
-      localAddr = 'Karviyam Tower, Park Avenue, Chennai, Tamil Nadu 600001';
-      localStorage.setItem('karviyam_address', localAddr);
-    }
-    const localPhone = localStorage.getItem('karviyam_support_phone');
-    const localEmail = localStorage.getItem('karviyam_support_email');
-
-    if (localAbout || localAddr || localPhone || localEmail) {
-      setFooterData(prev => ({
-        ...prev,
-        about: localAbout || prev.about,
-        address: localAddr || prev.address,
-        phone: localPhone || prev.phone,
-        email: localEmail || prev.email
-      }));
-    }
-
     try {
-      const res = await api.get('/settings');
+      const res = await api.get('/footer-settings').catch(() => api.get('/settings/footer')).catch(() => api.get('/settings'));
       const apiData = res.data ? res.data : res;
       const dataMap = apiData.data !== undefined ? apiData.data : apiData;
+
       if (dataMap && typeof dataMap === 'object') {
         const logo = dataMap.logoUrl || dataMap.logo;
         if (logo) {
@@ -70,13 +48,14 @@ export default function Footer() {
           localStorage.setItem('karviyam_logo', logo);
         }
 
-        const aboutText = dataMap.footerAbout || dataMap.about;
-        let addrText = dataMap.registeredAddress || dataMap.address;
+        const aboutText = dataMap.about || dataMap.footerAbout;
+        let addrText = dataMap.address || dataMap.registeredAddress;
         if (!addrText || addrText === 'ABC00123') {
           addrText = 'Karviyam Tower, Park Avenue, Chennai, Tamil Nadu 600001';
         }
-        const phoneText = dataMap.supportPhone || dataMap.phone;
-        const emailText = dataMap.supportEmail || dataMap.email;
+        const phoneText = dataMap.phone || dataMap.supportPhone;
+        const emailText = dataMap.email || dataMap.supportEmail;
+        const copyText = dataMap.copyright || dataMap.copyrightText;
 
         if (aboutText) localStorage.setItem('karviyam_footer_about', aboutText);
         if (addrText) localStorage.setItem('karviyam_address', addrText);
@@ -89,20 +68,21 @@ export default function Footer() {
           address: addrText || prev.address,
           phone: phoneText || prev.phone,
           email: emailText || prev.email,
-          b1Title: dataMap.badge1Title || prev.b1Title,
-          b1Sub: dataMap.badge1Sub || prev.b1Sub,
-          b2Title: dataMap.badge2Title || prev.b2Title,
-          b2Sub: dataMap.badge2Sub || prev.b2Sub,
-          b3Title: dataMap.badge3Title || prev.b3Title,
-          b3Sub: dataMap.badge3Sub || prev.b3Sub,
-          b4Title: dataMap.badge4Title || prev.b4Title,
-          b4Sub: dataMap.badge4Sub || prev.b4Sub,
-          b5Title: dataMap.badge5Title || prev.b5Title,
-          b5Sub: dataMap.badge5Sub || prev.b5Sub,
+          copyright: copyText || prev.copyright || '© 2026 Karviyam E-Commerce Platform. All Rights Reserved. Built for Enterprise Performance.',
+          b1Title: dataMap.b1Title || dataMap.badge1Title || prev.b1Title,
+          b1Sub: dataMap.b1Sub || dataMap.badge1Sub || prev.b1Sub,
+          b2Title: dataMap.b2Title || dataMap.badge2Title || prev.b2Title,
+          b2Sub: dataMap.b2Sub || dataMap.badge2Sub || prev.b2Sub,
+          b3Title: dataMap.b3Title || dataMap.badge3Title || prev.b3Title,
+          b3Sub: dataMap.b3Sub || dataMap.badge3Sub || prev.b3Sub,
+          b4Title: dataMap.b4Title || dataMap.badge4Title || prev.b4Title,
+          b4Sub: dataMap.b4Sub || dataMap.badge4Sub || prev.b4Sub,
+          b5Title: dataMap.b5Title || dataMap.badge5Title || prev.b5Title,
+          b5Sub: dataMap.b5Sub || dataMap.badge5Sub || prev.b5Sub,
         }));
       }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to load database footer settings:', e);
     }
   };
 

@@ -72,10 +72,14 @@ router.post('/pincodes/bulk-import', pincodeController.bulkImportPincodes);
 
 // Admin Help & Contact Messages
 router.get('/contact-messages', contactController.getContactMessages);
+router.get('/contact-messages/:id', contactController.getConversationById);
+router.post('/contact-messages/:id/reply', contactController.replyToConversation);
+router.put('/contact-messages/:id/reply', contactController.replyToConversation);
 router.put('/contact-messages/:id/status', contactController.updateMessageStatus);
 router.post('/contact-messages/:id/status', contactController.updateMessageStatus);
 router.delete('/contact-messages/:id', contactController.deleteMessage);
 router.post('/contact-messages/:id/delete', contactController.deleteMessage);
+
 router.post('/help', contactController.submitAdminHelp);
 router.get('/company-settings', settingController.getCompanySettings);
 router.post('/company-settings', settingController.updateCompanySettings);

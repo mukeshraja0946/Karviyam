@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   MessageSquare,
   Search,
@@ -15,19 +15,20 @@ import {
   X,
   HelpCircle,
   Filter,
-  FileText,
-  Plus
+  Plus,
+  CornerDownLeft,
+  ShieldAlert
 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import ExportDropdown from '../components/ExportDropdown';
 
 const CONTACT_EXPORT_HEADERS = [
-  { label: 'Customer Name', accessor: 'name' },
-  { label: 'Email Address', accessor: 'email' },
+  { label: 'Customer Name', accessor: (m) => m.name || m.customerName || 'Customer' },
+  { label: 'Email Address', accessor: (m) => m.email || m.customerEmail },
   { label: 'Subject', accessor: (m) => m.subject || 'N/A' },
-  { label: 'Message', accessor: 'message' },
-  { label: 'Status', accessor: (m) => m.status || (m.isRead ? 'read' : 'new') },
+  { label: 'Latest Message', accessor: 'message' },
+  { label: 'Status', accessor: (m) => String(m.status || 'NEW').toUpperCase() },
   { label: 'Date Received', accessor: (m) => m.createdAt ? new Date(m.createdAt).toLocaleString() : 'N/A' }
 ];
 
@@ -37,14 +38,18 @@ export default function AdminHelpSupportPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  // Modals state
+  // Active Thread Modal state
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [activeThread, setActiveThread] = useState(null);
+  const [loadingThread, setLoadingThread] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const threadEndRef = useRef(null);
+
+  // Send Admin Help modal
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendingHelp, setSendingHelp] = useState(false);
-  const [helpForm, setHelpForm] = useState({
-    subject: '',
-    message: ''
-  });
+  const [helpForm, setHelpForm] = useState({ subject: '', message: '' });
 
   useEffect(() => {
     fetchMessages();
@@ -61,6 +66,12 @@ export default function AdminHelpSupportPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (threadEndRef.current) {
+      threadEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [activeThread]);
+
   const fetchMessages = async () => {
     setLoading(true);
     try {
@@ -76,21 +87,122 @@ export default function AdminHelpSupportPage() {
     }
   };
 
-  const handleUpdateStatus = async (id, newStatus) => {
+  const handleOpenConversation = async (msg) => {
+    setSelectedMessage(msg);
+    setLoadingThread(true);
+    setReplyText('');
     try {
-      toast.loading(`Updating message status to ${newStatus}...`, { id: 'status-toast' });
-      await api.put(`/admin/contact-messages/${id}/status`, { status: newStatus })
-        .catch(() => api.post(`/admin/contact-messages/${id}/status`, { status: newStatus }));
+      const res = await api.get(`/admin/contact-messages/${msg.id}`).catch(() => api.get(`/contact/messages/${msg.id}`));
+      const threadData = res.data?.data || res.data || res;
+      setActiveThread(threadData);
+
+      // Update local state to IN REVIEW if status was NEW
+      const newStatus = (threadData.status || 'IN REVIEW').toUpperCase();
+      setMessages(prev =>
+        prev.map(m => m.id === msg.id ? { ...m, status: newStatus } : m)
+      );
+    } catch (e) {
+      console.error('Error fetching conversation thread:', e);
+      // Fallback: construct single message thread
+      setActiveThread({
+        id: msg.id,
+        customerName: msg.name,
+        customerEmail: msg.email,
+        subject: msg.subject,
+        status: (msg.status || 'NEW').toUpperCase(),
+        createdAt: msg.createdAt,
+        messages: [{
+          id: msg.id,
+          senderType: 'customer',
+          senderEmail: msg.email,
+          message: msg.message,
+          createdAt: msg.createdAt
+        }]
+      });
+    } finally {
+      setLoadingThread(false);
+    }
+  };
+
+  const handleSendReply = async (e) => {
+    e.preventDefault();
+    if (!replyText || !replyText.trim()) {
+      toast.error('Please enter a reply message before sending.');
+      return;
+    }
+
+    const msgId = selectedMessage?.id;
+    if (!msgId) return;
+
+    try {
+      setSendingReply(true);
+      toast.loading(`Sending reply email to ${selectedMessage.email}...`, { id: 'reply-toast' });
+
+      const res = await api.post(`/admin/contact-messages/${msgId}/reply`, { message: replyText.trim() })
+        .catch(() => api.post(`/contact/messages/${msgId}/reply`, { message: replyText.trim() }));
+
+      const resData = res.data?.data || res.data || {};
+      const updatedMessages = resData.messages || [];
+
+      toast.success(resData.emailSent ? `Reply sent successfully to ${selectedMessage.email}!` : 'Reply stored in database thread!', { id: 'reply-toast' });
+
+      if (updatedMessages.length > 0) {
+        setActiveThread(prev => ({
+          ...prev,
+          status: resData.status || 'IN REVIEW',
+          messages: updatedMessages
+        }));
+      } else {
+        // Append locally if backend returns basic object
+        const newMsgObj = {
+          id: Date.now(),
+          conversationId: msgId,
+          senderType: 'admin',
+          senderEmail: 'vanakkam@karviyam.com',
+          message: replyText.trim(),
+          createdAt: new Date().toISOString()
+        };
+        setActiveThread(prev => ({
+          ...prev,
+          status: 'IN REVIEW',
+          messages: [...(prev?.messages || []), newMsgObj]
+        }));
+      }
 
       setMessages(prev =>
-        prev.map(m => m.id === id ? { ...m, status: newStatus, isRead: newStatus === 'read' || newStatus === 'resolved' } : m)
+        prev.map(m => m.id === msgId ? { ...m, status: 'IN REVIEW', message: replyText.trim() } : m)
+      );
+
+      setReplyText('');
+    } catch (err) {
+      console.error(err);
+      const errMsg = err.response?.data?.message || err.message || 'Failed to send reply';
+      toast.error(`Error: ${errMsg}`, { id: 'reply-toast' });
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const handleUpdateStatus = async (id, newStatus) => {
+    try {
+      const cleanStatus = newStatus.toUpperCase();
+      toast.loading(`Updating status to ${cleanStatus}...`, { id: 'status-toast' });
+
+      await api.put(`/admin/contact-messages/${id}/status`, { status: cleanStatus })
+        .catch(() => api.post(`/admin/contact-messages/${id}/status`, { status: cleanStatus }));
+
+      setMessages(prev =>
+        prev.map(m => m.id === id ? { ...m, status: cleanStatus, isRead: cleanStatus === 'IN REVIEW' || cleanStatus === 'RESOLVED' } : m)
       );
 
       if (selectedMessage && selectedMessage.id === id) {
-        setSelectedMessage(prev => ({ ...prev, status: newStatus, isRead: newStatus === 'read' || newStatus === 'resolved' }));
+        setSelectedMessage(prev => ({ ...prev, status: cleanStatus }));
+      }
+      if (activeThread && activeThread.id === id) {
+        setActiveThread(prev => ({ ...prev, status: cleanStatus }));
       }
 
-      toast.success(`Message marked as ${newStatus}`, { id: 'status-toast' });
+      toast.success(`Conversation marked as ${cleanStatus}`, { id: 'status-toast' });
     } catch (e) {
       console.error(e);
       toast.error('Failed to update status', { id: 'status-toast' });
@@ -98,18 +210,19 @@ export default function AdminHelpSupportPage() {
   };
 
   const handleDeleteMessage = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this support message?')) return;
+    if (!window.confirm('Are you sure you want to delete this support conversation?')) return;
 
     try {
-      toast.loading('Deleting message...', { id: 'delete-toast' });
+      toast.loading('Deleting conversation...', { id: 'delete-toast' });
       await api.delete(`/admin/contact-messages/${id}`)
         .catch(() => api.post(`/admin/contact-messages/${id}/delete`));
 
       setMessages(prev => prev.filter(m => m.id !== id));
       if (selectedMessage && selectedMessage.id === id) {
         setSelectedMessage(null);
+        setActiveThread(null);
       }
-      toast.success('Message deleted successfully', { id: 'delete-toast' });
+      toast.success('Conversation deleted successfully', { id: 'delete-toast' });
     } catch (e) {
       console.error(e);
       toast.error('Failed to delete message', { id: 'delete-toast' });
@@ -143,33 +256,14 @@ export default function AdminHelpSupportPage() {
     }
   };
 
-  // Filter messages
-  const filteredMessages = messages.filter(m => {
-    const matchesSearch =
-      (m.name && m.name.toLowerCase().includes(search.toLowerCase())) ||
-      (m.email && m.email.toLowerCase().includes(search.toLowerCase())) ||
-      (m.subject && m.subject.toLowerCase().includes(search.toLowerCase())) ||
-      (m.message && m.message.toLowerCase().includes(search.toLowerCase()));
-
-    const statusVal = m.status || (m.isRead ? 'read' : 'new');
-    const matchesStatus = statusFilter === 'ALL' || statusVal.toLowerCase() === statusFilter.toLowerCase();
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const totalCount = messages.length;
-  const newCount = messages.filter(m => (m.status === 'new' || (!m.status && !m.isRead))).length;
-  const readCount = messages.filter(m => (m.status === 'read' || (!m.status && m.isRead))).length;
-  const resolvedCount = messages.filter(m => m.status === 'resolved').length;
-
   const handleCreateTestMessage = async () => {
     try {
       toast.loading('Creating test customer inquiry in MySQL...', { id: 'test-msg-toast' });
       await api.post('/contact', {
-        name: 'Test Customer',
-        email: 'test@karviyam.com',
-        subject: 'Support Email & Database Verification',
-        message: 'This is an automated test inquiry verifying MySQL storage and SMTP delivery to vanakkam@karviyam.com.'
+        name: 'Mukesh',
+        email: 'mukesh@gmail.com',
+        subject: 'Payment issue',
+        message: 'I need help with my payment.'
       });
       toast.success('Test message saved to MySQL! Updating table...', { id: 'test-msg-toast' });
       fetchMessages();
@@ -179,6 +273,30 @@ export default function AdminHelpSupportPage() {
       toast.error(`Error: ${errMsg}`, { id: 'test-msg-toast' });
     }
   };
+
+  // Filter messages
+  const filteredMessages = messages.filter(m => {
+    const name = m.name || m.customerName || '';
+    const email = m.email || m.customerEmail || '';
+    const subject = m.subject || '';
+    const msg = m.message || '';
+
+    const matchesSearch =
+      name.toLowerCase().includes(search.toLowerCase()) ||
+      email.toLowerCase().includes(search.toLowerCase()) ||
+      subject.toLowerCase().includes(search.toLowerCase()) ||
+      msg.toLowerCase().includes(search.toLowerCase());
+
+    const statusVal = String(m.status || (m.isRead ? 'IN REVIEW' : 'NEW')).toUpperCase();
+    const matchesStatus = statusFilter === 'ALL' || statusVal === statusFilter.toUpperCase();
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalCount = messages.length;
+  const newCount = messages.filter(m => String(m.status || 'NEW').toUpperCase() === 'NEW').length;
+  const inReviewCount = messages.filter(m => String(m.status || '').toUpperCase() === 'IN REVIEW' || String(m.status || '').toUpperCase() === 'READ').length;
+  const resolvedCount = messages.filter(m => String(m.status || '').toUpperCase() === 'RESOLVED').length;
 
   return (
     <div className="space-y-6">
@@ -195,8 +313,8 @@ export default function AdminHelpSupportPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={handleCreateTestMessage}
-            className="px-3 py-2 bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1.5"
-            title="Insert a test inquiry into MySQL to verify system"
+            className="px-3 py-2 bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+            title="Insert Mukesh test inquiry into MySQL"
           >
             <Plus className="w-3.5 h-3.5 text-[#B71C1C]" />
             <span>Test DB Entry</span>
@@ -204,7 +322,7 @@ export default function AdminHelpSupportPage() {
           <ExportDropdown data={filteredMessages} headers={CONTACT_EXPORT_HEADERS} filename="Karviyam_Customer_Messages" />
           <button
             onClick={() => setShowSendModal(true)}
-            className="px-4 py-2 bg-[#B71C1C] text-white text-xs font-bold rounded-lg shadow hover:bg-[#8E1414] transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-[#B71C1C] text-white text-xs font-bold rounded-lg shadow hover:bg-[#8E1414] transition-colors flex items-center gap-2 cursor-pointer"
           >
             <Send className="w-4 h-4" />
             <span>Send Support Email</span>
@@ -212,7 +330,7 @@ export default function AdminHelpSupportPage() {
           <button
             onClick={fetchMessages}
             disabled={loading}
-            className="p-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50"
+            className="p-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
             title="Refresh Messages"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -245,7 +363,7 @@ export default function AdminHelpSupportPage() {
         <div className="bg-white p-4 rounded-xl border border-amber-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">In Review</p>
-            <h3 className="text-2xl font-black text-amber-700 mt-1">{readCount}</h3>
+            <h3 className="text-2xl font-black text-amber-700 mt-1">{inReviewCount}</h3>
           </div>
           <div className="p-3 bg-amber-50 rounded-lg text-amber-600">
             <Clock className="w-5 h-5" />
@@ -285,9 +403,9 @@ export default function AdminHelpSupportPage() {
             className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#B71C1C]"
           >
             <option value="ALL">All Messages ({totalCount})</option>
-            <option value="new">New ({newCount})</option>
-            <option value="read">Read ({readCount})</option>
-            <option value="resolved">Resolved ({resolvedCount})</option>
+            <option value="NEW">New ({newCount})</option>
+            <option value="IN REVIEW">In Review ({inReviewCount})</option>
+            <option value="RESOLVED">Resolved ({resolvedCount})</option>
           </select>
         </div>
       </div>
@@ -320,29 +438,35 @@ export default function AdminHelpSupportPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredMessages.map((msg) => {
-                  const currentStatus = msg.status || (msg.isRead ? 'read' : 'new');
-                  const isNew = currentStatus === 'new';
-                  const isResolved = currentStatus === 'resolved';
+                  const name = msg.name || msg.customerName || 'Customer';
+                  const email = msg.email || msg.customerEmail || '';
+                  const statusVal = String(msg.status || (msg.isRead ? 'IN REVIEW' : 'NEW')).toUpperCase();
+                  const isNew = statusVal === 'NEW';
+                  const isResolved = statusVal === 'RESOLVED';
 
                   return (
-                    <tr key={msg.id} className={`hover:bg-slate-50/80 transition-colors ${isNew ? 'bg-rose-50/30 font-semibold' : ''}`}>
+                    <tr
+                      key={msg.id}
+                      onClick={() => handleOpenConversation(msg)}
+                      className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${isNew ? 'bg-rose-50/30 font-semibold' : ''}`}
+                    >
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs border border-slate-200">
-                            {msg.name ? msg.name.charAt(0).toUpperCase() : 'U'}
+                            {name ? name.charAt(0).toUpperCase() : 'U'}
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900">{msg.name || 'Anonymous Customer'}</div>
-                            <a href={`mailto:${msg.email}`} className="text-slate-500 text-[11px] hover:underline flex items-center gap-1">
+                            <div className="font-bold text-slate-900">{name}</div>
+                            <span className="text-slate-500 text-[11px] flex items-center gap-1">
                               <Mail className="w-3 h-3 text-slate-400" />
-                              <span>{msg.email}</span>
-                            </a>
+                              <span>{email}</span>
+                            </span>
                           </div>
                         </div>
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-800 line-clamp-1">{msg.subject || 'General Inquiry'}</div>
+                        <div className="font-bold text-slate-800 line-clamp-1">{msg.subject || 'General Support Inquiry'}</div>
                       </td>
 
                       <td className="py-3.5 px-4 max-w-xs">
@@ -353,17 +477,17 @@ export default function AdminHelpSupportPage() {
                         {isNew ? (
                           <span className="px-2.5 py-1 bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1 uppercase">
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
-                            New
+                            NEW
                           </span>
                         ) : isResolved ? (
                           <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1 uppercase">
                             <Check className="w-3 h-3" />
-                            Resolved
+                            RESOLVED
                           </span>
                         ) : (
                           <span className="px-2.5 py-1 bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1 uppercase">
                             <Clock className="w-3 h-3" />
-                            Read
+                            IN REVIEW
                           </span>
                         )}
                       </td>
@@ -372,29 +496,29 @@ export default function AdminHelpSupportPage() {
                         {msg.createdAt ? new Date(msg.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'}
                       </td>
 
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => setSelectedMessage(msg)}
+                            onClick={() => handleOpenConversation(msg)}
                             className="p-1.5 bg-slate-100 text-slate-700 hover:bg-[#B71C1C] hover:text-white rounded-md transition-colors"
-                            title="View Full Message"
+                            title="Open Conversation Thread & Reply"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
 
-                          {currentStatus !== 'read' && currentStatus !== 'resolved' && (
+                          {statusVal !== 'IN REVIEW' && statusVal !== 'RESOLVED' && (
                             <button
-                              onClick={() => handleUpdateStatus(msg.id, 'read')}
+                              onClick={() => handleUpdateStatus(msg.id, 'IN REVIEW')}
                               className="p-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-md transition-colors"
-                              title="Mark as Read"
+                              title="Mark as In Review"
                             >
                               <Clock className="w-3.5 h-3.5" />
                             </button>
                           )}
 
-                          {currentStatus !== 'resolved' && (
+                          {statusVal !== 'RESOLVED' && (
                             <button
-                              onClick={() => handleUpdateStatus(msg.id, 'resolved')}
+                              onClick={() => handleUpdateStatus(msg.id, 'RESOLVED')}
                               className="p-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-md transition-colors"
                               title="Mark as Resolved"
                             >
@@ -405,7 +529,7 @@ export default function AdminHelpSupportPage() {
                           <button
                             onClick={() => handleDeleteMessage(msg.id)}
                             className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-md transition-colors"
-                            title="Delete Message"
+                            title="Delete Conversation"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -420,88 +544,160 @@ export default function AdminHelpSupportPage() {
         )}
       </div>
 
-      {/* View Message Modal */}
+      {/* Complete Conversation Thread & Reply Modal */}
       {selectedMessage && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-[#B71C1C]" />
-                <h3 className="font-bold text-sm">Customer Message Details</h3>
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            
+            {/* Modal Header */}
+            <div className="bg-slate-900 text-white p-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[#B71C1C] text-white flex items-center justify-center font-bold text-xs">
+                  <MessageSquare className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm leading-none">Support Conversation #{selectedMessage.id}</h3>
+                  <p className="text-[11px] text-slate-400 mt-1">Customer: <strong className="text-white">{selectedMessage.name || selectedMessage.customerName}</strong> ({selectedMessage.email || selectedMessage.customerEmail})</p>
+                </div>
               </div>
-              <button onClick={() => setSelectedMessage(null)} className="text-slate-400 hover:text-white p-1">
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <span className={`px-2.5 py-1 text-[10px] font-extrabold rounded-full uppercase ${
+                  String(activeThread?.status || selectedMessage.status || 'NEW').toUpperCase() === 'RESOLVED'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : String(activeThread?.status || selectedMessage.status || 'NEW').toUpperCase() === 'IN REVIEW'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                }`}>
+                  {String(activeThread?.status || selectedMessage.status || 'NEW').toUpperCase()}
+                </span>
+                <button onClick={() => { setSelectedMessage(null); setActiveThread(null); }} className="text-slate-400 hover:text-white p-1 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            <div className="p-6 space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+            {/* Conversation Information Summary */}
+            <div className="bg-slate-50 border-b border-slate-200 p-4 shrink-0 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
-                  <span className="text-slate-400 uppercase font-bold text-[10px] block">Customer Name</span>
-                  <span className="font-bold text-slate-900 text-sm">{selectedMessage.name}</span>
+                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Customer Name</span>
+                  <span className="font-bold text-slate-900">{selectedMessage.name || selectedMessage.customerName}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 uppercase font-bold text-[10px] block">Email Address</span>
-                  <a href={`mailto:${selectedMessage.email}`} className="font-bold text-[#B71C1C] hover:underline text-sm">
-                    {selectedMessage.email}
-                  </a>
+                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Customer Email</span>
+                  <span className="font-bold text-[#B71C1C]">{selectedMessage.email || selectedMessage.customerEmail}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 uppercase font-bold text-[10px] block">Date Received</span>
-                  <span className="font-medium text-slate-700">
-                    {selectedMessage.createdAt ? new Date(selectedMessage.createdAt).toLocaleString() : 'N/A'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 uppercase font-bold text-[10px] block">Current Status</span>
-                  <span className="font-extrabold uppercase text-[#B71C1C]">
-                    {selectedMessage.status || (selectedMessage.isRead ? 'read' : 'new')}
-                  </span>
+                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Subject</span>
+                  <span className="font-bold text-slate-800 truncate block">{selectedMessage.subject || 'General Inquiry'}</span>
                 </div>
               </div>
+            </div>
 
-              <div>
-                <span className="text-slate-400 uppercase font-bold text-[10px] block mb-1">Subject</span>
-                <div className="p-3 bg-white border border-slate-200 rounded-lg font-bold text-slate-900">
-                  {selectedMessage.subject || 'General Inquiry'}
+            {/* Chronological Messages Body */}
+            <div className="p-4 space-y-4 text-xs overflow-y-auto flex-1 bg-slate-50/50">
+              {loadingThread ? (
+                <div className="py-12 text-center text-slate-400">
+                  <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#B71C1C]" />
+                  <p className="text-xs font-bold">Fetching complete conversation history...</p>
                 </div>
+              ) : (activeThread?.messages || []).length === 0 ? (
+                <div className="p-4 bg-white border border-slate-200 rounded-xl">
+                  <p className="font-bold text-slate-700 mb-1">Customer Message:</p>
+                  <p className="text-slate-600 whitespace-pre-wrap">{selectedMessage.message}</p>
+                </div>
+              ) : (
+                (activeThread?.messages || []).map((msgItem, idx) => {
+                  const isCustomer = msgItem.senderType === 'customer' || msgItem.sender_type === 'customer';
+                  return (
+                    <div
+                      key={msgItem.id || idx}
+                      className={`flex flex-col ${isCustomer ? 'items-start' : 'items-end'}`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1 px-1">
+                        <span className="text-[10px] font-bold uppercase text-slate-500">
+                          {isCustomer ? (selectedMessage.name || 'Customer') : 'Karviyam Admin (vanakkam@karviyam.com)'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {msgItem.createdAt ? new Date(msgItem.createdAt).toLocaleString('en-IN', { timeStyle: 'short', dateStyle: 'short' }) : ''}
+                        </span>
+                      </div>
+                      <div
+                        className={`p-3.5 rounded-2xl max-w-[85%] text-xs shadow-xs leading-relaxed whitespace-pre-wrap ${
+                          isCustomer
+                            ? 'bg-white text-slate-800 border border-slate-200 rounded-tl-xs'
+                            : 'bg-[#B71C1C] text-white rounded-tr-xs shadow-md'
+                        }`}
+                      >
+                        {msgItem.message}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={threadEndRef} />
+            </div>
+
+            {/* Admin Reply Box Form */}
+            <form onSubmit={handleSendReply} className="p-4 bg-white border-t border-slate-200 shrink-0 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <CornerDownLeft className="w-3.5 h-3.5 text-[#B71C1C]" />
+                  <span>Send Admin Reply to <span className="text-[#B71C1C] font-mono">{selectedMessage.email || selectedMessage.customerEmail}</span></span>
+                </label>
+                <span className="text-[10px] text-slate-400 font-medium">Email sent from: vanakkam@karviyam.com</span>
               </div>
 
-              <div>
-                <span className="text-slate-400 uppercase font-bold text-[10px] block mb-1">Full Message</span>
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 whitespace-pre-wrap leading-relaxed text-xs max-h-60 overflow-y-auto">
-                  {selectedMessage.message}
-                </div>
-              </div>
+              <textarea
+                rows="3"
+                placeholder="Type your reply to the customer here... (e.g. Hello Mukesh, we have verified your payment details...)"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-[#B71C1C] focus:bg-white transition-colors"
+                required
+              />
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleUpdateStatus(selectedMessage.id, 'read')}
-                    className="px-3 py-1.5 bg-amber-50 text-amber-700 font-bold rounded-lg border border-amber-200 hover:bg-amber-100 transition-colors flex items-center gap-1.5"
+                    type="button"
+                    onClick={() => handleUpdateStatus(selectedMessage.id, 'IN REVIEW')}
+                    className="px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg border border-amber-200 hover:bg-amber-100 transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <Clock className="w-3.5 h-3.5" />
-                    <span>Mark Read</span>
+                    <span>In Review</span>
                   </button>
+
                   <button
-                    onClick={() => handleUpdateStatus(selectedMessage.id, 'resolved')}
-                    className="px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors flex items-center gap-1.5"
+                    type="button"
+                    onClick={() => handleUpdateStatus(selectedMessage.id, 'RESOLVED')}
+                    className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <CheckCircle className="w-3.5 h-3.5" />
                     <span>Mark Resolved</span>
                   </button>
                 </div>
 
-                <a
-                  href={`mailto:${selectedMessage.email}?subject=Re: ${encodeURIComponent(selectedMessage.subject || 'Karviyam Support Response')}`}
-                  className="px-4 py-1.5 bg-[#B71C1C] text-white font-bold rounded-lg shadow hover:bg-[#8E1414] transition-colors flex items-center gap-1.5"
+                <button
+                  type="submit"
+                  disabled={sendingReply}
+                  className="px-5 py-2 bg-[#B71C1C] text-white font-bold text-xs rounded-xl shadow hover:bg-[#8E1414] transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>Reply Customer</span>
-                </a>
+                  {sendingReply ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sending Email...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>SEND REPLY</span>
+                    </>
+                  )}
+                </button>
               </div>
-            </div>
+            </form>
+
           </div>
         </div>
       )}

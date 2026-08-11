@@ -394,10 +394,38 @@ async function initDb() {
         phone VARCHAR(20),
         subject VARCHAR(255),
         message TEXT NOT NULL,
+        status VARCHAR(20) DEFAULT 'NEW',
         is_read BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // 18b. Support Conversations table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS support_conversations (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        customer_name VARCHAR(100) NOT NULL,
+        customer_email VARCHAR(150) NOT NULL,
+        subject VARCHAR(255) DEFAULT 'General Support Inquiry',
+        status VARCHAR(20) DEFAULT 'NEW',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 18c. Support Messages table (Chronological Thread Messages)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS support_messages (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        conversation_id BIGINT NOT NULL,
+        sender_type VARCHAR(20) NOT NULL,
+        sender_email VARCHAR(150) NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (conversation_id) REFERENCES support_conversations(id) ON DELETE CASCADE
+      );
+    `);
+
 
     // 19. General Settings table
     await pool.query(`

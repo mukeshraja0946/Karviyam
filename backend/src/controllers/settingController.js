@@ -222,3 +222,92 @@ exports.updateCompanySettings = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.getFooterSettings = async (req, res, next) => {
+  try {
+    await ensureSettingsTable();
+    const [rows] = await pool.query('SELECT setting_key, setting_value FROM settings');
+    const settingsObj = {};
+
+    rows.forEach(r => {
+      let val = r.setting_value;
+      if (val === 'true') val = true;
+      else if (val === 'false') val = false;
+      settingsObj[r.setting_key] = val;
+    });
+
+    try {
+      const [compRows] = await pool.query('SELECT * FROM company_settings LIMIT 1');
+      if (compRows.length > 0) {
+        const c = compRows[0];
+        if (c.registered_address) settingsObj.address = c.registered_address;
+        if (c.support_email) settingsObj.email = c.support_email;
+        if (c.support_phone) settingsObj.phone = c.support_phone;
+      }
+    } catch (e) {}
+
+    const footerConfig = {
+      about: settingsObj.footerAbout || settingsObj.about || 'Karviyam is a premium marketplace destination for high-street streetwear, 925 sterling silver jewellery, luxury kicks, and lifestyle products.',
+      address: settingsObj.registeredAddress || settingsObj.address || 'Karviyam Tower, Park Avenue, Chennai, Tamil Nadu 600001',
+      phone: settingsObj.supportPhone || settingsObj.phone || '+91 98765 43210',
+      email: settingsObj.supportEmail || settingsObj.email || 'vanakkam@karviyam.com',
+      logoUrl: settingsObj.logoUrl || settingsObj.logo || '',
+      copyright: settingsObj.copyrightText || '© 2026 Karviyam E-Commerce Platform. All Rights Reserved. Built for Enterprise Performance.',
+      b1Title: settingsObj.badge1Title || 'Free Delivery',
+      b1Sub: settingsObj.badge1Sub || 'On orders above ₹499',
+      b2Title: settingsObj.badge2Title || 'Easy Returns',
+      b2Sub: settingsObj.badge2Sub || '30 days return policy',
+      b3Title: settingsObj.badge3Title || 'Secure Payments',
+      b3Sub: settingsObj.badge3Sub || '100% secure checkout',
+      b4Title: settingsObj.badge4Title || 'Best Price Guarantee',
+      b4Sub: settingsObj.badge4Sub || 'Unmatched value',
+      b5Title: settingsObj.badge5Title || '24/7 Support',
+      b5Sub: settingsObj.badge5Sub || 'Dedicated assistance',
+    };
+
+    return res.status(200).json(ApiResponse.success(footerConfig, 'Footer settings retrieved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateFooterSettings = async (req, res, next) => {
+  try {
+    await ensureSettingsTable();
+    const data = req.body || {};
+
+    const updates = {};
+    if (data.about !== undefined) updates['footerAbout'] = String(data.about);
+    if (data.footerAbout !== undefined) updates['footerAbout'] = String(data.footerAbout);
+    if (data.address !== undefined) updates['address'] = String(data.address);
+    if (data.phone !== undefined) updates['supportPhone'] = String(data.phone);
+    if (data.supportPhone !== undefined) updates['supportPhone'] = String(data.supportPhone);
+    if (data.email !== undefined) updates['supportEmail'] = String(data.email);
+    if (data.supportEmail !== undefined) updates['supportEmail'] = String(data.supportEmail);
+    if (data.logoUrl !== undefined) updates['logoUrl'] = String(data.logoUrl);
+    if (data.copyright !== undefined) updates['copyrightText'] = String(data.copyright);
+    if (data.b1Title !== undefined) updates['badge1Title'] = String(data.b1Title);
+    if (data.b1Sub !== undefined) updates['badge1Sub'] = String(data.b1Sub);
+    if (data.b2Title !== undefined) updates['badge2Title'] = String(data.b2Title);
+    if (data.b2Sub !== undefined) updates['badge2Sub'] = String(data.b2Sub);
+    if (data.b3Title !== undefined) updates['badge3Title'] = String(data.b3Title);
+    if (data.b3Sub !== undefined) updates['badge3Sub'] = String(data.b3Sub);
+    if (data.b4Title !== undefined) updates['badge4Title'] = String(data.b4Title);
+    if (data.b4Sub !== undefined) updates['badge4Sub'] = String(data.b4Sub);
+    if (data.b5Title !== undefined) updates['badge5Title'] = String(data.b5Title);
+    if (data.b5Sub !== undefined) updates['badge5Sub'] = String(data.b5Sub);
+
+    for (const [key, value] of Object.entries(updates)) {
+      await pool.query(
+        `INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
+        [key, value]
+      );
+    }
+
+    return exports.getFooterSettings(req, res, next);
+  } catch (err) {
+    next(err);
+  }
+};
+
