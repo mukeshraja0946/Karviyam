@@ -210,7 +210,7 @@ exports.getContactMessages = async (req, res, next) => {
   try {
     await ensureSupportTables();
     let resultList = [];
-    const seenMap = new Map();
+    const convIdsSet = new Set();
 
     // 1. Query support_conversations table
     try {
@@ -226,7 +226,7 @@ exports.getContactMessages = async (req, res, next) => {
           COALESCE(
             (SELECT message FROM support_messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1),
             (SELECT message FROM contact_messages WHERE email = c.customer_email ORDER BY id DESC LIMIT 1),
-            ''
+            'No message content'
           ) AS latest_message,
           COALESCE(
             (SELECT COUNT(*) FROM support_messages WHERE conversation_id = c.id),
@@ -238,48 +238,44 @@ exports.getContactMessages = async (req, res, next) => {
 
       if (convRows && convRows.length > 0) {
         for (const c of convRows) {
-          const item = {
+          convIdsSet.add(c.id);
+          resultList.push({
             id: c.id,
-            name: c.name,
-            email: c.email,
+            name: c.name || 'Customer',
+            email: c.email || '',
             phone: '',
             subject: c.subject || 'General Support Inquiry',
-            message: c.latest_message || '',
+            message: c.latest_message || 'Support inquiry',
             status: (c.status || 'NEW').toUpperCase(),
             messageCount: c.message_count || 1,
             isRead: (c.status || '').toUpperCase() === 'IN REVIEW' || (c.status || '').toUpperCase() === 'RESOLVED',
             createdAt: c.createdAt
-          };
-          const key = `${c.email.toLowerCase()}_${(c.subject || '').toLowerCase()}`;
-          seenMap.set(key, item);
-          resultList.push(item);
+          });
         }
       }
     } catch (convErr) {
       console.warn('⚠️ support_conversations select warning:', convErr.message);
     }
 
-    // 2. Query contact_messages table to merge any un-mapped records
+    // 2. Query contact_messages table
     try {
       const [legacyRows] = await pool.query('SELECT * FROM contact_messages ORDER BY id DESC');
       if (legacyRows && legacyRows.length > 0) {
         for (const m of legacyRows) {
-          const key = `${m.email.toLowerCase()}_${(m.subject || '').toLowerCase()}`;
-          if (!seenMap.has(key)) {
-            const item = {
+          // Add row if not already in convIdsSet
+          if (!convIdsSet.has(m.id)) {
+            resultList.push({
               id: m.id + 1000000,
-              name: m.name,
-              email: m.email,
+              name: m.name || 'Customer',
+              email: m.email || '',
               phone: m.phone || '',
               subject: m.subject || 'General Inquiry',
-              message: m.message || '',
+              message: m.message || 'Support inquiry',
               status: (m.status || (m.is_read ? 'IN REVIEW' : 'NEW')).toUpperCase(),
               messageCount: 1,
               isRead: Boolean(m.is_read || m.status === 'read' || m.status === 'resolved'),
               createdAt: m.created_at
-            };
-            seenMap.set(key, item);
-            resultList.push(item);
+            });
           }
         }
       }
@@ -287,8 +283,10 @@ exports.getContactMessages = async (req, res, next) => {
       console.warn('⚠️ contact_messages select warning:', legErr.message);
     }
 
-    // Sort by createdAt descending
+    // Sort all inquiries by createdAt descending
     resultList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+    console.log(`✅ [Database Success] Retrieved ${resultList.length} total contact support messages from MySQL.`);
 
     return res.status(200).json({
       success: true,
@@ -324,7 +322,8 @@ exports.getConversationById = async (req, res, next) => {
       // Check legacy table contact_messages
       let legacy = null;
       try {
-        const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [id]);
+        const legacyId = Number(id) > 1000000 ? Number(id) - 1000000 : id;
+        const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [legacyId]);
         if (legacyRows.length > 0) {
           legacy = legacyRows[0];
         }
@@ -414,7 +413,8 @@ exports.replyToConversation = async (req, res, next) => {
 
     if (!conv) {
       try {
-        const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [id]);
+        const legacyId = Number(id) > 1000000 ? Number(id) - 1000000 : id;
+        const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [legacyId]);
         if (legacyRows.length > 0) {
           const leg = legacyRows[0];
           await pool.query(
@@ -543,17 +543,19 @@ exports.updateMessageStatus = async (req, res, next) => {
     }
 
     const cleanStatus = String(status).toUpperCase();
+    const targetId = Number(id) > 1000000 ? Number(id) - 1000000 : id;
+
     try {
       await pool.query(
         'UPDATE support_conversations SET status = ?, updated_at = NOW() WHERE id = ?',
-        [cleanStatus, id]
+        [cleanStatus, targetId]
       );
     } catch (e) {}
 
     try {
       await pool.query(
         'UPDATE contact_messages SET status = ?, is_read = ? WHERE id = ?',
-        [cleanStatus.toLowerCase(), cleanStatus === 'RESOLVED' || cleanStatus === 'IN REVIEW' ? 1 : 0, id]
+        [cleanStatus.toLowerCase(), cleanStatus === 'RESOLVED' || cleanStatus === 'IN REVIEW' ? 1 : 0, targetId]
       );
     } catch (e) {}
 
@@ -574,8 +576,9 @@ exports.deleteMessage = async (req, res, next) => {
   try {
     await ensureSupportTables();
     const { id } = req.params;
-    try { await pool.query('DELETE FROM support_conversations WHERE id = ?', [id]); } catch (e) {}
-    try { await pool.query('DELETE FROM contact_messages WHERE id = ?', [id]); } catch (e) {}
+    const targetId = Number(id) > 1000000 ? Number(id) - 1000000 : id;
+    try { await pool.query('DELETE FROM support_conversations WHERE id = ?', [targetId]); } catch (e) {}
+    try { await pool.query('DELETE FROM contact_messages WHERE id = ?', [targetId]); } catch (e) {}
     return res.status(200).json({
       success: true,
       message: 'Support conversation deleted successfully',
