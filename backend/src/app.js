@@ -30,6 +30,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const auditLogRoutes = require('./routes/auditLogRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const settingController = require('./controllers/settingController');
+const contactController = require('./controllers/contactController');
 
 // --------------------------------------------------
 // CREATE EXPRESS APP
@@ -176,6 +177,24 @@ app.use('/api/pincodes', pincodeRoutes);
 app.use('/api/admin/audit-logs', auditLogRoutes);
 
 app.use('/api/admin', adminRoutes);
+
+// Explicit Help & Support Alias Routes
+app.get('/api/admin/contact-messages', contactController.getContactMessages);
+app.get('/api/admin/help-support', contactController.getContactMessages);
+app.get('/api/admin/help_support', contactController.getContactMessages);
+app.get('/api/contact-messages', contactController.getContactMessages);
+
+app.get('/api/admin/contact-messages/:id', contactController.getConversationById);
+app.get('/api/admin/help-support/:id', contactController.getConversationById);
+
+app.post('/api/admin/contact-messages/:id/reply', contactController.replyToConversation);
+app.post('/api/admin/help-support/:id/reply', contactController.replyToConversation);
+
+app.put('/api/admin/contact-messages/:id/status', contactController.updateMessageStatus);
+app.put('/api/admin/help-support/:id/status', contactController.updateMessageStatus);
+
+app.delete('/api/admin/contact-messages/:id', contactController.deleteMessage);
+app.delete('/api/admin/help-support/:id', contactController.deleteMessage);
 
 app.use('/api/upload', uploadRoutes);
 
