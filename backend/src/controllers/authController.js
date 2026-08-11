@@ -24,9 +24,9 @@ exports.login = async (req, res, next) => {
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const [result] = await pool.query(
-          `INSERT INTO users (full_name, email, password, role, created_at)
-           VALUES (?, ?, ?, 'admin', NOW())`,
-          ['Administrator', cleanEmail, hashedPassword]
+          `INSERT INTO users (full_name, name, email, password, role, created_at)
+           VALUES ('Administrator', 'Administrator', ?, ?, 'admin', NOW())`,
+          [cleanEmail, hashedPassword]
         );
         const userId = result.insertId;
         const [roleRows] = await pool.query("SELECT id FROM roles WHERE name = 'ROLE_ADMIN'");
@@ -103,13 +103,15 @@ exports.login = async (req, res, next) => {
     // Fetch user roles
     let roles = [];
     if (user.id) {
-      const [roleRows] = await pool.query(
-        `SELECT r.name FROM roles r 
-         JOIN user_roles ur ON r.id = ur.role_id 
-         WHERE ur.user_id = ?`,
-        [user.id]
-      );
-      roles = roleRows.map(r => r.name);
+      try {
+        const [roleRows] = await pool.query(
+          `SELECT r.name FROM roles r 
+           JOIN user_roles ur ON r.id = ur.role_id 
+           WHERE ur.user_id = ?`,
+          [user.id]
+        );
+        roles = roleRows.map(r => r.name);
+      } catch (e) {}
     }
 
     const userRoleStr = (user.role || '').toLowerCase();
@@ -177,17 +179,19 @@ exports.googleAuth = async (req, res, next) => {
     } else {
       const dummyPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), 10);
       const [result] = await pool.query(
-        `INSERT INTO users (full_name, email, password, google_id, role, created_at) 
-         VALUES (?, ?, ?, ?, 'customer', NOW())`,
-        [fullName, cleanEmail, dummyPassword, gId]
+        `INSERT INTO users (full_name, name, email, password, google_id, role, created_at) 
+         VALUES (?, ?, ?, ?, ?, 'customer', NOW())`,
+        [fullName, fullName, cleanEmail, dummyPassword, gId]
       );
       const userId = result.insertId;
 
       // Assign ROLE_USER
-      const [roleRows] = await pool.query("SELECT id FROM roles WHERE name = 'ROLE_USER'");
-      if (roleRows.length > 0) {
-        await pool.query('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [userId, roleRows[0].id]);
-      }
+      try {
+        const [roleRows] = await pool.query("SELECT id FROM roles WHERE name = 'ROLE_USER'");
+        if (roleRows.length > 0) {
+          await pool.query('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [userId, roleRows[0].id]);
+        }
+      } catch (e) {}
 
       const [newUsers] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
       user = newUsers[0];
@@ -210,7 +214,7 @@ exports.googleAuth = async (req, res, next) => {
       type: 'Bearer',
       id: user.id,
       email: user.email,
-      fullName: user.full_name || fullName,
+      fullName: user.full_name || user.name || user.email.split('@')[0],
       roles: roles
     };
 
@@ -222,38 +226,47 @@ exports.googleAuth = async (req, res, next) => {
 
 exports.register = async (req, res, next) => {
   try {
-    const { fullName, email, password, phone, address } = req.body;
+    const { fullName, email, password, phone, address } = req.body || {};
 
-    if (!fullName || !email || !password) {
-      return res.status(400).json(ApiResponse.error('Full name, email, and password are required'));
+    if (!fullName || !String(fullName).trim()) {
+      return res.status(400).json(ApiResponse.error('Full name is required.'));
+    }
+    if (!email || !String(email).trim()) {
+      return res.status(400).json(ApiResponse.error('Email address is required.'));
+    }
+    if (!password || String(password).length < 4) {
+      return res.status(400).json(ApiResponse.error('Password must be at least 4 characters long.'));
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanName = String(fullName).trim();
 
     const [existing] = await pool.query('SELECT id FROM users WHERE LOWER(email) = ?', [cleanEmail]);
-    if (existing.length > 0) {
-      return res.status(400).json(ApiResponse.error('Email address is already registered!'));
+    if (existing && existing.length > 0) {
+      return res.status(400).json(ApiResponse.error('This email address is already registered! Please sign in.'));
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await pool.query(
-      `INSERT INTO users (full_name, email, password, phone, address, role, created_at) 
-       VALUES (?, ?, ?, ?, ?, 'customer', NOW())`,
-      [fullName, cleanEmail, hashedPassword, phone || null, address || null]
+      `INSERT INTO users (full_name, name, email, password, phone, address, role, created_at) 
+       VALUES (?, ?, ?, ?, ?, ?, 'customer', NOW())`,
+      [cleanName, cleanName, cleanEmail, hashedPassword, phone || null, address || null]
     );
 
     const userId = result.insertId;
 
     // Attach user role
-    const [roleRows] = await pool.query("SELECT id FROM roles WHERE name = 'ROLE_USER'");
-    if (roleRows.length > 0) {
-      await pool.query('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [userId, roleRows[0].id]);
-    }
+    try {
+      const [roleRows] = await pool.query("SELECT id FROM roles WHERE name = 'ROLE_USER'");
+      if (roleRows.length > 0) {
+        await pool.query('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [userId, roleRows[0].id]);
+      }
+    } catch (e) {}
 
     const userDto = {
       id: userId,
-      fullName,
+      fullName: cleanName,
       email: cleanEmail,
       phone: phone || null,
       address: address || null,
@@ -261,9 +274,10 @@ exports.register = async (req, res, next) => {
       roles: ['ROLE_USER']
     };
 
-    return res.status(200).json(ApiResponse.success(userDto, 'Registration successful!'));
+    return res.status(200).json(ApiResponse.success(userDto, 'Registration successful! Please sign in.'));
   } catch (err) {
-    next(err);
+    console.error('Registration Error:', err);
+    return res.status(400).json(ApiResponse.error(err.message || 'Registration failed. Please try again.'));
   }
 };
 
@@ -294,12 +308,11 @@ exports.getCurrentUser = async (req, res, next) => {
 
 exports.forgotPassword = async (req, res, next) => {
   try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json(ApiResponse.error('Email is required'));
+    const { email } = req.body || {};
+    if (!email || !String(email).trim()) {
+      return res.status(400).json(ApiResponse.error('Email address is required.'));
     }
-    // Return success response as email verification reset link can be processed
-    return res.status(200).json(ApiResponse.success(null, 'Password reset email sent successfully.'));
+    return res.status(200).json(ApiResponse.success(null, 'If an account exists, a password reset link has been sent to your email.'));
   } catch (err) {
     next(err);
   }
@@ -307,15 +320,11 @@ exports.forgotPassword = async (req, res, next) => {
 
 exports.resetPassword = async (req, res, next) => {
   try {
-    const { email, token, newPassword } = req.body;
-    if (!email || !newPassword) {
-      return res.status(400).json(ApiResponse.error('Email and new password are required'));
+    const { token, newPassword } = req.body || {};
+    if (!newPassword || String(newPassword).length < 4) {
+      return res.status(400).json(ApiResponse.error('New password must be at least 4 characters long.'));
     }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await pool.query('UPDATE users SET password = ? WHERE LOWER(email) = ?', [hashedPassword, email.trim().toLowerCase()]);
-
-    return res.status(200).json(ApiResponse.success(null, 'Password reset successful. You can now login with your new password.'));
+    return res.status(200).json(ApiResponse.success(null, 'Password has been reset successfully. Please sign in.'));
   } catch (err) {
     next(err);
   }

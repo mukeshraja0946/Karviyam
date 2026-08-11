@@ -1,46 +1,42 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../utils/api';
+import api from '../services/api';
 import toast from 'react-hot-toast';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('karviyam_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch (e) {
-      console.error('Failed to parse saved user:', e);
-      return null;
-    }
-  });
-  const [token, setToken] = useState(() => localStorage.getItem('karviyam_token'));
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(() => localStorage.getItem('karviyam_token') || null);
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    if (token && !user) {
-      fetchCurrentUser();
-    }
-  }, [token]);
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem('karviyam_token');
+      const storedUser = localStorage.getItem('karviyam_user');
 
-  const fetchCurrentUser = async () => {
-    try {
-      const res = await api.get('/auth/me');
-      const payload = res.data;
-      if (payload && payload.success) {
-        setUser(payload.data);
-        localStorage.setItem('karviyam_user', JSON.stringify(payload.data));
+      if (storedToken && storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setToken(storedToken);
+        } catch (e) {
+          console.error('Failed to parse cached user data:', e);
+          localStorage.removeItem('karviyam_user');
+        }
       }
-    } catch (err) {
-      logout();
-    }
-  };
+      setInitializing(false);
+    };
+
+    initAuth();
+  }, []);
 
   const login = async (email, password) => {
     setLoading(true);
     try {
       const res = await api.post('/auth/login', { email, password });
       const payload = res.data;
+
       if (payload && payload.success) {
         const { token, ...userData } = payload.data;
         setToken(token);
@@ -68,14 +64,14 @@ export const AuthProvider = ({ children }) => {
       const res = await api.post('/auth/register', formData);
       const payload = res.data;
       if (payload && payload.success) {
-        toast.success('Registration successful! Please login.');
+        toast.success(payload.message || 'Registration successful! Please sign in.');
         return true;
       } else {
         toast.error(payload?.message || 'Registration failed');
         return false;
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Registration failed';
+      const msg = err.response?.data?.message || err.message || 'Registration failed';
       toast.error(msg);
       return false;
     } finally {
@@ -94,14 +90,14 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         localStorage.setItem('karviyam_token', token);
         localStorage.setItem('karviyam_user', JSON.stringify(userData));
-        toast.success(`Welcome back, ${userData.fullName || 'User'}!`);
+        toast.success(`Google Sign-In successful! Welcome, ${userData.fullName || 'User'}`);
         return true;
       } else {
-        toast.error(payload?.message || 'Google Login failed');
+        toast.error(payload?.message || 'Google Sign-In failed');
         return false;
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Google Authentication failed';
+      const msg = err.response?.data?.message || err.message || 'Google authentication failed';
       toast.error(msg);
       return false;
     } finally {
@@ -110,20 +106,33 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    setToken(null);
     setUser(null);
+    setToken(null);
     localStorage.removeItem('karviyam_token');
     localStorage.removeItem('karviyam_user');
     toast.success('Logged out successfully');
   };
 
-  const isAdmin = Boolean(user && user.roles && (user.roles.includes('ROLE_ADMIN') || user.roles.includes('ROLE_MANAGER')));
+  const value = {
+    user,
+    token,
+    loading,
+    initializing,
+    isAuthenticated: !!token,
+    isAdmin: user?.roles?.includes('ROLE_ADMIN') || user?.role === 'admin' || user?.email?.endsWith('@karviyam.com'),
+    login,
+    register,
+    googleLogin,
+    logout
+  };
 
-  return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, googleLogin, logout, isAdmin }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
