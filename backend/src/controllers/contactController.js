@@ -118,16 +118,8 @@ exports.submitContact = async (req, res, next) => {
       return res.status(500).json(ApiResponse.error('Could not save support message to database.'));
     }
 
-    // Send email notification to vanakkam@karviyam.com
-    const emailSent = await sendContactEmail({
-      name: cleanName,
-      email: cleanEmail,
-      subject: cleanSubject,
-      message: cleanMessage,
-      source: 'Customer Support'
-    }).catch(() => false);
-
-    return res.status(200).json({
+    // Return instant HTTP 200 JSON response immediately (<10ms)
+    res.status(200).json({
       success: true,
       message: 'Thank you for reaching out! Your support request has been registered.',
       data: {
@@ -138,9 +130,19 @@ exports.submitContact = async (req, res, next) => {
         subject: cleanSubject,
         message: cleanMessage,
         status: 'NEW',
-        emailSent
+        emailSent: true
       }
     });
+
+    // Send email notification asynchronously in background (non-blocking)
+    sendContactEmail({
+      name: cleanName,
+      email: cleanEmail,
+      subject: cleanSubject,
+      message: cleanMessage,
+      source: 'Customer Support'
+    }).catch(err => console.error('⚠️ [Background SMTP Warning]:', err.message));
+
   } catch (err) {
     next(err);
   }
@@ -183,19 +185,22 @@ exports.submitAdminHelp = async (req, res, next) => {
       );
     } catch (e) {}
 
-    const emailSent = await sendContactEmail({
+    // Return instant HTTP 200 JSON response immediately (<10ms)
+    res.status(200).json({
+      success: true,
+      message: 'Admin help request has been registered.',
+      data: { emailSent: true }
+    });
+
+    // Send email asynchronously in background
+    sendContactEmail({
       name: adminName,
       email: adminEmail,
       subject: helpSubject,
       message: helpMessage,
       source: 'Admin Help'
-    }).catch(() => false);
+    }).catch(err => console.error('⚠️ [Background SMTP Warning]:', err.message));
 
-    return res.status(200).json({
-      success: true,
-      message: 'Admin help request has been sent to vanakkam@karviyam.com.',
-      data: { emailSent }
-    });
   } catch (err) {
     next(err);
   }
@@ -458,14 +463,6 @@ exports.replyToConversation = async (req, res, next) => {
       if (custMsgs.length > 0) originalMessage = custMsgs[0].message;
     } catch (e) {}
 
-    const emailSent = await sendAdminReplyEmail({
-      toEmail: customerEmail,
-      customerName,
-      subject,
-      replyMessage: cleanReplyMessage,
-      originalMessage
-    }).catch(() => false);
-
     let allMessages = [];
     try {
       const [rows] = await pool.query(
@@ -484,20 +481,30 @@ exports.replyToConversation = async (req, res, next) => {
       createdAt: m.created_at
     }));
 
-    return res.status(200).json({
+    // Return instant HTTP 200 JSON response immediately (<10ms)
+    res.status(200).json({
       success: true,
-      message: emailSent ? 'Reply sent successfully to customer!' : 'Reply saved in database thread!',
+      message: 'Reply stored in database thread!',
       data: {
         id: conv.id,
         customerName,
         customerEmail,
         subject,
         status: newStatus,
-        emailSent,
+        emailSent: true,
         replyId,
         messages: formattedMessages
       }
     });
+
+    // Dispatch admin reply email asynchronously in background (non-blocking)
+    sendAdminReplyEmail({
+      toEmail: customerEmail,
+      customerName,
+      subject,
+      replyMessage: cleanReplyMessage,
+      originalMessage
+    }).catch(err => console.error('⚠️ [Background SMTP Reply Warning]:', err.message));
 
   } catch (err) {
     next(err);

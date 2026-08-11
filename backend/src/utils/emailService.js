@@ -17,7 +17,10 @@ const createTransporter = () => {
       },
       tls: {
         rejectUnauthorized: false
-      }
+      },
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000
     });
   }
 
@@ -29,7 +32,10 @@ const createTransporter = () => {
       secure: false,
       tls: {
         rejectUnauthorized: false
-      }
+      },
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000
     });
   }
 
@@ -94,35 +100,6 @@ exports.sendContactEmail = async ({ name, email, subject, message, source = 'Cus
   } catch (err) {
     console.error(`❌ [SMTP Send Failure]: ${err.message}`);
     console.log(`====================================================\n`);
-
-    // Backup try: Google Workspace SMTP if hostinger fails
-    try {
-      console.log(`[SMTP Fallback] Retrying with Google Workspace / alternate port 587...`);
-      const fallbackTransporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.SMTP_USER || 'vanakkam@karviyam.com',
-          pass: process.env.SMTP_PASS || process.env.SMTP_PASSWORD || ''
-        },
-        tls: { rejectUnauthorized: false }
-      });
-      if (process.env.SMTP_PASS || process.env.SMTP_PASSWORD) {
-        await fallbackTransporter.sendMail({
-          from: `"Karviyam ${source}" <${fromUser}>`,
-          to: recipient,
-          replyTo: email,
-          subject: `[${source}] ${subject || 'Contact Request from ' + name}`,
-          text: message
-        });
-        console.log(`✅ [SMTP Fallback Success] Delivered via fallback server!`);
-        return true;
-      }
-    } catch (fallbackErr) {
-      console.error(`❌ [SMTP Fallback Error]: ${fallbackErr.message}`);
-    }
-
     return false;
   }
 };
@@ -183,35 +160,6 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
   } catch (err) {
     console.error(`❌ [SMTP Send Failure]: ${err.message}`);
     console.log(`================================================================\n`);
-
-    try {
-      console.log(`[SMTP Fallback] Retrying reply via fallback server...`);
-      const fallbackTransporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.SMTP_USER || 'vanakkam@karviyam.com',
-          pass: process.env.SMTP_PASS || process.env.SMTP_PASSWORD || ''
-        },
-        tls: { rejectUnauthorized: false }
-      });
-      if (process.env.SMTP_PASS || process.env.SMTP_PASSWORD) {
-        await fallbackTransporter.sendMail({
-          from: `"Karviyam Support" <${fromUser}>`,
-          to: toEmail,
-          replyTo: supportEmail,
-          subject: `Re: ${subject || 'Karviyam Support Request'}`,
-          text: replyMessage
-        });
-        console.log(`✅ [SMTP Fallback Success] Delivered reply via fallback server!`);
-        return true;
-      }
-    } catch (fallbackErr) {
-      console.error(`❌ [SMTP Fallback Error]: ${fallbackErr.message}`);
-    }
-
     return false;
   }
 };
-
