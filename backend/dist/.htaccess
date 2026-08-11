@@ -1,0 +1,26 @@
+DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. REDIRECT LEGACY MAINTENANCE.PHP URL TO REACT ROUTE /maintenance
+  RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
+  RewriteRule ^(.*)$ /maintenance [R=301,L]
+
+  # 2. ALLOW PHYSICAL FILES AND STATIC ASSET DIRECTORIES TO PASS THROUGH DIRECTLY
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
+  RewriteRule ^ - [L]
+
+  # 3. PRODUCTION SPA FALLBACK FOR REACT ROUTES (/maintenance, /shop, /product/*, /admin/*, /wishlist, /cart)
+  RewriteCond %{DOCUMENT_ROOT}/frontend/dist/index.html -f
+  RewriteRule ^ /frontend/dist/index.html [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/dist/index.html -f
+  RewriteRule ^ /dist/index.html [L]
+
+  RewriteRule ^ /index.html [L]
+</IfModule>
