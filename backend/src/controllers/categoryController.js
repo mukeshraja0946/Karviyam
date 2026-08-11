@@ -240,13 +240,6 @@ exports.updateCategory = async (req, res, next) => {
   }
 };
 
-const ensureCategoryTableExists = async () => {
-  try {
-    await pool.query("ALTER TABLE categories MODIFY COLUMN image_url LONGTEXT");
-    await pool.query("ALTER TABLE categories MODIFY COLUMN icon_url LONGTEXT");
-    await pool.query("ALTER TABLE categories MODIFY COLUMN banner_url LONGTEXT");
-  } catch (e) {}
-};
 
 exports.deleteCategory = async (req, res, next) => {
   try {

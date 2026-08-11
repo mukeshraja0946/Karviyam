@@ -6,6 +6,7 @@ const categoryController = require('../controllers/categoryController');
 const pincodeController = require('../controllers/pincodeController');
 const settingController = require('../controllers/settingController');
 const contactController = require('../controllers/contactController');
+const orderController = require('../controllers/orderController');
 const { optionalToken } = require('../middleware/authMiddleware');
 const { requireAdmin } = require('../middleware/adminMiddleware');
 
