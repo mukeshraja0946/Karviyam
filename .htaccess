@@ -8,19 +8,19 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 2. DO NOT REWRITE API ENDPOINTS, UPLOADS, ASSETS OR PHYSICAL FILES TO INDEX.HTML
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
-
-  RewriteCond %{REQUEST_URI} ^/(api|uploads|assets)/ [NC]
-  RewriteRule ^ - [L]
-
-  # 3. PROXY /api/ REQUESTS TO LOCAL NODE.JS PROCESS IF MOD_PROXY IS ACTIVE
+  # 2. PROXY ALL /api/ REQUESTS TO LOCAL NODE.JS PROCESS IF MOD_PROXY IS ACTIVE
   <IfModule mod_proxy.c>
     RewriteCond %{REQUEST_URI} ^/api/(.*)$ [NC]
     RewriteRule ^api/(.*)$ http://127.0.0.1:3000/api/$1 [P,L]
   </IfModule>
+
+  # 3. ALLOW PHYSICAL FILES AND STATIC ASSET DIRECTORIES
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
+  RewriteRule ^ - [L]
 
   # 4. PRODUCTION SPA FALLBACK FOR FRONTEND REACT ROUTES ONLY (EXCLUDING /api/)
   RewriteCond %{REQUEST_URI} !^/api/ [NC]

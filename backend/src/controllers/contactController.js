@@ -127,8 +127,10 @@ exports.submitContact = async (req, res, next) => {
       source: 'Customer Support'
     }).catch(() => false);
 
-    return res.status(200).json(ApiResponse.success(
-      {
+    return res.status(200).json({
+      success: true,
+      message: 'Thank you for reaching out! Your support request has been registered.',
+      data: {
         conversationId,
         messageId,
         customerName: cleanName,
@@ -137,9 +139,8 @@ exports.submitContact = async (req, res, next) => {
         message: cleanMessage,
         status: 'NEW',
         emailSent
-      },
-      'Thank you for reaching out! Your support request has been registered.'
-    ));
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -190,10 +191,11 @@ exports.submitAdminHelp = async (req, res, next) => {
       source: 'Admin Help'
     }).catch(() => false);
 
-    return res.status(200).json(ApiResponse.success(
-      { emailSent },
-      'Admin help request has been sent to vanakkam@karviyam.com.'
-    ));
+    return res.status(200).json({
+      success: true,
+      message: 'Admin help request has been sent to vanakkam@karviyam.com.',
+      data: { emailSent }
+    });
   } catch (err) {
     next(err);
   }
@@ -262,10 +264,20 @@ exports.getContactMessages = async (req, res, next) => {
       }
     }
 
-    return res.status(200).json(ApiResponse.success(resultList, 'Contact support conversations retrieved successfully'));
+    return res.status(200).json({
+      success: true,
+      message: 'Contact support conversations retrieved successfully',
+      data: resultList,
+      messages: resultList
+    });
   } catch (err) {
     console.error('getContactMessages error fallback:', err);
-    return res.status(200).json(ApiResponse.success([], 'Contact support conversations fallback'));
+    return res.status(200).json({
+      success: true,
+      message: 'Contact support conversations fallback',
+      data: [],
+      messages: []
+    });
   }
 };
 
@@ -296,22 +308,26 @@ exports.getConversationById = async (req, res, next) => {
         return res.status(404).json(ApiResponse.error('Support conversation not found'));
       }
 
-      return res.status(200).json(ApiResponse.success({
-        id: legacy.id,
-        customerName: legacy.name,
-        customerEmail: legacy.email,
-        subject: legacy.subject || 'General Inquiry',
-        status: (legacy.status || 'NEW').toUpperCase(),
-        createdAt: legacy.created_at,
-        messages: [{
+      return res.status(200).json({
+        success: true,
+        message: 'Conversation retrieved',
+        data: {
           id: legacy.id,
-          conversationId: legacy.id,
-          senderType: 'customer',
-          senderEmail: legacy.email,
-          message: legacy.message,
-          createdAt: legacy.created_at
-        }]
-      }, 'Conversation retrieved'));
+          customerName: legacy.name,
+          customerEmail: legacy.email,
+          subject: legacy.subject || 'General Inquiry',
+          status: (legacy.status || 'NEW').toUpperCase(),
+          createdAt: legacy.created_at,
+          messages: [{
+            id: legacy.id,
+            conversationId: legacy.id,
+            senderType: 'customer',
+            senderEmail: legacy.email,
+            message: legacy.message,
+            createdAt: legacy.created_at
+          }]
+        }
+      });
     }
 
     if (conv.status === 'NEW') {
@@ -334,16 +350,20 @@ exports.getConversationById = async (req, res, next) => {
       createdAt: m.created_at
     }));
 
-    return res.status(200).json(ApiResponse.success({
-      id: conv.id,
-      customerName: conv.customer_name,
-      customerEmail: conv.customer_email,
-      subject: conv.subject,
-      status: (conv.status || 'NEW').toUpperCase(),
-      createdAt: conv.created_at,
-      updatedAt: conv.updated_at,
-      messages: formattedMessages
-    }, 'Conversation thread retrieved successfully'));
+    return res.status(200).json({
+      success: true,
+      message: 'Conversation thread retrieved successfully',
+      data: {
+        id: conv.id,
+        customerName: conv.customer_name,
+        customerEmail: conv.customer_email,
+        subject: conv.subject,
+        status: (conv.status || 'NEW').toUpperCase(),
+        createdAt: conv.created_at,
+        updatedAt: conv.updated_at,
+        messages: formattedMessages
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -464,16 +484,20 @@ exports.replyToConversation = async (req, res, next) => {
       createdAt: m.created_at
     }));
 
-    return res.status(200).json(ApiResponse.success({
-      id: conv.id,
-      customerName,
-      customerEmail,
-      subject,
-      status: newStatus,
-      emailSent,
-      replyId,
-      messages: formattedMessages
-    }, emailSent ? 'Reply sent successfully to customer!' : 'Reply saved in database. (Note: Email dispatch issue logged)'));
+    return res.status(200).json({
+      success: true,
+      message: emailSent ? 'Reply sent successfully to customer!' : 'Reply saved in database thread!',
+      data: {
+        id: conv.id,
+        customerName,
+        customerEmail,
+        subject,
+        status: newStatus,
+        emailSent,
+        replyId,
+        messages: formattedMessages
+      }
+    });
 
   } catch (err) {
     next(err);
@@ -505,10 +529,14 @@ exports.updateMessageStatus = async (req, res, next) => {
       );
     } catch (e) {}
 
-    return res.status(200).json(ApiResponse.success({
-      id: Number(id),
-      status: cleanStatus
-    }, 'Status updated successfully'));
+    return res.status(200).json({
+      success: true,
+      message: 'Status updated successfully',
+      data: {
+        id: Number(id),
+        status: cleanStatus
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -520,7 +548,11 @@ exports.deleteMessage = async (req, res, next) => {
     const { id } = req.params;
     try { await pool.query('DELETE FROM support_conversations WHERE id = ?', [id]); } catch (e) {}
     try { await pool.query('DELETE FROM contact_messages WHERE id = ?', [id]); } catch (e) {}
-    return res.status(200).json(ApiResponse.success(null, 'Support conversation deleted successfully'));
+    return res.status(200).json({
+      success: true,
+      message: 'Support conversation deleted successfully',
+      data: null
+    });
   } catch (err) {
     next(err);
   }
