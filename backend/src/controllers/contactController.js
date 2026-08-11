@@ -78,40 +78,39 @@ exports.submitContact = async (req, res, next) => {
     let conversationId = null;
     let messageId = null;
 
-    // Primary: insert into support_conversations and support_messages
-    try {
-      const [convRes] = await pool.query(
-        `INSERT INTO support_conversations (customer_name, customer_email, subject, status, created_at, updated_at)
-         VALUES (?, ?, ?, 'NEW', NOW(), NOW())`,
-        [cleanName, cleanEmail, cleanSubject]
-      );
-      conversationId = convRes.insertId;
-
-      const [msgRes] = await pool.query(
-        `INSERT INTO support_messages (conversation_id, sender_type, sender_email, message, created_at)
-         VALUES (?, 'customer', ?, ?, NOW())`,
-        [conversationId, cleanEmail, cleanMessage]
-      );
-      messageId = msgRes.insertId;
-      console.log(`✅ [Database Success] Conversation #${conversationId} created! Email: ${cleanEmail}`);
-    } catch (convErr) {
-      console.warn('⚠️ support_conversations insert warning:', convErr.message);
-    }
-
-    // Secondary/Backup: insert into contact_messages
+    // Primary: insert into contact_messages table
     try {
       const [legRes] = await pool.query(
         `INSERT INTO contact_messages (name, email, subject, message, status, is_read, created_at)
          VALUES (?, ?, ?, ?, 'NEW', 0, NOW())`,
         [cleanName, cleanEmail, cleanSubject, cleanMessage]
       );
-      if (!conversationId) {
-        conversationId = legRes.insertId;
-        messageId = legRes.insertId;
-      }
+      conversationId = legRes.insertId;
+      messageId = legRes.insertId;
       console.log(`✅ [Database Success] Contact message #${legRes.insertId} saved to contact_messages table.`);
     } catch (legErr) {
       console.warn('⚠️ contact_messages insert warning:', legErr.message);
+    }
+
+    // Secondary: insert into support_conversations and support_messages
+    try {
+      const [convRes] = await pool.query(
+        `INSERT INTO support_conversations (customer_name, customer_email, subject, status, created_at, updated_at)
+         VALUES (?, ?, ?, 'NEW', NOW(), NOW())`,
+        [cleanName, cleanEmail, cleanSubject]
+      );
+      const convId = convRes.insertId;
+      if (!conversationId) conversationId = convId;
+
+      const [msgRes] = await pool.query(
+        `INSERT INTO support_messages (conversation_id, sender_type, sender_email, message, created_at)
+         VALUES (?, 'customer', ?, ?, NOW())`,
+        [convId, cleanEmail, cleanMessage]
+      );
+      if (!messageId) messageId = msgRes.insertId;
+      console.log(`✅ [Database Success] Conversation #${convId} created in support_conversations! Email: ${cleanEmail}`);
+    } catch (convErr) {
+      console.warn('⚠️ support_conversations insert warning:', convErr.message);
     }
 
     if (!conversationId) {
@@ -163,6 +162,14 @@ exports.submitAdminHelp = async (req, res, next) => {
     }
 
     try {
+      await pool.query(
+        `INSERT INTO contact_messages (name, email, subject, message, status, is_read, created_at)
+         VALUES (?, ?, ?, ?, 'NEW', 0, NOW())`,
+        [adminName, adminEmail, helpSubject, helpMessage]
+      );
+    } catch (e) {}
+
+    try {
       const [convRes] = await pool.query(
         `INSERT INTO support_conversations (customer_name, customer_email, subject, status, created_at, updated_at)
          VALUES (?, ?, ?, 'NEW', NOW(), NOW())`,
@@ -174,14 +181,6 @@ exports.submitAdminHelp = async (req, res, next) => {
         `INSERT INTO support_messages (conversation_id, sender_type, sender_email, message, created_at)
          VALUES (?, 'admin', ?, ?, NOW())`,
         [convId, adminEmail, helpMessage]
-      );
-    } catch (e) {}
-
-    try {
-      await pool.query(
-        `INSERT INTO contact_messages (name, email, subject, message, status, is_read, created_at)
-         VALUES (?, ?, ?, ?, 'NEW', 0, NOW())`,
-        [adminName, adminEmail, helpSubject, helpMessage]
       );
     } catch (e) {}
 
@@ -209,10 +208,36 @@ exports.submitAdminHelp = async (req, res, next) => {
 exports.getContactMessages = async (req, res, next) => {
   try {
     await ensureSupportTables();
-    let resultList = [];
-    const convIdsSet = new Set();
+    const resultList = [];
+    const seenMessages = new Set();
 
-    // 1. Query support_conversations table
+    // 1. Fetch all rows from contact_messages (primary contact table)
+    try {
+      const [legacyRows] = await pool.query('SELECT * FROM contact_messages ORDER BY id DESC');
+      if (legacyRows && legacyRows.length > 0) {
+        for (const m of legacyRows) {
+          const item = {
+            id: Number(m.id),
+            name: m.name || 'Customer',
+            email: m.email || '',
+            phone: m.phone || '',
+            subject: m.subject || 'General Support Inquiry',
+            message: m.message || 'Support inquiry',
+            status: (m.status || (m.is_read ? 'IN REVIEW' : 'NEW')).toUpperCase(),
+            messageCount: 1,
+            isRead: Boolean(m.is_read || m.status === 'read' || m.status === 'resolved'),
+            createdAt: m.created_at
+          };
+          const msgBody = String(m.message || '').slice(0, 30);
+          seenMessages.add(`${(m.email || '').toLowerCase()}_${msgBody}`);
+          resultList.push(item);
+        }
+      }
+    } catch (legErr) {
+      console.warn('⚠️ contact_messages select warning:', legErr.message);
+    }
+
+    // 2. Fetch rows from support_conversations
     try {
       const [convRows] = await pool.query(`
         SELECT 
@@ -223,64 +248,34 @@ exports.getContactMessages = async (req, res, next) => {
           c.status,
           c.created_at AS createdAt,
           c.updated_at AS updatedAt,
-          COALESCE(
-            (SELECT message FROM support_messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1),
-            (SELECT message FROM contact_messages WHERE email = c.customer_email ORDER BY id DESC LIMIT 1),
-            'No message content'
-          ) AS latest_message,
-          COALESCE(
-            (SELECT COUNT(*) FROM support_messages WHERE conversation_id = c.id),
-            1
-          ) AS message_count
+          (SELECT message FROM support_messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) AS latest_message,
+          (SELECT COUNT(*) FROM support_messages WHERE conversation_id = c.id) AS message_count
         FROM support_conversations c
         ORDER BY c.id DESC
       `);
 
       if (convRows && convRows.length > 0) {
         for (const c of convRows) {
-          convIdsSet.add(c.id);
-          resultList.push({
-            id: c.id,
-            name: c.name || 'Customer',
-            email: c.email || '',
-            phone: '',
-            subject: c.subject || 'General Support Inquiry',
-            message: c.latest_message || 'Support inquiry',
-            status: (c.status || 'NEW').toUpperCase(),
-            messageCount: c.message_count || 1,
-            isRead: (c.status || '').toUpperCase() === 'IN REVIEW' || (c.status || '').toUpperCase() === 'RESOLVED',
-            createdAt: c.createdAt
-          });
-        }
-      }
-    } catch (convErr) {
-      console.warn('⚠️ support_conversations select warning:', convErr.message);
-    }
-
-    // 2. Query contact_messages table
-    try {
-      const [legacyRows] = await pool.query('SELECT * FROM contact_messages ORDER BY id DESC');
-      if (legacyRows && legacyRows.length > 0) {
-        for (const m of legacyRows) {
-          // Add row if not already in convIdsSet
-          if (!convIdsSet.has(m.id)) {
+          const msgBody = String(c.latest_message || '').slice(0, 30);
+          const dedupKey = `${(c.email || '').toLowerCase()}_${msgBody}`;
+          if (!seenMessages.has(dedupKey)) {
             resultList.push({
-              id: m.id + 1000000,
-              name: m.name || 'Customer',
-              email: m.email || '',
-              phone: m.phone || '',
-              subject: m.subject || 'General Inquiry',
-              message: m.message || 'Support inquiry',
-              status: (m.status || (m.is_read ? 'IN REVIEW' : 'NEW')).toUpperCase(),
-              messageCount: 1,
-              isRead: Boolean(m.is_read || m.status === 'read' || m.status === 'resolved'),
-              createdAt: m.created_at
+              id: Number(c.id) + 5000000,
+              name: c.name || 'Customer',
+              email: c.email || '',
+              phone: '',
+              subject: c.subject || 'General Support Inquiry',
+              message: c.latest_message || 'Support inquiry',
+              status: (c.status || 'NEW').toUpperCase(),
+              messageCount: c.message_count || 1,
+              isRead: (c.status || '').toUpperCase() === 'IN REVIEW' || (c.status || '').toUpperCase() === 'RESOLVED',
+              createdAt: c.createdAt
             });
           }
         }
       }
-    } catch (legErr) {
-      console.warn('⚠️ contact_messages select warning:', legErr.message);
+    } catch (convErr) {
+      console.warn('⚠️ support_conversations select warning:', convErr.message);
     }
 
     // Sort all inquiries by createdAt descending
@@ -310,29 +305,16 @@ exports.getConversationById = async (req, res, next) => {
     await ensureSupportTables();
     const { id } = req.params;
 
-    let conv = null;
+    let legacy = null;
     try {
-      const [convRows] = await pool.query('SELECT * FROM support_conversations WHERE id = ?', [id]);
-      if (convRows.length > 0) {
-        conv = convRows[0];
+      const targetId = Number(id) > 5000000 ? Number(id) - 5000000 : id;
+      const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [targetId]);
+      if (legacyRows.length > 0) {
+        legacy = legacyRows[0];
       }
     } catch (e) {}
 
-    if (!conv) {
-      // Check legacy table contact_messages
-      let legacy = null;
-      try {
-        const legacyId = Number(id) > 1000000 ? Number(id) - 1000000 : id;
-        const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [legacyId]);
-        if (legacyRows.length > 0) {
-          legacy = legacyRows[0];
-        }
-      } catch (e) {}
-
-      if (!legacy) {
-        return res.status(404).json(ApiResponse.error('Support conversation not found'));
-      }
-
+    if (legacy) {
       return res.status(200).json({
         success: true,
         message: 'Conversation retrieved',
@@ -355,14 +337,27 @@ exports.getConversationById = async (req, res, next) => {
       });
     }
 
+    let conv = null;
+    try {
+      const targetId = Number(id) > 5000000 ? Number(id) - 5000000 : id;
+      const [convRows] = await pool.query('SELECT * FROM support_conversations WHERE id = ?', [targetId]);
+      if (convRows.length > 0) {
+        conv = convRows[0];
+      }
+    } catch (e) {}
+
+    if (!conv) {
+      return res.status(404).json(ApiResponse.error('Support conversation not found'));
+    }
+
     if (conv.status === 'NEW') {
-      await pool.query('UPDATE support_conversations SET status = "IN REVIEW" WHERE id = ?', [id]).catch(() => null);
+      await pool.query('UPDATE support_conversations SET status = "IN REVIEW" WHERE id = ?', [conv.id]).catch(() => null);
       conv.status = 'IN REVIEW';
     }
 
     let msgRows = [];
     try {
-      const [rows] = await pool.query('SELECT * FROM support_messages WHERE conversation_id = ? ORDER BY id ASC', [id]);
+      const [rows] = await pool.query('SELECT * FROM support_messages WHERE conversation_id = ? ORDER BY id ASC', [conv.id]);
       msgRows = rows;
     } catch (e) {}
 
@@ -405,16 +400,17 @@ exports.replyToConversation = async (req, res, next) => {
       return res.status(400).json(ApiResponse.error('Reply message cannot be empty.'));
     }
 
+    const targetId = Number(id) > 5000000 ? Number(id) - 5000000 : id;
+
     let conv = null;
     try {
-      const [convRows] = await pool.query('SELECT * FROM support_conversations WHERE id = ?', [id]);
+      const [convRows] = await pool.query('SELECT * FROM support_conversations WHERE id = ?', [targetId]);
       if (convRows.length > 0) conv = convRows[0];
     } catch (e) {}
 
     if (!conv) {
       try {
-        const legacyId = Number(id) > 1000000 ? Number(id) - 1000000 : id;
-        const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [legacyId]);
+        const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [targetId]);
         if (legacyRows.length > 0) {
           const leg = legacyRows[0];
           await pool.query(
@@ -543,7 +539,7 @@ exports.updateMessageStatus = async (req, res, next) => {
     }
 
     const cleanStatus = String(status).toUpperCase();
-    const targetId = Number(id) > 1000000 ? Number(id) - 1000000 : id;
+    const targetId = Number(id) > 5000000 ? Number(id) - 5000000 : id;
 
     try {
       await pool.query(
@@ -576,7 +572,7 @@ exports.deleteMessage = async (req, res, next) => {
   try {
     await ensureSupportTables();
     const { id } = req.params;
-    const targetId = Number(id) > 1000000 ? Number(id) - 1000000 : id;
+    const targetId = Number(id) > 5000000 ? Number(id) - 5000000 : id;
     try { await pool.query('DELETE FROM support_conversations WHERE id = ?', [targetId]); } catch (e) {}
     try { await pool.query('DELETE FROM contact_messages WHERE id = ?', [targetId]); } catch (e) {}
     return res.status(200).json({
