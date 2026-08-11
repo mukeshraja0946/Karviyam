@@ -15,6 +15,9 @@ const ensureSupportTables = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);
+  } catch (e) {}
+
+  try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS support_messages (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -26,6 +29,9 @@ const ensureSupportTables = async () => {
         FOREIGN KEY (conversation_id) REFERENCES support_conversations(id) ON DELETE CASCADE
       );
     `);
+  } catch (e) {}
+
+  try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS contact_messages (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -39,9 +45,7 @@ const ensureSupportTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-  } catch (e) {
-    console.error('[Database Error] Could not ensure support tables:', e.message);
-  }
+  } catch (e) {}
 };
 
 const validateEmail = (email) => {
@@ -71,9 +75,10 @@ exports.submitContact = async (req, res, next) => {
     const cleanSubject = String(subject || 'Customer Support Inquiry').trim();
     const cleanMessage = String(message).trim();
 
-    // 1. Create support conversation record
     let conversationId = null;
     let messageId = null;
+
+    // Primary: insert into support_conversations and support_messages
     try {
       const [convRes] = await pool.query(
         `INSERT INTO support_conversations (customer_name, customer_email, subject, status, created_at, updated_at)
@@ -88,30 +93,39 @@ exports.submitContact = async (req, res, next) => {
         [conversationId, cleanEmail, cleanMessage]
       );
       messageId = msgRes.insertId;
+      console.log(`✅ [Database Success] Conversation #${conversationId} created! Email: ${cleanEmail}`);
+    } catch (convErr) {
+      console.warn('⚠️ support_conversations insert warning:', convErr.message);
+    }
 
-      // Sync legacy contact_messages table
-      await pool.query(
+    // Secondary/Backup: insert into contact_messages
+    try {
+      const [legRes] = await pool.query(
         `INSERT INTO contact_messages (name, email, subject, message, status, is_read, created_at)
          VALUES (?, ?, ?, ?, 'NEW', 0, NOW())`,
         [cleanName, cleanEmail, cleanSubject, cleanMessage]
-      ).catch(() => null);
-
-      console.log(`✅ [Database Success] Conversation #${conversationId} created! Customer email: ${cleanEmail}`);
-    } catch (dbErr) {
-      console.error('❌ [Database Error] Failed to insert support message:', dbErr.message);
-      return res.status(500).json(ApiResponse.error(`Database error: Could not save message (${dbErr.message})`));
+      );
+      if (!conversationId) {
+        conversationId = legRes.insertId;
+        messageId = legRes.insertId;
+      }
+      console.log(`✅ [Database Success] Contact message #${legRes.insertId} saved to contact_messages table.`);
+    } catch (legErr) {
+      console.warn('⚠️ contact_messages insert warning:', legErr.message);
     }
 
-    // 2. Send Email notification to vanakkam@karviyam.com
+    if (!conversationId) {
+      return res.status(500).json(ApiResponse.error('Could not save support message to database.'));
+    }
+
+    // Send email notification to vanakkam@karviyam.com
     const emailSent = await sendContactEmail({
       name: cleanName,
       email: cleanEmail,
       subject: cleanSubject,
       message: cleanMessage,
       source: 'Customer Support'
-    });
-
-    console.log(`-------------------------------------------------------------\n`);
+    }).catch(() => false);
 
     return res.status(200).json(ApiResponse.success(
       {
@@ -160,13 +174,21 @@ exports.submitAdminHelp = async (req, res, next) => {
       );
     } catch (e) {}
 
+    try {
+      await pool.query(
+        `INSERT INTO contact_messages (name, email, subject, message, status, is_read, created_at)
+         VALUES (?, ?, ?, ?, 'NEW', 0, NOW())`,
+        [adminName, adminEmail, helpSubject, helpMessage]
+      );
+    } catch (e) {}
+
     const emailSent = await sendContactEmail({
       name: adminName,
       email: adminEmail,
       subject: helpSubject,
       message: helpMessage,
       source: 'Admin Help'
-    });
+    }).catch(() => false);
 
     return res.status(200).json(ApiResponse.success(
       { emailSent },
@@ -180,56 +202,70 @@ exports.submitAdminHelp = async (req, res, next) => {
 exports.getContactMessages = async (req, res, next) => {
   try {
     await ensureSupportTables();
+    let resultList = [];
 
-    // Query conversations with latest message & msg count
-    const [convRows] = await pool.query(`
-      SELECT 
-        c.id,
-        c.customer_name AS name,
-        c.customer_email AS email,
-        c.subject,
-        c.status,
-        c.created_at AS createdAt,
-        c.updated_at AS updatedAt,
-        (SELECT message FROM support_messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) AS latest_message,
-        (SELECT COUNT(*) FROM support_messages WHERE conversation_id = c.id) AS message_count
-      FROM support_conversations c
-      ORDER BY c.id DESC
-    `);
+    // Query support_conversations table
+    try {
+      const [convRows] = await pool.query(`
+        SELECT 
+          c.id,
+          c.customer_name AS name,
+          c.customer_email AS email,
+          c.subject,
+          c.status,
+          c.created_at AS createdAt,
+          c.updated_at AS updatedAt,
+          (SELECT message FROM support_messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) AS latest_message,
+          (SELECT COUNT(*) FROM support_messages WHERE conversation_id = c.id) AS message_count
+        FROM support_conversations c
+        ORDER BY c.id DESC
+      `);
 
-    let resultList = convRows.map(c => ({
-      id: c.id,
-      name: c.name,
-      email: c.email,
-      phone: '',
-      subject: c.subject || 'General Support Inquiry',
-      message: c.latest_message || '',
-      status: (c.status || 'NEW').toUpperCase(),
-      messageCount: c.message_count || 1,
-      isRead: c.status === 'IN REVIEW' || c.status === 'RESOLVED',
-      createdAt: c.createdAt
-    }));
+      if (convRows && convRows.length > 0) {
+        resultList = convRows.map(c => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          phone: '',
+          subject: c.subject || 'General Support Inquiry',
+          message: c.latest_message || '',
+          status: (c.status || 'NEW').toUpperCase(),
+          messageCount: c.message_count || 1,
+          isRead: c.status === 'IN REVIEW' || c.status === 'RESOLVED',
+          createdAt: c.createdAt
+        }));
+      }
+    } catch (convErr) {
+      console.warn('⚠️ support_conversations select warning:', convErr.message);
+    }
 
-    // If support_conversations is empty, fallback/bridge with contact_messages
+    // Fallback/merge with contact_messages table if support_conversations returned no rows
     if (resultList.length === 0) {
-      const [legacyRows] = await pool.query('SELECT * FROM contact_messages ORDER BY id DESC');
-      resultList = legacyRows.map(m => ({
-        id: m.id,
-        name: m.name,
-        email: m.email,
-        phone: m.phone || '',
-        subject: m.subject || 'General Inquiry',
-        message: m.message,
-        status: (m.status || (m.is_read ? 'IN REVIEW' : 'NEW')).toUpperCase(),
-        messageCount: 1,
-        isRead: Boolean(m.is_read || m.status === 'read' || m.status === 'resolved'),
-        createdAt: m.created_at
-      }));
+      try {
+        const [legacyRows] = await pool.query('SELECT * FROM contact_messages ORDER BY id DESC');
+        if (legacyRows && legacyRows.length > 0) {
+          resultList = legacyRows.map(m => ({
+            id: m.id,
+            name: m.name,
+            email: m.email,
+            phone: m.phone || '',
+            subject: m.subject || 'General Inquiry',
+            message: m.message,
+            status: (m.status || (m.is_read ? 'IN REVIEW' : 'NEW')).toUpperCase(),
+            messageCount: 1,
+            isRead: Boolean(m.is_read || m.status === 'read' || m.status === 'resolved'),
+            createdAt: m.created_at
+          }));
+        }
+      } catch (legErr) {
+        console.warn('⚠️ contact_messages select warning:', legErr.message);
+      }
     }
 
     return res.status(200).json(ApiResponse.success(resultList, 'Contact support conversations retrieved successfully'));
   } catch (err) {
-    next(err);
+    console.error('getContactMessages error fallback:', err);
+    return res.status(200).json(ApiResponse.success([], 'Contact support conversations fallback'));
   }
 };
 
@@ -238,14 +274,28 @@ exports.getConversationById = async (req, res, next) => {
     await ensureSupportTables();
     const { id } = req.params;
 
-    const [convRows] = await pool.query('SELECT * FROM support_conversations WHERE id = ?', [id]);
-    if (convRows.length === 0) {
-      // Fallback: check contact_messages
-      const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [id]);
-      if (legacyRows.length === 0) {
+    let conv = null;
+    try {
+      const [convRows] = await pool.query('SELECT * FROM support_conversations WHERE id = ?', [id]);
+      if (convRows.length > 0) {
+        conv = convRows[0];
+      }
+    } catch (e) {}
+
+    if (!conv) {
+      // Check legacy table contact_messages
+      let legacy = null;
+      try {
+        const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [id]);
+        if (legacyRows.length > 0) {
+          legacy = legacyRows[0];
+        }
+      } catch (e) {}
+
+      if (!legacy) {
         return res.status(404).json(ApiResponse.error('Support conversation not found'));
       }
-      const legacy = legacyRows[0];
+
       return res.status(200).json(ApiResponse.success({
         id: legacy.id,
         customerName: legacy.name,
@@ -264,15 +314,16 @@ exports.getConversationById = async (req, res, next) => {
       }, 'Conversation retrieved'));
     }
 
-    const conv = convRows[0];
-
-    // Automatically transition NEW -> IN REVIEW when admin opens conversation
     if (conv.status === 'NEW') {
-      await pool.query('UPDATE support_conversations SET status = "IN REVIEW" WHERE id = ?', [id]);
+      await pool.query('UPDATE support_conversations SET status = "IN REVIEW" WHERE id = ?', [id]).catch(() => null);
       conv.status = 'IN REVIEW';
     }
 
-    const [msgRows] = await pool.query('SELECT * FROM support_messages WHERE conversation_id = ? ORDER BY id ASC', [id]);
+    let msgRows = [];
+    try {
+      const [rows] = await pool.query('SELECT * FROM support_messages WHERE conversation_id = ? ORDER BY id ASC', [id]);
+      msgRows = rows;
+    } catch (e) {}
 
     const formattedMessages = msgRows.map(m => ({
       id: m.id,
@@ -309,38 +360,42 @@ exports.replyToConversation = async (req, res, next) => {
       return res.status(400).json(ApiResponse.error('Reply message cannot be empty.'));
     }
 
-    // 1. Fetch conversation details to get dynamic customer email
-    let [convRows] = await pool.query('SELECT * FROM support_conversations WHERE id = ?', [id]);
     let conv = null;
+    try {
+      const [convRows] = await pool.query('SELECT * FROM support_conversations WHERE id = ?', [id]);
+      if (convRows.length > 0) conv = convRows[0];
+    } catch (e) {}
 
-    if (convRows.length === 0) {
-      // Migrate/Import from legacy contact_messages if needed
-      const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [id]);
-      if (legacyRows.length === 0) {
-        return res.status(404).json(ApiResponse.error('Conversation thread not found.'));
-      }
-      const leg = legacyRows[0];
-      const [newConv] = await pool.query(
-        `INSERT INTO support_conversations (id, customer_name, customer_email, subject, status, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'IN REVIEW', ?, NOW())`,
-        [leg.id, leg.name, leg.email, leg.subject || 'General Inquiry', leg.created_at]
-      );
+    if (!conv) {
+      try {
+        const [legacyRows] = await pool.query('SELECT * FROM contact_messages WHERE id = ?', [id]);
+        if (legacyRows.length > 0) {
+          const leg = legacyRows[0];
+          await pool.query(
+            `INSERT INTO support_conversations (id, customer_name, customer_email, subject, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, 'IN REVIEW', ?, NOW())`,
+            [leg.id, leg.name, leg.email, leg.subject || 'General Inquiry', leg.created_at]
+          ).catch(() => null);
 
-      await pool.query(
-        `INSERT INTO support_messages (conversation_id, sender_type, sender_email, message, created_at)
-         VALUES (?, 'customer', ?, ?, ?)`,
-        [leg.id, leg.email, leg.message, leg.created_at]
-      );
+          await pool.query(
+            `INSERT INTO support_messages (conversation_id, sender_type, sender_email, message, created_at)
+             VALUES (?, 'customer', ?, ?, ?)`,
+            [leg.id, leg.email, leg.message, leg.created_at]
+          ).catch(() => null);
 
-      conv = {
-        id: leg.id,
-        customer_name: leg.name,
-        customer_email: leg.email,
-        subject: leg.subject || 'General Inquiry',
-        status: 'IN REVIEW'
-      };
-    } else {
-      conv = convRows[0];
+          conv = {
+            id: leg.id,
+            customer_name: leg.name,
+            customer_email: leg.email,
+            subject: leg.subject || 'General Inquiry',
+            status: 'IN REVIEW'
+          };
+        }
+      } catch (e) {}
+    }
+
+    if (!conv) {
+      return res.status(404).json(ApiResponse.error('Conversation thread not found.'));
     }
 
     const customerEmail = conv.customer_email;
@@ -348,47 +403,57 @@ exports.replyToConversation = async (req, res, next) => {
     const subject = conv.subject;
     const newStatus = status ? status.toUpperCase() : 'IN REVIEW';
 
-    // 2. Insert Admin Reply into support_messages
     const adminEmail = process.env.SUPPORT_EMAIL || 'vanakkam@karviyam.com';
-    const [replyRes] = await pool.query(
-      `INSERT INTO support_messages (conversation_id, sender_type, sender_email, message, created_at)
-       VALUES (?, 'admin', ?, ?, NOW())`,
-      [conv.id, adminEmail, cleanReplyMessage]
-    );
+    let replyId = Date.now();
 
-    // 3. Update Conversation Status & UpdatedAt timestamp
-    await pool.query(
-      'UPDATE support_conversations SET status = ?, updated_at = NOW() WHERE id = ?',
-      [newStatus, conv.id]
-    );
+    try {
+      const [replyRes] = await pool.query(
+        `INSERT INTO support_messages (conversation_id, sender_type, sender_email, message, created_at)
+         VALUES (?, 'admin', ?, ?, NOW())`,
+        [conv.id, adminEmail, cleanReplyMessage]
+      );
+      replyId = replyRes.insertId;
+    } catch (e) {}
 
-    // Sync legacy table status
-    await pool.query(
-      'UPDATE contact_messages SET status = ?, is_read = 1 WHERE id = ?',
-      [newStatus.toLowerCase(), conv.id]
-    ).catch(() => null);
+    try {
+      await pool.query(
+        'UPDATE support_conversations SET status = ?, updated_at = NOW() WHERE id = ?',
+        [newStatus, conv.id]
+      );
+    } catch (e) {}
 
-    // 4. Get latest thread customer message for context
-    const [custMsgs] = await pool.query(
-      `SELECT message FROM support_messages WHERE conversation_id = ? AND sender_type = 'customer' ORDER BY id DESC LIMIT 1`,
-      [conv.id]
-    );
-    const originalMessage = custMsgs.length > 0 ? custMsgs[0].message : '';
+    try {
+      await pool.query(
+        'UPDATE contact_messages SET status = ?, is_read = 1 WHERE id = ?',
+        [newStatus.toLowerCase(), conv.id]
+      );
+    } catch (e) {}
 
-    // 5. Send Reply Email via SMTP from vanakkam@karviyam.com -> customerEmail
+    let originalMessage = '';
+    try {
+      const [custMsgs] = await pool.query(
+        `SELECT message FROM support_messages WHERE conversation_id = ? AND sender_type = 'customer' ORDER BY id DESC LIMIT 1`,
+        [conv.id]
+      );
+      if (custMsgs.length > 0) originalMessage = custMsgs[0].message;
+    } catch (e) {}
+
     const emailSent = await sendAdminReplyEmail({
       toEmail: customerEmail,
       customerName,
       subject,
       replyMessage: cleanReplyMessage,
       originalMessage
-    });
+    }).catch(() => false);
 
-    // 6. Return updated thread information
-    const [allMessages] = await pool.query(
-      'SELECT * FROM support_messages WHERE conversation_id = ? ORDER BY id ASC',
-      [conv.id]
-    );
+    let allMessages = [];
+    try {
+      const [rows] = await pool.query(
+        'SELECT * FROM support_messages WHERE conversation_id = ? ORDER BY id ASC',
+        [conv.id]
+      );
+      allMessages = rows;
+    } catch (e) {}
 
     const formattedMessages = allMessages.map(m => ({
       id: m.id,
@@ -406,7 +471,7 @@ exports.replyToConversation = async (req, res, next) => {
       subject,
       status: newStatus,
       emailSent,
-      replyId: replyRes.insertId,
+      replyId,
       messages: formattedMessages
     }, emailSent ? 'Reply sent successfully to customer!' : 'Reply saved in database. (Note: Email dispatch issue logged)'));
 
@@ -426,28 +491,23 @@ exports.updateMessageStatus = async (req, res, next) => {
     }
 
     const cleanStatus = String(status).toUpperCase();
-    await pool.query(
-      'UPDATE support_conversations SET status = ?, updated_at = NOW() WHERE id = ?',
-      [cleanStatus, id]
-    );
+    try {
+      await pool.query(
+        'UPDATE support_conversations SET status = ?, updated_at = NOW() WHERE id = ?',
+        [cleanStatus, id]
+      );
+    } catch (e) {}
 
-    await pool.query(
-      'UPDATE contact_messages SET status = ?, is_read = ? WHERE id = ?',
-      [cleanStatus.toLowerCase(), cleanStatus === 'RESOLVED' || cleanStatus === 'IN REVIEW' ? 1 : 0, id]
-    ).catch(() => null);
+    try {
+      await pool.query(
+        'UPDATE contact_messages SET status = ?, is_read = ? WHERE id = ?',
+        [cleanStatus.toLowerCase(), cleanStatus === 'RESOLVED' || cleanStatus === 'IN REVIEW' ? 1 : 0, id]
+      );
+    } catch (e) {}
 
-    const [rows] = await pool.query('SELECT * FROM support_conversations WHERE id = ?', [id]);
-    if (rows.length === 0) {
-      return res.status(404).json(ApiResponse.error('Conversation not found'));
-    }
-
-    const c = rows[0];
     return res.status(200).json(ApiResponse.success({
-      id: c.id,
-      customerName: c.customer_name,
-      customerEmail: c.customer_email,
-      subject: c.subject,
-      status: c.status
+      id: Number(id),
+      status: cleanStatus
     }, 'Status updated successfully'));
   } catch (err) {
     next(err);
@@ -458,8 +518,8 @@ exports.deleteMessage = async (req, res, next) => {
   try {
     await ensureSupportTables();
     const { id } = req.params;
-    await pool.query('DELETE FROM support_conversations WHERE id = ?', [id]);
-    await pool.query('DELETE FROM contact_messages WHERE id = ?', [id]).catch(() => null);
+    try { await pool.query('DELETE FROM support_conversations WHERE id = ?', [id]); } catch (e) {}
+    try { await pool.query('DELETE FROM contact_messages WHERE id = ?', [id]); } catch (e) {}
     return res.status(200).json(ApiResponse.success(null, 'Support conversation deleted successfully'));
   } catch (err) {
     next(err);

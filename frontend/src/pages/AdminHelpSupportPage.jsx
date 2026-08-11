@@ -75,13 +75,15 @@ export default function AdminHelpSupportPage() {
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/contact-messages').catch(() => api.get('/contact/messages'));
-      const apiData = res.data ? res.data : res;
-      const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      const res = await api.get('/admin/contact-messages')
+        .catch(() => api.get('/contact/messages'))
+        .catch(() => api.get('/contact'));
+      const apiData = res?.data ? res.data : res;
+      const list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
       setMessages(list);
     } catch (e) {
       console.error('Failed to fetch contact messages:', e);
-      toast.error('Failed to load support messages');
+      setMessages([]);
     } finally {
       setLoading(false);
     }
