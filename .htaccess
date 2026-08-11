@@ -8,7 +8,13 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 2. ALLOW PHYSICAL FILES AND STATIC ASSETS
+  # 2. PROXY ALL /api/ REQUESTS TO NODE.JS EXPRESS BACKEND (PORT 8080)
+  <IfModule mod_proxy.c>
+    RewriteCond %{REQUEST_URI} ^/api/(.*)$ [NC]
+    RewriteRule ^api/(.*)$ http://127.0.0.1:8080/api/$1 [P,L]
+  </IfModule>
+
+  # 3. ALLOW PHYSICAL FILES AND STATIC ASSETS
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
@@ -16,7 +22,7 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
   RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
   RewriteRule ^ - [L]
 
-  # 3. PRODUCTION SPA FALLBACK FOR FRONTEND REACT ROUTES (EXCLUDING /api/)
+  # 4. PRODUCTION SPA FALLBACK FOR FRONTEND REACT ROUTES (EXCLUDING /api/)
   RewriteCond %{REQUEST_URI} !^/api/ [NC]
   RewriteCond %{DOCUMENT_ROOT}/frontend/dist/index.html -f
   RewriteRule ^ /frontend/dist/index.html [L]
