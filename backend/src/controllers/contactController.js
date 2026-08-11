@@ -210,8 +210,9 @@ exports.getContactMessages = async (req, res, next) => {
   try {
     await ensureSupportTables();
     let resultList = [];
+    const seenMap = new Map();
 
-    // Query support_conversations table
+    // 1. Query support_conversations table
     try {
       const [convRows] = await pool.query(`
         SELECT 
@@ -222,56 +223,72 @@ exports.getContactMessages = async (req, res, next) => {
           c.status,
           c.created_at AS createdAt,
           c.updated_at AS updatedAt,
-          (SELECT message FROM support_messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) AS latest_message,
-          (SELECT COUNT(*) FROM support_messages WHERE conversation_id = c.id) AS message_count
+          COALESCE(
+            (SELECT message FROM support_messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1),
+            (SELECT message FROM contact_messages WHERE email = c.customer_email ORDER BY id DESC LIMIT 1),
+            ''
+          ) AS latest_message,
+          COALESCE(
+            (SELECT COUNT(*) FROM support_messages WHERE conversation_id = c.id),
+            1
+          ) AS message_count
         FROM support_conversations c
         ORDER BY c.id DESC
       `);
 
       if (convRows && convRows.length > 0) {
-        resultList = convRows.map(c => ({
-          id: c.id,
-          name: c.name,
-          email: c.email,
-          phone: '',
-          subject: c.subject || 'General Support Inquiry',
-          message: c.latest_message || '',
-          status: (c.status || 'NEW').toUpperCase(),
-          messageCount: c.message_count || 1,
-          isRead: c.status === 'IN REVIEW' || c.status === 'RESOLVED',
-          createdAt: c.createdAt
-        }));
+        for (const c of convRows) {
+          const item = {
+            id: c.id,
+            name: c.name,
+            email: c.email,
+            phone: '',
+            subject: c.subject || 'General Support Inquiry',
+            message: c.latest_message || '',
+            status: (c.status || 'NEW').toUpperCase(),
+            messageCount: c.message_count || 1,
+            isRead: (c.status || '').toUpperCase() === 'IN REVIEW' || (c.status || '').toUpperCase() === 'RESOLVED',
+            createdAt: c.createdAt
+          };
+          const key = `${c.email.toLowerCase()}_${(c.subject || '').toLowerCase()}`;
+          seenMap.set(key, item);
+          resultList.push(item);
+        }
       }
     } catch (convErr) {
       console.warn('⚠️ support_conversations select warning:', convErr.message);
     }
 
-    // Merge contact_messages table rows
+    // 2. Query contact_messages table to merge any un-mapped records
     try {
       const [legacyRows] = await pool.query('SELECT * FROM contact_messages ORDER BY id DESC');
       if (legacyRows && legacyRows.length > 0) {
-        const legacyList = legacyRows.map(m => ({
-          id: m.id,
-          name: m.name,
-          email: m.email,
-          phone: m.phone || '',
-          subject: m.subject || 'General Inquiry',
-          message: m.message,
-          status: (m.status || (m.is_read ? 'IN REVIEW' : 'NEW')).toUpperCase(),
-          messageCount: 1,
-          isRead: Boolean(m.is_read || m.status === 'read' || m.status === 'resolved'),
-          createdAt: m.created_at
-        }));
-
-        for (const leg of legacyList) {
-          if (!resultList.some(r => r.email === leg.email && r.subject === leg.subject)) {
-            resultList.push(leg);
+        for (const m of legacyRows) {
+          const key = `${m.email.toLowerCase()}_${(m.subject || '').toLowerCase()}`;
+          if (!seenMap.has(key)) {
+            const item = {
+              id: m.id + 1000000,
+              name: m.name,
+              email: m.email,
+              phone: m.phone || '',
+              subject: m.subject || 'General Inquiry',
+              message: m.message || '',
+              status: (m.status || (m.is_read ? 'IN REVIEW' : 'NEW')).toUpperCase(),
+              messageCount: 1,
+              isRead: Boolean(m.is_read || m.status === 'read' || m.status === 'resolved'),
+              createdAt: m.created_at
+            };
+            seenMap.set(key, item);
+            resultList.push(item);
           }
         }
       }
     } catch (legErr) {
       console.warn('⚠️ contact_messages select warning:', legErr.message);
     }
+
+    // Sort by createdAt descending
+    resultList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
     return res.status(200).json({
       success: true,
