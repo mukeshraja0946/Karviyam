@@ -246,27 +246,31 @@ exports.getContactMessages = async (req, res, next) => {
       console.warn('⚠️ support_conversations select warning:', convErr.message);
     }
 
-    // Fallback/merge with contact_messages table if support_conversations returned no rows
-    if (resultList.length === 0) {
-      try {
-        const [legacyRows] = await pool.query('SELECT * FROM contact_messages ORDER BY id DESC');
-        if (legacyRows && legacyRows.length > 0) {
-          resultList = legacyRows.map(m => ({
-            id: m.id,
-            name: m.name,
-            email: m.email,
-            phone: m.phone || '',
-            subject: m.subject || 'General Inquiry',
-            message: m.message,
-            status: (m.status || (m.is_read ? 'IN REVIEW' : 'NEW')).toUpperCase(),
-            messageCount: 1,
-            isRead: Boolean(m.is_read || m.status === 'read' || m.status === 'resolved'),
-            createdAt: m.created_at
-          }));
+    // Merge contact_messages table rows
+    try {
+      const [legacyRows] = await pool.query('SELECT * FROM contact_messages ORDER BY id DESC');
+      if (legacyRows && legacyRows.length > 0) {
+        const legacyList = legacyRows.map(m => ({
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          phone: m.phone || '',
+          subject: m.subject || 'General Inquiry',
+          message: m.message,
+          status: (m.status || (m.is_read ? 'IN REVIEW' : 'NEW')).toUpperCase(),
+          messageCount: 1,
+          isRead: Boolean(m.is_read || m.status === 'read' || m.status === 'resolved'),
+          createdAt: m.created_at
+        }));
+
+        for (const leg of legacyList) {
+          if (!resultList.some(r => r.email === leg.email && r.subject === leg.subject)) {
+            resultList.push(leg);
+          }
         }
-      } catch (legErr) {
-        console.warn('⚠️ contact_messages select warning:', legErr.message);
       }
+    } catch (legErr) {
+      console.warn('⚠️ contact_messages select warning:', legErr.message);
     }
 
     return res.status(200).json({
