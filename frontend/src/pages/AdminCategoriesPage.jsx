@@ -340,11 +340,15 @@ export default function AdminCategoriesPage() {
     const nextStatus = targetStatus !== null ? Boolean(targetStatus) : !cat.isActive;
     toast.loading(`Updating ${cat.name} status...`, { id: 'cat-toggle-toast' });
     try {
-      const res = await api.put(`/categories/${cat.id}/toggle-status?active=${nextStatus}`, {
+      const payload = {
         isActive: nextStatus,
         active: nextStatus,
         is_active: nextStatus
-      });
+      };
+      let res = await api.post(`/categories/${cat.id}/toggle-status?active=${nextStatus}`, payload).catch(() => null);
+      if (!res) {
+        res = await api.put(`/categories/${cat.id}/toggle-status?active=${nextStatus}`, payload);
+      }
       const apiData = res.data ? res.data : res;
       if (apiData && (apiData.success !== false || apiData.status === 'success')) {
         toast.success(`Category ${nextStatus ? 'enabled' : 'disabled'} successfully!`, { id: 'cat-toggle-toast' });
