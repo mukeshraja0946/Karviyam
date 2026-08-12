@@ -71,13 +71,17 @@ export default function MegaMenu({ onClose }) {
 
   useEffect(() => {
     fetchTree();
+    window.addEventListener('karviyam_categories_updated', fetchTree);
+    return () => window.removeEventListener('karviyam_categories_updated', fetchTree);
   }, []);
 
   const fetchTree = async () => {
     try {
       const res = await api.get('/categories/tree');
-      if (res.success && res.data && res.data.length > 0) {
-        setTree(res.data);
+      const apiData = res?.data ? res.data : res;
+      const list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      if (list.length > 0) {
+        setTree(list);
       }
     } catch (e) {
       console.error(e);

@@ -49,6 +49,13 @@ exports.getSettings = async (req, res, next) => {
       }
     } catch (e) {}
 
+    const cnVal = settingsObj.categoryNavigationEnabled !== undefined 
+      ? settingsObj.categoryNavigationEnabled 
+      : settingsObj.category_navigation_enabled;
+    const isCatNavEnabled = cnVal === undefined ? true : (cnVal === true || cnVal === 'true' || cnVal === 1 || cnVal === '1');
+    settingsObj.categoryNavigationEnabled = isCatNavEnabled;
+    settingsObj.category_navigation_enabled = isCatNavEnabled;
+
     return res.status(200).json(ApiResponse.success(settingsObj, 'Settings retrieved successfully'));
   } catch (err) {
     next(err);

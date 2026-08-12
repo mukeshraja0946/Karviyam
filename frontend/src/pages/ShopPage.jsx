@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 import api from '../utils/api';
@@ -7,6 +7,7 @@ import { SlidersHorizontal, ChevronDown, Check, X, Filter } from 'lucide-react';
 
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { slug } = useParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +16,7 @@ export default function ShopPage() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   // Selected Filter States
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || searchParams.get('categoryId') || '');
+  const [selectedCategory, setSelectedCategory] = useState(slug || searchParams.get('category') || searchParams.get('categoryId') || '');
   const [selectedSubcategory, setSelectedSubcategory] = useState(searchParams.get('subcategory') || searchParams.get('subcategoryId') || '');
   const [selectedBrand, setSelectedBrand] = useState(searchParams.get('brand') || '');
   const [selectedGender, setSelectedGender] = useState(searchParams.get('gender') || '');
@@ -36,7 +37,7 @@ export default function ShopPage() {
 
   // Sync state whenever URL searchParams change
   useEffect(() => {
-    const cat = searchParams.get('category') || searchParams.get('categoryId') || '';
+    const cat = slug || searchParams.get('category') || searchParams.get('categoryId') || '';
     const subcat = searchParams.get('subcategory') || searchParams.get('subcategoryId') || '';
     const brand = searchParams.get('brand') || '';
     const gender = searchParams.get('gender') || '';
@@ -47,7 +48,7 @@ export default function ShopPage() {
     setSelectedBrand(brand);
     setSelectedGender(gender);
     setSearchKeyword(search);
-  }, [searchParams]);
+  }, [searchParams, slug]);
 
   // Count Active Filters for Mobile Badge
   const activeFilterCount = [

@@ -58,6 +58,7 @@ export default function App() {
                   <Route path="/maintenance" element={<MaintenancePage />} />
                   <Route path="/maintenance.php" element={<Navigate to="/maintenance" replace />} />
                   <Route path="/shop" element={<ShopPage />} />
+                  <Route path="/category/:slug" element={<ShopPage />} />
                   <Route path="/product/:id" element={<ProductDetailPage />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />

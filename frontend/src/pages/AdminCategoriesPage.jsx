@@ -273,6 +273,7 @@ export default function AdminCategoriesPage() {
             return updated;
           });
           try { await fetchCategories(); } catch (eFetch) {}
+          window.dispatchEvent(new Event('karviyam_categories_updated'));
           setModalOpen(false);
         } else {
           throw new Error(apiData?.message || 'Failed to update category');
@@ -293,6 +294,7 @@ export default function AdminCategoriesPage() {
             return updated;
           });
           try { await fetchCategories(); } catch (eFetch) {}
+          window.dispatchEvent(new Event('karviyam_categories_updated'));
           setModalOpen(false);
         } else {
           throw new Error(apiData?.message || 'Failed to create category');
@@ -319,6 +321,7 @@ export default function AdminCategoriesPage() {
         return updated;
       });
 
+      window.dispatchEvent(new Event('karviyam_categories_updated'));
       toast.success('Category deleted successfully!', { id: 'cat-del-toast' });
     } catch (e) {
       console.error(e);
@@ -335,6 +338,7 @@ export default function AdminCategoriesPage() {
       if (apiData && apiData.success !== false) {
         toast.success(`Category ${!cat.isActive ? 'enabled' : 'disabled'} successfully!`, { id: 'cat-toggle-toast' });
         await fetchCategories();
+        window.dispatchEvent(new Event('karviyam_categories_updated'));
       } else {
         throw new Error(apiData?.message || 'Failed to toggle category status');
       }

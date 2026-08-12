@@ -36,18 +36,49 @@ export default function Navbar() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
 
-  // Custom Admin Uploaded Logo
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
 
+  // Category Navigation Setting & Dynamic Categories
+  const [navEnabled, setNavEnabled] = useState(true);
+  const [navCategories, setNavCategories] = useState([]);
+
+  const fetchNavSettingsAndCategories = async () => {
+    try {
+      const setRes = await api.get('/settings').catch(() => null);
+      const setPayload = setRes?.data?.data || setRes?.data || {};
+      const cnVal = setPayload.categoryNavigationEnabled !== undefined 
+        ? setPayload.categoryNavigationEnabled 
+        : setPayload.category_navigation_enabled;
+      const isEnabled = cnVal === undefined ? true : (cnVal === true || cnVal === 'true' || cnVal === 1 || cnVal === '1');
+      setNavEnabled(isEnabled);
+
+      const catRes = await api.get('/categories/tree').catch(() => null);
+      const catPayload = catRes?.data?.data || catRes?.data || [];
+      const activeList = Array.isArray(catPayload) ? catPayload : [];
+      // Only top-level active categories (parent_id IS NULL)
+      const topActive = activeList.filter(c => !c.parentId && (c.isActive === undefined || c.isActive === true));
+      setNavCategories(topActive);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
+    fetchNavSettingsAndCategories();
     const handleStorageChange = () => {
       setCustomLogo(localStorage.getItem('karviyam_logo') || '');
     };
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('karviyam_logo_updated', handleStorageChange);
+    window.addEventListener('karviyam_settings_updated', fetchNavSettingsAndCategories);
+    window.addEventListener('karviyam_category_nav_updated', fetchNavSettingsAndCategories);
+    window.addEventListener('karviyam_categories_updated', fetchNavSettingsAndCategories);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('karviyam_logo_updated', handleStorageChange);
+      window.removeEventListener('karviyam_settings_updated', fetchNavSettingsAndCategories);
+      window.removeEventListener('karviyam_category_nav_updated', fetchNavSettingsAndCategories);
+      window.removeEventListener('karviyam_categories_updated', fetchNavSettingsAndCategories);
     };
   }, []);
 
@@ -237,10 +268,16 @@ export default function Navbar() {
                 <div className="space-y-1 font-bold text-slate-800 text-sm">
                   <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg">Home</Link>
                   <Link to="/shop" onClick={() => setMobileMenuOpen(false)} className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg">All Shop Products</Link>
-                  <Link to="/shop?category=Women" onClick={() => setMobileMenuOpen(false)} className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg">Women Collection</Link>
-                  <Link to="/shop?category=Men" onClick={() => setMobileMenuOpen(false)} className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg">Men Collection</Link>
-                  <Link to="/shop?category=Kids" onClick={() => setMobileMenuOpen(false)} className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg">Kids & Baby</Link>
-                  <Link to="/shop?category=Accessories" onClick={() => setMobileMenuOpen(false)} className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg">Jewellery & Accessories</Link>
+                  {navEnabled && navCategories.map((cat) => (
+                    <Link
+                      key={cat.id}
+                      to={`/shop?category=${encodeURIComponent(cat.name)}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg uppercase"
+                    >
+                      {cat.name}
+                    </Link>
+                  ))}
                   <Link to="/contact" onClick={() => setMobileMenuOpen(false)} className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg">Contact Us</Link>
                   {isAdmin && (
                     <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="block p-2 text-[#B71C1C] hover:bg-red-50 rounded-lg">Admin Dashboard</Link>
@@ -514,39 +551,46 @@ export default function Navbar() {
         </div>
 
         {/* Category Links Navigation Bar with Hoverable Wide MegaMenu */}
-        <div className="hidden lg:block bg-slate-50 border-b border-slate-200 px-4 sm:px-8 lg:px-12 py-2 relative">
-          <div className="w-full flex items-center justify-between text-xs font-bold text-slate-700">
-            
-            {/* Hover / Click Mega Menu Dropdown */}
-            <div
-              className="relative"
-              onMouseEnter={() => setMegaMenuOpen(true)}
-              onMouseLeave={() => setMegaMenuOpen(false)}
-            >
-              <button className="flex items-center gap-2 text-xs font-bold text-[#B71C1C] py-1.5 px-3.5 bg-red-50 hover:bg-red-100 rounded-xl transition-colors">
-                <Grid className="w-4 h-4" />
-                <span>ALL CATEGORIES</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${megaMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
+        {navEnabled && (
+          <div className="hidden lg:block bg-slate-50 border-b border-slate-200 px-4 sm:px-8 lg:px-12 py-2 relative">
+            <div className="w-full flex items-center justify-between text-xs font-bold text-slate-700">
+              
+              {/* Hover / Click Mega Menu Dropdown */}
+              <div
+                className="relative"
+                onMouseEnter={() => setMegaMenuOpen(true)}
+                onMouseLeave={() => setMegaMenuOpen(false)}
+              >
+                <button className="flex items-center gap-2 text-xs font-bold text-[#B71C1C] py-1.5 px-3.5 bg-red-50 hover:bg-red-100 rounded-xl transition-colors">
+                  <Grid className="w-4 h-4" />
+                  <span>ALL CATEGORIES</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${megaMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-              {megaMenuOpen && (
-                <div className="absolute left-0 top-full mt-2 w-[880px] max-w-[90vw] bg-white border border-[#E5E7EB] shadow-2xl z-50 p-6 rounded-2xl">
-                  <MegaMenu onClose={() => setMegaMenuOpen(false)} />
-                </div>
-              )}
-            </div>
+                {megaMenuOpen && (
+                  <div className="absolute left-0 top-full mt-2 w-[880px] max-w-[90vw] bg-white border border-[#E5E7EB] shadow-2xl z-50 p-6 rounded-2xl">
+                    <MegaMenu onClose={() => setMegaMenuOpen(false)} />
+                  </div>
+                )}
+              </div>
 
-            <div className="flex items-center gap-5 overflow-x-auto py-1 no-scrollbar">
-              <Link to="/shop?search=WOMEN" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap">WOMEN</Link>
-              <Link to="/shop?search=MEN" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap">MEN</Link>
-              <Link to="/shop?search=KIDS" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap">KIDS & BABY</Link>
-              <Link to="/shop?search=ACCESSORIES" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap">ACCESSORIES</Link>
-              <Link to="/shop?search=KITCHEN" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap">KITCHEN & HOME</Link>
-              <Link to="/shop?search=SCHOOL" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap">SCHOOL & OFFICE</Link>
-              <Link to="/contact" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap">CONTACT US</Link>
+              <div className="flex items-center gap-5 overflow-x-auto py-1 no-scrollbar">
+                {navCategories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    to={`/shop?category=${encodeURIComponent(cat.name)}`}
+                    className="hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+                <Link to="/contact" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase">
+                  CONTACT US
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Delivery Location Modal */}

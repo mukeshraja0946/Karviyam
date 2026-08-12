@@ -51,7 +51,11 @@ const mapCategoryRow = (c) => ({
 exports.getAllCategories = async (req, res, next) => {
   try {
     await ensureCategoryTableExists();
-    const [rows] = await pool.query('SELECT * FROM categories ORDER BY order_index ASC, id ASC');
+    const activeOnly = req.query.activeOnly === 'true';
+    const query = activeOnly
+      ? 'SELECT * FROM categories WHERE is_active = 1 OR is_active IS TRUE ORDER BY order_index ASC, id ASC'
+      : 'SELECT * FROM categories ORDER BY order_index ASC, id ASC';
+    const [rows] = await pool.query(query);
     const categories = rows.map(mapCategoryRow);
     return res.status(200).json(ApiResponse.success(categories, 'Categories retrieved successfully'));
   } catch (err) {
@@ -62,7 +66,11 @@ exports.getAllCategories = async (req, res, next) => {
 exports.getCategoryTree = async (req, res, next) => {
   try {
     await ensureCategoryTableExists();
-    const [rows] = await pool.query('SELECT * FROM categories ORDER BY order_index ASC, id ASC');
+    const includeAll = req.query.all === 'true';
+    const query = includeAll
+      ? 'SELECT * FROM categories ORDER BY order_index ASC, id ASC'
+      : 'SELECT * FROM categories WHERE is_active = 1 OR is_active IS TRUE ORDER BY order_index ASC, id ASC';
+    const [rows] = await pool.query(query);
     const categories = rows.map(mapCategoryRow);
 
     const categoryMap = {};
@@ -70,13 +78,14 @@ exports.getCategoryTree = async (req, res, next) => {
 
     categories.forEach(cat => {
       cat.subcategories = [];
+      cat.children = cat.subcategories; // Provide both subcategories and children aliases
       categoryMap[cat.id] = cat;
     });
 
     categories.forEach(cat => {
       if (cat.parentId && categoryMap[cat.parentId]) {
         categoryMap[cat.parentId].subcategories.push(cat);
-      } else {
+      } else if (!cat.parentId) {
         rootCategories.push(cat);
       }
     });
