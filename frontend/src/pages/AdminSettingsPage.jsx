@@ -749,52 +749,10 @@ export default function AdminSettingsPage() {
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4 text-xs">
             <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
               <Globe className="w-4 h-4 text-[#B71C1C]" />
-              <span>Branding & Category Navigation Settings</span>
+              <span>Branding & General Settings</span>
             </h3>
 
             <div className="space-y-4">
-              {/* Category Navigation Master Setting Switch */}
-              <div className="bg-gradient-to-r from-red-50/60 to-slate-50 p-4 rounded-2xl border border-red-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase font-black tracking-widest text-[#B71C1C] bg-white px-2.5 py-0.5 rounded-full border border-red-200">
-                      HEADER NAVIGATION
-                    </span>
-                    <h4 className="font-bold text-slate-900 text-sm">Category Navigation</h4>
-                  </div>
-                  <p className="text-[11px] text-slate-600 mt-1">
-                    Toggle to show or hide dynamic category navigation items on the customer website header.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-2xs shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const updated = { ...settings, categoryNavigationEnabled: true };
-                      setSettings(updated);
-                      localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
-                      window.dispatchEvent(new Event('karviyam_settings_updated'));
-                      window.dispatchEvent(new Event('karviyam_category_nav_updated'));
-                    }}
-                    className={`px-4 py-2 rounded-xl font-black text-xs transition-all cursor-pointer ${settings.categoryNavigationEnabled ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                  >
-                    [ ON ]
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const updated = { ...settings, categoryNavigationEnabled: false };
-                      setSettings(updated);
-                      localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
-                      window.dispatchEvent(new Event('karviyam_settings_updated'));
-                      window.dispatchEvent(new Event('karviyam_category_nav_updated'));
-                    }}
-                    className={`px-4 py-2 rounded-xl font-black text-xs transition-all cursor-pointer ${!settings.categoryNavigationEnabled ? 'bg-red-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                  >
-                    [ OFF ]
-                  </button>
-                </div>
-              </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Footer About Description</label>
                 <textarea

@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Box,
+  Layers,
   ShoppingBag,
   Users,
   UserCheck,
@@ -87,6 +88,12 @@ export default function AdminLayout() {
         { name: 'Brands', path: '/admin/brands' },
         { name: 'Inventory & Stock', path: '/admin/inventory' },
       ],
+    },
+    {
+      id: 'categories',
+      title: 'Categories',
+      icon: Layers,
+      path: '/admin/categories',
     },
     {
       id: 'orders',

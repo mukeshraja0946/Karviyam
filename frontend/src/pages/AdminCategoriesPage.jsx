@@ -367,8 +367,8 @@ export default function AdminCategoriesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display font-bold text-2xl text-slate-900">Categories & Subcategories Management</h1>
-          <p className="text-xs text-slate-500">Manage catalog tree, image uploads, icon uploads, banner uploads, order, and SEO details</p>
+          <h1 className="font-display font-bold text-2xl text-slate-900">Categories Management</h1>
+          <p className="text-xs text-slate-500">Manage product categories, visibility, sorting and category details.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -381,10 +381,10 @@ export default function AdminCategoriesPage() {
 
           <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+            className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer uppercase tracking-wider"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Category / Subcategory</span>
+            <span>+ ADD CATEGORY</span>
           </button>
         </div>
       </div>
