@@ -27,6 +27,7 @@ const ensureCategoryTableExists = async () => {
     try { await pool.query("ALTER TABLE categories MODIFY COLUMN image_url LONGTEXT"); } catch (e) {}
     try { await pool.query("ALTER TABLE categories MODIFY COLUMN icon_url LONGTEXT"); } catch (e) {}
     try { await pool.query("ALTER TABLE categories MODIFY COLUMN banner_url LONGTEXT"); } catch (e) {}
+    try { await pool.query("UPDATE categories SET is_active = 1 WHERE is_active IS NULL"); } catch (e) {}
 
     await ensureMainCategoriesExist();
   } catch (e) {}

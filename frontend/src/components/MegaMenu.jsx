@@ -80,29 +80,26 @@ export default function MegaMenu({ onClose }) {
       const res = await api.get('/categories/tree');
       const apiData = res?.data ? res.data : res;
       const list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
-      if (list.length > 0) {
-        setTree(list);
-      }
+      setTree(list);
     } catch (e) {
       console.error(e);
+      setTree([]);
     }
   };
 
-  const renderSections = tree.length > 0 ? tree : null;
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 text-left max-h-[75vh] overflow-y-auto pr-2">
-      {renderSections ? (
-        renderSections.slice(0, 6).map((cat) => (
+      {tree.length > 0 ? (
+        tree.map((cat) => (
           <div key={cat.id} className="bg-slate-50/50 p-3.5 rounded-2xl border border-slate-100">
             <h4 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-900 mb-2 border-b border-slate-200 pb-2">
               <Sparkles className="w-4 h-4 text-[#B71C1C]" /> {cat.name}
             </h4>
             <ul className="space-y-1.5 text-xs font-medium text-slate-600">
-              {(cat.children || []).slice(0, 5).map((sub) => (
+              {(cat.subcategories || cat.children || []).map((sub) => (
                 <li key={sub.id}>
                   <Link
-                    to={`/shop?category=${sub.id}`}
+                    to={`/shop?category=${encodeURIComponent(sub.name)}`}
                     onClick={onClose}
                     className="hover:text-[#B71C1C] transition-colors truncate block"
                   >
@@ -110,33 +107,22 @@ export default function MegaMenu({ onClose }) {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link
+                  to={`/shop?category=${encodeURIComponent(cat.name)}`}
+                  onClick={onClose}
+                  className="font-bold text-[#B71C1C] hover:underline text-[11px] mt-1 inline-block"
+                >
+                  View All {cat.name} →
+                </Link>
+              </li>
             </ul>
           </div>
         ))
       ) : (
-        DEFAULT_SECTIONS.map((sec, idx) => {
-          const IconComp = sec.icon;
-          return (
-            <div key={idx} className="bg-slate-50/50 p-3.5 rounded-2xl border border-slate-100">
-              <h4 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-900 mb-2 border-b border-slate-200 pb-2">
-                <IconComp className="w-4 h-4 text-[#B71C1C]" /> {sec.name}
-              </h4>
-              <ul className="space-y-1.5 text-xs font-medium text-slate-600">
-                {sec.subs.map((sub, sIdx) => (
-                  <li key={sIdx}>
-                    <Link
-                      to={sub.link}
-                      onClick={onClose}
-                      className="hover:text-[#B71C1C] transition-colors truncate block"
-                    >
-                      {sub.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })
+        <div className="col-span-full py-6 text-center text-slate-400 font-bold text-xs">
+          No categories available.
+        </div>
       )}
 
       {/* Featured Spotlight Card */}
