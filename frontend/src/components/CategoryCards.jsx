@@ -21,7 +21,7 @@ export default function CategoryCards() {
       const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
 
       if (list.length > 0) {
-        const formatted = list.slice(0, 8).map((cat) => ({
+        const formatted = list.map((cat) => ({
           id: cat.id,
           name: cat.name,
           count: cat.description || `${cat.subcategories ? cat.subcategories.length : 0} Collections`,

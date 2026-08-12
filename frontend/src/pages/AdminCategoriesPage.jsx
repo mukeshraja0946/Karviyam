@@ -95,10 +95,44 @@ const getCategoryActive = (cat) => {
   return Boolean(val);
 };
 
+const CategoryToggleSwitch = ({ isActive, disabled, onToggle }) => {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onToggle}
+      className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full border transition-all cursor-pointer select-none ${
+        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-2xs active:scale-95'
+      } ${
+        isActive
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          : 'bg-slate-100 border-slate-200 text-slate-600'
+      }`}
+      title={isActive ? 'Click to Disable Category' : 'Click to Enable Category'}
+    >
+      <div
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out ${
+          isActive ? 'bg-emerald-600' : 'bg-slate-300'
+        }`}
+      >
+        <span
+          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
+            isActive ? 'translate-x-4.5' : 'translate-x-0.5'
+          }`}
+        />
+      </div>
+      <span className="text-[11px] font-extrabold tracking-wide uppercase">
+        {isActive ? 'Enabled' : 'Disabled'}
+      </span>
+    </button>
+  );
+};
+
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [togglingId, setTogglingId] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -376,30 +410,36 @@ export default function AdminCategoriesPage() {
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
 
   const handleToggleStatus = async (cat, targetStatus = null) => {
+    const catId = typeof cat === 'object' ? cat.id : cat;
     const currentActive = getCategoryActive(cat);
     const nextStatus = targetStatus !== null ? Boolean(targetStatus) : !currentActive;
 
-    // Mutate state immediately for instant UI button color change!
-    setCategories(prev => prev.map(c =>
-      String(c.id) === String(cat.id)
-        ? { ...c, isActive: nextStatus, is_active: nextStatus ? 1 : 0 }
-        : c
-    ));
+    setTogglingId(catId);
+    toast.loading(`Updating ${cat.name || 'category'} status...`, { id: 'cat-toggle-toast' });
 
-    toast.loading(`Updating ${cat.name} status...`, { id: 'cat-toggle-toast' });
     try {
       const payload = {
         isActive: nextStatus,
         active: nextStatus,
         is_active: nextStatus
       };
-      let res = await api.post(`/categories/${cat.id}/toggle-status?active=${nextStatus}`, payload).catch(() => null);
+      let res = await api.post(`/categories/${catId}/toggle-status?active=${nextStatus}`, payload).catch(() => null);
       if (!res) {
-        res = await api.put(`/categories/${cat.id}/toggle-status?active=${nextStatus}`, payload);
+        res = await api.put(`/categories/${catId}/toggle-status?active=${nextStatus}`, payload);
       }
       const apiData = res.data ? res.data : res;
       if (apiData && (apiData.success !== false || apiData.status === 'success')) {
-        toast.success(`Category ${nextStatus ? 'enabled' : 'disabled'} successfully!`, { id: 'cat-toggle-toast' });
+        const returnedObj = apiData.data || apiData;
+        const finalActive = getCategoryActive(returnedObj) !== undefined ? getCategoryActive(returnedObj) : nextStatus;
+
+        setCategories(prev => prev.map(c =>
+          String(c.id) === String(catId)
+            ? { ...c, ...returnedObj, isActive: finalActive, is_active: finalActive ? 1 : 0 }
+            : c
+        ));
+
+        toast.success(`Category ${finalActive ? 'enabled' : 'disabled'} successfully!`, { id: 'cat-toggle-toast' });
+        await fetchCategories();
         window.dispatchEvent(new Event('karviyam_categories_updated'));
       } else {
         throw new Error(apiData?.message || 'Failed to toggle category status');
@@ -408,12 +448,14 @@ export default function AdminCategoriesPage() {
       console.error(e);
       // Revert state if request failed
       setCategories(prev => prev.map(c =>
-        String(c.id) === String(cat.id)
+        String(c.id) === String(catId)
           ? { ...c, isActive: currentActive, is_active: currentActive ? 1 : 0 }
           : c
       ));
-      const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to toggle status';
+      const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to update category. Please try again.';
       toast.error(msg, { id: 'cat-toggle-toast' });
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -540,22 +582,11 @@ export default function AdminCategoriesPage() {
                           {cat.orderIndex || 0}
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleStatus(cat, true)}
-                              className={`px-3 py-1 rounded-lg font-black text-[11px] transition-all cursor-pointer ${isActive ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-800'}`}
-                            >
-                              ON
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleStatus(cat, false)}
-                              className={`px-3 py-1 rounded-lg font-black text-[11px] transition-all cursor-pointer ${!isActive ? 'bg-red-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-800'}`}
-                            >
-                              OFF
-                            </button>
-                          </div>
+                          <CategoryToggleSwitch
+                            isActive={isActive}
+                            disabled={togglingId === cat.id}
+                            onToggle={() => handleToggleStatus(cat)}
+                          />
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -606,7 +637,7 @@ export default function AdminCategoriesPage() {
                           Parent: {cat.parentName}
                         </span>
                       )}
-                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
                         {isActive ? 'ENABLED' : 'DISABLED'}
                       </span>
                     </div>
@@ -617,23 +648,12 @@ export default function AdminCategoriesPage() {
 
                 <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
                   <span className="text-[11px] font-mono text-slate-400">Order #{cat.orderIndex || 0}</span>
-                  <div className="flex items-center gap-1">
-                    <div className="inline-flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200 mr-1">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleStatus(cat, true)}
-                        className={`px-2 py-0.5 rounded font-black text-[9px] ${isActive ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}
-                      >
-                        ON
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleStatus(cat, false)}
-                        className={`px-2 py-0.5 rounded font-black text-[9px] ${!isActive ? 'bg-red-600 text-white' : 'text-slate-400'}`}
-                      >
-                        OFF
-                      </button>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <CategoryToggleSwitch
+                      isActive={isActive}
+                      disabled={togglingId === cat.id}
+                      onToggle={() => handleToggleStatus(cat)}
+                    />
                     <button
                       onClick={() => handleOpenEdit(cat)}
                       className="p-1.5 text-slate-400 hover:text-[#B71C1C] rounded-lg hover:bg-red-50"
