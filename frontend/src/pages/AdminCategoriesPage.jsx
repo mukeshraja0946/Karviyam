@@ -121,7 +121,24 @@ export default function AdminCategoriesPage() {
   });
 
   useEffect(() => {
+    // Load from localStorage cache immediately if available for instant display
+    try {
+      const saved = localStorage.getItem('karviyam_admin_categories');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) setCategories(parsed);
+      }
+    } catch (eSaved) {}
+
     fetchCategories();
+
+    const handleCategoryUpdate = () => {
+      fetchCategories();
+    };
+    window.addEventListener('karviyam_categories_updated', handleCategoryUpdate);
+    return () => {
+      window.removeEventListener('karviyam_categories_updated', handleCategoryUpdate);
+    };
   }, []);
 
   const fetchCategories = async () => {
@@ -129,17 +146,37 @@ export default function AdminCategoriesPage() {
     try {
       const res = await api.get('/categories');
       const apiData = res.data ? res.data : res;
-      const rawList = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      const rawList = Array.isArray(apiData?.data)
+        ? apiData.data
+        : (Array.isArray(apiData)
+          ? apiData
+          : (Array.isArray(apiData?.categories) ? apiData.categories : []));
       
-      const normalized = rawList.map(c => ({
-        ...c,
-        isActive: getCategoryActive(c)
-      }));
-
-      setCategories(normalized);
+      if (rawList.length > 0) {
+        const normalized = rawList.map(c => ({
+          ...c,
+          isActive: getCategoryActive(c)
+        }));
+        setCategories(normalized);
+        try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(normalized)); } catch (e) {}
+      } else {
+        const saved = localStorage.getItem('karviyam_admin_categories');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) setCategories(parsed);
+          } catch (eSaved) {}
+        }
+      }
     } catch (e) {
-      console.error(e);
-      toast.error('Failed to load categories');
+      console.error('Error fetching categories:', e);
+      const saved = localStorage.getItem('karviyam_admin_categories');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) setCategories(parsed);
+        } catch (eSaved) {}
+      }
     } finally {
       setLoading(false);
     }
@@ -265,7 +302,12 @@ export default function AdminCategoriesPage() {
           setCategories(prev => {
             let updated = [...prev];
             const idx = updated.findIndex(c => String(c.id) === String(editingCategory.id));
-            if (idx >= 0) updated[idx] = { ...updated[idx], ...savedItem };
+            const normalizedItem = {
+              ...updated[idx],
+              ...savedItem,
+              isActive: getCategoryActive(savedItem)
+            };
+            if (idx >= 0) updated[idx] = normalizedItem;
             try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(updated)); } catch (e) {}
             return updated;
           });
@@ -281,12 +323,14 @@ export default function AdminCategoriesPage() {
         if (apiData && apiData.success !== false) {
           toast.success('Category created successfully!', { id: 'cat-save-toast' });
           const savedItem = apiData.data || apiData;
+          const normalizedNew = {
+            id: savedItem?.id || Date.now(),
+            ...payload,
+            ...(savedItem || {}),
+            isActive: getCategoryActive(savedItem || payload)
+          };
           setCategories(prev => {
-            let updated = [...prev];
-            const itemToInsert = (savedItem && (savedItem.id || savedItem.name))
-              ? savedItem
-              : { id: Date.now(), ...payload };
-            updated.unshift(itemToInsert);
+            const updated = [normalizedNew, ...prev.filter(c => String(c.id) !== String(normalizedNew.id))];
             try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(updated)); } catch (e) {}
             return updated;
           });
