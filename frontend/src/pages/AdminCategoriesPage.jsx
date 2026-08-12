@@ -95,38 +95,34 @@ const getCategoryActive = (cat) => {
   return Boolean(val);
 };
 
-const CategoryStatusControl = ({ isActive, disabled, onToggle }) => {
+const CategoryToggleSwitch = ({ isActive, disabled, onToggle }) => {
   return (
-    <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onToggle(true)}
-        className={`px-3 py-1 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all cursor-pointer ${
-          disabled ? 'opacity-50 cursor-not-allowed' : ''
-        } ${
-          isActive
-            ? 'bg-emerald-600 text-white shadow-xs'
-            : 'text-slate-500 hover:text-slate-900'
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onToggle}
+      className={`relative inline-flex h-8 w-20 shrink-0 cursor-pointer items-center rounded-full transition-all duration-300 ease-in-out select-none border focus:outline-none ${
+        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'
+      } ${
+        isActive
+          ? 'bg-emerald-600 border-emerald-700 shadow-xs'
+          : 'bg-slate-300 border-slate-400 shadow-inner'
+      }`}
+      title={isActive ? 'Click to Turn OFF (Disable Category)' : 'Click to Turn ON (Enable Category)'}
+    >
+      <span
+        className={`absolute text-[11px] font-black tracking-wider transition-opacity duration-200 ${
+          isActive ? 'left-3 text-white opacity-100' : 'right-3 text-slate-700 opacity-100'
         }`}
       >
-        ENABLE
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onToggle(false)}
-        className={`px-3 py-1 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all cursor-pointer ${
-          disabled ? 'opacity-50 cursor-not-allowed' : ''
-        } ${
-          !isActive
-            ? 'bg-red-600 text-white shadow-xs'
-            : 'text-slate-500 hover:text-slate-900'
+        {isActive ? 'ON' : 'OFF'}
+      </span>
+      <span
+        className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition duration-300 ease-in-out ${
+          isActive ? 'translate-x-13' : 'translate-x-1'
         }`}
-      >
-        DISABLE
-      </button>
-    </div>
+      />
+    </button>
   );
 };
 
@@ -584,10 +580,10 @@ export default function AdminCategoriesPage() {
                           {cat.orderIndex || 0}
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <CategoryStatusControl
+                          <CategoryToggleSwitch
                             isActive={isActive}
                             disabled={togglingId === cat.id}
-                            onToggle={(targetState) => handleToggleStatus(cat, targetState)}
+                            onToggle={() => handleToggleStatus(cat)}
                           />
                         </td>
                         <td className="py-3 px-4 text-right">
@@ -651,10 +647,10 @@ export default function AdminCategoriesPage() {
                 <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
                   <span className="text-[11px] font-mono text-slate-400">Order #{cat.orderIndex || 0}</span>
                   <div className="flex items-center gap-2">
-                    <CategoryStatusControl
+                    <CategoryToggleSwitch
                       isActive={isActive}
                       disabled={togglingId === cat.id}
-                      onToggle={(targetState) => handleToggleStatus(cat, targetState)}
+                      onToggle={() => handleToggleStatus(cat)}
                     />
                     <button
                       onClick={() => handleOpenEdit(cat)}
