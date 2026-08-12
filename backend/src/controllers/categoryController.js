@@ -323,20 +323,27 @@ exports.reorderCategories = async (req, res, next) => {
   }
 };
 
+const parseBoolParam = (val) => {
+  if (val === undefined || val === null) return null;
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'number') return val === 1;
+  if (typeof val === 'string') {
+    const s = val.trim().toLowerCase();
+    if (s === 'true' || s === '1' || s === 'on' || s === 'enable' || s === 'enabled') return true;
+    if (s === 'false' || s === '0' || s === 'off' || s === 'disable' || s === 'disabled') return false;
+  }
+  return null;
+};
+
 exports.toggleStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    let targetActive = null;
-
-    if (req.query.active !== undefined) {
-      targetActive = req.query.active === 'true' || req.query.active === '1' || req.query.active === 1;
-    } else if (req.body && req.body.active !== undefined) {
-      targetActive = req.body.active === 'true' || req.body.active === '1' || req.body.active === true;
-    } else if (req.body && req.body.isActive !== undefined) {
-      targetActive = req.body.isActive === 'true' || req.body.isActive === '1' || req.body.isActive === true;
-    } else if (req.body && req.body.is_active !== undefined) {
-      targetActive = req.body.is_active === 'true' || req.body.is_active === '1' || req.body.is_active === true;
-    }
+    
+    let targetActive = parseBoolParam(req.query?.active)
+      ?? parseBoolParam(req.query?.isActive)
+      ?? parseBoolParam(req.body?.active)
+      ?? parseBoolParam(req.body?.isActive)
+      ?? parseBoolParam(req.body?.is_active);
 
     const [rows] = await pool.query('SELECT is_active FROM categories WHERE id = ?', [id]);
     if (rows.length === 0) {
