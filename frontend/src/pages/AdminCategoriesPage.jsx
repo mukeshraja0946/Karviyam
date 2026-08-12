@@ -82,6 +82,19 @@ const compressBase64Url = (url) => {
   });
 };
 
+const getCategoryActive = (cat) => {
+  if (!cat) return true;
+  const val = cat.isActive !== undefined ? cat.isActive : cat.is_active;
+  if (val === undefined || val === null) return true;
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'number') return val === 1;
+  if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
+  if (typeof val === 'object' && val !== null && val.type === 'Buffer' && Array.isArray(val.data)) {
+    return val.data[0] === 1 || val.data[0] === 0x01;
+  }
+  return Boolean(val);
+};
+
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -116,32 +129,14 @@ export default function AdminCategoriesPage() {
     try {
       const res = await api.get('/categories');
       const apiData = res.data ? res.data : res;
-      const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      const rawList = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      
+      const normalized = rawList.map(c => ({
+        ...c,
+        isActive: getCategoryActive(c)
+      }));
 
-      setCategories(prev => {
-        if (list.length > 0) {
-          const merged = [...list];
-          prev.forEach(p => {
-            if (p && p.id && !merged.some(m => String(m.id) === String(p.id))) {
-              merged.unshift(p);
-            }
-          });
-          try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(merged)); } catch (e) {}
-          return merged;
-        } else if (prev.length > 0) {
-          try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(prev)); } catch (e) {}
-          return prev;
-        } else {
-          try {
-            const saved = localStorage.getItem('karviyam_admin_categories');
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-            }
-          } catch (eSaved) {}
-          return [];
-        }
-      });
+      setCategories(normalized);
     } catch (e) {
       console.error(e);
       toast.error('Failed to load categories');
@@ -337,7 +332,16 @@ export default function AdminCategoriesPage() {
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
 
   const handleToggleStatus = async (cat, targetStatus = null) => {
-    const nextStatus = targetStatus !== null ? Boolean(targetStatus) : !cat.isActive;
+    const currentActive = getCategoryActive(cat);
+    const nextStatus = targetStatus !== null ? Boolean(targetStatus) : !currentActive;
+
+    // Mutate state immediately for instant UI button color change!
+    setCategories(prev => prev.map(c =>
+      String(c.id) === String(cat.id)
+        ? { ...c, isActive: nextStatus, is_active: nextStatus ? 1 : 0 }
+        : c
+    ));
+
     toast.loading(`Updating ${cat.name} status...`, { id: 'cat-toggle-toast' });
     try {
       const payload = {
@@ -352,13 +356,18 @@ export default function AdminCategoriesPage() {
       const apiData = res.data ? res.data : res;
       if (apiData && (apiData.success !== false || apiData.status === 'success')) {
         toast.success(`Category ${nextStatus ? 'enabled' : 'disabled'} successfully!`, { id: 'cat-toggle-toast' });
-        await fetchCategories();
         window.dispatchEvent(new Event('karviyam_categories_updated'));
       } else {
         throw new Error(apiData?.message || 'Failed to toggle category status');
       }
     } catch (e) {
       console.error(e);
+      // Revert state if request failed
+      setCategories(prev => prev.map(c =>
+        String(c.id) === String(cat.id)
+          ? { ...c, isActive: currentActive, is_active: currentActive ? 1 : 0 }
+          : c
+      ));
       const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to toggle status';
       toast.error(msg, { id: 'cat-toggle-toast' });
     }
@@ -453,8 +462,9 @@ export default function AdminCategoriesPage() {
                 ) : (
                   filtered.map((cat) => {
                     const parentCat = categories.find(c => String(c.id) === String(cat.parentId));
+                    const isActive = getCategoryActive(cat);
                     return (
-                      <tr key={cat.id} className={`hover:bg-slate-50/80 transition-colors ${!cat.isActive ? 'bg-amber-50/20' : ''}`}>
+                      <tr key={cat.id} className={`hover:bg-slate-50/80 transition-colors ${!isActive ? 'bg-amber-50/20' : ''}`}>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             <img
@@ -490,14 +500,14 @@ export default function AdminCategoriesPage() {
                             <button
                               type="button"
                               onClick={() => handleToggleStatus(cat, true)}
-                              className={`px-3 py-1 rounded-lg font-black text-[11px] transition-all cursor-pointer ${cat.isActive ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-800'}`}
+                              className={`px-3 py-1 rounded-lg font-black text-[11px] transition-all cursor-pointer ${isActive ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-800'}`}
                             >
                               ON
                             </button>
                             <button
                               type="button"
                               onClick={() => handleToggleStatus(cat, false)}
-                              className={`px-3 py-1 rounded-lg font-black text-[11px] transition-all cursor-pointer ${!cat.isActive ? 'bg-red-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-800'}`}
+                              className={`px-3 py-1 rounded-lg font-black text-[11px] transition-all cursor-pointer ${!isActive ? 'bg-red-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-800'}`}
                             >
                               OFF
                             </button>
@@ -532,70 +542,73 @@ export default function AdminCategoriesPage() {
       ) : (
         /* Categories Cards Grid */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((cat) => (
-            <div key={cat.id} className={`bg-white p-5 rounded-2xl border ${cat.isActive ? 'border-slate-200' : 'border-amber-200 bg-amber-50/20'} shadow-xs flex flex-col justify-between space-y-4`}>
-              <div className="flex items-start gap-4">
-                <img
-                  src={cat.imageUrl || cat.iconUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'}
-                  alt={cat.name}
-                  className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-red-50 text-[#B71C1C]">
-                      {cat.type}
-                    </span>
-                    {cat.parentName && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                        Parent: {cat.parentName}
+          {filtered.map((cat) => {
+            const isActive = getCategoryActive(cat);
+            return (
+              <div key={cat.id} className={`bg-white p-5 rounded-2xl border ${isActive ? 'border-slate-200' : 'border-amber-200 bg-amber-50/20'} shadow-xs flex flex-col justify-between space-y-4`}>
+                <div className="flex items-start gap-4">
+                  <img
+                    src={cat.imageUrl || cat.iconUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'}
+                    alt={cat.name}
+                    className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-red-50 text-[#B71C1C]">
+                        {cat.type}
                       </span>
-                    )}
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${cat.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
-                      {cat.isActive ? 'Active' : 'Disabled'}
-                    </span>
+                      {cat.parentName && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                          Parent: {cat.parentName}
+                        </span>
+                      )}
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                        {isActive ? 'ENABLED' : 'DISABLED'}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-slate-900 text-sm truncate">{cat.name}</h3>
+                    <p className="text-xs text-slate-500 line-clamp-1">{cat.description || 'No description'}</p>
                   </div>
-                  <h3 className="font-bold text-slate-900 text-sm truncate">{cat.name}</h3>
-                  <p className="text-xs text-slate-500 line-clamp-1">{cat.description || 'No description'}</p>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
-                <span className="text-[11px] font-mono text-slate-400">Order #{cat.orderIndex || 0}</span>
-                <div className="flex items-center gap-1">
-                  <div className="inline-flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200 mr-1">
+                <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+                  <span className="text-[11px] font-mono text-slate-400">Order #{cat.orderIndex || 0}</span>
+                  <div className="flex items-center gap-1">
+                    <div className="inline-flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200 mr-1">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(cat, true)}
+                        className={`px-2 py-0.5 rounded font-black text-[9px] ${isActive ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}
+                      >
+                        ON
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(cat, false)}
+                        className={`px-2 py-0.5 rounded font-black text-[9px] ${!isActive ? 'bg-red-600 text-white' : 'text-slate-400'}`}
+                      >
+                        OFF
+                      </button>
+                    </div>
                     <button
-                      type="button"
-                      onClick={() => handleToggleStatus(cat, true)}
-                      className={`px-2 py-0.5 rounded font-black text-[9px] ${cat.isActive ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}
+                      onClick={() => handleOpenEdit(cat)}
+                      className="p-1.5 text-slate-400 hover:text-[#B71C1C] rounded-lg hover:bg-red-50"
+                      title="Edit Category"
                     >
-                      ON
+                      <Edit2 className="w-4 h-4" />
                     </button>
                     <button
-                      type="button"
-                      onClick={() => handleToggleStatus(cat, false)}
-                      className={`px-2 py-0.5 rounded font-black text-[9px] ${!cat.isActive ? 'bg-red-600 text-white' : 'text-slate-400'}`}
+                      onClick={() => handleDelete(cat)}
+                      className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50"
+                      title="Delete Category"
                     >
-                      OFF
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <button
-                    onClick={() => handleOpenEdit(cat)}
-                    className="p-1.5 text-slate-400 hover:text-[#B71C1C] rounded-lg hover:bg-red-50"
-                    title="Edit Category"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(cat)}
-                    className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50"
-                    title="Delete Category"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

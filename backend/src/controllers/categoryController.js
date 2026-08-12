@@ -62,6 +62,9 @@ const ensureMainCategoriesExist = async () => {
 const parseIsActive = (val) => {
   if (val === undefined || val === null) return true;
   if (Buffer.isBuffer(val)) return val[0] === 1 || val[0] === 0x01;
+  if (typeof val === 'object' && val !== null && val.type === 'Buffer' && Array.isArray(val.data)) {
+    return val.data[0] === 1 || val.data[0] === 0x01;
+  }
   if (typeof val === 'number') return val === 1;
   if (typeof val === 'boolean') return val;
   if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
