@@ -323,14 +323,25 @@ exports.reorderCategories = async (req, res, next) => {
 exports.toggleStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const active = req.query.active !== undefined ? req.query.active === 'true' : null;
+    let targetActive = null;
+
+    if (req.query.active !== undefined) {
+      targetActive = req.query.active === 'true' || req.query.active === '1' || req.query.active === 1;
+    } else if (req.body && req.body.active !== undefined) {
+      targetActive = req.body.active === 'true' || req.body.active === '1' || req.body.active === true;
+    } else if (req.body && req.body.isActive !== undefined) {
+      targetActive = req.body.isActive === 'true' || req.body.isActive === '1' || req.body.isActive === true;
+    } else if (req.body && req.body.is_active !== undefined) {
+      targetActive = req.body.is_active === 'true' || req.body.is_active === '1' || req.body.is_active === true;
+    }
 
     const [rows] = await pool.query('SELECT is_active FROM categories WHERE id = ?', [id]);
     if (rows.length === 0) {
       return res.status(404).json(ApiResponse.error('Category not found'));
     }
 
-    const newStatus = active !== null ? (active ? 1 : 0) : (rows[0].is_active ? 0 : 1);
+    const currentActive = parseIsActive(rows[0].is_active);
+    const newStatus = targetActive !== null ? (targetActive ? 1 : 0) : (currentActive ? 0 : 1);
     await pool.query('UPDATE categories SET is_active = ? WHERE id = ?', [newStatus, id]);
 
     const [updatedRows] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);

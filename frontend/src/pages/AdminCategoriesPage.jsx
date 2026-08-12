@@ -340,9 +340,13 @@ export default function AdminCategoriesPage() {
     const nextStatus = targetStatus !== null ? Boolean(targetStatus) : !cat.isActive;
     toast.loading(`Updating ${cat.name} status...`, { id: 'cat-toggle-toast' });
     try {
-      const res = await api.put(`/categories/${cat.id}/toggle-status?active=${nextStatus}`);
+      const res = await api.put(`/categories/${cat.id}/toggle-status?active=${nextStatus}`, {
+        isActive: nextStatus,
+        active: nextStatus,
+        is_active: nextStatus
+      });
       const apiData = res.data ? res.data : res;
-      if (apiData && apiData.success !== false) {
+      if (apiData && (apiData.success !== false || apiData.status === 'success')) {
         toast.success(`Category ${nextStatus ? 'enabled' : 'disabled'} successfully!`, { id: 'cat-toggle-toast' });
         await fetchCategories();
         window.dispatchEvent(new Event('karviyam_categories_updated'));
@@ -351,7 +355,7 @@ export default function AdminCategoriesPage() {
       }
     } catch (e) {
       console.error(e);
-      const msg = e.response?.data?.message || 'Failed to toggle status';
+      const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to toggle status';
       toast.error(msg, { id: 'cat-toggle-toast' });
     }
   };
