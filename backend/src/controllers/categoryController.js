@@ -27,7 +27,36 @@ const ensureCategoryTableExists = async () => {
     try { await pool.query("ALTER TABLE categories MODIFY COLUMN image_url LONGTEXT"); } catch (e) {}
     try { await pool.query("ALTER TABLE categories MODIFY COLUMN icon_url LONGTEXT"); } catch (e) {}
     try { await pool.query("ALTER TABLE categories MODIFY COLUMN banner_url LONGTEXT"); } catch (e) {}
+
+    await ensureMainCategoriesExist();
   } catch (e) {}
+};
+
+const ensureMainCategoriesExist = async () => {
+  try {
+    const required = [
+      { name: 'MEN', type: 'MEN', description: "Men's clothing and products", order: 1 },
+      { name: 'WOMEN', type: 'WOMEN', description: "Women's clothing and products", order: 2 },
+      { name: 'UNISEX', type: 'UNISEX', description: "Unisex clothing and products", order: 3 },
+      { name: 'JEWELS', type: 'JEWELS', description: "Jewellery products", order: 4 }
+    ];
+
+    for (const item of required) {
+      const [rows] = await pool.query(
+        'SELECT id FROM categories WHERE parent_id IS NULL AND LOWER(name) = LOWER(?)',
+        [item.name]
+      );
+      if (rows.length === 0) {
+        const slug = item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        await pool.query(
+          'INSERT INTO categories (name, slug, type, description, order_index, is_active) VALUES (?, ?, ?, ?, ?, 1)',
+          [item.name, slug, item.type, item.description, item.order]
+        );
+      }
+    }
+  } catch (e) {
+    console.error('Error ensuring main categories exist:', e);
+  }
 };
 
 const parseIsActive = (val) => {

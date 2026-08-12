@@ -5,8 +5,10 @@ import toast from 'react-hot-toast';
 import BulkCategoryImportModal from '../components/BulkCategoryImportModal';
 
 const CLASSIFICATION_OPTIONS = [
-  'WOMEN',
   'MEN',
+  'WOMEN',
+  'UNISEX',
+  'JEWELS',
   'KIDS & BABY',
   'ACCESSORIES',
   'KITCHEN & HOME',
@@ -309,14 +311,16 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this category?')) return;
-    toast.loading('Deleting category...', { id: 'cat-del-toast' });
+  const handleDelete = async (cat) => {
+    const catId = typeof cat === 'object' ? cat.id : cat;
+    const catName = typeof cat === 'object' ? cat.name : 'this category';
+    if (!window.confirm(`Are you sure you want to delete ${catName}?`)) return;
+    toast.loading(`Deleting category ${catName}...`, { id: 'cat-del-toast' });
     try {
-      await api.delete(`/categories/${id}`).catch(() => null);
+      await api.delete(`/categories/${catId}`).catch(() => null);
 
       setCategories(prev => {
-        const updated = prev.filter(c => String(c.id) !== String(id));
+        const updated = prev.filter(c => String(c.id) !== String(catId));
         try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(updated)); } catch (e) {}
         return updated;
       });
@@ -501,7 +505,7 @@ export default function AdminCategoriesPage() {
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => handleDelete(cat.id)}
+                              onClick={() => handleDelete(cat)}
                               className="p-1.5 text-slate-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                               title="Delete Category"
                             >
@@ -574,7 +578,7 @@ export default function AdminCategoriesPage() {
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(cat.id)}
+                    onClick={() => handleDelete(cat)}
                     className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50"
                     title="Delete Category"
                   >
