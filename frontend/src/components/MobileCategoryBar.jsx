@@ -2,18 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
-const DEFAULT_MOBILE_CATEGORIES = [
-  { id: 1, name: "Women", image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400", query: "category=Women" },
-  { id: 2, name: "Men", image: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400", query: "category=Men" },
-  { id: 3, name: "Kitchen", image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=400", query: "category=Kitchenware" },
-  { id: 4, name: "Jewelry", image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400", query: "category=Accessories" },
-  { id: 5, name: "Kids", image: "https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=400", query: "category=Kids" },
-  { id: 6, name: "Ethnic", image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=400", query: "category=Ethnic" },
-];
+const DEFAULT_MOBILE_PLACEHOLDER = "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400";
 
 export default function MobileCategoryBar() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState(DEFAULT_MOBILE_CATEGORIES);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     fetchCategories();
@@ -28,14 +21,16 @@ export default function MobileCategoryBar() {
       const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
 
       if (list.length > 0) {
-        const formatted = list.map((cat, idx) => ({
+        const formatted = list.map((cat) => ({
           id: cat.id,
           name: cat.name.split(' ')[0], // Compact first word
           fullName: cat.name,
-          image: cat.imageUrl || DEFAULT_MOBILE_CATEGORIES[idx % DEFAULT_MOBILE_CATEGORIES.length].image,
+          image: cat.imageUrl || cat.iconUrl || DEFAULT_MOBILE_PLACEHOLDER,
           query: `category=${encodeURIComponent(cat.name)}`
         }));
         setCategories(formatted);
+      } else {
+        setCategories([]);
       }
     } catch (e) {
       console.error(e);
