@@ -3,7 +3,7 @@ import { useSearchParams, useParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 import api from '../utils/api';
-import { SlidersHorizontal, ChevronDown, Check, X, Filter } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown, Check, X, Filter, EyeOff } from 'lucide-react';
 
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -12,6 +12,8 @@ export default function ShopPage() {
   const [loading, setLoading] = useState(true);
 
   const [categoriesTree, setCategoriesTree] = useState([]);
+  const [allCategoriesList, setAllCategoriesList] = useState([]);
+  const [isCategoryDisabled, setIsCategoryDisabled] = useState(false);
   const [brands, setBrands] = useState([]);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
@@ -76,13 +78,17 @@ export default function ShopPage() {
 
   const fetchMetadata = async () => {
     try {
-      const [catRes, brandRes] = await Promise.all([
+      const [catRes, brandRes, allCatRes] = await Promise.all([
         api.get('/categories/tree'),
-        api.get('/brands')
+        api.get('/brands'),
+        api.get('/categories?all=true').catch(() => null)
       ]);
       const catData = catRes.data ? catRes.data : catRes;
       const brandData = brandRes.data ? brandRes.data : brandRes;
+      const allCatData = allCatRes?.data ? allCatRes.data : allCatRes;
+
       setCategoriesTree(Array.isArray(catData.data) ? catData.data : (Array.isArray(catData) ? catData : []));
+      setAllCategoriesList(Array.isArray(allCatData?.data) ? allCatData.data : (Array.isArray(allCatData) ? allCatData : []));
       setBrands(Array.isArray(brandData.data) ? brandData.data : (Array.isArray(brandData) ? brandData : []));
     } catch (e) {
       console.error(e);
@@ -91,6 +97,21 @@ export default function ShopPage() {
 
   const fetchProducts = async () => {
     setLoading(true);
+    if (selectedCategory && allCategoriesList.length > 0) {
+      const catLower = String(selectedCategory).trim().toLowerCase();
+      const matchedAll = allCategoriesList.find(c =>
+        String(c.id) === String(selectedCategory) ||
+        (c.name || '').toLowerCase() === catLower ||
+        (c.slug || '').toLowerCase() === catLower
+      );
+      if (matchedAll && (matchedAll.isActive === false || matchedAll.is_active === 0 || matchedAll.is_active === false)) {
+        setIsCategoryDisabled(true);
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+    }
+    setIsCategoryDisabled(false);
     try {
       let query = `/products?size=60&sortBy=${sortBy}&sortDir=${sortDir}`;
       if (priceRange && priceRange < 10000) {
@@ -448,7 +469,21 @@ export default function ShopPage() {
 
         {/* Product Grid - STRICT 3 COLUMNS ON MOBILE */}
         <div className="flex-1 min-w-0">
-          {loading ? (
+          {isCategoryDisabled ? (
+            <div className="bg-amber-50/90 border border-amber-200 p-8 sm:p-12 rounded-3xl text-center space-y-4 max-w-xl mx-auto my-6 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                <EyeOff className="w-6 h-6" />
+              </div>
+              <h3 className="font-display font-extrabold text-xl text-slate-900">Category Currently Unavailable</h3>
+              <p className="text-xs text-slate-600">The requested category is currently disabled or inactive in our catalog.</p>
+              <button
+                onClick={clearFilters}
+                className="inline-block bg-[#B71C1C] hover:bg-[#900C0C] text-white text-xs font-bold px-6 py-2.5 rounded-full shadow-md cursor-pointer transition-all"
+              >
+                View All Active Products →
+              </button>
+            </div>
+          ) : loading ? (
             <SkeletonLoader count={6} />
           ) : products.length === 0 ? (
             <div className="bg-white p-8 sm:p-12 rounded-2xl sm:rounded-3xl text-center border border-slate-200/80 shadow-xs">

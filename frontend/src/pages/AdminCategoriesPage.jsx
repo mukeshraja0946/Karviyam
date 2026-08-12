@@ -330,13 +330,16 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  const handleToggleStatus = async (cat) => {
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
+
+  const handleToggleStatus = async (cat, targetStatus = null) => {
+    const nextStatus = targetStatus !== null ? Boolean(targetStatus) : !cat.isActive;
     toast.loading(`Updating ${cat.name} status...`, { id: 'cat-toggle-toast' });
     try {
-      const res = await api.put(`/categories/${cat.id}/toggle-status?active=${!cat.isActive}`);
+      const res = await api.put(`/categories/${cat.id}/toggle-status?active=${nextStatus}`);
       const apiData = res.data ? res.data : res;
       if (apiData && apiData.success !== false) {
-        toast.success(`Category ${!cat.isActive ? 'enabled' : 'disabled'} successfully!`, { id: 'cat-toggle-toast' });
+        toast.success(`Category ${nextStatus ? 'enabled' : 'disabled'} successfully!`, { id: 'cat-toggle-toast' });
         await fetchCategories();
         window.dispatchEvent(new Event('karviyam_categories_updated'));
       } else {
@@ -382,8 +385,8 @@ export default function AdminCategoriesPage() {
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between gap-4">
+      {/* Filter Bar & View Toggle */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
           <input
@@ -394,67 +397,195 @@ export default function AdminCategoriesPage() {
             className="w-full bg-slate-50 border border-slate-200 text-xs pl-10 pr-4 py-2.5 rounded-xl outline-none focus:border-[#B71C1C]"
           />
         </div>
-        <span className="text-xs font-bold text-slate-600">{filtered.length} Categories Total</span>
-      </div>
-
-      {/* Categories Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map((cat) => (
-          <div key={cat.id} className={`bg-white p-5 rounded-2xl border ${cat.isActive ? 'border-slate-200' : 'border-amber-200 bg-amber-50/20'} shadow-xs flex flex-col justify-between space-y-4`}>
-            <div className="flex items-start gap-4">
-              <img
-                src={cat.imageUrl || cat.iconUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'}
-                alt={cat.name}
-                className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shrink-0"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-red-50 text-[#B71C1C]">
-                    {cat.type}
-                  </span>
-                  {cat.parentName && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                      Parent: {cat.parentName}
-                    </span>
-                  )}
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${cat.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
-                    {cat.isActive ? 'Active' : 'Disabled'}
-                  </span>
-                </div>
-                <h3 className="font-bold text-slate-900 text-sm truncate">{cat.name}</h3>
-                <p className="text-xs text-slate-500 line-clamp-1">{cat.description || 'No description'}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
-              <span className="text-[11px] font-mono text-slate-400">Order #{cat.orderIndex || 0}</span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => handleToggleStatus(cat)}
-                  className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
-                  title={cat.isActive ? 'Disable Category' : 'Enable Category'}
-                >
-                  {cat.isActive ? <Eye className="w-4 h-4 text-emerald-600" /> : <EyeOff className="w-4 h-4 text-amber-600" />}
-                </button>
-                <button
-                  onClick={() => handleOpenEdit(cat)}
-                  className="p-1.5 text-slate-400 hover:text-[#B71C1C] rounded-lg hover:bg-red-50"
-                  title="Edit Category"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(cat.id)}
-                  className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50"
-                  title="Delete Category"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-xs font-bold text-slate-600">{filtered.length} Categories Total</span>
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'table' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              Table View
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'grid' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              Grid View
+            </button>
           </div>
-        ))}
+        </div>
       </div>
+
+      {/* Structured Category Table */}
+      {viewMode === 'table' ? (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase text-slate-600 tracking-wider">
+                <tr>
+                  <th className="py-3.5 px-4">Category</th>
+                  <th className="py-3.5 px-4">Parent Category</th>
+                  <th className="py-3.5 px-4">Classification</th>
+                  <th className="py-3.5 px-4 text-center">Display Order</th>
+                  <th className="py-3.5 px-4 text-center">STATUS</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400 font-bold">
+                      No categories found matching filter criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((cat) => {
+                    const parentCat = categories.find(c => String(c.id) === String(cat.parentId));
+                    return (
+                      <tr key={cat.id} className={`hover:bg-slate-50/80 transition-colors ${!cat.isActive ? 'bg-amber-50/20' : ''}`}>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={cat.imageUrl || cat.iconUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'}
+                              alt={cat.name}
+                              className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0"
+                            />
+                            <div>
+                              <p className="font-bold text-slate-900 text-xs">{cat.name}</p>
+                              <p className="text-[11px] text-slate-500 line-clamp-1">{cat.description || 'No description'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {parentCat ? (
+                            <span className="font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full text-[11px]">
+                              {parentCat.name}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-[11px]">None (Top-Level)</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-red-50 text-[#B71C1C] text-[10px]">
+                            {cat.type || 'WOMEN'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center font-mono font-bold text-slate-700">
+                          {cat.orderIndex || 0}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(cat, true)}
+                              className={`px-3 py-1 rounded-lg font-black text-[11px] transition-all cursor-pointer ${cat.isActive ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-800'}`}
+                            >
+                              ON
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(cat, false)}
+                              className={`px-3 py-1 rounded-lg font-black text-[11px] transition-all cursor-pointer ${!cat.isActive ? 'bg-red-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-800'}`}
+                            >
+                              OFF
+                            </button>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleOpenEdit(cat)}
+                              className="p-1.5 text-slate-500 hover:text-[#B71C1C] rounded-lg hover:bg-red-50 transition-colors"
+                              title="Edit Category"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(cat.id)}
+                              className="p-1.5 text-slate-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                              title="Delete Category"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        /* Categories Cards Grid */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((cat) => (
+            <div key={cat.id} className={`bg-white p-5 rounded-2xl border ${cat.isActive ? 'border-slate-200' : 'border-amber-200 bg-amber-50/20'} shadow-xs flex flex-col justify-between space-y-4`}>
+              <div className="flex items-start gap-4">
+                <img
+                  src={cat.imageUrl || cat.iconUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'}
+                  alt={cat.name}
+                  className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-red-50 text-[#B71C1C]">
+                      {cat.type}
+                    </span>
+                    {cat.parentName && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                        Parent: {cat.parentName}
+                      </span>
+                    )}
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${cat.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+                      {cat.isActive ? 'Active' : 'Disabled'}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-sm truncate">{cat.name}</h3>
+                  <p className="text-xs text-slate-500 line-clamp-1">{cat.description || 'No description'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+                <span className="text-[11px] font-mono text-slate-400">Order #{cat.orderIndex || 0}</span>
+                <div className="flex items-center gap-1">
+                  <div className="inline-flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200 mr-1">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStatus(cat, true)}
+                      className={`px-2 py-0.5 rounded font-black text-[9px] ${cat.isActive ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}
+                    >
+                      ON
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStatus(cat, false)}
+                      className={`px-2 py-0.5 rounded font-black text-[9px] ${!cat.isActive ? 'bg-red-600 text-white' : 'text-slate-400'}`}
+                    >
+                      OFF
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => handleOpenEdit(cat)}
+                    className="p-1.5 text-slate-400 hover:text-[#B71C1C] rounded-lg hover:bg-red-50"
+                    title="Edit Category"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(cat.id)}
+                    className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50"
+                    title="Delete Category"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Add/Edit Modal */}
       {modalOpen && (
@@ -517,6 +648,30 @@ export default function AdminCategoriesPage() {
                     onChange={(e) => setFormData({ ...formData, orderIndex: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl outline-none"
                   />
+                </div>
+              </div>
+
+              {/* Row 1.5: Category Status Control */}
+              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="font-bold text-slate-800 text-xs">Category Status *</h4>
+                  <p className="text-[11px] text-slate-500">Enabled categories appear in customer navigation. Disabled categories are hidden.</p>
+                </div>
+                <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, isActive: true })}
+                    className={`px-3.5 py-1 rounded-lg font-black text-xs transition-all cursor-pointer ${formData.isActive ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+                  >
+                    Enabled [ ON ]
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, isActive: false })}
+                    className={`px-3.5 py-1 rounded-lg font-black text-xs transition-all cursor-pointer ${!formData.isActive ? 'bg-red-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+                  >
+                    Disabled [ OFF ]
+                  </button>
                 </div>
               </div>
 

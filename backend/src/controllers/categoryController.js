@@ -30,6 +30,15 @@ const ensureCategoryTableExists = async () => {
   } catch (e) {}
 };
 
+const parseIsActive = (val) => {
+  if (val === undefined || val === null) return true;
+  if (Buffer.isBuffer(val)) return val[0] === 1 || val[0] === 0x01;
+  if (typeof val === 'number') return val === 1;
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
+  return Boolean(val);
+};
+
 const mapCategoryRow = (c) => ({
   id: c.id,
   parentId: c.parent_id,
@@ -41,7 +50,7 @@ const mapCategoryRow = (c) => ({
   iconUrl: c.icon_url,
   bannerUrl: c.banner_url,
   orderIndex: c.order_index || 0,
-  isActive: c.is_active !== undefined ? Boolean(c.is_active) : true,
+  isActive: parseIsActive(c.is_active),
   seoTitle: c.seo_title,
   metaDescription: c.meta_description,
   metaKeywords: c.meta_keywords,
@@ -53,7 +62,7 @@ exports.getAllCategories = async (req, res, next) => {
     await ensureCategoryTableExists();
     const activeOnly = req.query.activeOnly === 'true';
     const query = activeOnly
-      ? 'SELECT * FROM categories WHERE is_active = 1 OR is_active IS TRUE ORDER BY order_index ASC, id ASC'
+      ? 'SELECT * FROM categories WHERE is_active = 1 OR is_active = b\'1\' OR is_active IS TRUE ORDER BY order_index ASC, id ASC'
       : 'SELECT * FROM categories ORDER BY order_index ASC, id ASC';
     const [rows] = await pool.query(query);
     const categories = rows.map(mapCategoryRow);
@@ -69,7 +78,7 @@ exports.getCategoryTree = async (req, res, next) => {
     const includeAll = req.query.all === 'true';
     const query = includeAll
       ? 'SELECT * FROM categories ORDER BY order_index ASC, id ASC'
-      : 'SELECT * FROM categories WHERE is_active = 1 OR is_active IS TRUE ORDER BY order_index ASC, id ASC';
+      : 'SELECT * FROM categories WHERE is_active = 1 OR is_active = b\'1\' OR is_active IS TRUE ORDER BY order_index ASC, id ASC';
     const [rows] = await pool.query(query);
     const categories = rows.map(mapCategoryRow);
 
