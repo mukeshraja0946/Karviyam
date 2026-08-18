@@ -7,6 +7,7 @@ import GoogleSignInButton from '../components/GoogleSignInButton';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { login, loading, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -15,12 +16,12 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated) {
       if (isAdmin) {
-        navigate('/admin', { replace: true });
+        window.location.href = '/admin';
       } else {
-        navigate('/', { replace: true });
+        window.location.href = '/';
       }
     }
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, isAdmin]);
 
   // Custom Admin Uploaded Logo
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
@@ -51,17 +52,21 @@ export default function LoginPage() {
       toast.error('Please enter your password');
       return;
     }
+    setIsSubmitting(true);
     try {
       const res = await login(email, password);
       if (res && res.success) {
         if (res.isAdmin) {
-          navigate('/admin', { replace: true });
+          window.location.href = '/admin';
         } else {
-          navigate('/', { replace: true });
+          window.location.href = '/';
         }
+        return;
       }
     } catch (err) {
       console.error('Login submit error:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -152,12 +157,12 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || isSubmitting}
             className={`w-full flex items-center justify-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-xs uppercase tracking-wider transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed mt-6 ${
               isMaintenanceMode ? 'py-4 rounded-2xl' : 'py-3.5 rounded-xl'
             }`}
           >
-            {loading ? (
+            {(loading || isSubmitting) ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>AUTHENTICATING...</span>
