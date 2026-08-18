@@ -8,7 +8,17 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 2. ALLOW PHYSICAL FILES AND STATIC ASSETS TO PASS THROUGH DIRECTLY
+  # 2. SERVE STATIC FILES FROM FRONTEND BUILD DIRECTORIES IF PRESENT
+  RewriteCond %{DOCUMENT_ROOT}/frontend/dist/$1 -f
+  RewriteRule ^(.*)$ /frontend/dist/$1 [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/frontend/public/$1 -f
+  RewriteRule ^(.*)$ /frontend/public/$1 [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/dist/$1 -f
+  RewriteRule ^(.*)$ /dist/$1 [L]
+
+  # 3. ALLOW PHYSICAL FILES AND STATIC ASSETS TO PASS THROUGH DIRECTLY
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d [OR]
   RewriteCond %{REQUEST_URI} \.(ico|png|svg|jpg|jpeg|gif|webp|css|js)$ [NC]
