@@ -62,12 +62,16 @@ exports.login = async (req, res, next) => {
     }
 
     let isMatch = false;
+    let isBcryptMatched = false;
 
     // 1. Try standard bcrypt compare (converting legacy PHP $2y$ prefix to $2a$ if needed)
     if (user.password) {
       try {
         const formattedHash = user.password.replace(/^\$2y\$/, '$2a$');
         isMatch = await bcrypt.compare(password, formattedHash);
+        if (isMatch) {
+          isBcryptMatched = true;
+        }
       } catch (e) {}
     }
 
@@ -90,12 +94,14 @@ exports.login = async (req, res, next) => {
       }
     }
 
-    // Auto-update database hash when authenticated via fallback/plain-text
+    // Auto-update database hash ONLY when authenticated via fallback/plain-text (not when bcrypt already matched)
     if (isMatch) {
-      try {
-        const newHash = await bcrypt.hash(password, 10);
-        await pool.query('UPDATE users SET password = ? WHERE id = ?', [newHash, user.id]);
-      } catch (e) {}
+      if (!isBcryptMatched && user.id) {
+        try {
+          const newHash = await bcrypt.hash(password, 10);
+          await pool.query('UPDATE users SET password = ? WHERE id = ?', [newHash, user.id]);
+        } catch (e) {}
+      }
     } else {
       return res.status(400).json(ApiResponse.error('Invalid email or password'));
     }

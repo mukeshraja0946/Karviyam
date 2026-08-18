@@ -55,7 +55,14 @@ export const AuthProvider = ({ children }) => {
         return false;
       }
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Invalid email or password';
+      let msg = 'Invalid email or password';
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        msg = 'Connection timed out. Please verify backend server status.';
+      } else if (err.response?.data?.message) {
+        msg = err.response.data.message;
+      } else if (err.message) {
+        msg = err.message;
+      }
       toast.error(msg);
       return false;
     } finally {
