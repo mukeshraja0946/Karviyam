@@ -58,7 +58,7 @@ exports.login = async (req, res, next) => {
     }
 
     if (!user) {
-      return res.status(400).json(ApiResponse.error('Invalid email or password'));
+      return res.status(401).json(ApiResponse.error('Invalid email or password'));
     }
 
     let isMatch = false;
@@ -103,7 +103,7 @@ exports.login = async (req, res, next) => {
         } catch (e) {}
       }
     } else {
-      return res.status(400).json(ApiResponse.error('Invalid email or password'));
+      return res.status(401).json(ApiResponse.error('Invalid email or password'));
     }
 
     // Fetch user roles

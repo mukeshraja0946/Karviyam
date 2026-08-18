@@ -43,7 +43,14 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim() || !password) return;
+    if (!email || !email.trim()) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    if (!password || !password.trim()) {
+      toast.error('Please enter your password');
+      return;
+    }
     try {
       const res = await login(email, password);
       if (res && res.success) {
