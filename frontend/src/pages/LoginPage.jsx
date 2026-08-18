@@ -8,8 +8,19 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login, loading } = useAuth();
+  const { login, loading, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect authenticated user if visiting /login
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (isAdmin) {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
 
   // Custom Admin Uploaded Logo
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
@@ -32,9 +43,18 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await login(email, password);
-    if (success) {
-      navigate('/');
+    if (!email.trim() || !password) return;
+    try {
+      const res = await login(email, password);
+      if (res && res.success) {
+        if (res.isAdmin) {
+          navigate('/admin', { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
+      }
+    } catch (err) {
+      console.error('Login submit error:', err);
     }
   };
 

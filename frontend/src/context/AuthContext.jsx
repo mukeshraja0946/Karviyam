@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
 
       if (typeof payload === 'string' && (payload.toLowerCase().includes('<!doctype') || payload.toLowerCase().includes('<html'))) {
         toast.error('API endpoint returned HTML instead of JSON. Backend server may be offline or misconfigured.');
-        return false;
+        return { success: false };
       }
 
       if (payload && payload.success) {
@@ -48,11 +48,14 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         localStorage.setItem('karviyam_token', token);
         localStorage.setItem('karviyam_user', JSON.stringify(userData));
+
+        const userIsAdmin = userData?.roles?.includes('ROLE_ADMIN') || userData?.role === 'admin' || userData?.email?.endsWith('@karviyam.com');
+
         toast.success(`Welcome back, ${userData.fullName || 'User'}!`);
-        return true;
+        return { success: true, isAdmin: userIsAdmin, user: userData };
       } else {
         toast.error(payload?.message || 'Invalid email or password');
-        return false;
+        return { success: false };
       }
     } catch (err) {
       let msg = 'Invalid email or password';
@@ -64,7 +67,7 @@ export const AuthProvider = ({ children }) => {
         msg = err.message;
       }
       toast.error(msg);
-      return false;
+      return { success: false };
     } finally {
       setLoading(false);
     }
@@ -77,15 +80,15 @@ export const AuthProvider = ({ children }) => {
       const payload = res.data;
       if (payload && payload.success) {
         toast.success(payload.message || 'Registration successful! Please sign in.');
-        return true;
+        return { success: true };
       } else {
         toast.error(payload?.message || 'Registration failed');
-        return false;
+        return { success: false };
       }
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Registration failed';
       toast.error(msg);
-      return false;
+      return { success: false };
     } finally {
       setLoading(false);
     }
@@ -102,16 +105,19 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         localStorage.setItem('karviyam_token', token);
         localStorage.setItem('karviyam_user', JSON.stringify(userData));
+
+        const userIsAdmin = userData?.roles?.includes('ROLE_ADMIN') || userData?.role === 'admin' || userData?.email?.endsWith('@karviyam.com');
+
         toast.success(`Google Sign-In successful! Welcome, ${userData.fullName || 'User'}`);
-        return true;
+        return { success: true, isAdmin: userIsAdmin, user: userData };
       } else {
         toast.error(payload?.message || 'Google Sign-In failed');
-        return false;
+        return { success: false };
       }
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Google authentication failed';
       toast.error(msg);
-      return false;
+      return { success: false };
     } finally {
       setLoading(false);
     }

@@ -33,8 +33,8 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await register(formData);
-    if (success) {
+    const res = await register(formData);
+    if (res && res.success) {
       navigate('/login');
     }
   };

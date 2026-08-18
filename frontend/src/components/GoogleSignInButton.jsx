@@ -59,9 +59,13 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
                 idToken: tokenResponse.id_token || tokenResponse.access_token
               };
 
-              const ok = await googleLogin(payload);
-              if (ok) {
-                navigate('/');
+              const res = await googleLogin(payload);
+              if (res && res.success) {
+                if (res.isAdmin) {
+                  navigate('/admin', { replace: true });
+                } else {
+                  navigate('/', { replace: true });
+                }
               }
             } catch (err) {
               console.error('Google Profile Fetch Error:', err);
