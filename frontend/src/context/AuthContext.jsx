@@ -37,8 +37,8 @@ export const AuthProvider = ({ children }) => {
       const res = await api.post('/auth/login', { email, password });
       const payload = res.data;
 
-      if (typeof payload === 'string' && payload.includes('<!DOCTYPE')) {
-        toast.error('API server unreachable or returned non-JSON response');
+      if (typeof payload === 'string' && (payload.toLowerCase().includes('<!doctype') || payload.toLowerCase().includes('<html'))) {
+        toast.error('API endpoint returned HTML instead of JSON. Backend server may be offline or misconfigured.');
         return false;
       }
 

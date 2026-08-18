@@ -16,19 +16,27 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
   RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
   RewriteRule ^ - [L]
 
-  # 3. PASS /api/ REQUESTS TO PASSENGER NODE.JS SERVER SCRIPT IF PASSENGER IS PRESENT
+  # 3. PASS /api/ REQUESTS TO PASSENGER OR REVERSE PROXY TO NODE.JS BACKEND
+  <IfModule mod_proxy.c>
+    RewriteRule ^api/(.*)$ http://127.0.0.1:8080/api/$1 [P,L]
+  </IfModule>
+
   <IfModule mod_passenger.c>
     PassengerEnabled On
     PassengerAppType node
     PassengerStartupFile server.js
   </IfModule>
 
-  # 4. SPA FALLBACK FOR REACT FRONTEND SPA ROUTES
+  # 4. SPA FALLBACK FOR REACT FRONTEND SPA ROUTES (EXCLUDE /api/ REQUESTS)
+  RewriteCond %{REQUEST_URI} !^/api/ [NC]
   RewriteCond %{DOCUMENT_ROOT}/frontend/dist/index.html -f
   RewriteRule ^ /frontend/dist/index.html [L]
 
+  RewriteCond %{REQUEST_URI} !^/api/ [NC]
   RewriteCond %{DOCUMENT_ROOT}/dist/index.html -f
   RewriteRule ^ /dist/index.html [L]
 
+  RewriteCond %{REQUEST_URI} !^/api/ [NC]
   RewriteRule ^ /index.html [L]
 </IfModule>
+
