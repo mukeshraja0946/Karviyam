@@ -37,6 +37,11 @@ export const AuthProvider = ({ children }) => {
       const res = await api.post('/auth/login', { email, password });
       const payload = res.data;
 
+      if (typeof payload === 'string' && payload.includes('<!DOCTYPE')) {
+        toast.error('API server unreachable or returned non-JSON response');
+        return false;
+      }
+
       if (payload && payload.success) {
         const { token, ...userData } = payload.data;
         setToken(token);
@@ -46,11 +51,11 @@ export const AuthProvider = ({ children }) => {
         toast.success(`Welcome back, ${userData.fullName || 'User'}!`);
         return true;
       } else {
-        toast.error(payload?.message || 'Login failed');
+        toast.error(payload?.message || 'Invalid email or password');
         return false;
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Invalid email or password';
+      const msg = err.response?.data?.message || err.message || 'Invalid email or password';
       toast.error(msg);
       return false;
     } finally {
