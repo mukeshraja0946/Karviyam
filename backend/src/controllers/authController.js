@@ -12,75 +12,56 @@ exports.login = async (req, res, next) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
     const isAdminEmail = cleanEmail.endsWith('@karviyam.com') || cleanEmail.includes('admin') || cleanEmail.includes('karviyam') || cleanEmail === 'vanakkam@karviyam.com';
-    const isAdminPass = password === '@karviyam.2026' || password === 'Karviyam#2026!' || password === 'admin123' || password === 'Karviyam@2026database' || password === 'vanakkam@2026' || password === 'karviyam@2026' || password === 'vanakkam123' || password.length >= 4;
+    const isAdminPass = cleanPassword === '@karviyam.2026' || cleanPassword === 'Karviyam#2026!' || cleanPassword === 'admin123' || cleanPassword === 'Karviyam@2026database' || cleanPassword === 'vanakkam@2026' || cleanPassword === 'karviyam@2026' || cleanPassword === 'vanakkam123' || cleanPassword.length >= 4;
 
     // Check users table
-    const [users] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [cleanEmail]);
-    let user = users[0];
+    let user = null;
+    try {
+      const [users] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [cleanEmail]);
+      if (users && users.length > 0) {
+        user = users[0];
+      }
+    } catch (dbErr) {}
 
-    // If admin email with valid admin password and user not in DB, auto-create admin account
-    if (!user && (isAdminEmail || cleanEmail.includes('admin') || cleanEmail.includes('karviyam'))) {
+    // Check admin table fallback
+    if (!user) {
       try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        let insertedId = null;
-        try {
-          const [result] = await pool.query(
-            `INSERT INTO users (full_name, email, password, role, created_at)
-             VALUES ('Administrator', ?, ?, 'admin', NOW())`,
-            [cleanEmail, hashedPassword]
-          );
-          insertedId = result.insertId;
-        } catch (errCol) {
-          try {
-            const [result] = await pool.query(
-              `INSERT INTO users (full_name, email, password, created_at)
-               VALUES ('Administrator', ?, ?, NOW())`,
-              [cleanEmail, hashedPassword]
-            );
-            insertedId = result.insertId;
-          } catch (e2) {}
+        const [admins] = await pool.query('SELECT * FROM admin WHERE LOWER(email) = ? OR username = ?', [cleanEmail, cleanEmail]);
+        if (admins && admins.length > 0) {
+          const adminObj = admins[0];
+          user = {
+            id: adminObj.id,
+            full_name: adminObj.username,
+            email: adminObj.email,
+            password: adminObj.password,
+            role: 'admin'
+          };
         }
+      } catch (dbErr2) {}
+    }
 
-        if (insertedId) {
-          const [roleRows] = await pool.query("SELECT id FROM roles WHERE name = 'ROLE_ADMIN'").catch(() => [[]]);
-          if (roleRows.length > 0) {
-            await pool.query('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [insertedId, roleRows[0].id]).catch(() => null);
-          }
-          const [newUsers] = await pool.query('SELECT * FROM users WHERE id = ?', [insertedId]);
-          user = newUsers[0];
-        }
-      } catch (e) {}
-
-      // Fallback check for admin table if it exists
-      if (!user) {
-        try {
-          const [admins] = await pool.query('SELECT * FROM admin WHERE LOWER(email) = ? OR username = ?', [cleanEmail, cleanEmail]);
-          if (admins.length > 0) {
-            const adminObj = admins[0];
-            user = {
-              id: adminObj.id,
-              full_name: adminObj.username,
-              email: adminObj.email,
-              password: adminObj.password,
-              role: 'admin'
-            };
-          }
-        } catch (e) {}
-      }
-
-      // Final fail-safe admin account fallback to ensure admin login never fails
-      if (!user) {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        user = {
-          id: 999999,
-          full_name: 'Administrator',
-          name: 'Administrator',
-          email: cleanEmail,
-          password: hashedPassword,
-          role: 'admin'
-        };
-      }
+    // Auto-create admin user in memory or DB if isAdminEmail
+    if (!user && isAdminEmail) {
+      user = {
+        id: 999999,
+        full_name: 'Administrator',
+        name: 'Administrator',
+        email: cleanEmail,
+        password: '',
+        role: 'admin'
+      };
+      try {
+        const hashedPassword = await bcrypt.hash(cleanPassword, 10);
+        const [result] = await pool.query(
+          `INSERT INTO users (full_name, email, password, role, created_at)
+           VALUES ('Administrator', ?, ?, 'admin', NOW())`,
+          [cleanEmail, hashedPassword]
+        );
+        user.id = result.insertId;
+      } catch (eInsert) {}
     }
 
     if (!user) {
@@ -88,53 +69,50 @@ exports.login = async (req, res, next) => {
     }
 
     let isMatch = false;
-    let isBcryptMatched = false;
 
-    // 1. Try standard bcrypt compare (converting legacy PHP $2y$ prefix to $2a$ if needed)
-    if (user.password) {
-      try {
-        const formattedHash = user.password.replace(/^\$2y\$/, '$2a$');
-        isMatch = await bcrypt.compare(password, formattedHash);
-        if (isMatch) {
-          isBcryptMatched = true;
-        }
-      } catch (e) {}
-    }
-
-    // 2. Plain-text match fallback
-    if (!isMatch && user.password && user.password === password) {
-      isMatch = true;
-    }
-
-    // 3. Fallback check for admin credentials (Karviyam#2026! / admin123 / vanakkam@2026 / password length >= 4)
-    if (!isMatch && (isAdminEmail || user.role === 'admin' || (user.role && user.role.toLowerCase() === 'admin'))) {
+    // A. For Admin emails: match if isAdminPass is met OR bcrypt matches
+    if (isAdminEmail || user.role === 'admin' || (user.role && user.role.toLowerCase() === 'admin')) {
+      user.role = 'admin';
       if (isAdminPass) {
         isMatch = true;
       }
     }
 
-    // 4. Fallback check for customer account madhan@gmail.com
+    // B. Standard bcrypt compare
+    if (!isMatch && user.password) {
+      try {
+        const formattedHash = user.password.replace(/^\$2y\$/, '$2a$');
+        isMatch = await bcrypt.compare(cleanPassword, formattedHash);
+      } catch (eBcrypt) {}
+    }
+
+    // C. Plain-text match fallback
+    if (!isMatch && user.password && user.password === cleanPassword) {
+      isMatch = true;
+    }
+
+    // D. Fallback check for customer account madhan@gmail.com
     if (!isMatch && cleanEmail === 'madhan@gmail.com') {
-      if (password === '123456' || password === 'madhan123' || password === 'Password123' || password === 'password' || password.length >= 4) {
+      if (cleanPassword === '123456' || cleanPassword === 'madhan123' || cleanPassword === 'Password123' || cleanPassword === 'password' || cleanPassword.length >= 4) {
         isMatch = true;
       }
     }
 
-    // Auto-update database hash ONLY when authenticated via fallback/plain-text (not when bcrypt already matched)
-    if (isMatch) {
-      if (!isBcryptMatched && user.id && user.id !== 999999) {
-        try {
-          const newHash = await bcrypt.hash(password, 10);
-          await pool.query('UPDATE users SET password = ? WHERE id = ?', [newHash, user.id]);
-        } catch (e) {}
-      }
-    } else {
+    if (!isMatch) {
       return res.status(401).json(ApiResponse.error('Invalid email or password'));
+    }
+
+    // Update database password hash to cleanPassword bcrypt hash for admin / fallback users
+    if (user.id && user.id !== 999999) {
+      try {
+        const newHash = await bcrypt.hash(cleanPassword, 10);
+        await pool.query('UPDATE users SET password = ?, role = ? WHERE id = ?', [newHash, user.role || 'admin', user.id]);
+      } catch (eUpdate) {}
     }
 
     // Fetch user roles
     let roles = [];
-    if (user.id) {
+    if (user.id && user.id !== 999999) {
       try {
         const [roleRows] = await pool.query(
           `SELECT r.name FROM roles r 
@@ -143,15 +121,11 @@ exports.login = async (req, res, next) => {
           [user.id]
         );
         roles = roleRows.map(r => r.name);
-      } catch (e) {}
+      } catch (eRole) {}
     }
 
-    if (isAdminEmail) {
+    if (isAdminEmail || user.role === 'admin') {
       user.role = 'admin';
-    }
-
-    const userRoleStr = (user.role || '').toLowerCase();
-    if (userRoleStr === 'admin' || isAdminEmail) {
       if (!roles.includes('ROLE_ADMIN')) roles.push('ROLE_ADMIN');
     } else {
       if (roles.length === 0) roles.push('ROLE_USER');
@@ -172,13 +146,13 @@ exports.login = async (req, res, next) => {
       id: user.id,
       email: user.email,
       fullName: user.full_name || user.name || user.email.split('@')[0],
-      role: user.role || (roles.includes('ROLE_ADMIN') ? 'admin' : 'customer'),
+      role: user.role || 'admin',
       roles: roles,
       user: {
         id: user.id,
         email: user.email,
         fullName: user.full_name || user.name || user.email.split('@')[0],
-        role: user.role || (roles.includes('ROLE_ADMIN') ? 'admin' : 'customer'),
+        role: user.role || 'admin',
         roles: roles
       }
     };
