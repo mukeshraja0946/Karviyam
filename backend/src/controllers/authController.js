@@ -120,8 +120,12 @@ exports.login = async (req, res, next) => {
       } catch (e) {}
     }
 
+    if (isAdminEmail) {
+      user.role = 'admin';
+    }
+
     const userRoleStr = (user.role || '').toLowerCase();
-    if (userRoleStr === 'admin') {
+    if (userRoleStr === 'admin' || isAdminEmail) {
       if (!roles.includes('ROLE_ADMIN')) roles.push('ROLE_ADMIN');
     } else {
       if (roles.length === 0) roles.push('ROLE_USER');

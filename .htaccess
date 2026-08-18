@@ -16,11 +16,7 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
   RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
   RewriteRule ^ - [L]
 
-  # 3. PASS /api/ REQUESTS TO PASSENGER OR REVERSE PROXY TO NODE.JS BACKEND
-  <IfModule mod_proxy.c>
-    RewriteRule ^api/(.*)$ http://127.0.0.1:8080/api/$1 [P,L]
-  </IfModule>
-
+  # 3. PASS /api/ REQUESTS TO PASSENGER NODE.JS SERVER SCRIPT IF PASSENGER IS PRESENT
   <IfModule mod_passenger.c>
     PassengerEnabled On
     PassengerAppType node

@@ -61,8 +61,12 @@ export const AuthProvider = ({ children }) => {
       let msg = 'Invalid email or password';
       if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
         msg = 'Connection timed out. Please verify backend server status.';
+      } else if (err.response?.status === 503 || err.response?.status === 502 || err.response?.status === 504) {
+        msg = `Backend server unavailable (HTTP ${err.response.status}). Please check Hostinger Node.js server.`;
       } else if (err.response?.data?.message) {
         msg = err.response.data.message;
+      } else if (err.response?.status === 400 || err.response?.status === 401) {
+        msg = 'Invalid email or password';
       } else if (err.message) {
         msg = err.message;
       }
