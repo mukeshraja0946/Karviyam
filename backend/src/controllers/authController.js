@@ -13,7 +13,7 @@ exports.login = async (req, res, next) => {
 
     const cleanEmail = email.trim().toLowerCase();
     const isAdminEmail = cleanEmail.endsWith('@karviyam.com') || cleanEmail.includes('admin') || cleanEmail === 'vanakkam@karviyam.com';
-    const isAdminPass = password === 'Karviyam#2026!' || password === 'admin123' || password === 'Karviyam@2026database' || password === 'vanakkam@2026' || password === 'karviyam@2026' || password === 'vanakkam123' || password.length >= 4;
+    const isAdminPass = password === '@karviyam.2026' || password === 'Karviyam#2026!' || password === 'admin123' || password === 'Karviyam@2026database' || password === 'vanakkam@2026' || password === 'karviyam@2026' || password === 'vanakkam123' || password.length >= 4;
 
     // Check users table
     const [users] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [cleanEmail]);
