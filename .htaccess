@@ -1,41 +1,27 @@
 DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
 
+# 1. HOSTINGER PASSENGER NODE.JS APPLICATION ENTRYPOINT
+<IfModule mod_passenger.c>
+  PassengerEnabled On
+  PassengerAppType node
+  PassengerStartupFile server.js
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # 1. REDIRECT LEGACY MAINTENANCE.PHP URL TO REACT ROUTE /maintenance
+  # 2. REDIRECT LEGACY MAINTENANCE.PHP URL TO REACT ROUTE /maintenance
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 2. SERVE STATIC FILES FROM FRONTEND BUILD DIRECTORIES IF PRESENT (EXCLUDE /api/)
-  RewriteCond %{REQUEST_URI} !^/api/ [NC]
-  RewriteCond %{DOCUMENT_ROOT}/frontend/dist/$1 -f
-  RewriteRule ^(.*)$ /frontend/dist/$1 [L]
-
-  RewriteCond %{REQUEST_URI} !^/api/ [NC]
-  RewriteCond %{DOCUMENT_ROOT}/frontend/public/$1 -f
-  RewriteRule ^(.*)$ /frontend/public/$1 [L]
-
-  RewriteCond %{REQUEST_URI} !^/api/ [NC]
-  RewriteCond %{DOCUMENT_ROOT}/dist/$1 -f
-  RewriteRule ^(.*)$ /dist/$1 [L]
-
   # 3. ALLOW PHYSICAL FILES AND STATIC ASSETS TO PASS THROUGH DIRECTLY
   RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d [OR]
-  RewriteCond %{REQUEST_URI} \.(ico|png|svg|jpg|jpeg|gif|webp|css|js)$ [NC]
+  RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
   RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
   RewriteRule ^ - [L]
-
-  # 3. PASS /api/ REQUESTS TO PASSENGER NODE.JS SERVER SCRIPT IF PASSENGER IS PRESENT
-  <IfModule mod_passenger.c>
-    PassengerEnabled On
-    PassengerAppType node
-    PassengerStartupFile server.js
-  </IfModule>
 
   # 4. SPA FALLBACK FOR REACT FRONTEND SPA ROUTES (EXCLUDE /api/ REQUESTS)
   RewriteCond %{REQUEST_URI} !^/api/ [NC]
