@@ -23,16 +23,13 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
     PassengerStartupFile server.js
   </IfModule>
 
-  # 4. SPA FALLBACK FOR REACT FRONTEND SPA ROUTES (EXCLUDE /api/ REQUESTS)
-  RewriteCond %{REQUEST_URI} !^/api/ [NC]
+  # 4. SPA FALLBACK FOR REACT FRONTEND SPA ROUTES
   RewriteCond %{DOCUMENT_ROOT}/frontend/dist/index.html -f
   RewriteRule ^ /frontend/dist/index.html [L]
 
-  RewriteCond %{REQUEST_URI} !^/api/ [NC]
   RewriteCond %{DOCUMENT_ROOT}/dist/index.html -f
   RewriteRule ^ /dist/index.html [L]
 
-  RewriteCond %{REQUEST_URI} !^/api/ [NC]
   RewriteRule ^ /index.html [L]
 </IfModule>
 
