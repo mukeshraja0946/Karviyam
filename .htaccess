@@ -10,7 +10,8 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
 
   # 2. ALLOW PHYSICAL FILES AND STATIC ASSETS TO PASS THROUGH DIRECTLY
   RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteCond %{REQUEST_FILENAME} -d [OR]
+  RewriteCond %{REQUEST_URI} \.(ico|png|svg|jpg|jpeg|gif|webp|css|js)$ [NC]
   RewriteRule ^ - [L]
 
   RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
