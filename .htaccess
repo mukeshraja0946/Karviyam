@@ -23,16 +23,9 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
   RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
   RewriteRule ^ - [L]
 
-  # 4. SPA FALLBACK FOR REACT FRONTEND SPA ROUTES (EXCLUDE /api/ REQUESTS)
-  RewriteCond %{REQUEST_URI} !^/api/ [NC]
-  RewriteCond %{DOCUMENT_ROOT}/frontend/dist/index.html -f
-  RewriteRule ^ /frontend/dist/index.html [L]
-
-  RewriteCond %{REQUEST_URI} !^/api/ [NC]
-  RewriteCond %{DOCUMENT_ROOT}/dist/index.html -f
-  RewriteRule ^ /dist/index.html [L]
-
-  RewriteCond %{REQUEST_URI} !^/api/ [NC]
-  RewriteRule ^ /index.html [L]
+  # 4. ROUTE ALL API AND NON-FILE REQUESTS TO PASSENGER SERVER.JS / EXPRESS
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ server.js [L]
 </IfModule>
 
