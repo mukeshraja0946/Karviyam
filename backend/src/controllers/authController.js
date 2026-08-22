@@ -63,9 +63,16 @@ exports.login = async (req, res, next) => {
       } catch (eInsert) {}
     }
 
+    console.log(`[LOGIN DEBUG] email found: ${Boolean(user)}`);
+
     if (!user || !user.password) {
+      console.log(`[LOGIN DEBUG] password hash exists: false`);
       return res.status(401).json(ApiResponse.error('Invalid email or password'));
     }
+
+    console.log(`[LOGIN DEBUG] user id: ${user.id}`);
+    console.log(`[LOGIN DEBUG] role: ${user.role}`);
+    console.log(`[LOGIN DEBUG] password hash exists: true`);
 
     // 4. Verify password strictly using BCrypt compare (with backward compatibility for PHP $2y$ prefix)
     const formattedHash = user.password.startsWith('$2y$')
@@ -76,8 +83,11 @@ exports.login = async (req, res, next) => {
     try {
       isMatch = await bcrypt.compare(cleanPassword, formattedHash);
     } catch (eBcrypt) {
-      console.error('[Auth BCrypt Error]', eBcrypt.message);
+      console.error('[LOGIN DEBUG] BCrypt compare error:', eBcrypt.message);
     }
+
+    console.log(`[LOGIN DEBUG] bcrypt comparison: ${isMatch}`);
+    console.log(`[LOGIN DEBUG] database environment: production`);
 
     if (!isMatch) {
       return res.status(401).json(ApiResponse.error('Invalid email or password'));

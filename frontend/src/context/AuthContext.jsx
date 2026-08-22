@@ -51,10 +51,10 @@ export const AuthProvider = ({ children }) => {
 
         const userIsAdmin = userData?.roles?.includes('ROLE_ADMIN') || userData?.role === 'admin' || userData?.email === 'vanakkam@karviyam.com';
 
-        toast.success(`Welcome back, ${userData.fullName || 'User'}!`);
+        toast.success(`Welcome back, ${userData.fullName || 'User'}!`, { id: 'auth-login-success' });
         return { success: true, isAdmin: userIsAdmin, user: userData };
       } else {
-        toast.error(payload?.message || 'Invalid email or password');
+        toast.error(payload?.message || 'Invalid email or password', { id: 'auth-login-error' });
         return { success: false };
       }
     } catch (err) {
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
       } else if (err.message) {
         msg = err.message;
       }
-      toast.error(msg);
+      toast.error(msg, { id: 'auth-login-error' });
       return { success: false };
     } finally {
       setLoading(false);

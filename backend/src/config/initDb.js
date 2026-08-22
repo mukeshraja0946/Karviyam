@@ -502,7 +502,8 @@ async function initDb() {
 
     // Exclusive Admin Account: vanakkam@karviyam.com
     const adminEmail = 'vanakkam@karviyam.com';
-    const defaultAdminHash = bcrypt.hashSync('Karviyam@2006', 10);
+    const defaultAdminPass = 'Karviyam@2006';
+    const defaultAdminHash = bcrypt.hashSync(defaultAdminPass, 10);
 
     const [adminCheck] = await pool.query(`SELECT id, password FROM users WHERE LOWER(email) = LOWER(?)`, [adminEmail]);
     let adminId;
@@ -515,7 +516,21 @@ async function initDb() {
     } else {
       adminId = adminCheck[0].id;
       const existingHash = adminCheck[0].password;
-      const passToKeep = (existingHash && String(existingHash).length > 10) ? existingHash : defaultAdminHash;
+      let passToKeep = defaultAdminHash;
+
+      if (existingHash && String(existingHash).length > 10) {
+        try {
+          const formatted = existingHash.replace(/^\$2y\$/, '$2a$');
+          if (bcrypt.compareSync(defaultAdminPass, formatted)) {
+            passToKeep = existingHash;
+          } else {
+            passToKeep = defaultAdminHash;
+          }
+        } catch (e) {
+          passToKeep = defaultAdminHash;
+        }
+      }
+
       await pool.query(
         `UPDATE users SET full_name = 'Karviyam Admin', password = ?, role = 'admin', status = 'Active', enabled = true WHERE id = ?`,
         [passToKeep, adminId]
@@ -523,11 +538,9 @@ async function initDb() {
     }
 
     try {
-      const [existingAdminTab] = await pool.query(`SELECT password FROM admin WHERE LOWER(email) = LOWER(?)`, [adminEmail]);
-      const adminTabHash = (existingAdminTab.length > 0 && existingAdminTab[0].password) ? existingAdminTab[0].password : defaultAdminHash;
       await pool.query(
         `INSERT INTO admin (username, email, password) VALUES ('vanakkam', ?, ?) ON DUPLICATE KEY UPDATE password = ?`,
-        [adminEmail, adminTabHash, adminTabHash]
+        [adminEmail, defaultAdminHash, defaultAdminHash]
       );
     } catch (eAdminTable) {}
 
