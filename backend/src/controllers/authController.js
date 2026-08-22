@@ -106,7 +106,10 @@ exports.login = async (req, res, next) => {
     if (user.id && user.id !== 999999) {
       try {
         const newHash = await bcrypt.hash(cleanPassword, 10);
-        await pool.query('UPDATE users SET password = ?, role = ? WHERE id = ?', [newHash, user.role || 'admin', user.id]);
+        await pool.query('UPDATE users SET password = ? WHERE id = ?', [newHash, user.id]);
+        try {
+          await pool.query('UPDATE users SET role = ? WHERE id = ?', [user.role || 'admin', user.id]);
+        } catch (eRoleUpdate) {}
       } catch (eUpdate) {}
     }
 

@@ -75,6 +75,13 @@ async function initDb() {
       );
     `);
 
+    try { await pool.query(`ALTER TABLE users ADD COLUMN name VARCHAR(100) AFTER full_name`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'customer'`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE users ADD COLUMN status VARCHAR(50) DEFAULT 'Active'`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE users ADD COLUMN enabled BOOLEAN DEFAULT TRUE`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE users ADD COLUMN login_provider VARCHAR(50) DEFAULT 'EMAIL'`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE users ADD COLUMN profile_photo VARCHAR(500)`); } catch (e) {}
+
     // 3. User roles join table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_roles (

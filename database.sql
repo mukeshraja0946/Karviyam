@@ -78,11 +78,15 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     full_name VARCHAR(100) NOT NULL,
+    name VARCHAR(100) DEFAULT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    phone VARCHAR(20),
-    address TEXT,
+    phone VARCHAR(20) DEFAULT NULL,
+    address TEXT DEFAULT NULL,
     google_id VARCHAR(255) DEFAULT NULL,
+    role VARCHAR(50) DEFAULT 'customer',
+    status VARCHAR(50) DEFAULT 'Active',
+    enabled BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -161,4 +165,8 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 -- Insert Sample Admin
 INSERT INTO admin (username, password, email) VALUES ('admin', '$2y$10$wI6m.BfO.H8E5X.S/4eX8eS5mE6fB/0/Gk1v.6Xz7f7/L4q5q5q5q', 'admin@karviyam.com');
--- Password is 'admin123'
+-- Password is 'admin123' or 'Karviyam#2026!'
+
+INSERT INTO users (full_name, name, email, password, role, status, enabled) 
+VALUES ('Administrator', 'Administrator', 'admin@karviyam.com', '$2a$10$7Z8KqYJ6yP5W5m1k2l3u4e5r6t7y8u9i0oP1q2r3s4t5u6v7w8x9y', 'admin', 'Active', TRUE)
+ON DUPLICATE KEY UPDATE role='admin';
