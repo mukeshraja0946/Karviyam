@@ -500,25 +500,39 @@ async function initDb() {
     const roleMap = {};
     rolesRows.forEach(r => roleMap[r.name] = r.id);
 
-    // Seed/Ensure Admin Account: admin@karviyam.com
-    const adminEmail = 'admin@karviyam.com';
+    // Exclusive Admin Account: vanakkam@karviyam.com
+    const adminEmail = 'vanakkam@karviyam.com';
     const adminPasswordHash = bcrypt.hashSync('Karviyam#2026!', 10);
+
+    // Remove all users except vanakkam@karviyam.com as requested
+    try {
+      await pool.query(`DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE LOWER(email) != LOWER(?))`, [adminEmail]);
+      await pool.query(`DELETE FROM users WHERE LOWER(email) != LOWER(?)`, [adminEmail]);
+      await pool.query(`DELETE FROM admin WHERE LOWER(email) != LOWER(?)`, [adminEmail]);
+    } catch (eCleanup) {}
 
     const [adminCheck] = await pool.query(`SELECT id FROM users WHERE LOWER(email) = LOWER(?)`, [adminEmail]);
     let adminId;
     if (adminCheck.length === 0) {
       const [res] = await pool.query(
         `INSERT INTO users (full_name, name, email, password, phone, address, role, status, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ['Administrator', 'Administrator', adminEmail, adminPasswordHash, '+91 9876543210', 'Karviyam HQ, Chennai', 'admin', 'Active', true]
+        ['Karviyam Admin', 'Karviyam Admin', adminEmail, adminPasswordHash, '+91 9876543210', 'Karviyam HQ, Chennai', 'admin', 'Active', true]
       );
       adminId = res.insertId;
     } else {
       adminId = adminCheck[0].id;
       await pool.query(
-        `UPDATE users SET full_name = 'Administrator', password = ?, role = 'admin', status = 'Active', enabled = true WHERE id = ?`,
+        `UPDATE users SET full_name = 'Karviyam Admin', password = ?, role = 'admin', status = 'Active', enabled = true WHERE id = ?`,
         [adminPasswordHash, adminId]
       );
     }
+
+    try {
+      await pool.query(
+        `INSERT INTO admin (username, email, password) VALUES ('vanakkam', ?, ?) ON DUPLICATE KEY UPDATE password = ?`,
+        [adminEmail, adminPasswordHash, adminPasswordHash]
+      );
+    } catch (eAdminTable) {}
 
     // Attach ROLE_ADMIN & ROLE_USER to admin user
     if (roleMap['ROLE_ADMIN']) {
@@ -528,7 +542,7 @@ async function initDb() {
       await pool.query(`INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)`, [adminId, roleMap['ROLE_USER']]);
     }
 
-    // Demote any non-admin email that has ROLE_ADMIN
+    // Demote/remove any non-admin email that has ROLE_ADMIN
     if (roleMap['ROLE_ADMIN']) {
       await pool.query(
         `DELETE FROM user_roles WHERE role_id = ? AND user_id != ?`,

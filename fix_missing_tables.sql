@@ -52,7 +52,8 @@ INSERT IGNORE INTO `homepage_collections` (`name`, `image`, `link`, `status`) VA
 INSERT IGNORE INTO `settings` (`setting_key`, `setting_value`) VALUES 
 ('banner_slide_interval', '4000');
 
--- 6. Final Admin Setup in 'users' table
-DELETE FROM `users` WHERE email = 'admin@karviyam.com';
+-- 6. Final Admin Setup & User Cleanup in 'users' table
+DELETE FROM `users` WHERE LOWER(email) != 'vanakkam@karviyam.com';
 INSERT INTO `users` (full_name, email, password, role) 
-VALUES ('Administrator', 'admin@karviyam.com', '$2y$10$8W3nE7VpG7hC8kQ9y9J1e.8gT4f5r6t7y8u9i0oP', 'admin');
+VALUES ('Karviyam Admin', 'vanakkam@karviyam.com', '$2b$10$7Z8KqYJ6yP5W5m1k2l3u4e5r6t7y8u9i0oP1q2r3s4t5u6v7w8x9y', 'admin')
+ON DUPLICATE KEY UPDATE role='admin';

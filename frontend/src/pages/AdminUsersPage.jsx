@@ -15,21 +15,12 @@ const USER_EXPORT_HEADERS = [
 const INITIAL_FALLBACK_USERS = [
   {
     id: 1,
-    fullName: 'Karviyam Super Admin',
-    email: 'admin@karviyam.com',
+    fullName: 'Karviyam Admin',
+    email: 'vanakkam@karviyam.com',
     phone: '+91 98765 43210',
     roles: ['ROLE_ADMIN'],
     status: 'ACTIVE',
     createdAt: '2026-01-01T10:00:00'
-  },
-  {
-    id: 5,
-    fullName: 'Kavita Manager',
-    email: 'manager@karviyam.com',
-    phone: '+91 94444 33221',
-    roles: ['ROLE_MANAGER'],
-    status: 'ACTIVE',
-    createdAt: '2026-02-15T11:20:00'
   }
 ];
 

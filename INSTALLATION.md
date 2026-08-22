@@ -53,6 +53,6 @@ Follow these steps to run the Node.js Express + React + MySQL application locall
 
 ## Default Credentials
 - **Admin Control Panel**: `http://localhost:5173/login`
-  - **Email**: `admin@karviyam.com`
+  - **Email**: `vanakkam@karviyam.com`
   - **Password**: `Karviyam#2026!`
 - **Customer Registration**: Register any new account on `/register` or login.

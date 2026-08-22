@@ -163,10 +163,10 @@ CREATE TABLE IF NOT EXISTS notifications (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Insert Sample Admin
-INSERT INTO admin (username, password, email) VALUES ('admin', '$2y$10$wI6m.BfO.H8E5X.S/4eX8eS5mE6fB/0/Gk1v.6Xz7f7/L4q5q5q5q', 'admin@karviyam.com');
--- Password is 'admin123' or 'Karviyam#2026!'
+-- Insert Exclusive Admin
+INSERT INTO admin (username, password, email) VALUES ('vanakkam', '$2b$10$7Z8KqYJ6yP5W5m1k2l3u4e5r6t7y8u9i0oP1q2r3s4t5u6v7w8x9y', 'vanakkam@karviyam.com');
+-- Password is 'Karviyam#2026!'
 
 INSERT INTO users (full_name, name, email, password, role, status, enabled) 
-VALUES ('Administrator', 'Administrator', 'admin@karviyam.com', '$2a$10$7Z8KqYJ6yP5W5m1k2l3u4e5r6t7y8u9i0oP1q2r3s4t5u6v7w8x9y', 'admin', 'Active', TRUE)
+VALUES ('Karviyam Admin', 'Karviyam Admin', 'vanakkam@karviyam.com', '$2b$10$7Z8KqYJ6yP5W5m1k2l3u4e5r6t7y8u9i0oP1q2r3s4t5u6v7w8x9y', 'admin', 'Active', TRUE)
 ON DUPLICATE KEY UPDATE role='admin';
