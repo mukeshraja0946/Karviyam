@@ -6,31 +6,27 @@ const ApiResponse = require('../utils/apiResponse');
 
 exports.login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
+    const { email, password } = req.body || {};
+    if (!email || !password || !String(email).trim() || !String(password).trim()) {
       return res.status(400).json(ApiResponse.error('Email and password are required'));
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanPassword = String(password).trim();
 
-    const TARGET_ADMIN_EMAIL = 'vanakkam@karviyam.com';
-    const TARGET_ADMIN_PASS = 'Karviyam#2026!';
-
-    // Check if user is logging in as the single designated Admin
-    const isTargetAdmin = (cleanEmail === TARGET_ADMIN_EMAIL);
-
-    // Check users table
+    // 1. Fetch user record from database
     let user = null;
     try {
       const [users] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [cleanEmail]);
       if (users && users.length > 0) {
         user = users[0];
       }
-    } catch (dbErr) {}
+    } catch (dbErr) {
+      console.error('[Auth DB Error] Query failed:', dbErr.message);
+    }
 
-    // Check admin table fallback
-    if (!user && isTargetAdmin) {
+    // 2. Check admin table fallback if not found in users table
+    if (!user) {
       try {
         const [admins] = await pool.query('SELECT * FROM admin WHERE LOWER(email) = ? OR username = ?', [cleanEmail, cleanEmail]);
         if (admins && admins.length > 0) {
@@ -38,7 +34,7 @@ exports.login = async (req, res, next) => {
           user = {
             id: adminObj.id,
             full_name: 'Karviyam Admin',
-            email: TARGET_ADMIN_EMAIL,
+            email: adminObj.email || cleanEmail,
             password: adminObj.password,
             role: 'admin'
           };
@@ -46,147 +42,107 @@ exports.login = async (req, res, next) => {
       } catch (dbErr2) {}
     }
 
-    // Auto-create admin user if missing
-    if (!user && isTargetAdmin) {
+    // 3. Fallback auto-creation for primary admin account if database is completely missing the record
+    if (!user && cleanEmail === 'vanakkam@karviyam.com') {
+      const defaultHash = bcrypt.hashSync('Karviyam@2006', 10);
       user = {
         id: 999999,
         full_name: 'Karviyam Admin',
         name: 'Karviyam Admin',
-        email: TARGET_ADMIN_EMAIL,
-        password: '',
+        email: 'vanakkam@karviyam.com',
+        password: defaultHash,
         role: 'admin'
       };
       try {
-        const hashedPassword = await bcrypt.hash(TARGET_ADMIN_PASS, 10);
         const [result] = await pool.query(
           `INSERT INTO users (full_name, name, email, password, role, status, enabled, created_at)
            VALUES ('Karviyam Admin', 'Karviyam Admin', ?, ?, 'admin', 'Active', 1, NOW())`,
-          [TARGET_ADMIN_EMAIL, hashedPassword]
+          ['vanakkam@karviyam.com', defaultHash]
         );
         user.id = result.insertId;
       } catch (eInsert) {}
     }
 
-    if (!user) {
+    if (!user || !user.password) {
       return res.status(401).json(ApiResponse.error('Invalid email or password'));
     }
 
-    // Handle Admin Login vs Customer Login
-    if (isTargetAdmin || user.role === 'admin' || (user.role && user.role.toLowerCase() === 'admin')) {
-      // EXCLUSIVE ADMIN ENFORCEMENT: Only vanakkam@karviyam.com can log in as admin!
-      if (!isTargetAdmin) {
-        return res.status(403).json(ApiResponse.error('Access denied. Admin privileges are restricted exclusively to vanakkam@karviyam.com'));
-      }
+    // 4. Verify password strictly using BCrypt compare (with backward compatibility for PHP $2y$ prefix)
+    const formattedHash = user.password.startsWith('$2y$')
+      ? user.password.replace(/^\$2y\$/, '$2a$')
+      : user.password;
 
-      let isMatch = (cleanPassword === TARGET_ADMIN_PASS);
-      if (!isMatch && user.password) {
-        try {
-          const formattedHash = user.password.replace(/^\$2y\$/, '$2a$');
-          isMatch = await bcrypt.compare(cleanPassword, formattedHash);
-        } catch (eBcrypt) {}
-      }
-
-      if (!isMatch) {
-        return res.status(401).json(ApiResponse.error('Invalid email or password'));
-      }
-
-      user.role = 'admin';
-
-      // Update password hash in DB if needed
-      if (user.id && user.id !== 999999) {
-        try {
-          const newHash = await bcrypt.hash(cleanPassword, 10);
-          await pool.query('UPDATE users SET password = ? WHERE id = ?', [newHash, user.id]);
-          try {
-            await pool.query('UPDATE users SET role = ? WHERE id = ?', ['admin', user.id]);
-          } catch (eRoleUpdate) {}
-        } catch (eUpdate) {}
-      }
-
-      const roles = ['ROLE_ADMIN', 'ROLE_USER'];
-      const tokenPayload = {
-        id: user.id || 999999,
-        email: user.email,
-        role: 'admin',
-        roles: roles
-      };
-
-      const secretKey = (jwtConfig && jwtConfig.secret && String(jwtConfig.secret).trim().length > 0)
-        ? jwtConfig.secret
-        : 'karviyam_super_secret_jwt_key_2026_prod';
-
-      const token = jwt.sign(tokenPayload, secretKey, { expiresIn: '7d' });
-
-      const jwtResponse = {
-        token,
-        type: 'Bearer',
-        id: user.id || 999999,
-        email: user.email,
-        fullName: user.full_name || user.name || 'Karviyam Admin',
-        role: 'admin',
-        roles: roles,
-        user: {
-          id: user.id || 999999,
-          email: user.email,
-          fullName: user.full_name || user.name || 'Karviyam Admin',
-          role: 'admin',
-          roles: roles
-        }
-      };
-
-      return res.status(200).json(ApiResponse.success(jwtResponse, 'Admin login successful!'));
-    } else {
-      // Standard Customer Login
-      let isMatch = false;
-      if (user.password) {
-        try {
-          const formattedHash = user.password.replace(/^\$2y\$/, '$2a$');
-          isMatch = await bcrypt.compare(cleanPassword, formattedHash);
-        } catch (eBcrypt) {}
-      }
-      if (!isMatch && user.password && user.password === cleanPassword) {
-        isMatch = true;
-      }
-
-      if (!isMatch) {
-        return res.status(401).json(ApiResponse.error('Invalid email or password'));
-      }
-
-      const roles = ['ROLE_USER'];
-      const tokenPayload = {
-        id: user.id,
-        email: user.email,
-        role: 'customer',
-        roles: roles
-      };
-
-      const secretKey = (jwtConfig && jwtConfig.secret && String(jwtConfig.secret).trim().length > 0)
-        ? jwtConfig.secret
-        : 'karviyam_super_secret_jwt_key_2026_prod';
-
-      const token = jwt.sign(tokenPayload, secretKey, { expiresIn: '7d' });
-
-      const jwtResponse = {
-        token,
-        type: 'Bearer',
-        id: user.id,
-        email: user.email,
-        fullName: user.full_name || user.name || user.email.split('@')[0],
-        role: 'customer',
-        roles: roles,
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.full_name || user.name || user.email.split('@')[0],
-          role: 'customer',
-          roles: roles
-        }
-      };
-
-      return res.status(200).json(ApiResponse.success(jwtResponse, 'Login successful!'));
+    let isMatch = false;
+    try {
+      isMatch = await bcrypt.compare(cleanPassword, formattedHash);
+    } catch (eBcrypt) {
+      console.error('[Auth BCrypt Error]', eBcrypt.message);
     }
+
+    if (!isMatch) {
+      return res.status(401).json(ApiResponse.error('Invalid email or password'));
+    }
+
+    // 5. Fetch user roles from database (users.role and user_roles join table)
+    let roles = [];
+    if (user.id && user.id !== 999999) {
+      try {
+        const [roleRows] = await pool.query(
+          `SELECT r.name FROM roles r 
+           JOIN user_roles ur ON r.id = ur.role_id 
+           WHERE ur.user_id = ?`,
+          [user.id]
+        );
+        roles = roleRows.map(r => r.name);
+      } catch (eRole) {}
+    }
+
+    const userRoleStr = (user.role || '').toLowerCase();
+    const isAdminUser = (userRoleStr === 'admin') || roles.includes('ROLE_ADMIN') || (cleanEmail === 'vanakkam@karviyam.com');
+
+    if (isAdminUser) {
+      if (!roles.includes('ROLE_ADMIN')) roles.push('ROLE_ADMIN');
+      if (!roles.includes('ROLE_USER')) roles.push('ROLE_USER');
+    } else {
+      if (roles.length === 0) roles.push('ROLE_USER');
+    }
+
+    const assignedRole = isAdminUser ? 'admin' : 'customer';
+
+    // 6. Generate JWT token
+    const tokenPayload = {
+      id: user.id || 999999,
+      email: user.email,
+      role: assignedRole,
+      roles: roles
+    };
+
+    const secretKey = (jwtConfig && jwtConfig.secret && String(jwtConfig.secret).trim().length > 0)
+      ? jwtConfig.secret
+      : 'karviyam_super_secret_jwt_key_2026_prod';
+
+    const token = jwt.sign(tokenPayload, secretKey, { expiresIn: '7d' });
+
+    const jwtResponse = {
+      token,
+      type: 'Bearer',
+      id: user.id || 999999,
+      email: user.email,
+      fullName: user.full_name || user.name || (isAdminUser ? 'Karviyam Admin' : user.email.split('@')[0]),
+      role: assignedRole,
+      roles: roles,
+      user: {
+        id: user.id || 999999,
+        email: user.email,
+        fullName: user.full_name || user.name || (isAdminUser ? 'Karviyam Admin' : user.email.split('@')[0]),
+        role: assignedRole,
+        roles: roles
+      }
+    };
+
+    return res.status(200).json(ApiResponse.success(jwtResponse, 'Login successful!'));
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('[Auth Unhandled Error]', err);
     return res.status(500).json(ApiResponse.error(err.message || 'Internal authentication error'));
   }
 };

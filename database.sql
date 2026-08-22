@@ -164,9 +164,9 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 -- Insert Exclusive Admin
-INSERT INTO admin (username, password, email) VALUES ('vanakkam', '$2b$10$7Z8KqYJ6yP5W5m1k2l3u4e5r6t7y8u9i0oP1q2r3s4t5u6v7w8x9y', 'vanakkam@karviyam.com');
--- Password is 'Karviyam#2026!'
+INSERT INTO admin (username, password, email) VALUES ('vanakkam', '$2b$10$g2olN3PbEJmt9AkxSdSwxeBOeV8F0PfXEhbWppSJ7K9PJQpsf2vh.', 'vanakkam@karviyam.com');
+-- Password is 'Karviyam@2006'
 
 INSERT INTO users (full_name, name, email, password, role, status, enabled) 
-VALUES ('Karviyam Admin', 'Karviyam Admin', 'vanakkam@karviyam.com', '$2b$10$7Z8KqYJ6yP5W5m1k2l3u4e5r6t7y8u9i0oP1q2r3s4t5u6v7w8x9y', 'admin', 'Active', TRUE)
+VALUES ('Karviyam Admin', 'Karviyam Admin', 'vanakkam@karviyam.com', '$2b$10$g2olN3PbEJmt9AkxSdSwxeBOeV8F0PfXEhbWppSJ7K9PJQpsf2vh.', 'admin', 'Active', TRUE)
 ON DUPLICATE KEY UPDATE role='admin';

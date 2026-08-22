@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function LoginPage() {

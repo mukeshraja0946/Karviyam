@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('karviyam_token', token);
         localStorage.setItem('karviyam_user', JSON.stringify(userData));
 
-        const userIsAdmin = userData?.roles?.includes('ROLE_ADMIN') || userData?.role === 'admin' || userData?.email?.endsWith('@karviyam.com');
+        const userIsAdmin = userData?.roles?.includes('ROLE_ADMIN') || userData?.role === 'admin' || userData?.email === 'vanakkam@karviyam.com';
 
         toast.success(`Welcome back, ${userData.fullName || 'User'}!`);
         return { success: true, isAdmin: userIsAdmin, user: userData };
@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     initializing,
     isAuthenticated: !!token,
-    isAdmin: user?.roles?.includes('ROLE_ADMIN') || user?.role === 'admin' || user?.email?.endsWith('@karviyam.com'),
+    isAdmin: user?.roles?.includes('ROLE_ADMIN') || user?.role === 'admin' || user?.email === 'vanakkam@karviyam.com',
     login,
     register,
     googleLogin,

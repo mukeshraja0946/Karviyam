@@ -502,35 +502,32 @@ async function initDb() {
 
     // Exclusive Admin Account: vanakkam@karviyam.com
     const adminEmail = 'vanakkam@karviyam.com';
-    const adminPasswordHash = bcrypt.hashSync('Karviyam#2026!', 10);
+    const defaultAdminHash = bcrypt.hashSync('Karviyam@2006', 10);
 
-    // Remove all users except vanakkam@karviyam.com as requested
-    try {
-      await pool.query(`DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE LOWER(email) != LOWER(?))`, [adminEmail]);
-      await pool.query(`DELETE FROM users WHERE LOWER(email) != LOWER(?)`, [adminEmail]);
-      await pool.query(`DELETE FROM admin WHERE LOWER(email) != LOWER(?)`, [adminEmail]);
-    } catch (eCleanup) {}
-
-    const [adminCheck] = await pool.query(`SELECT id FROM users WHERE LOWER(email) = LOWER(?)`, [adminEmail]);
+    const [adminCheck] = await pool.query(`SELECT id, password FROM users WHERE LOWER(email) = LOWER(?)`, [adminEmail]);
     let adminId;
     if (adminCheck.length === 0) {
       const [res] = await pool.query(
         `INSERT INTO users (full_name, name, email, password, phone, address, role, status, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ['Karviyam Admin', 'Karviyam Admin', adminEmail, adminPasswordHash, '+91 9876543210', 'Karviyam HQ, Chennai', 'admin', 'Active', true]
+        ['Karviyam Admin', 'Karviyam Admin', adminEmail, defaultAdminHash, '+91 9876543210', 'Karviyam HQ, Chennai', 'admin', 'Active', true]
       );
       adminId = res.insertId;
     } else {
       adminId = adminCheck[0].id;
+      const existingHash = adminCheck[0].password;
+      const passToKeep = (existingHash && String(existingHash).length > 10) ? existingHash : defaultAdminHash;
       await pool.query(
         `UPDATE users SET full_name = 'Karviyam Admin', password = ?, role = 'admin', status = 'Active', enabled = true WHERE id = ?`,
-        [adminPasswordHash, adminId]
+        [passToKeep, adminId]
       );
     }
 
     try {
+      const [existingAdminTab] = await pool.query(`SELECT password FROM admin WHERE LOWER(email) = LOWER(?)`, [adminEmail]);
+      const adminTabHash = (existingAdminTab.length > 0 && existingAdminTab[0].password) ? existingAdminTab[0].password : defaultAdminHash;
       await pool.query(
         `INSERT INTO admin (username, email, password) VALUES ('vanakkam', ?, ?) ON DUPLICATE KEY UPDATE password = ?`,
-        [adminEmail, adminPasswordHash, adminPasswordHash]
+        [adminEmail, adminTabHash, adminTabHash]
       );
     } catch (eAdminTable) {}
 

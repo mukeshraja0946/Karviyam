@@ -326,34 +326,41 @@ exports.deleteAddress = async (req, res, next) => {
 exports.changePassword = async (req, res, next) => {
   try {
     const userId = req.user ? req.user.id : null;
-    const { currentPassword, newPassword, email } = req.body;
+    const { currentPassword, newPassword, email } = req.body || {};
 
     let user = null;
     if (userId) {
       const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
       user = rows[0];
-    } else if (email) {
+    } else if (email && String(email).trim()) {
       const [rows] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [email.trim().toLowerCase()]);
       user = rows[0];
     }
 
     if (!user) {
-      return res.status(400).json(ApiResponse.error('User session not found'));
+      return res.status(400).json(ApiResponse.error('User session not found. Please log in again.'));
     }
 
-    if (!newPassword || newPassword.trim().length < 6) {
+    if (!newPassword || String(newPassword).trim().length < 6) {
       return res.status(400).json(ApiResponse.error('New password must be at least 6 characters long'));
     }
 
     if (currentPassword && user.password) {
-      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      const formattedHash = user.password.startsWith('$2y$')
+        ? user.password.replace(/^\$2y\$/, '$2a$')
+        : user.password;
+      const isMatch = await bcrypt.compare(String(currentPassword).trim(), formattedHash);
       if (!isMatch) {
         return res.status(400).json(ApiResponse.error('Current password does not match'));
       }
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(String(newPassword).trim(), 10);
     await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id]);
+
+    try {
+      await pool.query('UPDATE admin SET password = ? WHERE LOWER(email) = ? OR username = ?', [hashedPassword, user.email.toLowerCase(), 'vanakkam']);
+    } catch (eAdmin) {}
 
     return res.status(200).json(ApiResponse.success(null, 'Password changed successfully'));
   } catch (err) {
