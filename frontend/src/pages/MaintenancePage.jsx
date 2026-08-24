@@ -98,12 +98,12 @@ export default function MaintenancePage() {
 
         {/* Bottom Red Status Pill */}
         <div className="pt-1">
-          <div className="w-full bg-[#FFF1F2] border border-[#FFE4E6] rounded-full py-2.5 px-6 flex items-center justify-center gap-2 text-xs text-[#991B1B] font-semibold shadow-2xs">
+          <div className="w-full bg-[#FFF1F2] border border-[#FFE4E6] rounded-full py-2.5 px-3 sm:px-4 flex items-center justify-center gap-1.5 sm:gap-2 text-[10.5px] sm:text-[11.5px] font-semibold text-[#991B1B] whitespace-nowrap shadow-2xs">
             <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E11D48] opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E11D48]"></span>
             </span>
-            <span>Store will be back online shortly. Please check again soon.</span>
+            <span className="whitespace-nowrap">Store will be back online shortly. Please check again soon.</span>
           </div>
         </div>
 
