@@ -280,6 +280,7 @@ export default function AdminSettingsPage() {
         logoUrl: settings.logoUrl || '',
         maxProductImages: String(settings.maxProductImages),
         maintenanceMode: String(settings.maintenanceMode),
+        maintenanceLogoUrl: settings.maintenanceLogoUrl || '',
         maintenanceTitle: settings.maintenanceTitle,
         maintenanceSubtitle: settings.maintenanceSubtitle,
         maintenanceMessage: settings.maintenanceMessage,
@@ -319,6 +320,7 @@ export default function AdminSettingsPage() {
       localStorage.setItem('karviyam_state_code', settings.stateCode);
       localStorage.setItem('karviyam_signatory_name', settings.signatoryName);
       localStorage.setItem('karviyam_maintenance_mode', String(settings.maintenanceMode));
+      localStorage.setItem('karviyam_maintenance_logo', settings.maintenanceLogoUrl || '');
       localStorage.setItem('karviyam_maintenance_message', settings.maintenanceMessage);
 
       window.dispatchEvent(new Event('karviyam_settings_updated'));
@@ -841,6 +843,58 @@ export default function AdminSettingsPage() {
                 <Wrench className="w-4 h-4 text-[#B71C1C]" />
                 <span>Maintenance Page Display & Customer Messaging</span>
               </h3>
+
+              {/* Dedicated Maintenance Page Logo */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-800 text-xs">Separate Maintenance Page Logo</label>
+                    <p className="text-[11px] text-slate-500">This logo will ONLY be applied on the Maintenance Mode page.</p>
+                  </div>
+                  {settings.maintenanceLogoUrl && (
+                    <div className="shrink-0 p-2 bg-white border border-slate-200 rounded-xl flex items-center gap-2">
+                      <img src={settings.maintenanceLogoUrl} alt="Maintenance Logo Preview" className="h-10 w-auto max-w-[140px] object-contain" />
+                      <button
+                        type="button"
+                        onClick={() => setSettings({ ...settings, maintenanceLogoUrl: '' })}
+                        className="text-[10px] text-red-600 font-bold hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Upload Maintenance Logo</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setSettings({ ...settings, maintenanceLogoUrl: reader.result });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="w-full bg-white border border-slate-200 p-2 rounded-xl text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Or Logo Image URL</label>
+                    <input
+                      type="text"
+                      value={settings.maintenanceLogoUrl}
+                      onChange={(e) => setSettings({ ...settings, maintenanceLogoUrl: e.target.value })}
+                      placeholder="https://example.com/maintenance-logo.png"
+                      className="w-full bg-white border border-slate-200 p-2.5 rounded-xl outline-none font-medium text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
