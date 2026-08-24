@@ -3,7 +3,7 @@ import { useSearchParams, useParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 import api from '../utils/api';
-import { SlidersHorizontal, ChevronDown, Check, X, Filter, EyeOff } from 'lucide-react';
+import { Menu, SlidersHorizontal, ChevronDown, Check, X, Filter, EyeOff } from 'lucide-react';
 
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -16,6 +16,27 @@ export default function ShopPage() {
   const [isCategoryDisabled, setIsCategoryDisabled] = useState(false);
   const [brands, setBrands] = useState([]);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  // Body Scroll Lock & ESC Key Listener for Left Slide-Over Filter Drawer
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setMobileFilterOpen(false);
+      }
+    };
+
+    if (mobileFilterOpen) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [mobileFilterOpen]);
 
   // Selected Filter States
   const [selectedCategory, setSelectedCategory] = useState(slug || searchParams.get('category') || searchParams.get('categoryId') || '');
@@ -398,12 +419,13 @@ export default function ShopPage() {
 
           {/* Controls Container */}
           <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
-            {/* Mobile Filter Drawer Button */}
+            {/* 3-Line Filter Button (☰ FILTER) for Mobile & Desktop */}
             <button
               onClick={() => setMobileFilterOpen(true)}
-              className="lg:hidden flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 shadow-2xs cursor-pointer active:scale-95 transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[#B71C1C] rounded-xl text-xs font-extrabold text-slate-800 shadow-2xs cursor-pointer active:scale-95 transition-all"
+              title="Open Filter Drawer"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#B71C1C]" />
+              <Menu className="w-4 h-4 text-[#B71C1C]" />
               <span>FILTER</span>
               {activeFilterCount > 0 && (
                 <span className="bg-[#B71C1C] text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center ml-0.5">
@@ -484,27 +506,53 @@ export default function ShopPage() {
           <FilterContent />
         </aside>
 
-        {/* Mobile Filter Drawer / Bottom Sheet */}
+        {/* Amazon-Style Left Slide-Over Filter Drawer */}
         {mobileFilterOpen && (
-          <div className="fixed inset-0 z-50 flex lg:hidden bg-slate-900/60 backdrop-blur-xs">
-            <div className="relative w-4/5 max-w-xs bg-white h-full shadow-2xl p-5 overflow-y-auto flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                  <h3 className="font-display font-black text-base text-slate-900 flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-[#B71C1C]" /> Refine Catalog
-                  </h3>
-                  <button onClick={() => setMobileFilterOpen(false)} className="p-1 text-slate-500 hover:text-slate-900">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+          <div
+            className="fixed inset-0 z-50 flex bg-slate-900/60 backdrop-blur-xs justify-start transition-opacity duration-300"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setMobileFilterOpen(false);
+            }}
+          >
+            <div className="relative w-[88vw] sm:w-[380px] max-w-full bg-white h-full shadow-2xl flex flex-col justify-between animate-in slide-in-from-left duration-300 z-50">
+              
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 bg-slate-50 shrink-0">
+                <h3 className="font-display font-black text-sm uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                  <Menu className="w-4 h-4 text-[#B71C1C]" /> FILTERS
+                </h3>
+                <button
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="p-1 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
+                  title="Close (Esc)"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Drawer Filter Content (Scrollable) */}
+              <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-6">
                 <FilterContent />
               </div>
-              <button
-                onClick={() => setMobileFilterOpen(false)}
-                className="w-full bg-[#B71C1C] text-white font-extrabold text-xs uppercase py-3 rounded-xl shadow-md mt-6"
-              >
-                Apply Filters ({products.length} Products)
-              </button>
+
+              {/* Drawer Sticky Footer Action Buttons */}
+              <div className="p-4 sm:p-5 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="px-4 py-2.5 text-xs font-bold text-[#B71C1C] hover:bg-red-50 rounded-xl transition-colors border border-red-200 cursor-pointer"
+                >
+                  CLEAR ALL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="flex-1 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-xs uppercase py-2.5 rounded-xl shadow-md hover:shadow-lg transition-colors cursor-pointer text-center"
+                >
+                  APPLY FILTERS ({products.length})
+                </button>
+              </div>
+
             </div>
           </div>
         )}
