@@ -54,9 +54,34 @@ export default function Navbar() {
 
       const catRes = await api.get('/categories/tree').catch(() => null);
       const catPayload = catRes?.data?.data || catRes?.data || [];
-      const activeList = Array.isArray(catPayload) ? catPayload : [];
-      // Only top-level active categories (parent_id IS NULL)
-      const topActive = activeList.filter(c => !c.parentId && (c.isActive === undefined || c.isActive === true));
+      let activeList = Array.isArray(catPayload) ? catPayload : [];
+
+      if (activeList.length === 0) {
+        const altRes = await api.get('/categories?activeOnly=true').catch(() => null);
+        const altPayload = altRes?.data?.data || altRes?.data || [];
+        activeList = Array.isArray(altPayload) ? altPayload : [];
+      }
+
+      const isCategoryActive = (c) => {
+        if (!c) return false;
+        const val = c.isActive !== undefined ? c.isActive : (c.is_active !== undefined ? c.is_active : c.enabled);
+        if (val === undefined || val === null) return true;
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'number') return val === 1;
+        if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
+        if (typeof val === 'object' && val !== null && val.type === 'Buffer' && Array.isArray(val.data)) {
+          return val.data[0] === 1 || val.data[0] === 0x01;
+        }
+        return Boolean(val);
+      };
+
+      const isTopLevelParent = (c) => {
+        if (!c) return false;
+        const pId = c.parentId !== undefined ? c.parentId : c.parent_id;
+        return pId === null || pId === undefined || pId === '' || pId === 0 || pId === '0';
+      };
+
+      const topActive = activeList.filter(c => isTopLevelParent(c) && isCategoryActive(c));
       setNavCategories(topActive);
     } catch (e) {
       console.error(e);

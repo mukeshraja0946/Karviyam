@@ -139,23 +139,29 @@ const parseIsActive = (val) => {
   return Boolean(val);
 };
 
-const mapCategoryRow = (c) => ({
-  id: c.id,
-  parentId: c.parent_id,
-  name: c.name,
-  slug: c.slug,
-  type: c.type || 'General',
-  description: c.description,
-  imageUrl: c.image_url,
-  iconUrl: c.icon_url,
-  bannerUrl: c.banner_url,
-  orderIndex: c.order_index || 0,
-  isActive: parseIsActive(c.is_active),
-  seoTitle: c.seo_title,
-  metaDescription: c.meta_description,
-  metaKeywords: c.meta_keywords,
-  createdAt: c.created_at
-});
+const mapCategoryRow = (c) => {
+  const activeBool = parseIsActive(c.is_active);
+  return {
+    id: c.id,
+    parentId: c.parent_id,
+    parent_id: c.parent_id,
+    name: c.name,
+    slug: c.slug,
+    type: c.type || 'General',
+    description: c.description,
+    imageUrl: c.image_url,
+    iconUrl: c.icon_url,
+    bannerUrl: c.banner_url,
+    orderIndex: c.order_index || 0,
+    isActive: activeBool,
+    is_active: activeBool,
+    enabled: activeBool,
+    seoTitle: c.seo_title,
+    metaDescription: c.meta_description,
+    metaKeywords: c.meta_keywords,
+    createdAt: c.created_at
+  };
+};
 
 exports.getAllCategories = async (req, res, next) => {
   try {
