@@ -1,52 +1,65 @@
-const pool = require('../config/db');
-const ApiResponse = require('../utils/apiResponse');
+const CANONICAL_MAP = {
+  'men': 'MEN',
+  'mens': 'MEN',
+  "men's": 'MEN',
+  'men clothing': 'MEN',
+  'mens wear': 'MEN',
+  'women': 'WOMEN',
+  'womens': 'WOMEN',
+  "women's": 'WOMEN',
+  'women clothing': 'WOMEN',
+  'womens wear': 'WOMEN',
+  'kids': 'KIDS & BABY',
+  'kids & baby': 'KIDS & BABY',
+  'baby': 'KIDS & BABY',
+  'kids wear': 'KIDS & BABY',
+  'jewels': 'JEWELS',
+  'jewellery': 'JEWELS',
+  'jewelry': 'JEWELS',
+  'accessories': 'ACCESSORIES',
+  'kitchen & home': 'KITCHEN & HOME',
+  'school & office': 'SCHOOL & OFFICE',
+  'unisex': 'UNISEX'
+};
 
-const cleanupDuplicateCategoriesInternal = async () => {
+const getCanonicalName = (name) => {
+  if (!name) return '';
+  const clean = name.trim().toLowerCase();
+  return CANONICAL_MAP[clean] || name.trim().toUpperCase();
+};
+
+const consolidateDuplicateCategories = async () => {
   try {
-    const [allRows] = await pool.query('SELECT * FROM categories ORDER BY id ASC');
-    if (!allRows || allRows.length === 0) return { removedCount: 0 };
+    const [roots] = await pool.query('SELECT * FROM categories WHERE parent_id IS NULL ORDER BY id ASC');
+    const groupMap = {};
 
-    const normKey = (cat) => {
-      let n = (cat.name || '').trim().toLowerCase();
-      if (n.endsWith('s') && !n.endsWith('ss')) {
-        n = n.slice(0, -1);
+    roots.forEach(cat => {
+      const canonicalKey = getCanonicalName(cat.name);
+      if (!groupMap[canonicalKey]) {
+        groupMap[canonicalKey] = [];
       }
-      const parent = cat.parent_id || 'root';
-      return `${parent}:${n}`;
-    };
-
-    const groups = {};
-    allRows.forEach(c => {
-      const k = normKey(c);
-      if (!groups[k]) groups[k] = [];
-      groups[k].push(c);
+      groupMap[canonicalKey].push(cat);
     });
 
-    let removedCount = 0;
+    for (const [canonicalKey, cats] of Object.entries(groupMap)) {
+      if (cats.length > 1) {
+        const primary = cats.find(c => (c.image_url && c.image_url.length > 10) || c.description) || cats[0];
+        const duplicateIds = cats.filter(c => c.id !== primary.id).map(c => c.id);
 
-    for (const [key, catList] of Object.entries(groups)) {
-      if (catList.length > 1) {
-        const canonical = catList.find(c => parseIsActive(c.is_active)) || catList[0];
-        const duplicates = catList.filter(c => c.id !== canonical.id);
+        if (duplicateIds.length > 0) {
+          console.log(`[Category Consolidation] Consolidating duplicate categories [${duplicateIds.join(', ')}] into canonical ID ${primary.id} (${primary.name})`);
 
-        for (const dup of duplicates) {
-          try {
-            await pool.query('UPDATE products SET category_id = ? WHERE category_id = ?', [canonical.id, dup.id]);
-            await pool.query('UPDATE products SET subcategory_id = ? WHERE subcategory_id = ?', [canonical.id, dup.id]);
-            await pool.query('UPDATE categories SET parent_id = ? WHERE parent_id = ? AND id != ?', [canonical.id, dup.id, canonical.id]);
-            await pool.query('DELETE FROM categories WHERE id = ?', [dup.id]);
-            removedCount++;
-          } catch (eDup) {
-            console.error(`[Category Cleanup] Failed to delete dup id ${dup.id}:`, eDup.message);
+          for (const dupId of duplicateIds) {
+            await pool.query('UPDATE categories SET parent_id = ? WHERE parent_id = ?', [primary.id, dupId]);
+            await pool.query('UPDATE products SET category_id = ? WHERE category_id = ?', [primary.id, dupId]);
+            await pool.query('UPDATE products SET subcategory_id = ? WHERE subcategory_id = ?', [primary.id, dupId]);
+            await pool.query('DELETE FROM categories WHERE id = ?', [dupId]);
           }
         }
       }
     }
-
-    return { removedCount };
-  } catch (e) {
-    console.error('[Category Cleanup Error]', e.message);
-    return { removedCount: 0 };
+  } catch (err) {
+    console.error('[Category Consolidation Error]', err.message);
   }
 };
 
@@ -79,7 +92,7 @@ const ensureCategoryTableExists = async () => {
     try { await pool.query("UPDATE categories SET is_active = 1 WHERE is_active IS NULL"); } catch (e) {}
 
     await ensureMainCategoriesExist();
-    await cleanupDuplicateCategoriesInternal();
+    await consolidateDuplicateCategories();
   } catch (e) {}
 };
 
@@ -89,13 +102,17 @@ const ensureMainCategoriesExist = async () => {
       { name: 'MEN', type: 'MEN', description: "Men's clothing and products", order: 1 },
       { name: 'WOMEN', type: 'WOMEN', description: "Women's clothing and products", order: 2 },
       { name: 'UNISEX', type: 'UNISEX', description: "Unisex clothing and products", order: 3 },
-      { name: 'JEWELS', type: 'JEWELS', description: "Jewellery products", order: 4 }
+      { name: 'JEWELS', type: 'JEWELS', description: "Jewellery products", order: 4 },
+      { name: 'KIDS & BABY', type: 'KIDS & BABY', description: "Kids and baby clothing", order: 5 },
+      { name: 'ACCESSORIES', type: 'ACCESSORIES', description: "Fashion accessories", order: 6 },
+      { name: 'KITCHEN & HOME', type: 'KITCHEN & HOME', description: "Kitchen and home products", order: 7 }
     ];
 
     for (const item of required) {
+      const canonical = getCanonicalName(item.name);
       const [rows] = await pool.query(
-        'SELECT id FROM categories WHERE parent_id IS NULL AND LOWER(name) = LOWER(?)',
-        [item.name]
+        'SELECT id FROM categories WHERE parent_id IS NULL AND (LOWER(name) = LOWER(?) OR LOWER(name) = LOWER(?))',
+        [item.name, canonical]
       );
       if (rows.length === 0) {
         const slug = item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -205,16 +222,32 @@ exports.createCategory = async (req, res, next) => {
   try {
     await ensureCategoryTableExists();
     const dto = req.body;
-    if (!dto.name) {
-      return res.status(400).json(ApiResponse.error('Category name is required'));
-    }
-
-    const slug = dto.slug || dto.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const trimmedName = dto.name.trim();
+    const slug = dto.slug || trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
     let parentIdVal = dto.parentId ? parseInt(dto.parentId, 10) : null;
     if (parentIdVal) {
       const [validParent] = await pool.query('SELECT id FROM categories WHERE id = ?', [parentIdVal]);
       if (validParent.length === 0) parentIdVal = null;
+    }
+
+    const canonicalName = getCanonicalName(trimmedName);
+
+    // Duplicate Check
+    let dupQuery = '';
+    let dupParams = [];
+
+    if (parentIdVal) {
+      dupQuery = 'SELECT id, name FROM categories WHERE parent_id = ? AND (LOWER(name) = LOWER(?) OR LOWER(name) = LOWER(?))';
+      dupParams = [parentIdVal, trimmedName, canonicalName];
+    } else {
+      dupQuery = 'SELECT id, name FROM categories WHERE parent_id IS NULL AND (LOWER(name) = LOWER(?) OR LOWER(name) = LOWER(?))';
+      dupParams = [trimmedName, canonicalName];
+    }
+
+    const [existing] = await pool.query(dupQuery, dupParams);
+    if (existing.length > 0) {
+      return res.status(400).json(ApiResponse.error('This category already exists.'));
     }
 
     const [result] = await pool.query(
@@ -223,7 +256,7 @@ exports.createCategory = async (req, res, next) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         parentIdVal,
-        dto.name.trim(),
+        trimmedName,
         slug,
         dto.type || 'WOMEN',
         dto.description || null,
@@ -314,8 +347,22 @@ exports.updateCategory = async (req, res, next) => {
     let params = [];
 
     if (dto.name !== undefined) {
-      updates.push('name = ?'); params.push(dto.name);
-      updates.push('slug = ?'); params.push(dto.slug || dto.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+      const nameTrim = dto.name.trim();
+      const targetParentId = dto.parentId !== undefined ? (dto.parentId ? parseInt(dto.parentId, 10) : null) : rows[0].parent_id;
+      const canonicalName = getCanonicalName(nameTrim);
+
+      let dupQuery = targetParentId
+        ? 'SELECT id FROM categories WHERE id != ? AND parent_id = ? AND (LOWER(name) = LOWER(?) OR LOWER(name) = LOWER(?))'
+        : 'SELECT id FROM categories WHERE id != ? AND parent_id IS NULL AND (LOWER(name) = LOWER(?) OR LOWER(name) = LOWER(?))';
+      let dupParams = targetParentId ? [id, targetParentId, nameTrim, canonicalName] : [id, nameTrim, canonicalName];
+
+      const [dupRows] = await pool.query(dupQuery, dupParams);
+      if (dupRows.length > 0) {
+        return res.status(400).json(ApiResponse.error('This category already exists.'));
+      }
+
+      updates.push('name = ?'); params.push(nameTrim);
+      updates.push('slug = ?'); params.push(dto.slug || nameTrim.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
     }
     if (dto.parentId !== undefined) { updates.push('parent_id = ?'); params.push(dto.parentId); }
     if (dto.type !== undefined) { updates.push('type = ?'); params.push(dto.type); }
@@ -407,15 +454,6 @@ exports.toggleStatus = async (req, res, next) => {
 
     const [updatedRows] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
     return res.status(200).json(ApiResponse.success(mapCategoryRow(updatedRows[0]), 'Category status updated successfully'));
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.cleanupDuplicates = async (req, res, next) => {
-  try {
-    const result = await cleanupDuplicateCategoriesInternal();
-    return res.status(200).json(ApiResponse.success(result, `Cleaned up ${result.removedCount} duplicate categories.`));
   } catch (err) {
     next(err);
   }

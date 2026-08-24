@@ -173,8 +173,6 @@ export default function AdminCategoriesPage() {
     };
   }, []);
 
-  const [cleaning, setCleaning] = useState(false);
-
   const fetchCategories = async () => {
     setLoading(true);
     try {
@@ -187,25 +185,12 @@ export default function AdminCategoriesPage() {
           : (Array.isArray(apiData?.categories) ? apiData.categories : []));
       
       if (rawList.length > 0) {
-        const seen = new Set();
-        const deduplicated = [];
-        rawList.forEach(c => {
-          let normName = (c.name || '').trim().toLowerCase();
-          if (normName.endsWith('s') && !normName.endsWith('ss')) {
-            normName = normName.slice(0, -1);
-          }
-          const pId = c.parentId || c.parent_id || 'root';
-          const key = `${pId}:${normName}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            deduplicated.push({
-              ...c,
-              isActive: getCategoryActive(c)
-            });
-          }
-        });
-        setCategories(deduplicated);
-        try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(deduplicated)); } catch (e) {}
+        const normalized = rawList.map(c => ({
+          ...c,
+          isActive: getCategoryActive(c)
+        }));
+        setCategories(normalized);
+        try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(normalized)); } catch (e) {}
       } else {
         const saved = localStorage.getItem('karviyam_admin_categories');
         if (saved) {
@@ -226,22 +211,6 @@ export default function AdminCategoriesPage() {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCleanDuplicates = async () => {
-    setCleaning(true);
-    try {
-      const res = await api.post('/categories/cleanup-duplicates');
-      const apiData = res.data ? res.data : res;
-      const removed = apiData?.data?.removedCount || 0;
-      toast.success(removed > 0 ? `Duplicates cleaned! Removed ${removed} duplicate categories.` : 'No duplicate categories found. Categories are clean!');
-      await fetchCategories();
-      window.dispatchEvent(new Event('karviyam_categories_updated'));
-    } catch (e) {
-      toast.error('Failed to clean duplicate categories');
-    } finally {
-      setCleaning(false);
     }
   };
 
@@ -504,16 +473,6 @@ export default function AdminCategoriesPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={handleCleanDuplicates}
-            disabled={cleaning}
-            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-3.5 py-2.5 rounded-xl font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
-            title="Remove all duplicate categories from database"
-          >
-            <Trash2 className="w-4 h-4 text-amber-600" />
-            <span>{cleaning ? 'Cleaning...' : 'Clean Duplicates'}</span>
-          </button>
-
-          <button
             onClick={() => setImportModalOpen(true)}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
           >
@@ -744,13 +703,13 @@ export default function AdminCategoriesPage() {
                   <select
                     value={formData.parentId}
                     onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl outline-none focus:border-[#B71C1C]"
                   >
-                    <option value="">None (Top-Level)</option>
+                    <option value="">None (Top-Level Category)</option>
                     {categories
-                      .filter(c => !editingCategory || c.id !== editingCategory.id)
+                      .filter(c => !c.parentId && (!editingCategory || String(c.id) !== String(editingCategory.id)))
                       .map(c => (
-                        <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
+                        <option key={c.id} value={c.id}>↳ {c.name} ({c.type || 'General'})</option>
                       ))}
                   </select>
                 </div>
