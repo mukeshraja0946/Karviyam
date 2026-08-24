@@ -57,13 +57,13 @@ export default function MaintenancePage() {
     <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4 py-8 sm:py-12 select-none">
       <div className="w-full max-w-[460px] bg-white p-7 sm:p-11 rounded-[36px] border border-gray-100/90 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] text-center space-y-6 mx-auto">
         
-        {/* Logo Container Box (No stroke/border as requested) */}
+        {/* Logo Container Box (Increased logo size alone) */}
         <div className="flex justify-center pt-1">
-          <div className="flex items-center justify-center min-h-[140px] bg-white w-full max-w-[320px] p-2">
+          <div className="flex items-center justify-center min-h-[160px] bg-white w-full max-w-[360px] p-2">
             {maintenanceLogo ? (
-              <img src={maintenanceLogo} alt="Maintenance Logo" className="max-h-28 w-auto object-contain max-w-full" />
+              <img src={maintenanceLogo} alt="Maintenance Logo" className="h-36 sm:h-44 max-h-48 w-auto object-contain max-w-full" />
             ) : (
-              <img src="/brand-mark-gold.png" alt="Karviyam Logo" className="max-h-28 w-auto object-contain max-w-full" onError={(e) => {
+              <img src="/brand-mark-gold.png" alt="Karviyam Logo" className="h-36 sm:h-44 max-h-48 w-auto object-contain max-w-full" onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = '/brand_logo.png';
               }} />
