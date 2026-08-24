@@ -8,12 +8,18 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
 
+const dbHost = process.env.DB_HOST || 'localhost';
+const dbUser = process.env.DB_USER || 'root';
+const dbName = process.env.DB_NAME || 'karviyam_db';
+
+console.log(`[DB Config] Attempting MySQL connection to host: '${dbHost}', user: '${dbUser}', database: '${dbName}'`);
+
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
+  host: dbHost,
   port: parseInt(process.env.DB_PORT || '3306', 10),
-  user: process.env.DB_USER || 'root',
+  user: dbUser,
   password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '',
-  database: process.env.DB_NAME || 'karviyam_db',
+  database: dbName,
   waitForConnections: true,
   connectionLimit: 20,
   queueLimit: 0,
