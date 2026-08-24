@@ -59,27 +59,6 @@ exports.login = async (req, res, next) => {
       return res.status(500).json(ApiResponse.error(errMessage));
     }
 
-    // 3. Fallback auto-creation for primary admin account if database is completely missing the record
-    if (!user && cleanEmail === 'vanakkam@karviyam.com') {
-      const defaultHash = bcrypt.hashSync('Karviyam@2006', 10);
-      user = {
-        id: 999999,
-        full_name: 'Karviyam Admin',
-        name: 'Karviyam Admin',
-        email: 'vanakkam@karviyam.com',
-        password: defaultHash,
-        role: 'admin'
-      };
-      try {
-        const [result] = await pool.query(
-          `INSERT INTO users (full_name, name, email, password, role, status, enabled, created_at)
-           VALUES ('Karviyam Admin', 'Karviyam Admin', ?, ?, 'admin', 'Active', 1, NOW())`,
-          ['vanakkam@karviyam.com', defaultHash]
-        );
-        user.id = result.insertId;
-      } catch (eInsert) {}
-    }
-
     console.log(`[LOGIN DEBUG] email found: ${Boolean(user)}`);
 
     if (!user || !user.password) {
@@ -91,7 +70,7 @@ exports.login = async (req, res, next) => {
     console.log(`[LOGIN DEBUG] role: ${user.role}`);
     console.log(`[LOGIN DEBUG] password hash exists: true`);
 
-    // 4. Verify password strictly using BCrypt compare (with backward compatibility for PHP $2y$ prefix)
+    // Verify password strictly using BCrypt compare
     const formattedHash = user.password.startsWith('$2y$')
       ? user.password.replace(/^\$2y\$/, '$2a$')
       : user.password;
@@ -103,16 +82,7 @@ exports.login = async (req, res, next) => {
       console.error('[LOGIN DEBUG] BCrypt compare error:', eBcrypt.message);
     }
 
-    // Fallback match for admin accounts to ensure both Karviyam@2026 and Karviyam#2026! work seamlessly
-    if (!isMatch && (cleanEmail === 'vanakkam@karviyam.com' || cleanEmail === 'admin@karviyam.com')) {
-      const allowedAdminPasswords = ['Karviyam@2026', 'Karviyam#2026!', 'Karviyam@2006', 'admin123'];
-      if (allowedAdminPasswords.includes(cleanPassword)) {
-        isMatch = true;
-      }
-    }
-
     console.log(`[LOGIN DEBUG] bcrypt comparison: ${isMatch}`);
-    console.log(`[LOGIN DEBUG] database environment: production`);
 
     if (!isMatch) {
       return res.status(401).json(ApiResponse.error('Invalid email or password'));
