@@ -26,21 +26,30 @@ export default function MaintenancePage() {
   const fetchLiveMaintenanceSettings = async () => {
     try {
       const res = await api.get('/settings');
-      const apiData = res.data ? res.data : res;
-      if (Array.isArray(apiData)) {
-        const dataMap = {};
-        apiData.forEach((s) => {
-          if (s.settingKey) dataMap[s.settingKey] = s.settingValue;
-        });
+      const dataObj = res.data?.data || res.data || res;
+      
+      if (dataObj && typeof dataObj === 'object') {
+        const dataMap = Array.isArray(dataObj)
+          ? dataObj.reduce((acc, s) => { if (s.settingKey) acc[s.settingKey] = s.settingValue; return acc; }, {})
+          : dataObj;
 
-        if (dataMap.maintenanceLogoUrl) setMaintenanceLogo(dataMap.maintenanceLogoUrl);
-        if (dataMap.maintenanceTitle) setTitle(dataMap.maintenanceTitle);
-        if (dataMap.maintenanceSubtitle) setSubtitle(dataMap.maintenanceSubtitle);
-        if (dataMap.maintenanceMessage) setMessage(dataMap.maintenanceMessage);
-        if (dataMap.maintenanceEstimatedTime) setEstimatedTime(dataMap.maintenanceEstimatedTime);
+        const logo = dataMap.maintenanceLogoUrl || dataMap.maintenance_logo_url;
+        const t = dataMap.maintenanceTitle || dataMap.maintenance_title;
+        const sub = dataMap.maintenanceSubtitle || dataMap.maintenance_subtitle;
+        const msg = dataMap.maintenanceMessage || dataMap.maintenance_message;
+        const est = dataMap.maintenanceEstimatedTime || dataMap.maintenance_estimated_time;
+
+        if (logo) {
+          setMaintenanceLogo(logo);
+          localStorage.setItem('karviyam_maintenance_logo', logo);
+        }
+        if (t) setTitle(t);
+        if (sub) setSubtitle(sub);
+        if (msg) setMessage(msg);
+        if (est) setEstimatedTime(est);
       }
     } catch (e) {
-      console.error(e);
+      console.error('[MaintenancePage] Settings fetch error:', e);
     }
   };
 
@@ -48,13 +57,13 @@ export default function MaintenancePage() {
     <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4 py-8 sm:py-12 select-none">
       <div className="w-full max-w-[460px] bg-white p-7 sm:p-11 rounded-[36px] border border-gray-100/90 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] text-center space-y-6 mx-auto">
         
-        {/* Logo Framed Container Box */}
+        {/* Logo Container Box (No stroke/border as requested) */}
         <div className="flex justify-center pt-1">
-          <div className="border border-gray-300/80 rounded-md p-4 sm:p-6 flex items-center justify-center min-h-[150px] bg-white w-full max-w-[320px]">
+          <div className="flex items-center justify-center min-h-[140px] bg-white w-full max-w-[320px] p-2">
             {maintenanceLogo ? (
-              <img src={maintenanceLogo} alt="Maintenance Logo" className="max-h-24 w-auto object-contain max-w-full" />
+              <img src={maintenanceLogo} alt="Maintenance Logo" className="max-h-28 w-auto object-contain max-w-full" />
             ) : (
-              <img src="/brand-mark-gold.png" alt="Karviyam Logo" className="max-h-24 w-auto object-contain max-w-full" onError={(e) => {
+              <img src="/brand-mark-gold.png" alt="Karviyam Logo" className="max-h-28 w-auto object-contain max-w-full" onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = '/brand_logo.png';
               }} />
