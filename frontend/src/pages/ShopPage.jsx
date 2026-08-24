@@ -499,14 +499,8 @@ export default function ShopPage() {
         )}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-5 items-start">
-        
-        {/* Desktop Sidebar Filters (Fixed / Sticky while product grid scrolls) */}
-        <aside className="hidden lg:block w-64 xl:w-72 shrink-0 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs sticky top-24 self-start max-h-[calc(100vh-110px)] overflow-y-auto z-20">
-          <FilterContent />
-        </aside>
-
-        {/* Amazon-Style Left Slide-Over Filter Drawer */}
+      <div className="w-full">
+        {/* Universal Left Slide-Over Filter Drawer */}
         {mobileFilterOpen && (
           <div
             className="fixed inset-0 z-50 flex bg-slate-900/60 backdrop-blur-xs justify-start transition-opacity duration-300"
@@ -557,8 +551,8 @@ export default function ShopPage() {
           </div>
         )}
 
-        {/* Product Grid - STRICT 3 COLUMNS ON MOBILE */}
-        <div className="flex-1 min-w-0">
+        {/* Product Catalogue Grid - 100% FULL WIDTH WHEN CLOSED */}
+        <div className="w-full">
           {isCategoryDisabled ? (
             <div className="bg-amber-50/90 border border-amber-200 p-8 sm:p-12 rounded-3xl text-center space-y-4 max-w-xl mx-auto my-6 shadow-sm">
               <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
@@ -584,14 +578,13 @@ export default function ShopPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1.5 md:gap-6">
+            <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1.5 sm:gap-6 w-full">
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
