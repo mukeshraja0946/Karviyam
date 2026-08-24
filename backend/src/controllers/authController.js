@@ -49,13 +49,14 @@ exports.login = async (req, res, next) => {
 
     // If database connection explicitly failed, return 500 error instead of false 401 invalid credentials
     if (dbConnectionError) {
-      const isConnRefused = dbConnectionError.code === 'ECONNREFUSED' || 
-                            dbConnectionError.code === 'ER_ACCESS_DENIED_ERROR' ||
-                            dbConnectionError.code === 'ER_BAD_DB_ERROR' ||
+      const errCode = dbConnectionError.code || 'DB_CONN_ERROR';
+      const isConnRefused = errCode === 'ECONNREFUSED' || 
+                            errCode === 'ER_ACCESS_DENIED_ERROR' ||
+                            errCode === 'ER_BAD_DB_ERROR' ||
                             dbConnectionError.message?.includes('connect');
       const errMessage = isConnRefused
-        ? 'Database connection error. Please check Hostinger MySQL credentials in environment configuration.'
-        : `Database error: ${dbConnectionError.message}`;
+        ? `Database connection error (${errCode}): Please configure DB_PASSWORD for user u202296270_karviyam_user in Hostinger hPanel Node.js Environment Variables.`
+        : `Database error (${errCode}): ${dbConnectionError.message}`;
       return res.status(500).json(ApiResponse.error(errMessage));
     }
 
