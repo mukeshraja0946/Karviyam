@@ -3,8 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "description": "Karviyam E-Commerce Web Application Root Workspace",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
-    "build": "npm --prefix frontend run build && node scripts/post-build.js",
+    "postinstall": "npm --prefix frontend install && npm --prefix backend install",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build && node scripts/post-build.js",
     "dev": "npm --prefix frontend run dev",
     "start": "npm --prefix backend start"
   },
