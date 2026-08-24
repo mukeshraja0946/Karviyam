@@ -409,20 +409,15 @@ export default function ShopPage() {
   return (
     <div className="w-full px-2 sm:px-4 lg:px-6 py-3 sm:py-6 max-w-[1750px] mx-auto space-y-4 sm:space-y-6">
       
-      {/* Header & Amazon-Style Mobile/Desktop Controls */}
+      {/* Header Controls Bar */}
       <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:pb-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div>
-            <h1 className="font-display font-black text-xl sm:text-3xl text-slate-900">Karviyam Product Catalog</h1>
-            <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1">Showing {products.length} catalog products</p>
-          </div>
-
-          {/* Controls Container */}
-          <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
-            {/* 3-Line Filter Button (☰ FILTER) for Mobile & Desktop */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Left Container: FILTER button + Page Heading */}
+          <div className="flex items-center gap-3">
+            {/* 3-Line Filter Button (☰ FILTER) on Left Side Before Heading */}
             <button
               onClick={() => setMobileFilterOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[#B71C1C] rounded-xl text-xs font-extrabold text-slate-800 shadow-2xs cursor-pointer active:scale-95 transition-all"
+              className="flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-white border border-slate-200 hover:border-[#B71C1C] rounded-xl text-xs font-extrabold text-slate-800 shadow-2xs cursor-pointer active:scale-95 transition-all shrink-0"
               title="Open Filter Drawer"
             >
               <Menu className="w-4 h-4 text-[#B71C1C]" />
@@ -434,26 +429,31 @@ export default function ShopPage() {
               )}
             </button>
 
-            {/* Sort Controls */}
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">Sort By:</span>
-              <div className="relative inline-flex items-center">
-                <select
-                  value={`${sortBy}-${sortDir}`}
-                  onChange={(e) => {
-                    const [b, d] = e.target.value.split('-');
-                    setSortBy(b);
-                    setSortDir(d);
-                  }}
-                  className="bg-white border border-slate-200 text-slate-900 text-xs font-bold pl-3 pr-8 py-2 rounded-xl outline-none cursor-pointer focus:border-[#B71C1C] shadow-xs appearance-none leading-normal"
-                >
-                  <option value="id-desc">Newest</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                  <option value="rating-desc">Highest Rated</option>
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 pointer-events-none" />
-              </div>
+            <div>
+              <h1 className="font-display font-black text-lg sm:text-3xl text-slate-900 leading-tight">Karviyam Product Catalog</h1>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Showing {products.length} catalog products</p>
+            </div>
+          </div>
+
+          {/* Right Container: Sort Controls */}
+          <div className="flex items-center justify-end gap-2 shrink-0">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">Sort By:</span>
+            <div className="relative inline-flex items-center">
+              <select
+                value={`${sortBy}-${sortDir}`}
+                onChange={(e) => {
+                  const [b, d] = e.target.value.split('-');
+                  setSortBy(b);
+                  setSortDir(d);
+                }}
+                className="bg-white border border-slate-200 text-slate-900 text-xs font-bold pl-3 pr-8 py-2 rounded-xl outline-none cursor-pointer focus:border-[#B71C1C] shadow-xs appearance-none leading-normal"
+              >
+                <option value="id-desc">Newest</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="rating-desc">Highest Rated</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 pointer-events-none" />
             </div>
           </div>
         </div>
