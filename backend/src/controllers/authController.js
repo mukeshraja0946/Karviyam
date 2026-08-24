@@ -16,17 +16,20 @@ exports.login = async (req, res, next) => {
 
     // 1. Fetch user record from database
     let user = null;
+    let dbConnectionError = null;
+
     try {
       const [users] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [cleanEmail]);
       if (users && users.length > 0) {
         user = users[0];
       }
     } catch (dbErr) {
-      console.error('[Auth DB Error] Query failed:', dbErr.message);
+      console.error('[Auth DB Error] User query failed:', dbErr.stack || dbErr.message);
+      dbConnectionError = dbErr;
     }
 
     // 2. Check admin table fallback if not found in users table
-    if (!user) {
+    if (!user && !dbConnectionError) {
       try {
         const [admins] = await pool.query('SELECT * FROM admin WHERE LOWER(email) = ? OR username = ?', [cleanEmail, cleanEmail]);
         if (admins && admins.length > 0) {
@@ -39,7 +42,21 @@ exports.login = async (req, res, next) => {
             role: 'admin'
           };
         }
-      } catch (dbErr2) {}
+      } catch (dbErr2) {
+        console.error('[Auth DB Error] Admin query failed:', dbErr2.message);
+      }
+    }
+
+    // If database connection explicitly failed, return 500 error instead of false 401 invalid credentials
+    if (dbConnectionError) {
+      const isConnRefused = dbConnectionError.code === 'ECONNREFUSED' || 
+                            dbConnectionError.code === 'ER_ACCESS_DENIED_ERROR' ||
+                            dbConnectionError.code === 'ER_BAD_DB_ERROR' ||
+                            dbConnectionError.message?.includes('connect');
+      const errMessage = isConnRefused
+        ? 'Database connection error. Please check Hostinger MySQL credentials in environment configuration.'
+        : `Database error: ${dbConnectionError.message}`;
+      return res.status(500).json(ApiResponse.error(errMessage));
     }
 
     // 3. Fallback auto-creation for primary admin account if database is completely missing the record
