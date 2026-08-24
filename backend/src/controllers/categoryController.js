@@ -1,6 +1,55 @@
 const pool = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
 
+const cleanupDuplicateCategoriesInternal = async () => {
+  try {
+    const [allRows] = await pool.query('SELECT * FROM categories ORDER BY id ASC');
+    if (!allRows || allRows.length === 0) return { removedCount: 0 };
+
+    const normKey = (cat) => {
+      let n = (cat.name || '').trim().toLowerCase();
+      if (n.endsWith('s') && !n.endsWith('ss')) {
+        n = n.slice(0, -1);
+      }
+      const parent = cat.parent_id || 'root';
+      return `${parent}:${n}`;
+    };
+
+    const groups = {};
+    allRows.forEach(c => {
+      const k = normKey(c);
+      if (!groups[k]) groups[k] = [];
+      groups[k].push(c);
+    });
+
+    let removedCount = 0;
+
+    for (const [key, catList] of Object.entries(groups)) {
+      if (catList.length > 1) {
+        const canonical = catList.find(c => parseIsActive(c.is_active)) || catList[0];
+        const duplicates = catList.filter(c => c.id !== canonical.id);
+
+        for (const dup of duplicates) {
+          try {
+            await pool.query('UPDATE products SET category_id = ? WHERE category_id = ?', [canonical.id, dup.id]);
+            await pool.query('UPDATE products SET subcategory_id = ? WHERE subcategory_id = ?', [canonical.id, dup.id]);
+            await pool.query('UPDATE categories SET parent_id = ? WHERE parent_id = ? AND id != ?', [canonical.id, dup.id, canonical.id]);
+            await pool.query('DELETE FROM categories WHERE id = ?', [dup.id]);
+            removedCount++;
+          } catch (eDup) {
+            console.error(`[Category Cleanup] Failed to delete dup id ${dup.id}:`, eDup.message);
+          }
+        }
+      }
+    }
+
+    return { removedCount };
+  } catch (e) {
+    console.error('[Category Cleanup Error]', e.message);
+    return { removedCount: 0 };
+  }
+};
+
 const ensureCategoryTableExists = async () => {
   try {
     await pool.query(`
@@ -30,6 +79,7 @@ const ensureCategoryTableExists = async () => {
     try { await pool.query("UPDATE categories SET is_active = 1 WHERE is_active IS NULL"); } catch (e) {}
 
     await ensureMainCategoriesExist();
+    await cleanupDuplicateCategoriesInternal();
   } catch (e) {}
 };
 
@@ -357,6 +407,15 @@ exports.toggleStatus = async (req, res, next) => {
 
     const [updatedRows] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
     return res.status(200).json(ApiResponse.success(mapCategoryRow(updatedRows[0]), 'Category status updated successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.cleanupDuplicates = async (req, res, next) => {
+  try {
+    const result = await cleanupDuplicateCategoriesInternal();
+    return res.status(200).json(ApiResponse.success(result, `Cleaned up ${result.removedCount} duplicate categories.`));
   } catch (err) {
     next(err);
   }

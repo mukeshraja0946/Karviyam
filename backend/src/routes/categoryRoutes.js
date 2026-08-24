@@ -10,6 +10,7 @@ router.get('/:id', categoryController.getCategoryById);
 
 router.post('/bulk-import', optionalToken, requireAdmin, categoryController.bulkImportCategories);
 router.post('/reorder', optionalToken, requireAdmin, categoryController.reorderCategories);
+router.post('/cleanup-duplicates', optionalToken, requireAdmin, categoryController.cleanupDuplicates);
 
 router.put('/:id/toggle-status', optionalToken, requireAdmin, categoryController.toggleStatus);
 router.post('/:id/toggle-status', optionalToken, requireAdmin, categoryController.toggleStatus);
