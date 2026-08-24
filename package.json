@@ -4,14 +4,14 @@
   "private": true,
   "description": "Karviyam E-Commerce Web Application Root Workspace",
   "scripts": {
-    "build": "npm --prefix frontend run build && node -e \"const fs=require('fs'); if(fs.existsSync('frontend/dist')){ fs.cpSync('frontend/dist', 'dist', {recursive: true}); fs.cpSync('frontend/dist', 'backend/dist', {recursive: true}); fs.copyFileSync('frontend/dist/index.html', 'index.html'); if(fs.existsSync('frontend/dist/assets')){ fs.cpSync('frontend/dist/assets', 'assets', {recursive: true}); } }\"",
+    "build": "npm --prefix frontend run build && node scripts/post-build.js",
     "dev": "npm --prefix frontend run dev",
     "start": "npm --prefix backend start"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3"
-  },
-  "devDependencies": {
-    "sharp": "^0.35.3"
   }
 }

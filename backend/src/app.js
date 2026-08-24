@@ -60,6 +60,8 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://karviyam.com',
   'https://www.karviyam.com',
+  'http://karviyam.com',
+  'http://www.karviyam.com',
   'http://localhost:5173',
   'http://localhost:3000',
   'http://localhost:8080'

@@ -15,15 +15,18 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 3. ALLOW PHYSICAL FILES AND STATIC ASSETS TO PASS THROUGH DIRECTLY
+  # 3. ALWAYS FORWARD API REQUESTS DIRECTLY TO PASSENGER SERVER.JS (NODE.JS)
+  RewriteRule ^api/(.*)$ server.js [QSA,L]
+
+  # 4. ALLOW PHYSICAL FILES AND STATIC ASSETS TO PASS THROUGH DIRECTLY
+  RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
+  RewriteRule ^ - [L]
+
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
-  RewriteRule ^ - [L]
-
-  # 4. ROUTE ALL API AND NON-FILE REQUESTS TO PASSENGER SERVER.JS / EXPRESS
+  # 5. ROUTE ALL OTHER NON-FILE REQUESTS TO PASSENGER SERVER.JS / EXPRESS
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^ server.js [L]
