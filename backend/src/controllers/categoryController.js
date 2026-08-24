@@ -161,11 +161,11 @@ exports.getAllCategories = async (req, res, next) => {
   try {
     await ensureCategoryTableExists();
     const activeOnly = req.query.activeOnly === 'true';
-    const query = activeOnly
-      ? 'SELECT * FROM categories WHERE is_active = 1 OR is_active = b\'1\' OR is_active IS TRUE ORDER BY order_index ASC, id ASC'
-      : 'SELECT * FROM categories ORDER BY order_index ASC, id ASC';
-    const [rows] = await pool.query(query);
-    const categories = rows.map(mapCategoryRow);
+    const [rows] = await pool.query('SELECT * FROM categories ORDER BY order_index ASC, id ASC');
+    let categories = rows.map(mapCategoryRow);
+    if (activeOnly) {
+      categories = categories.filter(c => c.isActive);
+    }
     return res.status(200).json(ApiResponse.success(categories, 'Categories retrieved successfully'));
   } catch (err) {
     next(err);
@@ -176,11 +176,11 @@ exports.getCategoryTree = async (req, res, next) => {
   try {
     await ensureCategoryTableExists();
     const includeAll = req.query.all === 'true';
-    const query = includeAll
-      ? 'SELECT * FROM categories ORDER BY order_index ASC, id ASC'
-      : 'SELECT * FROM categories WHERE is_active = 1 OR is_active = b\'1\' OR is_active IS TRUE ORDER BY order_index ASC, id ASC';
-    const [rows] = await pool.query(query);
-    const categories = rows.map(mapCategoryRow);
+    const [rows] = await pool.query('SELECT * FROM categories ORDER BY order_index ASC, id ASC');
+    let categories = rows.map(mapCategoryRow);
+    if (!includeAll) {
+      categories = categories.filter(c => c.isActive);
+    }
 
     const categoryMap = {};
     const rootCategories = [];

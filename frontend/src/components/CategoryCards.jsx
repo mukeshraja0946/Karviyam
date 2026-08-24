@@ -4,6 +4,17 @@ import api from '../utils/api';
 
 const DEFAULT_PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800";
 
+const CATEGORY_TYPE_IMAGES = {
+  'WOMEN': "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800",
+  'MEN': "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800",
+  'KIDS & BABY': "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800",
+  'ACCESSORIES': "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800",
+  'JEWELS': "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800",
+  'KITCHEN & HOME': "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800",
+  'SCHOOL & OFFICE': "https://images.unsplash.com/photo-1588072432836-e10032774350?w=800",
+  'UNISEX': "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800"
+};
+
 export default function CategoryCards() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
@@ -18,24 +29,45 @@ export default function CategoryCards() {
     try {
       const res = await api.get('/categories/tree');
       const apiData = res.data ? res.data : res;
-      const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      let list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+
+      if (list.length === 0) {
+        const altRes = await api.get('/categories?activeOnly=true');
+        const altData = altRes.data ? altRes.data : altRes;
+        const allCats = Array.isArray(altData.data) ? altData.data : (Array.isArray(altData) ? altData : []);
+        list = allCats.filter(c => !c.parentId && (c.isActive === undefined || c.isActive === true));
+      }
 
       if (list.length > 0) {
-        const formatted = list.map((cat) => ({
-          id: cat.id,
-          name: cat.name,
-          count: cat.description || `${cat.subcategories ? cat.subcategories.length : 0} Collections`,
-          image: cat.imageUrl || cat.iconUrl || DEFAULT_PLACEHOLDER_IMAGE,
-          query: `category=${encodeURIComponent(cat.name)}`
-        }));
+        const formatted = list.map((cat) => {
+          const catType = (cat.type || cat.name || '').toUpperCase();
+          const fallbackImg = CATEGORY_TYPE_IMAGES[catType] || DEFAULT_PLACEHOLDER_IMAGE;
+          const subCount = cat.subcategories ? cat.subcategories.length : 0;
+          const countText = cat.description && cat.description.length < 40
+            ? cat.description
+            : (subCount > 0 ? `${subCount} Collections` : 'Exclusive Collection');
+
+          return {
+            id: cat.id,
+            name: cat.name,
+            count: countText,
+            image: cat.imageUrl || cat.iconUrl || fallbackImg,
+            query: `category=${encodeURIComponent(cat.name)}`
+          };
+        });
         setCategories(formatted);
       } else {
         setCategories([]);
       }
     } catch (e) {
-      console.error(e);
+      console.error('[CategoryCards] Error fetching categories:', e);
+      setCategories([]);
     }
   };
+
+  if (categories.length === 0) {
+    return null;
+  }
 
   return (
     <div className="w-full px-4 sm:px-8 lg:px-12 pt-6 pb-2">
