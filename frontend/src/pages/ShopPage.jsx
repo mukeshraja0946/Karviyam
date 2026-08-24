@@ -388,51 +388,93 @@ export default function ShopPage() {
   return (
     <div className="w-full px-2 sm:px-4 lg:px-6 py-3 sm:py-6 max-w-[1750px] mx-auto space-y-4 sm:space-y-6">
       
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200 pb-3 sm:pb-4">
-        <div>
-          <h1 className="font-display font-black text-xl sm:text-3xl text-slate-900">Karviyam Product Catalog</h1>
-          <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1">Showing {products.length} catalog products</p>
-        </div>
+      {/* Header & Amazon-Style Mobile/Desktop Controls */}
+      <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:pb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h1 className="font-display font-black text-xl sm:text-3xl text-slate-900">Karviyam Product Catalog</h1>
+            <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1">Showing {products.length} catalog products</p>
+          </div>
 
-        {/* Mobile Toolbar & Desktop Sort Controls */}
-        <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
-          {/* Mobile Filter Drawer Trigger Button */}
-          <button
-            onClick={() => setMobileFilterOpen(true)}
-            className="lg:hidden flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 shadow-2xs cursor-pointer"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#B71C1C]" />
-            <span>Filters</span>
-            {activeFilterCount > 0 && (
-              <span className="bg-[#B71C1C] text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center ml-0.5">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
+          {/* Controls Container */}
+          <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
+            {/* Mobile Filter Drawer Button */}
+            <button
+              onClick={() => setMobileFilterOpen(true)}
+              className="lg:hidden flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 shadow-2xs cursor-pointer active:scale-95 transition-all"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#B71C1C]" />
+              <span>FILTER</span>
+              {activeFilterCount > 0 && (
+                <span className="bg-[#B71C1C] text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center ml-0.5">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
 
-          {/* Sort Controls */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">Sort By:</span>
-            <div className="relative inline-flex items-center">
-              <select
-                value={`${sortBy}-${sortDir}`}
-                onChange={(e) => {
-                  const [b, d] = e.target.value.split('-');
-                  setSortBy(b);
-                  setSortDir(d);
-                }}
-                className="bg-white border border-slate-200 text-slate-900 text-xs font-bold pl-3 pr-8 py-2 rounded-xl outline-none cursor-pointer focus:border-[#B71C1C] shadow-xs appearance-none leading-normal"
-              >
-                <option value="id-desc">Newest</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="rating-desc">Highest Rated</option>
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 pointer-events-none" />
+            {/* Sort Controls */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">Sort By:</span>
+              <div className="relative inline-flex items-center">
+                <select
+                  value={`${sortBy}-${sortDir}`}
+                  onChange={(e) => {
+                    const [b, d] = e.target.value.split('-');
+                    setSortBy(b);
+                    setSortDir(d);
+                  }}
+                  className="bg-white border border-slate-200 text-slate-900 text-xs font-bold pl-3 pr-8 py-2 rounded-xl outline-none cursor-pointer focus:border-[#B71C1C] shadow-xs appearance-none leading-normal"
+                >
+                  <option value="id-desc">Newest</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                  <option value="rating-desc">Highest Rated</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 pointer-events-none" />
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Active Filter Chips Bar */}
+        {activeFilterCount > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 text-[11px] font-semibold text-slate-700">
+            <span className="text-[10px] uppercase font-extrabold text-slate-400 shrink-0">Active:</span>
+            {selectedCategory && (
+              <span className="inline-flex items-center gap-1 bg-red-50 text-[#B71C1C] px-2.5 py-0.5 rounded-full border border-red-200 shrink-0">
+                Category: {selectedCategory}
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedCategory('')} />
+              </span>
+            )}
+            {selectedSubcategory && (
+              <span className="inline-flex items-center gap-1 bg-red-50 text-[#B71C1C] px-2.5 py-0.5 rounded-full border border-red-200 shrink-0">
+                Subcategory: {selectedSubcategory}
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedSubcategory('')} />
+              </span>
+            )}
+            {selectedBrand && (
+              <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200 shrink-0">
+                Brand: {selectedBrand}
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedBrand('')} />
+              </span>
+            )}
+            {selectedGender && (
+              <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200 shrink-0">
+                Target: {selectedGender}
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedGender('')} />
+              </span>
+            )}
+            {priceRange < 10000 && (
+              <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200 shrink-0">
+                ≤ ₹{priceRange}
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setPriceRange(10000)} />
+              </span>
+            )}
+            <button onClick={clearFilters} className="text-[10px] font-bold text-[#B71C1C] underline shrink-0 cursor-pointer ml-1">
+              Reset All
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-5 items-start">
