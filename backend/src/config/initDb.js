@@ -502,7 +502,7 @@ async function initDb() {
 
     // Exclusive Admin Account: vanakkam@karviyam.com
     const adminEmail = 'vanakkam@karviyam.com';
-    const defaultAdminPass = 'Karviyam@2006';
+    const defaultAdminPass = 'Karviyam@2026';
     const defaultAdminHash = bcrypt.hashSync(defaultAdminPass, 10);
 
     const [adminCheck] = await pool.query(`SELECT id, password FROM users WHERE LOWER(email) = LOWER(?)`, [adminEmail]);
@@ -521,7 +521,7 @@ async function initDb() {
       if (existingHash && String(existingHash).length > 10) {
         try {
           const formatted = existingHash.replace(/^\$2y\$/, '$2a$');
-          if (bcrypt.compareSync(defaultAdminPass, formatted)) {
+          if (bcrypt.compareSync('Karviyam@2026', formatted) || bcrypt.compareSync('Karviyam@2006', formatted) || bcrypt.compareSync('Karviyam#2026!', formatted)) {
             passToKeep = existingHash;
           } else {
             passToKeep = defaultAdminHash;
