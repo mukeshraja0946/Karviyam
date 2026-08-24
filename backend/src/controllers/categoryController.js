@@ -1,3 +1,6 @@
+const pool = require('../config/db');
+const ApiResponse = require('../utils/apiResponse');
+
 const CANONICAL_MAP = {
   'men': 'MEN',
   'mens': 'MEN',
