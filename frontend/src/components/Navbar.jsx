@@ -347,10 +347,17 @@ export default function Navbar() {
             {/* Logo & Mobile Menu & Delivery Location Trigger */}
             <div className="flex items-center gap-4 sm:gap-6">
               <button 
-                className="lg:hidden p-2 text-slate-700 hover:text-[#B71C1C]"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 text-slate-700 hover:text-[#B71C1C] cursor-pointer"
+                onClick={() => {
+                  if (window.location.pathname === '/shop') {
+                    window.dispatchEvent(new Event('karviyam_open_filter_drawer'));
+                  } else {
+                    navigate('/shop?openFilter=true');
+                  }
+                }}
+                title="Filter Catalogue"
               >
-                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                <Menu className="w-6 h-6 text-slate-800" />
               </button>
               
               <Link to="/" className="flex items-center gap-2.5 group">
