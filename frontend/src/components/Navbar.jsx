@@ -577,7 +577,7 @@ export default function Navbar() {
 
         {/* Category Links Navigation Bar with Hoverable Wide MegaMenu */}
         {navEnabled && (
-          <div className="hidden lg:block bg-slate-50 border-b border-slate-200 px-4 sm:px-8 lg:px-12 py-2 relative">
+          <div className="hidden lg:block bg-slate-50 border-b border-slate-200 px-2 sm:px-4 lg:px-6 py-2 relative">
             <div className="w-full flex items-center justify-between text-xs font-bold text-slate-700">
               
               <div className="flex items-center gap-3 shrink-0">

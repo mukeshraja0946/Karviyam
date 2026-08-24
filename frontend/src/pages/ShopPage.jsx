@@ -422,26 +422,9 @@ export default function ShopPage() {
       {/* Header & Controls */}
       <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:pb-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex items-center gap-3.5">
-            {/* 3-Line Filter Button (☰ FILTER) on Left Side */}
-            <button
-              onClick={() => setMobileFilterOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[#B71C1C] rounded-xl text-xs font-extrabold text-slate-800 shadow-2xs cursor-pointer active:scale-95 transition-all shrink-0"
-              title="Open Filter Drawer"
-            >
-              <Menu className="w-4 h-4 text-[#B71C1C]" />
-              <span>FILTER</span>
-              {activeFilterCount > 0 && (
-                <span className="bg-[#B71C1C] text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center ml-0.5">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-
-            <div>
-              <h1 className="font-display font-black text-xl sm:text-2xl text-slate-900">Karviyam Product Catalog</h1>
-              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Showing {products.length} catalog products</p>
-            </div>
+          <div>
+            <h1 className="font-display font-black text-xl sm:text-2xl text-slate-900">Karviyam Product Catalog</h1>
+            <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Showing {products.length} catalog products</p>
           </div>
 
           {/* Sort Controls Right Aligned */}
