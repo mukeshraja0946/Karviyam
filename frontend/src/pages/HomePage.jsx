@@ -494,6 +494,49 @@ export default function HomePage() {
 
         </div>
 
+        {/* ROW 5: BOTTOM SERVICE BAR (5 Equal Boxes Row matching Desktop Requirement 13) */}
+        <div className="grid grid-cols-5 gap-5 pt-1">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-2xs">
+            <span className="text-xl shrink-0">🛡️</span>
+            <div>
+              <h5 className="font-black text-xs text-slate-900 leading-tight">100% Original Products</h5>
+              <p className="text-[10px] text-slate-500 font-medium mt-0.5">Sourced Directly</p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-2xs">
+            <span className="text-xl shrink-0">💳</span>
+            <div>
+              <h5 className="font-black text-xs text-slate-900 leading-tight">Secure Payments</h5>
+              <p className="text-[10px] text-slate-500 font-medium mt-0.5">Multiple Payment Options</p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-2xs">
+            <span className="text-xl shrink-0">🔄</span>
+            <div>
+              <h5 className="font-black text-xs text-slate-900 leading-tight">Easy Returns & Refunds</h5>
+              <p className="text-[10px] text-slate-500 font-medium mt-0.5">Hassle Free Process</p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-2xs">
+            <span className="text-xl shrink-0">🎧</span>
+            <div>
+              <h5 className="font-black text-xs text-slate-900 leading-tight">Customer Support</h5>
+              <p className="text-[10px] text-slate-500 font-medium mt-0.5">24/7 Support</p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 shadow-2xs">
+            <span className="text-xl shrink-0">🏷️</span>
+            <div>
+              <h5 className="font-black text-xs text-slate-900 leading-tight">Best Price Guarantee</h5>
+              <p className="text-[10px] text-slate-500 font-medium mt-0.5">We Promise The Best</p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
