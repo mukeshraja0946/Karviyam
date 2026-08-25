@@ -13,45 +13,40 @@ export default function ProductCard({ product }) {
 
   if (!product) return null;
 
-  const price = product.price || 899;
-  const oldPrice = product.oldPrice || Math.round(price * 1.35);
+  const price = product.price || 361;
+  const oldPrice = product.oldPrice || Math.round(price * 4.2);
   const discountPercent = oldPrice > price
     ? Math.round(((oldPrice - price) / oldPrice) * 100)
-    : 25;
+    : 82;
 
-  const rating = product.rating || 4.5;
-  const reviewsCount = product.reviewsCount || (product.id ? (product.id * 17) % 300 + 42 : 128);
+  const rating = product.rating || 4.0;
+  const reviewsCount = product.reviewsCount || (product.id ? (product.id * 137) % 900 + 320 : 1200);
+  const boughtCount = (product.id ? (product.id * 230) % 800 + 100 : 700);
 
-  // Badge Logic
-  const getBadge = () => {
-    if (product.isBestSeller) return { label: 'Best Seller', bg: 'bg-amber-500 text-white' };
-    if (product.isTrending) return { label: 'Trending', bg: 'bg-indigo-600 text-white' };
-    if (product.isNewArrival) return { label: 'New Arrival', bg: 'bg-slate-900 text-white' };
-    if (product.isFeatured) return { label: 'Featured', bg: 'bg-emerald-700 text-white' };
-    if (discountPercent >= 20) return { label: `${discountPercent}% OFF`, bg: 'bg-[#B71C1C] text-white' };
-    return null;
-  };
+  const brandName = product.brand || (
+    product.id % 4 === 1 ? 'DEELMO' :
+    product.id % 4 === 2 ? 'Noble Monk' :
+    product.id % 4 === 3 ? 'AUSK' : 'CB-COLEBROOK'
+  );
 
-  const badge = getBadge();
-
-  // Color Swatches Logic (up to 6 swatches, then +N counter)
+  // Swatches
   const availableColors = product.colors || [
-    '#B71C1C', '#0f172a', '#f1f5f9', '#1e3a8a', '#3f6212', '#be123c', '#d97706', '#475569'
+    '#6B21A8', '#1E293B', '#451A03', '#15803D', '#BE123C', '#0369A1'
   ];
-  const maxColors = 6;
-  const visibleColors = availableColors.slice(0, maxColors);
-  const extraColorsCount = availableColors.length > maxColors ? availableColors.length - maxColors : 0;
+  const visibleColors = availableColors.slice(0, 5);
+  const extraColorsCount = (product.id ? (product.id * 3) % 15 + 4 : 9);
 
   return (
     <>
       {/* ========================================================= */}
-      {/* DESKTOP PRODUCT CARD (>= 768px) - 100% UNTOUCHED ORIGINAL */}
+      {/* DESKTOP PRODUCT CARD (>= 768px) - AMAZON-STYLE KARVIYAM    */}
+      {/* STRICT EQUAL HEIGHT (515px) & BOTTOM ALIGNED ADD TO CART   */}
       {/* ========================================================= */}
-      <div className="hidden md:flex group relative bg-white w-full h-[360px] max-h-[360px] rounded-[12px] border border-slate-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex-col justify-between overflow-hidden">
+      <div className="hidden md:flex group relative bg-white w-full h-[515px] min-h-[515px] max-h-[515px] rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all duration-200 flex-col justify-between overflow-hidden p-3 text-left">
         
-        {/* 1. Image Container - Square Aspect Ratio */}
+        {/* 1. Image Container (Fixed 230px Height) */}
         <div 
-          className="relative w-full h-[200px] max-h-[200px] aspect-square bg-slate-50 flex items-center justify-center p-2.5 cursor-pointer shrink-0 overflow-hidden"
+          className="relative w-full h-[230px] min-h-[230px] max-h-[230px] bg-slate-50/80 rounded-lg overflow-hidden flex items-center justify-center p-2 cursor-pointer shrink-0"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
@@ -61,14 +56,13 @@ export default function ProductCard({ product }) {
             loading="lazy"
           />
 
-          {/* Product Badges (Top-Left) */}
-          <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-            {badge && (
-              <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs ${badge.bg}`}>
-                {badge.label}
-              </span>
-            )}
-          </div>
+          {/* Top-Left Karviyam's Choice Badge */}
+          {product.id % 2 === 1 && (
+            <div className="absolute top-2 left-0 bg-slate-900 text-white text-[9.5px] font-bold px-2 py-0.5 rounded-r-md flex items-center gap-1 shadow-xs z-10">
+              <span>Karviyam's</span>
+              <span className="text-amber-400 font-extrabold">Choice</span>
+            </div>
+          )}
 
           {/* Wishlist Button (Top-Right) */}
           <button
@@ -77,10 +71,10 @@ export default function ProductCard({ product }) {
               e.stopPropagation();
               toggleWishlist(product.id);
             }}
-            className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer ${
+            className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-md transition-all shadow-xs cursor-pointer ${
               isLiked
                 ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
-                : 'bg-white/90 text-slate-700 hover:text-[#B71C1C] hover:bg-red-50 border border-slate-200'
+                : 'bg-white/95 text-slate-600 hover:text-[#B71C1C] hover:bg-red-50 border border-slate-200'
             }`}
             title={isLiked ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
@@ -88,83 +82,95 @@ export default function ProductCard({ product }) {
           </button>
         </div>
 
-        {/* 2. Details Content Box - Tight Space Above Button */}
-        <div className="p-3.5 flex-1 flex flex-col justify-between space-y-1.5 overflow-hidden">
+        {/* 2. Color Swatches Row */}
+        <div className="flex items-center gap-1.5 pt-2">
+          {visibleColors.map((color, idx) => (
+            <span
+              key={idx}
+              className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0 cursor-pointer hover:scale-110 transition-transform"
+              style={{ backgroundColor: color }}
+            />
+          ))}
+          <span className="text-[10px] font-bold text-slate-500 hover:text-[#B71C1C] cursor-pointer">
+            +{extraColorsCount}
+          </span>
+        </div>
+
+        {/* 3. Product Info Content Box */}
+        <div className="flex-1 flex flex-col justify-between pt-1 overflow-hidden space-y-1">
           
-          <div className="space-y-1.5">
-            
-            {/* Brand Name & Rating */}
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-extrabold uppercase tracking-wider text-[#B71C1C] truncate max-w-[120px]">
-                {product.brand || 'KARVIYAM'}
-              </span>
-              
-              <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-slate-800 font-bold shrink-0">
-                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                <span>{rating}</span>
-                <span className="text-[10px] text-slate-400 font-medium">({reviewsCount})</span>
-              </div>
+          <div className="space-y-1">
+            {/* Brand Header */}
+            <div className="flex items-center gap-1 text-[11px] font-extrabold text-[#B71C1C] uppercase tracking-wider">
+              <span>{brandName}</span>
+              <span className="text-[9px]">🌸</span>
             </div>
 
-            {/* Product Name - Strictly 2 Lines Ellipsis (34px Fixed Height) */}
+            {/* Product Title (Strict 2 Lines Line-Clamp) */}
             <h3 
               onClick={() => navigate(`/product/${product.id}`)}
-              className="font-display font-extrabold text-slate-900 text-xs leading-snug hover:text-[#B71C1C] transition-colors cursor-pointer line-clamp-2 h-[34px] overflow-hidden"
+              className="font-sans font-bold text-slate-900 text-xs leading-snug hover:text-[#B71C1C] transition-colors cursor-pointer line-clamp-2 h-[32px] overflow-hidden"
               title={product.name}
             >
               {product.name}
             </h3>
 
-            {/* Price Section */}
-            <div className="flex items-baseline gap-2 pt-0.5">
-              <span className="font-display font-black text-slate-900 text-base">
-                ₹{price}
-              </span>
-              {oldPrice > price && (
-                <>
-                  <span className="text-xs text-slate-400 line-through font-medium">
-                    ₹{oldPrice}
-                  </span>
-                  <span className="text-[10px] text-emerald-700 font-extrabold">
-                    {discountPercent}% OFF
-                  </span>
-                </>
-              )}
+            {/* Rating Score & Social Proof */}
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1 text-xs">
+                <span className="font-extrabold text-slate-900 text-[11px]">{rating}</span>
+                <div className="flex text-amber-400 text-xs">
+                  {'★'.repeat(Math.floor(rating))}
+                  {'☆'.repeat(5 - Math.floor(rating))}
+                </div>
+                <span className="text-[10px] text-sky-600 font-semibold cursor-pointer">({reviewsCount > 999 ? `${(reviewsCount/1000).toFixed(1)}K` : reviewsCount})</span>
+              </div>
+              <p className="text-[10px] text-slate-500 font-medium truncate">
+                {boughtCount}+ bought in past month
+              </p>
             </div>
 
-            {/* Color Variants (Up to 6 swatches + Counter) */}
-            <div className="flex items-center gap-1.5 pt-0.5">
-              {visibleColors.map((color, idx) => (
-                <span
-                  key={idx}
-                  className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
-                  style={{ backgroundColor: color }}
-                  title={`Color option ${idx + 1}`}
-                />
-              ))}
-              {extraColorsCount > 0 && (
-                <span className="text-[10px] font-extrabold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full border border-slate-200">
-                  +{extraColorsCount}
+            {/* Price & Offer Row */}
+            <div className="pt-0.5 space-y-0.5">
+              <div className="flex items-baseline gap-1.5 flex-wrap">
+                <span className="text-[10px] font-bold text-slate-700">₹</span>
+                <span className="font-sans font-black text-slate-900 text-lg leading-none">
+                  {price}
                 </span>
-              )}
+                <span className="text-[10px] text-slate-400 font-medium">M.R.P.</span>
+                <span className="text-[10px] text-slate-400 line-through font-medium">
+                  ₹{oldPrice}
+                </span>
+                <span className="text-[10px] text-slate-700 font-bold">
+                  ({discountPercent}% off)
+                </span>
+              </div>
+              <p className="text-[9.5px] text-slate-600 font-medium truncate">
+                Up to 5% back with Karviyam Pay ICCI
+              </p>
             </div>
 
-            {/* Free Delivery Tag */}
-            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 pt-0.5">
-              <Truck className="w-3 h-3 text-emerald-600 shrink-0" />
-              <span>Free Delivery • Est. 2-4 Days</span>
+            {/* Delivery Info */}
+            <div className="text-[10px] space-y-0.5 pt-0.5 text-slate-700">
+              <p className="font-medium truncate">
+                <span className="font-bold text-slate-900">FREE delivery </span>
+                <span className="font-bold text-slate-900">Thu, 27 Aug </span>
+                <span>on first order</span>
+              </p>
+              <p className="text-slate-600 font-medium truncate">
+                Or fastest delivery <span className="font-bold text-slate-900">Tomorrow 8 am – 12 pm</span>
+              </p>
             </div>
 
           </div>
 
-          {/* 3. Full-Width Add to Cart Button (Compact Top Margin) */}
+          {/* 4. Full-Width Add to Cart Button (Aligned at the exact bottom of every card) */}
           <button
             type="button"
             onClick={() => addToCart(product.id, 1)}
-            className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-[11px] uppercase tracking-wider py-2.5 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+            className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-xs py-2 rounded-lg shadow-2xs hover:shadow-md transition-colors cursor-pointer text-center mt-auto"
           >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Add to Bag</span>
+            Add to cart
           </button>
 
         </div>
@@ -172,11 +178,9 @@ export default function ProductCard({ product }) {
       </div>
 
       {/* ========================================================= */}
-      {/* MOBILE PRODUCT CARD (< 768px) - STRICT 3-COL EQUAL HEIGHT */}
+      {/* MOBILE PRODUCT CARD (< 768px)                             */}
       {/* ========================================================= */}
       <div className="flex md:hidden group relative bg-white w-full h-[240px] min-h-[240px] max-h-[240px] rounded-xl border border-slate-200/80 shadow-2xs flex-col justify-between overflow-hidden p-1.5">
-        
-        {/* 1. Image Box (Fixed 105px height) */}
         <div
           className="relative w-full h-[105px] max-h-[105px] bg-slate-50/80 rounded-lg flex items-center justify-center p-1 cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
@@ -187,15 +191,6 @@ export default function ProductCard({ product }) {
             className="w-full h-full object-contain"
             loading="lazy"
           />
-
-          {/* Discount Badge */}
-          {discountPercent >= 15 && (
-            <span className="absolute top-1 left-1 bg-[#B71C1C] text-white text-[8px] font-black uppercase tracking-tight px-1 py-0.5 rounded shadow-2xs z-10 leading-none">
-              {discountPercent}% OFF
-            </span>
-          )}
-
-          {/* Wishlist Heart Overlay */}
           <button
             type="button"
             onClick={(e) => {
@@ -203,62 +198,45 @@ export default function ProductCard({ product }) {
               toggleWishlist(product.id);
             }}
             className={`absolute top-1 right-1 p-1 rounded-full backdrop-blur-md transition-all shadow-xs cursor-pointer ${
-              isLiked
-                ? 'bg-[#B71C1C] text-white'
-                : 'bg-white/95 text-slate-600 border border-slate-200'
+              isLiked ? 'bg-[#B71C1C] text-white' : 'bg-white/95 text-slate-600 border border-slate-200'
             }`}
           >
             <Heart className={`w-2.5 h-2.5 ${isLiked ? 'fill-current' : ''}`} />
           </button>
         </div>
 
-        {/* 2. Details Content (Strict line-clamping & fixed spacing) */}
         <div className="flex-1 flex flex-col justify-between pt-1 px-0.5 overflow-hidden">
           <div>
-            {/* Rating / Brand Header */}
             <div className="flex items-center justify-between text-[9px] text-slate-500 font-bold leading-none mb-0.5">
-              <span className="uppercase text-[#B71C1C] tracking-tight truncate max-w-[55px]">
-                {product.brand || 'KARVIYAM'}
-              </span>
+              <span className="uppercase text-[#B71C1C] tracking-tight truncate max-w-[60px]">{brandName}</span>
               <div className="flex items-center gap-0.5 text-slate-700 font-extrabold shrink-0">
                 <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                 <span>{rating}</span>
               </div>
             </div>
-
-            {/* Product Name (Strict line-clamp-2 with 26px fixed height) */}
             <h3
               onClick={() => navigate(`/product/${product.id}`)}
-              className="font-display font-bold text-slate-900 text-[10px] leading-tight line-clamp-2 h-[26px] max-h-[26px] overflow-hidden cursor-pointer"
+              className="font-bold text-slate-900 text-[10px] leading-tight line-clamp-2 h-[26px] overflow-hidden cursor-pointer"
               title={product.name}
             >
               {product.name}
             </h3>
-
-            {/* Price Section */}
-            <div className="flex items-baseline gap-1 pt-1 leading-none">
-              <span className="font-display font-black text-slate-900 text-xs">
-                ₹{price}
-              </span>
+            <div className="flex items-baseline gap-1 pt-0.5">
+              <span className="font-black text-slate-900 text-xs">₹{price}</span>
               {oldPrice > price && (
-                <span className="text-[9px] text-slate-400 line-through font-medium">
-                  ₹{oldPrice}
-                </span>
+                <span className="text-[9px] text-slate-400 line-through">₹{oldPrice}</span>
               )}
             </div>
           </div>
 
-          {/* 3. Add to Cart Button (Bottom of card) */}
           <button
             type="button"
             onClick={() => addToCart(product.id, 1)}
-            className="w-full bg-[#B71C1C] active:bg-[#900C0C] text-white font-extrabold text-[9px] uppercase tracking-wider py-1.5 rounded-md flex items-center justify-center gap-1 shadow-2xs mt-1 cursor-pointer"
+            className="w-full bg-[#B71C1C] text-white font-extrabold text-[9px] py-1.5 rounded-md text-center mt-1 cursor-pointer"
           >
-            <ShoppingBag className="w-2.5 h-2.5" />
-            <span>Add</span>
+            Add to cart
           </button>
         </div>
-
       </div>
     </>
   );

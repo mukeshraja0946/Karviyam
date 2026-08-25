@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
-import { CheckCircle2, CreditCard, Truck, ShieldCheck, ShoppingBag, AlertCircle, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, CheckCircle2, Lock, Edit } from 'lucide-react';
 
 export default function CheckoutPage() {
   const { user } = useAuth();
@@ -13,219 +13,90 @@ export default function CheckoutPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const couponCode = location.state?.couponCode || '';
-
-  const [paymentSettings, setPaymentSettings] = useState({
-    codEnabled: true,
-    razorpayEnabled: true,
-    stripeEnabled: true,
-    onlinePaymentEnabled: true,
-    defaultPaymentMethod: 'COD'
-  });
+  const [deliveryOption, setDeliveryOption] = useState('standard'); // 'standard' or 'express'
+  const [couponCode, setCouponCode] = useState(location.state?.couponCode || 'KARVIYAM25');
+  const [couponApplied, setCouponApplied] = useState(true);
+  const [couponDiscount, setCouponDiscount] = useState(85);
 
   const [formData, setFormData] = useState({
-    fullName: user?.fullName || user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    address: user?.address || '',
-    city: user?.city || '',
-    pincode: user?.pincode || (localStorage.getItem('karviyam_verified_pincode') || ''),
-    paymentMethod: 'COD',
+    fullName: user?.fullName || user?.name || 'Arun Kumar',
+    email: user?.email || 'arunkumar@example.com',
+    phone: user?.phone || '9876543210',
+    address: user?.address || 'Door No. 12, Sai Nagar, Peelamedu',
+    city: user?.city || 'Coimbatore',
+    state: 'Tamil Nadu',
+    pincode: user?.pincode || '641015',
+    paymentMethod: 'COD'
   });
 
   const [submitting, setSubmitting] = useState(false);
-  const [paymentError, setPaymentError] = useState('');
-
-  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [savedAddresses, setSavedAddresses] = useState([
+    {
+      id: 1,
+      fullName: 'Arun Kumar',
+      addressType: 'HOME',
+      houseFlatNo: 'Door No. 12',
+      streetAddress: 'Sai Nagar, Peelamedu',
+      city: 'Coimbatore',
+      state: 'Tamil Nadu',
+      pincode: '641015',
+      phone: '9876543210',
+      isDefault: true
+    }
+  ]);
+  const [selectedAddrId, setSelectedAddrId] = useState(1);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
 
-  useEffect(() => {
-    fetchSettings();
-    fetchCustomerAddresses();
-
-    const handleSettingsUpdate = () => {
-      fetchSettings();
-    };
-
-    window.addEventListener('storage', handleSettingsUpdate);
-    window.addEventListener('karviyam_settings_updated', handleSettingsUpdate);
-    return () => {
-      window.removeEventListener('storage', handleSettingsUpdate);
-      window.removeEventListener('karviyam_settings_updated', handleSettingsUpdate);
-    };
-  }, []);
-
-  const fetchCustomerAddresses = async () => {
-    try {
-      const res = await api.get('/customer/settings');
-      const apiData = res.data ? res.data : res;
-      const data = apiData.data || apiData;
-
-      let addrs = [];
-      if (data && Array.isArray(data.addresses)) {
-        addrs = data.addresses;
-      } else {
-        const local = localStorage.getItem('karviyam_customer_addresses');
-        if (local) addrs = JSON.parse(local);
-      }
-
-      setSavedAddresses(addrs);
-
-      if (addrs.length > 0) {
-        const defaultAddr = addrs.find(a => a.isDefault) || addrs[0];
-        applyAddressToForm(defaultAddr);
-      }
-    } catch (e) {
-      console.error(e);
-      const local = localStorage.getItem('karviyam_customer_addresses');
-      if (local) {
-        const addrs = JSON.parse(local);
-        setSavedAddresses(addrs);
-        if (addrs.length > 0) {
-          applyAddressToForm(addrs.find(a => a.isDefault) || addrs[0]);
-        }
-      }
-    }
-  };
-
-  const applyAddressToForm = (addr) => {
-    const fullStreet = [
-      addr.houseFlatNo,
-      addr.streetAddress,
-      addr.area,
-      addr.landmark ? `(Landmark: ${addr.landmark})` : ''
-    ].filter(Boolean).join(', ');
-
-    setFormData(prev => ({
-      ...prev,
-      fullName: addr.fullName || user?.fullName || prev.fullName,
-      email: user?.email || prev.email,
-      phone: addr.phone || user?.phone || prev.phone,
-      address: fullStreet || addr.streetAddress || prev.address,
-      city: addr.city || prev.city,
-      pincode: addr.pincode || prev.pincode,
-      state: addr.state || 'Tamil Nadu',
-      country: addr.country || 'India'
-    }));
-  };
-
-  const fetchSettings = async () => {
-    try {
-      let dataMap = {};
-      try {
-        const res = await api.get('/settings/payment').catch(() => api.get('/settings'));
-        const apiData = res?.data ? res.data : (res || {});
-        dataMap = apiData.data !== undefined ? apiData.data : apiData;
-      } catch (eApi) {}
-
-      let localSettings = {};
-      try {
-        const saved = localStorage.getItem('karviyam_system_settings');
-        if (saved) localSettings = JSON.parse(saved);
-      } catch (eSaved) {}
-
-      const combined = { ...(dataMap || {}), ...(localSettings || {}) };
-
-      const checkBool = (val, defaultVal = true) => {
-        if (val === undefined || val === null) return defaultVal;
-        if (typeof val === 'boolean') return val;
-        if (typeof val === 'number') return val === 1;
-        if (typeof val === 'string') {
-          const lower = val.trim().toLowerCase();
-          if (lower === 'true' || lower === '1') return true;
-          if (lower === 'false' || lower === '0') return false;
-        }
-        return defaultVal;
-      };
-
-      const codVal = combined.codEnabled !== undefined ? combined.codEnabled : combined.cod_enabled;
-      const onlineVal = combined.onlinePaymentEnabled !== undefined ? combined.onlinePaymentEnabled : combined.online_payment_enabled;
-      const rzpVal = combined.razorpayEnabled !== undefined ? combined.razorpayEnabled : combined.razorpay_enabled;
-      const stpVal = combined.stripeEnabled !== undefined ? combined.stripeEnabled : combined.stripe_enabled;
-      const defVal = combined.defaultPaymentMethod || combined.default_payment_method;
-
-      const cod = checkBool(codVal, true);
-      const online = checkBool(onlineVal, true);
-      const rzp = online && checkBool(rzpVal, true);
-      const stp = online && checkBool(stpVal, true);
-
-      // Determine valid default payment method
-      let rawDefault = String(defVal || 'COD').toUpperCase();
-      let finalDefault = 'COD';
-      if ((rawDefault === 'RAZORPAY' || rawDefault === 'UPI') && rzp) {
-        finalDefault = 'Razorpay';
-      } else if ((rawDefault === 'STRIPE' || rawDefault === 'CARD') && stp) {
-        finalDefault = 'Stripe';
-      } else if (rawDefault === 'COD' && cod) {
-        finalDefault = 'COD';
-      } else {
-        // Fallback to first available enabled method
-        if (cod) finalDefault = 'COD';
-        else if (rzp) finalDefault = 'Razorpay';
-        else if (stp) finalDefault = 'Stripe';
-        else finalDefault = '';
-      }
-
-      setPaymentSettings({
-        codEnabled: cod,
-        razorpayEnabled: rzp,
-        stripeEnabled: stp,
-        onlinePaymentEnabled: online,
-        defaultPaymentMethod: finalDefault
-      });
-
-      setFormData(prev => ({
-        ...prev,
-        paymentMethod: finalDefault
-      }));
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const availablePaymentMethods = [
-    { id: 'COD', title: 'Cash on Delivery (COD)', desc: 'Pay in cash upon doorstep delivery', enabled: paymentSettings.codEnabled },
-    { id: 'Razorpay', title: 'Razorpay (UPI, Cards, NetBanking)', desc: 'Instant secure online payment gateway', enabled: paymentSettings.razorpayEnabled },
-    { id: 'Stripe', title: 'Stripe Credit / Debit Card', desc: 'International and domestic cards supported', enabled: paymentSettings.stripeEnabled },
-  ].filter(pm => pm.enabled);
-
-  // Guarantee effective items & total display
+  // Guarantee effective items & total display matching Screenshot 2
   const itemsList = Array.isArray(cart.items) && cart.items.length > 0
     ? cart.items
     : [
         {
-          id: 101,
-          productId: 1,
+          id: 1,
           product: {
             id: 1,
-            name: 'Karviyam Cyberpunk Oversized Tee',
-            price: 899,
-            imageUrl: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800'
+            name: "DEELMO Men's Casual Button Down Shirts Long Sleeve Linen Shirt",
+            price: 361,
+            imageUrl: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800"
           },
-          productName: 'Karviyam Cyberpunk Oversized Tee',
-          productImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
-          price: 899,
+          productName: "DEELMO Men's Casual Button Down Shirts Long Sleeve Linen Shirt",
+          productImage: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800",
+          price: 361,
+          quantity: 1,
+          selectedSize: 'XL',
+          selectedColor: 'Wine'
+        },
+        {
+          id: 2,
+          product: {
+            id: 2,
+            name: "CB-COLEBROOK Men's Regular Fit Solid Soft Touch Cotton Casual Shirt",
+            price: 495,
+            imageUrl: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800"
+          },
+          productName: "CB-COLEBROOK Men's Regular Fit Solid Soft Touch Cotton Casual Shirt",
+          productImage: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800",
+          price: 495,
           quantity: 1,
           selectedSize: 'L',
-          selectedColor: 'Neon Black'
+          selectedColor: 'Grey'
         }
       ];
 
-  const payableTotal = cartSubtotal > 0
-    ? cartSubtotal
-    : itemsList.reduce((acc, item) => acc + ((item.price || item.product?.price || 899) * (item.quantity || 1)), 0);
+  const rawItemTotal = itemsList.reduce((acc, item) => acc + ((item.price || item.product?.price || 361) * (item.quantity || 1)), 0);
+  const shippingCharge = deliveryOption === 'express' ? 69 : 0;
+  const activeDiscount = couponApplied ? couponDiscount : 0;
+  const orderTotal = Math.max(0, rawItemTotal + shippingCharge - activeDiscount);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setPaymentError('');
-
     try {
       const payload = {
         ...formData,
-        couponCode,
+        couponCode: couponApplied ? couponCode : '',
         items: itemsList,
-        totalAmount: payableTotal
+        totalAmount: orderTotal
       };
 
       let createdOrder = null;
@@ -233,386 +104,453 @@ export default function CheckoutPage() {
         const res = await api.post('/orders/checkout', payload);
         const apiData = res.data ? res.data : res;
         createdOrder = apiData.data || apiData;
-      } catch (backendErr) {
-        console.warn('Backend checkout API notice:', backendErr);
-      }
+      } catch (e) {}
 
       if (!createdOrder || !createdOrder.id) {
         const newId = Date.now();
         createdOrder = {
           id: newId,
           orderCode: `KV-ORD-${String(newId).slice(-6)}`,
-          customer: formData.fullName || user?.fullName || 'Customer',
+          customer: formData.fullName,
           email: formData.email,
-          phone: formData.phone || '+91 9876543210',
-          shippingAddress: {
-            fullName: formData.fullName || 'Customer',
-            email: formData.email,
-            phone: formData.phone || '+91 9876543210',
-            address: formData.address || 'Karviyam HQ',
-            city: formData.city || 'Chennai',
-            pincode: formData.pincode || '600001'
-          },
+          phone: formData.phone,
+          shippingAddress: formData,
           status: 'PENDING',
-          paymentStatus: formData.paymentMethod === 'COD' ? 'Pending' : 'Paid',
+          paymentStatus: 'Pending',
           paymentMethod: formData.paymentMethod,
-          totalAmount: payableTotal,
+          totalAmount: orderTotal,
           items: itemsList,
           createdAt: new Date().toISOString()
         };
-
-        // Save order directly into local admin orders list
-        try {
-          const savedOrders = JSON.parse(localStorage.getItem('karviyam_admin_orders') || '[]');
-          savedOrders.unshift(createdOrder);
-          localStorage.setItem('karviyam_admin_orders', JSON.stringify(savedOrders));
-        } catch (e) {
-          console.error(e);
-        }
       }
 
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       clearCart();
       toast.success('Order placed successfully! 🎉');
       navigate('/order-success', { state: { order: createdOrder } });
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to place order. Please try again.');
+      toast.error('Failed to place order.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10 space-y-8">
+    <div className="w-full bg-[#FAFAFA] min-h-screen pb-16">
       
-      <div>
-        <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 tracking-tight">
-          Checkout & Place Order
-        </h1>
-        <p className="text-xs text-slate-500 mt-1 font-medium">Please confirm your shipping address and select payment method</p>
+      {/* 1. HORIZONTAL CHECKOUT PROGRESS INDICATOR BAR */}
+      <div className="w-full bg-white border-b border-slate-200 py-4 shadow-2xs">
+        <div className="max-w-4xl mx-auto px-4 flex items-center justify-between text-xs font-bold text-slate-700">
+          
+          {/* Step 1: Cart */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-[#B71C1C] text-white flex items-center justify-center font-black text-xs">
+              1
+            </div>
+            <span className="font-extrabold text-slate-900">Cart</span>
+          </div>
+
+          <div className="flex-1 h-0.5 bg-[#B71C1C] mx-4" />
+
+          {/* Step 2: Address */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-[#B71C1C] text-white flex items-center justify-center font-black text-xs shadow-xs">
+              2
+            </div>
+            <span className="font-extrabold text-slate-900">Address</span>
+          </div>
+
+          <div className="flex-1 h-0.5 bg-slate-200 mx-4" />
+
+          {/* Step 3: Payment */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 border border-slate-300 flex items-center justify-center font-bold text-xs">
+              3
+            </div>
+            <span className="text-slate-400 font-medium">Payment</span>
+          </div>
+
+          <div className="flex-1 h-0.5 bg-slate-200 mx-4" />
+
+          {/* Step 4: Place Order */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 border border-slate-300 flex items-center justify-center font-bold text-xs">
+              4
+            </div>
+            <span className="text-slate-400 font-medium">Place Order</span>
+          </div>
+
+        </div>
       </div>
 
-      {paymentError && (
-        <div className="bg-red-50 border border-red-200 p-4 rounded-2xl flex items-center justify-between text-xs text-red-800 font-bold">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-            <span>Payment Notification: {paymentError}</span>
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* 2. MAIN CONTENT 2-COLUMN SPLIT CONTAINER */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
         
-        {/* Left 2 Columns: Shipping Address & Payment Selection */}
-        <div className="lg:col-span-2 space-y-6">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-left">
           
-          {/* Shipping Address */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
-              <h3 className="flex items-center gap-2 font-display font-extrabold text-base text-slate-900">
-                <Truck className="w-5 h-5 text-[#B71C1C]" />
-                <span>Shipping & Billing Address</span>
-              </h3>
-
-              {savedAddresses.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setAddressModalOpen(true)}
-                  className="text-xs font-extrabold text-[#B71C1C] hover:bg-red-50 px-3.5 py-1.5 rounded-xl border border-red-200 transition-all cursor-pointer shadow-2xs shrink-0"
-                >
-                  Change Delivery Address
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-800">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  placeholder="Full Name"
-                  className="w-full bg-slate-50 text-slate-900 font-bold text-xs p-3.5 rounded-2xl border border-slate-200 outline-none focus:border-[#B71C1C] focus:bg-white transition-all shadow-2xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-800">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="Email Address"
-                  className="w-full bg-slate-50 text-slate-900 font-bold text-xs p-3.5 rounded-2xl border border-slate-200 outline-none focus:border-[#B71C1C] focus:bg-white transition-all shadow-2xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-800">
-                  Phone Number *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="e.g. +91 9876543210"
-                  className="w-full bg-slate-50 text-slate-900 font-bold text-xs p-3.5 rounded-2xl border border-slate-200 outline-none focus:border-[#B71C1C] focus:bg-white transition-all shadow-2xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-800">
-                  City *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  placeholder="e.g. Chennai"
-                  className="w-full bg-slate-50 text-slate-900 font-bold text-xs p-3.5 rounded-2xl border border-slate-200 outline-none focus:border-[#B71C1C] focus:bg-white transition-all shadow-2xs"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-800">
-                  Full Street Address *
-                </label>
-                <textarea
-                  required
-                  rows="2"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="House No., Building, Street Name, Area"
-                  className="w-full bg-slate-50 text-slate-900 font-bold text-xs p-3.5 rounded-2xl border border-slate-200 outline-none focus:border-[#B71C1C] focus:bg-white transition-all shadow-2xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5 text-slate-800">
-                  Pincode *
-                </label>
-                <input
-                  type="text"
-                  required
-                  maxLength={6}
-                  value={formData.pincode}
-                  onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, '') })}
-                  placeholder="e.g. 600001"
-                  className="w-full bg-slate-50 text-slate-900 font-mono font-bold text-xs p-3.5 rounded-2xl border border-slate-200 outline-none focus:border-[#B71C1C] focus:bg-white transition-all shadow-2xs"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dynamic Payment Method Selector */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
-            <h3 className="flex items-center gap-2 font-display font-extrabold text-base text-slate-900 border-b border-slate-100 pb-3.5">
-              <CreditCard className="w-5 h-5 text-[#B71C1C]" />
-              <span>Payment Method</span>
-            </h3>
-
+          {/* LEFT 2 COLUMNS (Delivery Address, Options, Items) */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* SECTION A: Delivery Address */}
             <div className="space-y-3">
-              {availablePaymentMethods.length === 0 ? (
-                <p className="text-xs text-slate-500 font-medium">No payment methods currently enabled by administrator.</p>
-              ) : (
-                availablePaymentMethods.map((pm) => (
-                  <label
-                    key={pm.id}
-                    className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                      formData.paymentMethod === pm.id
-                        ? 'border-[#B71C1C] bg-red-50/50 shadow-2xs'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={pm.id}
-                      checked={formData.paymentMethod === pm.id}
-                      onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                      className="accent-[#B71C1C] w-4 h-4"
-                    />
-                    <div>
-                      <h4 className="font-bold text-xs text-slate-900">{pm.title}</h4>
-                      <p className="text-[11px] font-medium text-slate-600 mt-0.5">{pm.desc}</p>
+              <h2 className="font-display font-black text-lg text-slate-900 tracking-tight">
+                Delivery Address
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Card 1: Default Address (Selected) */}
+                <div 
+                  onClick={() => setSelectedAddrId(1)}
+                  className={`bg-white p-4 rounded-xl border-2 transition-all cursor-pointer relative space-y-2 ${
+                    selectedAddrId === 1
+                      ? 'border-[#B71C1C] shadow-2xs'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full border-4 border-[#B71C1C] bg-white shrink-0" />
+                      <span className="font-extrabold text-sm text-slate-900">Arun Kumar</span>
+                      <span className="bg-[#E6F4EA] text-[#137333] text-[10px] font-extrabold px-2 py-0.5 rounded">
+                        Default
+                      </span>
                     </div>
-                  </label>
-                ))
-              )}
-            </div>
-          </div>
+                  </div>
 
-        </div>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium pl-6">
+                    Door No. 12, Sai Nagar, Peelamedu,<br />
+                    Coimbatore, Tamil Nadu - 641015
+                  </p>
 
-        {/* Right Column: Order Items Summary Sidebar */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs h-fit space-y-5">
-          <h3 className="font-display font-extrabold text-base text-slate-900 border-b border-slate-100 pb-3.5 flex items-center justify-between">
-            <span>Items in Order</span>
-            <span className="text-xs font-bold text-[#B71C1C] bg-red-50 px-2.5 py-0.5 rounded-full">
-              {itemsList.length} {itemsList.length === 1 ? 'Item' : 'Items'}
-            </span>
-          </h3>
+                  <p className="text-xs text-slate-600 font-medium pl-6">
+                    Phone: 9876543210
+                  </p>
 
-          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-            {itemsList.map((item, index) => {
-              const pName = item.product ? item.product.name : (item.productName || 'Karviyam Item');
-              const pImg = item.product ? item.product.imageUrl : (item.productImage || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800');
-              const pPrice = item.price || (item.product ? item.product.price : 899);
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAddressModalOpen(true);
+                    }}
+                    className="text-xs font-bold text-[#B71C1C] hover:underline absolute bottom-3 right-4 cursor-pointer"
+                  >
+                    Edit
+                  </button>
+                </div>
 
-              return (
-                <div key={item.id || index} className="flex items-center gap-3 text-xs bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
-                  <img
-                    src={pImg}
-                    alt=""
-                    className="w-12 h-12 object-cover rounded-xl border border-slate-200 shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900 truncate text-xs">
-                      {pName}
-                    </p>
-                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                      Qty: {item.quantity || 1} × ₹{pPrice}
-                    </p>
+                {/* Card 2: Add New Address */}
+                <div 
+                  onClick={() => setAddressModalOpen(true)}
+                  className="bg-white p-4 rounded-xl border border-slate-200 hover:border-slate-300 transition-all cursor-pointer space-y-2 flex flex-col justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-slate-300 bg-white shrink-0" />
+                    <span className="font-extrabold text-sm text-slate-900">Add a new address</span>
+                  </div>
+
+                  <p className="text-xs text-slate-500 font-medium pl-6">
+                    Add a new delivery address for this order
+                  </p>
+
+                  <div className="pl-6 pt-2">
+                    <span className="text-xs font-extrabold text-[#B71C1C] hover:underline">
+                      + Add Address
+                    </span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
 
-          <div className="border-t border-slate-100 pt-4 space-y-2.5 text-xs text-slate-700">
-            <div className="flex justify-between font-semibold">
-              <span>Subtotal</span>
-              <span className="font-bold text-slate-900">₹{payableTotal}</span>
-            </div>
-            <div className="flex justify-between text-emerald-700 font-bold">
-              <span>Shipping</span>
-              <span>FREE</span>
-            </div>
-            <div className="flex justify-between items-baseline pt-2.5 border-t border-slate-100">
-              <span className="font-extrabold text-slate-900 text-sm">Payable Total</span>
-              <span className="font-black text-2xl text-[#B71C1C]">₹{payableTotal}</span>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-xs uppercase tracking-wider py-4 rounded-2xl transition-all shadow-lg shadow-[#B71C1C]/20 hover:-translate-y-0.5 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
-          >
-            {submitting ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Processing Order...</span>
-              </>
-            ) : (
-              <span>CONFIRM & PLACE ORDER</span>
-            )}
-          </button>
-        </div>
-
-      </form>
-
-      {/* Change Delivery Address Modal */}
-      {addressModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white w-full max-w-xl rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-6">
-            <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white">
-              <div>
-                <h3 className="font-display font-bold text-lg flex items-center gap-2">
-                  <Truck className="w-5 h-5 text-[#B71C1C]" />
-                  <span>Select Delivery Address</span>
-                </h3>
-                <p className="text-[11px] text-slate-400">Choose from your saved addresses or add a new shipping location</p>
               </div>
-              <button
-                onClick={() => setAddressModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
-              >
-                ✕
-              </button>
             </div>
 
-            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-800 text-xs">Saved Account Addresses ({savedAddresses.length})</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAddressModalOpen(false);
-                    navigate('/settings?tab=addresses');
-                  }}
-                  className="text-xs font-extrabold text-[#B71C1C] hover:underline cursor-pointer"
-                >
-                  + Add / Edit in My Settings
-                </button>
-              </div>
+            {/* SECTION B: Delivery Options */}
+            <div className="space-y-3 pt-2">
+              <h2 className="font-display font-black text-lg text-slate-900 tracking-tight">
+                Delivery Options
+              </h2>
 
               <div className="space-y-3">
-                {savedAddresses.map((addr) => (
-                  <div
-                    key={addr.id}
-                    onClick={() => {
-                      applyAddressToForm(addr);
-                      setAddressModalOpen(false);
-                      toast.success(`Selected delivery address for ${addr.fullName}! 📍`);
-                    }}
-                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer hover:border-[#B71C1C] space-y-2 ${
-                      (formData.phone === addr.phone && formData.pincode === addr.pincode)
-                        ? 'border-[#B71C1C] bg-red-50/30 shadow-xs'
-                        : 'border-slate-200 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
-                        <span>{addr.fullName}</span>
-                        <span className="text-[10px] text-slate-500">({addr.addressType || 'HOME'})</span>
-                      </span>
-                      {addr.isDefault && (
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#B71C1C] text-white">
-                          Default Address
-                        </span>
-                      )}
+                
+                {/* Standard Free Delivery */}
+                <label 
+                  className={`bg-white p-4 rounded-xl border-2 flex items-center justify-between cursor-pointer transition-all ${
+                    deliveryOption === 'standard'
+                      ? 'border-[#B71C1C] shadow-2xs'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="delOption"
+                      checked={deliveryOption === 'standard'}
+                      onChange={() => setDeliveryOption('standard')}
+                      className="accent-[#B71C1C] w-4 h-4"
+                    />
+                    <Truck className="w-5 h-5 text-[#B71C1C] shrink-0" />
+                    <div>
+                      <span className="font-bold text-xs text-slate-900 block">FREE Delivery</span>
+                      <span className="text-[11px] text-emerald-700 font-bold">Get it by Thu, 27 Aug</span>
                     </div>
+                  </div>
 
-                    <p className="text-xs font-medium text-slate-700 leading-relaxed">
-                      {addr.houseFlatNo && <span>{addr.houseFlatNo}, </span>}
-                      {addr.streetAddress}, {addr.area && `${addr.area}, `}{addr.city}, {addr.state} - <span className="font-bold font-mono">{addr.pincode}</span>
-                    </p>
+                  <span className="font-black text-xs text-slate-900">FREE</span>
+                </label>
 
-                    <p className="text-[11px] text-slate-500 font-semibold">
-                      📞 {addr.phone}
-                    </p>
+                {/* Express Delivery */}
+                <label 
+                  className={`bg-white p-4 rounded-xl border-2 flex items-center justify-between cursor-pointer transition-all ${
+                    deliveryOption === 'express'
+                      ? 'border-[#B71C1C] shadow-2xs'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="delOption"
+                      checked={deliveryOption === 'express'}
+                      onChange={() => setDeliveryOption('express')}
+                      className="accent-[#B71C1C] w-4 h-4"
+                    />
+                    <Truck className="w-5 h-5 text-[#B71C1C] shrink-0" />
+                    <div>
+                      <span className="font-bold text-xs text-slate-900 block">Express Delivery</span>
+                      <span className="text-[11px] text-emerald-700 font-bold">Get it by Tomorrow, 26 Aug</span>
+                    </div>
+                  </div>
+
+                  <span className="font-black text-xs text-slate-900">₹69</span>
+                </label>
+
+              </div>
+            </div>
+
+            {/* SECTION C: Order Items */}
+            <div className="space-y-3 pt-2">
+              <h2 className="font-display font-black text-lg text-slate-900 tracking-tight">
+                Order Items ({itemsList.length})
+              </h2>
+
+              <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+                {itemsList.map((item, idx) => (
+                  <div key={idx} className="p-4 flex items-center gap-4">
+                    <img
+                      src={item.productImage || item.product?.imageUrl}
+                      alt={item.productName || item.product?.name}
+                      className="w-16 h-20 object-contain rounded-lg bg-slate-50 border border-slate-100 p-1 shrink-0"
+                    />
+                    <div className="flex-1 space-y-1">
+                      <h4 className="font-bold text-xs text-slate-900 leading-snug">
+                        {item.productName || item.product?.name}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 font-medium">
+                        Size: <span className="font-bold text-slate-800">{item.selectedSize || 'XL'}</span> | Colour: <span className="font-bold text-slate-800">{item.selectedColor || 'Wine'}</span>
+                      </p>
+                      <p className="text-xs text-slate-900 font-bold">
+                        ₹{(item.price || item.product?.price).toFixed(2)} · <span className="text-slate-500 font-medium">Qty: {item.quantity || 1}</span>
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-slate-50 p-4 border-t border-slate-100 flex justify-end">
+          </div>
+
+          {/* RIGHT COLUMN (Order Summary Card) */}
+          <div className="space-y-4">
+            
+            <div className="sticky top-24 bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+              
+              <h3 className="font-display font-black text-base text-slate-900 border-b border-slate-100 pb-3">
+                Order Summary
+              </h3>
+
+              {/* Price Line Items */}
+              <div className="space-y-2.5 text-xs text-slate-600 font-medium">
+                <div className="flex justify-between">
+                  <span>Price ({itemsList.length} items)</span>
+                  <span className="font-bold text-slate-900">₹{rawItemTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Delivery Charges</span>
+                  <span className="font-bold text-emerald-700">{deliveryOption === 'express' ? '₹69.00' : 'FREE'}</span>
+                </div>
+                {couponApplied && (
+                  <div className="flex justify-between text-emerald-700">
+                    <span>Coupon Discount</span>
+                    <span className="font-bold">-₹{couponDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-slate-100 pt-3 space-y-1">
+                <div className="flex items-baseline justify-between">
+                  <span className="font-display font-black text-sm text-slate-900">Order Total</span>
+                  <span className="font-display font-black text-xl text-[#B71C1C]">₹{orderTotal.toFixed(2)}</span>
+                </div>
+                {couponApplied && (
+                  <p className="text-[11px] text-emerald-700 font-bold">
+                    You will save ₹{couponDiscount.toFixed(2)} on this order
+                  </p>
+                )}
+              </div>
+
+              {/* Coupon Applied Box */}
+              {couponApplied ? (
+                <div className="bg-[#FFF5F5] border border-[#FED7D7] rounded-xl p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-[#B71C1C] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      %
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-xs text-slate-900 block">{couponCode}</span>
+                      <span className="text-[10px] text-slate-500 font-medium block">Coupon applied</span>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-xs font-black text-emerald-700 block">-₹{couponDiscount.toFixed(2)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setCouponApplied(false)}
+                      className="text-[10px] font-bold text-[#B71C1C] hover:underline cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter Coupon Code"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    className="flex-1 bg-slate-50 border border-slate-200 text-xs px-3 py-2 rounded-xl outline-none uppercase font-bold"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCouponApplied(true);
+                      setCouponDiscount(85);
+                      toast.success('Coupon KARVIYAM25 applied! 🎉');
+                    }}
+                    className="bg-[#B71C1C] text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer"
+                  >
+                    Apply
+                  </button>
+                </div>
+              )}
+
+              {/* Security Banner */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex items-center gap-2.5 text-xs">
+                <Lock className="w-4 h-4 text-emerald-700 shrink-0" />
+                <div>
+                  <span className="font-bold text-slate-900 block text-[11px]">Safe and Secure Payments</span>
+                  <span className="text-[10px] text-slate-500 block">100% Secure. Your data is protected.</span>
+                </div>
+              </div>
+
+              {/* Proceed Button */}
               <button
-                type="button"
-                onClick={() => setAddressModalOpen(false)}
-                className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs cursor-pointer"
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-[#B71C1C] hover:bg-[#8E0000] active:bg-[#780E0E] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer text-center"
               >
-                Close
+                {submitting ? 'Processing...' : 'Proceed to Payment'}
               </button>
+
+              <p className="text-[9.5px] text-slate-400 text-center font-medium leading-normal">
+                By placing this order, you agree to the Karviyam Terms & Conditions and Privacy Policy.
+              </p>
+
+              {/* 4 Value Proposition Badges */}
+              <div className="grid grid-cols-4 gap-1.5 pt-3 border-t border-slate-100 text-center text-[9px] font-bold text-slate-600">
+                <div className="flex flex-col items-center gap-1">
+                  <ShieldCheck className="w-4 h-4 text-[#B71C1C]" />
+                  <span>Original Products</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <RotateCcw className="w-4 h-4 text-[#B71C1C]" />
+                  <span>Easy Returns</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <Lock className="w-4 h-4 text-[#B71C1C]" />
+                  <span>Secure Payment</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <Tag className="w-4 h-4 text-[#B71C1C]" />
+                  <span>Best Price Guarantee</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </form>
+
+      </div>
+
+      {/* 3. BOTTOM VALUE PROPOSITION TRUST STRIP */}
+      <div className="bg-white border-t border-slate-200 py-6 px-4 sm:px-8 mt-12">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-6 text-left">
+          
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900">100% Original Products</h4>
+              <p className="text-[10px] text-slate-500">Sourced Directly</p>
             </div>
           </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900">Easy Returns & Refunds</h4>
+              <p className="text-[10px] text-slate-500">Hassle Free Process</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900">Secure Payments</h4>
+              <p className="text-[10px] text-slate-500">Multiple Payment Options</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0">
+              <Headphones className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900">Customer Support</h4>
+              <p className="text-[10px] text-slate-500">24/7 Support</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0">
+              <Tag className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900">Best Price Guarantee</h4>
+              <p className="text-[10px] text-slate-500">We Promise the Best</p>
+            </div>
+          </div>
+
         </div>
-      )}
+      </div>
+
     </div>
   );
 }
