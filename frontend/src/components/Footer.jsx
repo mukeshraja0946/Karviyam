@@ -145,7 +145,7 @@ export default function Footer() {
       </div>
 
       {/* Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-4 pb-8 md:py-12 grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
         
         {/* Brand Column (Dynamic Admin Content) */}
         <div className="space-y-4">
@@ -186,28 +186,31 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Categories Link Column */}
-        <div>
-          <h4 className="font-display font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">Categories</h4>
-          <ul className="space-y-2 text-xs font-medium text-slate-500">
-            <li><Link to="/shop?category=Clothing" className="hover:text-[#B71C1C] transition-colors">Oversized T-Shirts</Link></li>
-            <li><Link to="/shop?category=Clothing" className="hover:text-[#B71C1C] transition-colors">Casual Linen Shirts</Link></li>
-            <li><Link to="/shop?category=Footwear" className="hover:text-[#B71C1C] transition-colors">Apex Stealth Sneakers</Link></li>
-            <li><Link to="/shop?category=Jewellery" className="hover:text-[#B71C1C] transition-colors">925 Silver Jewellery</Link></li>
-            <li><Link to="/shop?category=Clothing" className="hover:text-[#B71C1C] transition-colors">Anime Graphic Hoodies</Link></li>
-          </ul>
-        </div>
+        {/* Categories Link Column & Customer Care Column Side-by-Side on Mobile */}
+        <div className="grid grid-cols-2 gap-6 col-span-1 md:col-span-2">
+          {/* Categories Link Column */}
+          <div>
+            <h4 className="font-display font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">Categories</h4>
+            <ul className="space-y-2 text-xs font-medium text-slate-500">
+              <li><Link to="/shop?category=Clothing" className="hover:text-[#B71C1C] transition-colors">Oversized T-Shirts</Link></li>
+              <li><Link to="/shop?category=Clothing" className="hover:text-[#B71C1C] transition-colors">Casual Linen Shirts</Link></li>
+              <li><Link to="/shop?category=Footwear" className="hover:text-[#B71C1C] transition-colors">Apex Stealth Sneakers</Link></li>
+              <li><Link to="/shop?category=Jewellery" className="hover:text-[#B71C1C] transition-colors">925 Silver Jewellery</Link></li>
+              <li><Link to="/shop?category=Clothing" className="hover:text-[#B71C1C] transition-colors">Anime Graphic Hoodies</Link></li>
+            </ul>
+          </div>
 
-        {/* Customer Care Column */}
-        <div>
-          <h4 className="font-display font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">Customer Care</h4>
-          <ul className="space-y-2 text-xs font-medium text-slate-500">
-            <li><Link to="/profile" className="hover:text-[#B71C1C] transition-colors">Track My Order</Link></li>
-            <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Help Center & FAQ</Link></li>
-            <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Return Policy</Link></li>
-            <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Terms of Service</Link></li>
-            <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Privacy Policy</Link></li>
-          </ul>
+          {/* Customer Care Column */}
+          <div>
+            <h4 className="font-display font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">Customer Care</h4>
+            <ul className="space-y-2 text-xs font-medium text-slate-500">
+              <li><Link to="/profile" className="hover:text-[#B71C1C] transition-colors">Track My Order</Link></li>
+              <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Help Center & FAQ</Link></li>
+              <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Return Policy</Link></li>
+              <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Terms of Service</Link></li>
+              <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Privacy Policy</Link></li>
+            </ul>
+          </div>
         </div>
 
         {/* Newsletter Subscription */}

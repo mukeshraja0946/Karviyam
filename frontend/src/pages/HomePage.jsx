@@ -103,7 +103,7 @@ export default function HomePage() {
       {/* MOBILE HOMEPAGE LAYOUT (< 1024px / lg)                     */}
       {/* STRICT REBUILD MATCHING REFERENCE IMAGE SPECIFICATIONS     */}
       {/* ========================================================= */}
-      <div className="block lg:hidden bg-slate-50/60 min-h-screen pb-24">
+      <div className="block lg:hidden bg-slate-50/60 pb-3">
         
         {/* 1. CATEGORY SHORTCUTS (Horizontal Squircle Cards) */}
         <div className="w-full bg-white py-3 px-3.5 border-b border-slate-100 overflow-x-auto no-scrollbar">
