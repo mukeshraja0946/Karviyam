@@ -50,11 +50,14 @@ export default function ProductCard({ product }) {
       {/* ========================================================= */}
       {/* DESKTOP PRODUCT CARD (>= 768px) - BLUEPRINT EXACT MATCH   */}
       {/* ========================================================= */}
-      <div className="desktop-only hidden md:flex group relative bg-white w-full h-[320px] max-h-[320px] rounded-[16px] border border-[#E5E7EB] shadow-xs hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex-col justify-between overflow-hidden">
+      {/* ========================================================= */}
+      {/* DESKTOP PRODUCT CARD (>= 768px) - EXACT 362px HEIGHT SPEC  */}
+      {/* ========================================================= */}
+      <div className="desktop-only hidden md:flex group relative bg-white w-full h-[362px] max-h-[362px] rounded-[16px] border border-[#E5E7EB] shadow-xs hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex-col justify-between overflow-hidden">
         
-        {/* 1. Image Container - Fixed 200px Height */}
+        {/* 1. Image Container - Fixed 220px Height */}
         <div 
-          className="relative w-full h-[200px] max-h-[200px] bg-slate-50 flex items-center justify-center p-2 cursor-pointer shrink-0 overflow-hidden"
+          className="relative w-full h-[220px] max-h-[220px] bg-slate-50 flex items-center justify-center p-2 cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
@@ -91,44 +94,44 @@ export default function ProductCard({ product }) {
           </button>
         </div>
 
-        {/* 2. Details Content Box (Fixed Height 120px) */}
+        {/* 2. Details Content Box (Fixed Height 142px) */}
         <div className="p-2.5 flex-1 flex flex-col justify-between overflow-hidden">
           
           <div className="space-y-0.5">
             
             {/* Brand Name & Rating */}
-            <div className="flex items-center justify-between text-[12px]">
+            <div className="flex items-center justify-between text-[11px]">
               <span className="font-extrabold uppercase tracking-wider text-[#D32F2F] truncate max-w-[90px]">
                 {product.brand || 'KARVIYAM'}
               </span>
               
               <div className="flex items-center gap-0.5 text-slate-800 font-bold shrink-0">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                <span className="text-[12px] font-bold">{rating}</span>
+                <span className="text-[11px] font-bold">{rating}</span>
                 <span className="text-[9px] text-slate-400 font-medium">({reviewsCount})</span>
               </div>
             </div>
 
-            {/* Product Name - 14px Font, 1 Line Ellipsis */}
+            {/* Product Name - 13px Font, 1 Line Ellipsis */}
             <h3 
               onClick={() => navigate(`/product/${product.id}`)}
-              className="font-display font-extrabold text-slate-900 text-[14px] leading-tight hover:text-[#D32F2F] transition-colors cursor-pointer truncate"
+              className="font-display font-extrabold text-slate-900 text-[13px] leading-tight hover:text-[#D32F2F] transition-colors cursor-pointer truncate"
               title={product.name}
             >
               {product.name}
             </h3>
 
-            {/* Price Section: 18px Bold Price, 13px Discount */}
+            {/* Price Section: 16px Bold Price, 12px Discount */}
             <div className="flex items-baseline gap-1.5 pt-0.5">
-              <span className="font-display font-black text-slate-900 text-[18px]">
+              <span className="font-display font-black text-slate-900 text-[16px]">
                 ₹{price}
               </span>
               {oldPrice > price && (
                 <>
-                  <span className="text-[11px] text-slate-400 line-through font-medium">
+                  <span className="text-[10px] text-slate-400 line-through font-medium">
                     ₹{oldPrice}
                   </span>
-                  <span className="text-[13px] text-emerald-700 font-extrabold">
+                  <span className="text-[12px] text-emerald-700 font-extrabold">
                     {discountPercent}% OFF
                   </span>
                 </>
