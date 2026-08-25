@@ -1,22 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/api';
-
-const DEFAULT_MOBILE_PLACEHOLDER = "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400";
-
-const GENDER_TABS = [
-  { id: 'ALL', label: 'ALL', query: '' },
-  { id: 'MEN', label: 'MEN', query: 'gender=Men' },
-  { id: 'WOMEN', label: 'WOMEN', query: 'gender=Women' },
-  { id: 'KIDS', label: 'KIDS', query: 'gender=Kids' },
-  { id: 'LUXURY', label: 'LUXURY', query: 'category=Jewellery' }
-];
 
 export default function MobileCategoryBar() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState('ALL');
+  const location = useLocation();
   const [categories, setCategories] = useState([]);
+
+  // Determine current active category from query search params or path
+  const searchParams = new URLSearchParams(location.search);
+  const activeCategoryParam = searchParams.get('category') || searchParams.get('categoryId') || '';
 
   useEffect(() => {
     fetchCategories();
@@ -24,118 +17,80 @@ export default function MobileCategoryBar() {
     return () => window.removeEventListener('karviyam_categories_updated', fetchCategories);
   }, []);
 
-  useEffect(() => {
-    const currentGender = searchParams.get('gender')?.toUpperCase();
-    const currentCat = searchParams.get('category')?.toUpperCase();
-    if (currentGender && GENDER_TABS.some(t => t.id === currentGender)) {
-      setActiveTab(currentGender);
-    } else if (currentCat === 'JEWELLERY') {
-      setActiveTab('LUXURY');
-    } else {
-      setActiveTab('ALL');
-    }
-  }, [searchParams]);
-
   const fetchCategories = async () => {
     try {
-      const res = await api.get('/categories/tree');
-      const apiData = res.data ? res.data : res;
-      const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      const res = await api.get('/categories/tree').catch(() => null);
+      const apiData = res?.data ? res.data : res;
+      let list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+
+      if (list.length === 0) {
+        const altRes = await api.get('/categories?activeOnly=true').catch(() => null);
+        const altData = altRes?.data ? altRes.data : altRes;
+        list = Array.isArray(altData?.data) ? altData.data : (Array.isArray(altData) ? altData : []);
+      }
 
       if (list.length > 0) {
         const formatted = list.map((cat) => ({
           id: cat.id,
-          name: cat.name,
-          image: cat.imageUrl || cat.iconUrl || DEFAULT_MOBILE_PLACEHOLDER,
+          name: cat.name.toUpperCase(),
+          fullName: cat.name,
           query: `category=${encodeURIComponent(cat.name)}`
         }));
         setCategories(formatted);
       } else {
-        // Fallback default circular categories if DB is empty
         setCategories([
-          { id: 1, name: 'Fashion', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300', query: 'category=Fashion' },
-          { id: 2, name: 'Beauty', image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300', query: 'category=Beauty' },
-          { id: 3, name: 'Footwear', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300', query: 'category=Footwear' },
-          { id: 4, name: 'Jewellery', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=300', query: 'category=Jewellery' },
-          { id: 5, name: 'Accessories', image: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=300', query: 'category=Accessories' }
+          { id: 1, name: 'MEN', fullName: 'Men', query: 'category=Men' },
+          { id: 2, name: 'WOMEN', fullName: 'Women', query: 'category=Women' },
+          { id: 3, name: 'KIDS', fullName: 'Kids', query: 'category=Kids' },
+          { id: 4, name: 'ACCESSORIES', fullName: 'Accessories', query: 'category=Accessories' },
+          { id: 5, name: 'JEWELLERY', fullName: 'Jewellery', query: 'category=Jewellery' }
         ]);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Error fetching mobile nav categories:', e);
     }
   };
 
-  const handleTabClick = (tab) => {
-    setActiveTab(tab.id);
-    if (tab.query) {
-      navigate(`/shop?${tab.query}`);
-    } else {
-      navigate('/shop');
-    }
-  };
+  const isAllActive = location.pathname === '/shop' && !activeCategoryParam;
 
   return (
-    <div className="w-full bg-white block md:hidden border-b border-slate-200">
-      
-      {/* 1. TOP HORIZONTAL SCROLLABLE TAB ROW ("ALL / MEN / WOMEN / KIDS") WITH ACTIVE UNDERLINE INDICATOR */}
-      <div className="flex items-center gap-6 px-4 overflow-x-auto no-scrollbar border-b border-slate-100 scroll-smooth">
-        {GENDER_TABS.map((tab) => {
-          const isActive = activeTab === tab.id;
+    <div className="w-full bg-white border-b border-slate-200 block md:hidden sticky top-[108px] z-30 shadow-2xs">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x px-3 py-2 whitespace-nowrap flex-nowrap">
+        {/* ALL Pill */}
+        <button
+          onClick={() => navigate('/shop')}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
+            isAllActive
+              ? 'bg-[#B71C1C] text-white shadow-xs scale-105'
+              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+          }`}
+        >
+          ALL
+        </button>
+
+        {/* Dynamic Category Pills */}
+        {categories.map((cat) => {
+          const isActive =
+            activeCategoryParam.toLowerCase() === cat.fullName.toLowerCase() ||
+            activeCategoryParam.toLowerCase() === cat.name.toLowerCase() ||
+            activeCategoryParam === String(cat.id);
+
           return (
             <button
-              key={tab.id}
-              onClick={() => handleTabClick(tab)}
-              className={`py-2.5 text-xs font-black tracking-wider uppercase shrink-0 transition-all relative ${
-                isActive ? 'text-[#B71C1C]' : 'text-slate-600 hover:text-slate-900 font-bold'
+              key={cat.id}
+              onClick={() => navigate(`/shop?${cat.query}`)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
+                isActive
+                  ? 'bg-[#B71C1C] text-white shadow-xs scale-105'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
               }`}
             >
-              <span>{tab.label}</span>
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#B71C1C] rounded-full animate-in fade-in duration-200" />
-              )}
+              {cat.name}
             </button>
           );
         })}
       </div>
-
-      {/* 2. BOTTOM HORIZONTALLY SCROLLABLE ROW OF CIRCULAR CATEGORY ICONS WITH LABELS UNDERNEATH */}
-      <div className="py-2.5 px-3">
-        <div className="flex items-center gap-3.5 overflow-x-auto no-scrollbar scroll-smooth">
-          {/* Explore All Category Circle */}
-          <button
-            onClick={() => navigate('/shop')}
-            className="flex flex-col items-center shrink-0 group focus:outline-none"
-          >
-            <div className="w-13 h-13 rounded-full bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 flex items-center justify-center text-[#B71C1C] font-black text-xs shadow-2xs group-active:scale-95 transition-transform">
-              ALL
-            </div>
-            <span className="text-[10px] font-extrabold text-slate-800 mt-1 text-center truncate max-w-[60px]">
-              Explore
-            </span>
-          </button>
-
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => navigate(`/shop?${cat.query}`)}
-              className="flex flex-col items-center shrink-0 group focus:outline-none"
-            >
-              <div className="w-13 h-13 rounded-full overflow-hidden border-2 border-slate-100 bg-slate-100 p-0.5 shadow-2xs group-hover:border-[#B71C1C] group-active:scale-95 transition-all">
-                <img
-                  src={cat.image}
-                  alt={cat.name}
-                  className="w-full h-full object-cover rounded-full"
-                  loading="lazy"
-                />
-              </div>
-              <span className="text-[10px] font-extrabold text-slate-700 mt-1 text-center truncate max-w-[62px]" title={cat.name}>
-                {cat.name}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
     </div>
   );
 }
+

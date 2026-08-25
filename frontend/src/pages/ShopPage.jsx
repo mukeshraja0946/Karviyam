@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import SkeletonLoader from '../components/SkeletonLoader';
+import MobileSortSheet from '../components/MobileSortSheet';
 import api from '../utils/api';
-import { Menu, SlidersHorizontal, ChevronDown, Check, X, Filter, EyeOff } from 'lucide-react';
+import { Menu, SlidersHorizontal, ChevronDown, Check, X, Filter, EyeOff, ArrowUpDown } from 'lucide-react';
 
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -16,6 +17,7 @@ export default function ShopPage() {
   const [isCategoryDisabled, setIsCategoryDisabled] = useState(false);
   const [brands, setBrands] = useState([]);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [mobileSortOpen, setMobileSortOpen] = useState(false);
 
   // Body Scroll Lock & ESC Key Listener for Left Slide-Over Filter Drawer
   useEffect(() => {
@@ -427,10 +429,10 @@ export default function ShopPage() {
             <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Showing {products.length} catalog products</p>
           </div>
 
-          {/* Sort Controls Right Aligned */}
-          <div className="flex items-center justify-end gap-2 w-full md:w-auto">
+          {/* Desktop Sort Controls Right Aligned (hidden on mobile) */}
+          <div className="hidden md:flex items-center justify-end gap-2 w-full md:w-auto">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">Sort By:</span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort By:</span>
               <div className="relative inline-flex items-center">
                 <select
                   value={`${sortBy}-${sortDir}`}
@@ -449,6 +451,64 @@ export default function ShopPage() {
                 <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 pointer-events-none" />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Mobile Horizontal Filter Controls Bar (< 768px) */}
+        <div className="block md:hidden overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            {/* Filter Button */}
+            <button
+              onClick={() => setMobileFilterOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold shrink-0 cursor-pointer shadow-2xs"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
+              <span>Filter</span>
+              {activeFilterCount > 0 && (
+                <span className="w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            {/* Sort Button */}
+            <button
+              onClick={() => setMobileSortOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-300 text-slate-800 text-xs font-bold shrink-0 cursor-pointer shadow-2xs"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5 text-[#B71C1C]" />
+              <span>Sort ▼</span>
+            </button>
+
+            {/* Quick Gender Pill */}
+            <button
+              onClick={() => setMobileFilterOpen(true)}
+              className={`flex items-center gap-1 px-3.5 py-1.5 rounded-full border text-xs font-bold shrink-0 cursor-pointer ${
+                selectedGender ? 'bg-red-50 text-[#B71C1C] border-red-200' : 'bg-white text-slate-700 border-slate-300'
+              }`}
+            >
+              <span>Gender {selectedGender ? `(${selectedGender})` : '▼'}</span>
+            </button>
+
+            {/* Quick Categories Pill */}
+            <button
+              onClick={() => setMobileFilterOpen(true)}
+              className={`flex items-center gap-1 px-3.5 py-1.5 rounded-full border text-xs font-bold shrink-0 cursor-pointer ${
+                selectedCategory ? 'bg-red-50 text-[#B71C1C] border-red-200' : 'bg-white text-slate-700 border-slate-300'
+              }`}
+            >
+              <span>Categories {selectedCategory ? `(${selectedCategory})` : '▼'}</span>
+            </button>
+
+            {/* Quick Brand Pill */}
+            <button
+              onClick={() => setMobileFilterOpen(true)}
+              className={`flex items-center gap-1 px-3.5 py-1.5 rounded-full border text-xs font-bold shrink-0 cursor-pointer ${
+                selectedBrand ? 'bg-red-50 text-[#B71C1C] border-red-200' : 'bg-white text-slate-700 border-slate-300'
+              }`}
+            >
+              <span>Brand {selectedBrand ? `(${selectedBrand})` : '▼'}</span>
+            </button>
           </div>
         </div>
 
@@ -494,6 +554,18 @@ export default function ShopPage() {
       </div>
 
       <div className="w-full">
+        {/* Mobile Sort Sheet Modal */}
+        <MobileSortSheet
+          isOpen={mobileSortOpen}
+          onClose={() => setMobileSortOpen(false)}
+          currentSort={`${sortBy}-${sortDir}`}
+          onSelectSort={(val) => {
+            const [b, d] = val.split('-');
+            setSortBy(b);
+            setSortDir(d);
+          }}
+        />
+
         {/* Universal Left Slide-Over Filter Drawer */}
         {mobileFilterOpen && (
           <div
@@ -545,7 +617,7 @@ export default function ShopPage() {
           </div>
         )}
 
-        {/* Product Catalogue Grid - 100% FULL WIDTH WHEN CLOSED */}
+        {/* Product Catalogue Grid - STRICT 2 PRODUCTS PER ROW ON MOBILE */}
         <div className="w-full">
           {isCategoryDisabled ? (
             <div className="bg-amber-50/90 border border-amber-200 p-8 sm:p-12 rounded-3xl text-center space-y-4 max-w-xl mx-auto my-6 shadow-sm">
@@ -572,7 +644,7 @@ export default function ShopPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-6 w-full">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-6 w-full">
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Star, ShoppingBag, Truck, Plus, Repeat } from 'lucide-react';
+import { Heart, Star, ShoppingBag, Truck } from 'lucide-react';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 
@@ -172,96 +172,79 @@ export default function ProductCard({ product }) {
       </div>
 
       {/* ========================================================= */}
-      {/* MOBILE PRODUCT CARD (< 768px) - MYNTRA 2-COL LAYOUT      */}
+      {/* MOBILE PRODUCT CARD (< 768px) - 2-COLUMN OPTIMIZED CARD   */}
       {/* ========================================================= */}
-      <div className="flex md:hidden group relative bg-white w-full h-[285px] rounded-2xl border border-slate-200/90 shadow-2xs flex-col justify-between overflow-hidden p-2">
+      <div className="flex md:hidden group relative bg-white w-full h-[330px] min-h-[330px] max-h-[330px] rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex-col justify-between overflow-hidden p-2">
         
-        {/* 1. Image Box with Wishlist Heart Top-Right & Floating Action Buttons Bottom-Right */}
+        {/* 1. Image Box (Fixed 165px height) */}
         <div
-          className="relative w-full h-[145px] max-h-[145px] bg-slate-50 rounded-xl flex items-center justify-center p-1 cursor-pointer shrink-0 overflow-hidden"
+          className="relative w-full h-[165px] max-h-[165px] bg-slate-50 rounded-xl flex items-center justify-center p-1.5 cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
             src={product.imageUrl || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400'}
             alt={product.name}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-contain group-active:scale-105 transition-transform"
             loading="lazy"
           />
 
-          {/* Wishlist Heart Icon Top-Right Overlapping Image */}
+          {/* Badges (Top-Left) */}
+          <div className="absolute top-1.5 left-1.5 flex flex-col gap-1 z-10">
+            {badge ? (
+              <span className={`text-[8px] font-black uppercase tracking-tight px-1.5 py-0.5 rounded shadow-2xs ${badge.bg}`}>
+                {badge.label}
+              </span>
+            ) : discountPercent >= 15 ? (
+              <span className="bg-[#B71C1C] text-white text-[8px] font-black uppercase tracking-tight px-1.5 py-0.5 rounded shadow-2xs">
+                {discountPercent}% OFF
+              </span>
+            ) : null}
+          </div>
+
+          {/* Wishlist Heart Overlay (Top-Right) */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               toggleWishlist(product.id);
             }}
-            className={`absolute top-1.5 right-1.5 p-1.5 rounded-full backdrop-blur-md transition-all shadow-xs cursor-pointer ${
+            className={`absolute top-1.5 right-1.5 p-1.5 rounded-full backdrop-blur-md transition-all shadow-2xs cursor-pointer ${
               isLiked
                 ? 'bg-[#B71C1C] text-white'
-                : 'bg-white/90 text-slate-700 hover:text-[#B71C1C] border border-slate-200'
+                : 'bg-white/95 text-slate-700 border border-slate-200'
             }`}
             title={isLiked ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
             <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
           </button>
-
-          {/* Bottom-Right Floating Buttons Overlapping Image: Circular Compare Button + Circular "+" Add to Cart Button */}
-          <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1 z-10">
-            {/* Compare / Duplicate Button */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                alert(`Compare added: ${product.name}`);
-              }}
-              className="w-7 h-7 rounded-full bg-white/95 text-slate-700 hover:text-[#B71C1C] border border-slate-200 flex items-center justify-center shadow-md active:scale-90 transition-transform cursor-pointer"
-              title="Compare Item"
-            >
-              <Repeat className="w-3.5 h-3.5" />
-            </button>
-
-            {/* Circular "+" Add to Cart Button */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                addToCart(product.id, 1);
-              }}
-              className="w-7 h-7 rounded-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white flex items-center justify-center shadow-md active:scale-90 transition-transform cursor-pointer"
-              title="Add to Bag"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-            </button>
-          </div>
         </div>
 
-        {/* 2. Details Content Below Image */}
-        <div className="flex-1 flex flex-col justify-between pt-1.5 px-1 overflow-hidden">
-          <div className="space-y-1">
-            
-            {/* Rating Badge below image: Star icon + rating number + review count */}
-            <div className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 w-max text-[10px] font-bold text-slate-800">
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
-              <span className="font-extrabold">{rating}</span>
-              <span className="text-slate-500 font-medium">({reviewsCount})</span>
+        {/* 2. Details Content */}
+        <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5 overflow-hidden">
+          <div>
+            {/* Brand & Rating with Review Count */}
+            <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold mb-0.5 leading-none">
+              <span className="uppercase text-[#B71C1C] tracking-tight truncate max-w-[80px]">
+                {product.brand || 'KARVIYAM'}
+              </span>
+              <div className="flex items-center gap-0.5 text-slate-800 font-extrabold shrink-0 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
+                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                <span>{rating}</span>
+                <span className="text-[9px] text-slate-400 font-medium">({reviewsCount})</span>
+              </div>
             </div>
 
-            {/* Brand Name in Bold */}
-            <div className="font-extrabold text-[11px] uppercase tracking-wider text-[#B71C1C] truncate leading-none pt-0.5">
-              {product.brand || 'KARVIYAM'}
-            </div>
-
-            {/* Product Type / Title / Description in gray below brand name */}
+            {/* Product Name (Strict line-clamp-2 with 28px fixed height) */}
             <h3
               onClick={() => navigate(`/product/${product.id}`)}
-              className="text-xs text-slate-500 font-medium truncate leading-tight hover:text-slate-900 cursor-pointer"
+              className="font-display font-bold text-slate-900 text-[11px] leading-snug line-clamp-2 h-[28px] max-h-[28px] overflow-hidden cursor-pointer"
               title={product.name}
             >
               {product.name}
             </h3>
 
-            {/* Price Row: Strikethrough original price + discounted price + "X% OFF" in orange/accent color */}
-            <div className="flex items-baseline gap-1.5 pt-0.5 leading-none">
+            {/* Price Section */}
+            <div className="flex items-baseline gap-1.5 pt-1 leading-none">
               <span className="font-display font-black text-slate-900 text-sm">
                 ₹{price}
               </span>
@@ -270,14 +253,23 @@ export default function ProductCard({ product }) {
                   <span className="text-[10px] text-slate-400 line-through font-medium">
                     ₹{oldPrice}
                   </span>
-                  <span className="text-[10px] font-black text-amber-600 uppercase tracking-tight">
+                  <span className="text-[9px] text-emerald-700 font-extrabold">
                     {discountPercent}% OFF
                   </span>
                 </>
               )}
             </div>
-
           </div>
+
+          {/* 3. Add to Bag Button */}
+          <button
+            type="button"
+            onClick={() => addToCart(product.id, 1)}
+            className="w-full bg-[#B71C1C] active:bg-[#900C0C] text-white font-black text-[10px] uppercase tracking-wider py-2 rounded-xl flex items-center justify-center gap-1.5 shadow-2xs mt-1 cursor-pointer transition-all"
+          >
+            <ShoppingBag className="w-3 h-3" />
+            <span>Add to Bag</span>
+          </button>
         </div>
 
       </div>
