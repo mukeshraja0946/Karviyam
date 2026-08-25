@@ -13,7 +13,9 @@ import {
   MapPin,
   Mic,
   ArrowRight,
-  Grid
+  Grid,
+  Bell,
+  Camera
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -148,7 +150,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 bg-white shadow-xs">
       
       {/* ========================================================= */}
-      {/* MOBILE HEADER (< 768px) - COMPACT MOBILE APP HEADER        */}
+      {/* MOBILE HEADER (< 768px) - MYNTRA STYLE COMPACT HEADER     */}
       {/* ========================================================= */}
       <div className="block md:hidden bg-white border-b border-slate-200">
         {/* Mobile Announcement Bar */}
@@ -157,106 +159,106 @@ export default function Navbar() {
           <span className="truncate">FESTIVE SALE LIVE! UP TO 60% OFF</span>
         </div>
 
-        {/* Mobile Header Top Row: Hamburger, Logo, Location, Icons */}
+        {/* Mobile Header Top Row: Sticky Deliver to Pincode (Top-Left) & 3 Icons (Top-Right) */}
         <div className="px-3 py-2 flex items-center justify-between gap-2 border-b border-slate-100">
           
-          {/* Hamburger Menu Icon */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-1 text-slate-700 hover:text-[#B71C1C] cursor-pointer shrink-0"
-            title="Menu Drawer"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-1 shrink-0">
-            {customLogo ? (
-              <img src={customLogo} alt="Karviyam" className="h-7 w-auto object-contain max-w-[110px]" />
-            ) : (
-              <div className="flex items-center gap-1">
-                <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-black text-base flex items-center justify-center shadow-xs">
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
-                  </svg>
-                </div>
-                <span className="font-display font-black text-base tracking-tight text-[#B71C1C] leading-none">
-                  KARVIYAM
-                </span>
-              </div>
-            )}
-          </Link>
-
-          {/* Location Delivery Chip */}
+          {/* Deliver to Pincode with Dropdown Chevron (Top-Left) */}
           <button
             onClick={() => setLocationModalOpen(true)}
-            className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] text-slate-800 font-bold shrink truncate max-w-[120px]"
+            className="flex items-center gap-1 text-[11px] font-extrabold text-slate-800 hover:text-[#B71C1C] cursor-pointer max-w-[210px] truncate"
+            title="Select Delivery Location"
           >
-            <MapPin className="w-3 h-3 text-[#B71C1C] shrink-0" />
-            <span className="truncate">{locationCity}</span>
+            <MapPin className="w-3.5 h-3.5 text-[#B71C1C] shrink-0" />
+            <span className="truncate">Deliver to <strong className="text-slate-900">{locationPincode || '600001'}</strong> ({locationCity || 'Chennai'})</span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
           </button>
 
-          {/* Right Icons: Wishlist, Cart, User */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Wishlist */}
-            <Link to="/wishlist" className="relative p-1.5 text-slate-700 hover:text-[#B71C1C]" title="Wishlist">
+          {/* Row of 3 Icons (Top-Right): Notification Bell, Wishlist Heart, Profile Icon */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* 1. Notification Bell */}
+            <button
+              onClick={() => alert('No new notifications')}
+              className="relative p-1 text-slate-700 hover:text-[#B71C1C] cursor-pointer"
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-[#B71C1C] rounded-full ring-2 ring-white animate-pulse" />
+            </button>
+
+            {/* 2. Wishlist Heart */}
+            <Link to="/wishlist" className="relative p-1 text-slate-700 hover:text-[#B71C1C]" title="Wishlist">
               <Heart className="w-5 h-5" />
               {(wishlistCount || wishlist.length) > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
                   {wishlistCount || wishlist.length}
                 </span>
               )}
             </Link>
 
-            {/* Cart */}
-            <Link to="/cart" className="relative p-1.5 text-slate-700 hover:text-[#B71C1C]" title="Cart">
-              <ShoppingBag className="w-5 h-5" />
-              {itemCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                  {itemCount}
-                </span>
-              )}
-            </Link>
-
-            {/* User */}
-            <Link to={user ? "/profile" : "/login"} className="p-1.5 text-slate-700 hover:text-[#B71C1C]" title="Account">
+            {/* 3. Profile Icon */}
+            <Link to={user ? "/profile" : "/login"} className="p-1 text-slate-700 hover:text-[#B71C1C]" title="Profile Account">
               <User className="w-5 h-5" />
             </Link>
+
+            {/* Menu Drawer Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-1 text-slate-700 hover:text-[#B71C1C] cursor-pointer ml-0.5"
+              title="Menu Drawer"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
 
-        {/* Mobile Full-Width Search Input */}
-        <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 relative">
+        {/* Mobile Search Bar Row: Rounded Pill Shape with Brand Logo on Left, Mic + Camera on Right */}
+        <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 relative">
           <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+            
+            {/* Brand Logo/Icon on Left inside Input */}
+            <div className="absolute left-2.5 z-10 flex items-center justify-center shrink-0 pointer-events-none">
+              {customLogo ? (
+                <img src={customLogo} alt="Karviyam" className="w-5 h-5 object-contain rounded-full" />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-[#B71C1C] text-white font-black text-[9px] flex items-center justify-center shadow-2xs">
+                  K
+                </div>
+              )}
+            </div>
+
+            {/* Rounded Pill Search Input */}
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Oversized Tees, Silver Jewellery, Sarees..."
-              className="w-full bg-white text-slate-900 placeholder-slate-400 pl-8 pr-16 py-1.5 rounded-xl border border-slate-200 focus:border-[#B71C1C] text-xs outline-none shadow-2xs"
+              placeholder="Search for brand, product..."
+              className="w-full bg-white text-slate-900 placeholder-slate-400 pl-9 pr-16 py-2 rounded-full border border-slate-200 focus:border-[#B71C1C] text-xs font-medium outline-none shadow-xs"
             />
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
             
-            <button
-              type="button"
-              onClick={() => setVoiceModalOpen(true)}
-              className="absolute right-9 p-1 text-slate-400 hover:text-[#B71C1C]"
-              title="Voice Search"
-            >
-              <Mic className="w-3.5 h-3.5" />
-            </button>
-
-            <button
-              type="submit"
-              className="absolute right-1 px-2 py-0.5 bg-[#B71C1C] text-white text-[10px] font-bold rounded-lg"
-            >
-              Search
-            </button>
+            {/* Mic Icon & Camera Icon on Right inside Input */}
+            <div className="absolute right-2.5 flex items-center gap-1.5 z-10">
+              <button
+                type="button"
+                onClick={() => setVoiceModalOpen(true)}
+                className="p-1 text-slate-400 hover:text-[#B71C1C] transition-colors cursor-pointer"
+                title="Voice Search"
+              >
+                <Mic className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setVoiceModalOpen(true)}
+                className="p-1 text-slate-400 hover:text-[#B71C1C] transition-colors cursor-pointer"
+                title="Camera Search"
+              >
+                <Camera className="w-4 h-4" />
+              </button>
+            </div>
           </form>
 
           {/* Search suggestions dropdown */}
           {showSearchDrop && searchResults.length > 0 && (
-            <div className="absolute left-3 right-3 top-full mt-1 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50">
+            <div className="absolute left-3 right-3 top-full mt-1 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
               {searchResults.map((item) => (
                 <div
                   key={item.id}

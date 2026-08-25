@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Star, ShoppingBag, Truck } from 'lucide-react';
+import { Heart, Star, ShoppingBag, Truck, Plus, Repeat } from 'lucide-react';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 
@@ -172,91 +172,112 @@ export default function ProductCard({ product }) {
       </div>
 
       {/* ========================================================= */}
-      {/* MOBILE PRODUCT CARD (< 768px) - STRICT 3-COL EQUAL HEIGHT */}
+      {/* MOBILE PRODUCT CARD (< 768px) - MYNTRA 2-COL LAYOUT      */}
       {/* ========================================================= */}
-      <div className="flex md:hidden group relative bg-white w-full h-[240px] min-h-[240px] max-h-[240px] rounded-xl border border-slate-200/80 shadow-2xs flex-col justify-between overflow-hidden p-1.5">
+      <div className="flex md:hidden group relative bg-white w-full h-[285px] rounded-2xl border border-slate-200/90 shadow-2xs flex-col justify-between overflow-hidden p-2">
         
-        {/* 1. Image Box (Fixed 105px height) */}
+        {/* 1. Image Box with Wishlist Heart Top-Right & Floating Action Buttons Bottom-Right */}
         <div
-          className="relative w-full h-[105px] max-h-[105px] bg-slate-50/80 rounded-lg flex items-center justify-center p-1 cursor-pointer shrink-0 overflow-hidden"
+          className="relative w-full h-[145px] max-h-[145px] bg-slate-50 rounded-xl flex items-center justify-center p-1 cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
             src={product.imageUrl || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400'}
             alt={product.name}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
 
-          {/* Discount Badge */}
-          {discountPercent >= 15 && (
-            <span className="absolute top-1 left-1 bg-[#B71C1C] text-white text-[8px] font-black uppercase tracking-tight px-1 py-0.5 rounded shadow-2xs z-10 leading-none">
-              {discountPercent}% OFF
-            </span>
-          )}
-
-          {/* Wishlist Heart Overlay */}
+          {/* Wishlist Heart Icon Top-Right Overlapping Image */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               toggleWishlist(product.id);
             }}
-            className={`absolute top-1 right-1 p-1 rounded-full backdrop-blur-md transition-all shadow-xs cursor-pointer ${
+            className={`absolute top-1.5 right-1.5 p-1.5 rounded-full backdrop-blur-md transition-all shadow-xs cursor-pointer ${
               isLiked
                 ? 'bg-[#B71C1C] text-white'
-                : 'bg-white/95 text-slate-600 border border-slate-200'
+                : 'bg-white/90 text-slate-700 hover:text-[#B71C1C] border border-slate-200'
             }`}
+            title={isLiked ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
-            <Heart className={`w-2.5 h-2.5 ${isLiked ? 'fill-current' : ''}`} />
+            <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
           </button>
+
+          {/* Bottom-Right Floating Buttons Overlapping Image: Circular Compare Button + Circular "+" Add to Cart Button */}
+          <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1 z-10">
+            {/* Compare / Duplicate Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                alert(`Compare added: ${product.name}`);
+              }}
+              className="w-7 h-7 rounded-full bg-white/95 text-slate-700 hover:text-[#B71C1C] border border-slate-200 flex items-center justify-center shadow-md active:scale-90 transition-transform cursor-pointer"
+              title="Compare Item"
+            >
+              <Repeat className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Circular "+" Add to Cart Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                addToCart(product.id, 1);
+              }}
+              className="w-7 h-7 rounded-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white flex items-center justify-center shadow-md active:scale-90 transition-transform cursor-pointer"
+              title="Add to Bag"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+            </button>
+          </div>
         </div>
 
-        {/* 2. Details Content (Strict line-clamping & fixed spacing) */}
-        <div className="flex-1 flex flex-col justify-between pt-1 px-0.5 overflow-hidden">
-          <div>
-            {/* Rating / Brand Header */}
-            <div className="flex items-center justify-between text-[9px] text-slate-500 font-bold leading-none mb-0.5">
-              <span className="uppercase text-[#B71C1C] tracking-tight truncate max-w-[55px]">
-                {product.brand || 'KARVIYAM'}
-              </span>
-              <div className="flex items-center gap-0.5 text-slate-700 font-extrabold shrink-0">
-                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                <span>{rating}</span>
-              </div>
+        {/* 2. Details Content Below Image */}
+        <div className="flex-1 flex flex-col justify-between pt-1.5 px-1 overflow-hidden">
+          <div className="space-y-1">
+            
+            {/* Rating Badge below image: Star icon + rating number + review count */}
+            <div className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 w-max text-[10px] font-bold text-slate-800">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
+              <span className="font-extrabold">{rating}</span>
+              <span className="text-slate-500 font-medium">({reviewsCount})</span>
             </div>
 
-            {/* Product Name (Strict line-clamp-2 with 26px fixed height) */}
+            {/* Brand Name in Bold */}
+            <div className="font-extrabold text-[11px] uppercase tracking-wider text-[#B71C1C] truncate leading-none pt-0.5">
+              {product.brand || 'KARVIYAM'}
+            </div>
+
+            {/* Product Type / Title / Description in gray below brand name */}
             <h3
               onClick={() => navigate(`/product/${product.id}`)}
-              className="font-display font-bold text-slate-900 text-[10px] leading-tight line-clamp-2 h-[26px] max-h-[26px] overflow-hidden cursor-pointer"
+              className="text-xs text-slate-500 font-medium truncate leading-tight hover:text-slate-900 cursor-pointer"
               title={product.name}
             >
               {product.name}
             </h3>
 
-            {/* Price Section */}
-            <div className="flex items-baseline gap-1 pt-1 leading-none">
-              <span className="font-display font-black text-slate-900 text-xs">
+            {/* Price Row: Strikethrough original price + discounted price + "X% OFF" in orange/accent color */}
+            <div className="flex items-baseline gap-1.5 pt-0.5 leading-none">
+              <span className="font-display font-black text-slate-900 text-sm">
                 ₹{price}
               </span>
               {oldPrice > price && (
-                <span className="text-[9px] text-slate-400 line-through font-medium">
-                  ₹{oldPrice}
-                </span>
+                <>
+                  <span className="text-[10px] text-slate-400 line-through font-medium">
+                    ₹{oldPrice}
+                  </span>
+                  <span className="text-[10px] font-black text-amber-600 uppercase tracking-tight">
+                    {discountPercent}% OFF
+                  </span>
+                </>
               )}
             </div>
-          </div>
 
-          {/* 3. Add to Cart Button (Bottom of card) */}
-          <button
-            type="button"
-            onClick={() => addToCart(product.id, 1)}
-            className="w-full bg-[#B71C1C] active:bg-[#900C0C] text-white font-extrabold text-[9px] uppercase tracking-wider py-1.5 rounded-md flex items-center justify-center gap-1 shadow-2xs mt-1 cursor-pointer"
-          >
-            <ShoppingBag className="w-2.5 h-2.5" />
-            <span>Add</span>
-          </button>
+          </div>
         </div>
 
       </div>

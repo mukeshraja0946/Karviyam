@@ -1,45 +1,41 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, User, Heart, ShoppingBag, Grid } from 'lucide-react';
+import { Home, Tag, Crown, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { useWishlist } from '../context/WishlistContext';
-import { useAuth } from '../context/AuthContext';
 
 export default function MobileBottomNav() {
   const location = useLocation();
   const { itemCount } = useCart();
-  const { wishlistCount, wishlist } = useWishlist();
-  const { user } = useAuth();
 
-  const totalWishlistCount = wishlistCount || wishlist.length;
+  const searchParams = new URLSearchParams(location.search);
+  const currentMaxPrice = searchParams.get('maxPrice');
+  const currentCategory = searchParams.get('category');
 
   const navItems = [
     {
       label: 'Home',
       path: '/',
-      icon: Home
+      icon: Home,
+      isActive: location.pathname === '/'
     },
     {
-      label: user ? 'You' : 'Account',
-      path: user ? '/profile' : '/login',
-      icon: User
+      label: 'Under ₹999',
+      path: '/shop?maxPrice=999',
+      icon: Tag,
+      isActive: location.pathname.startsWith('/shop') && currentMaxPrice === '999'
     },
     {
-      label: 'Wishlist',
-      path: '/wishlist',
-      icon: Heart,
-      badge: totalWishlistCount
+      label: 'Luxury',
+      path: '/shop?category=Jewellery',
+      icon: Crown,
+      isActive: location.pathname.startsWith('/shop') && (currentCategory === 'Jewellery' || currentCategory === 'Jewelry')
     },
     {
-      label: 'Cart',
+      label: 'Bag',
       path: '/cart',
       icon: ShoppingBag,
-      badge: itemCount
-    },
-    {
-      label: 'Menu',
-      path: '/shop',
-      icon: Grid
+      badge: itemCount,
+      isActive: location.pathname.startsWith('/cart')
     }
   ];
 
@@ -48,10 +44,7 @@ export default function MobileBottomNav() {
       <div className="flex items-center justify-around h-14 px-1 pb-safe">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive =
-            item.path === '/'
-              ? location.pathname === '/'
-              : location.pathname.startsWith(item.path);
+          const isActive = item.isActive;
 
           return (
             <Link
