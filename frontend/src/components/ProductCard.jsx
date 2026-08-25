@@ -47,11 +47,14 @@ export default function ProductCard({ product }) {
       {/* ========================================================= */}
       {/* DESKTOP PRODUCT CARD (>= 768px) - 100% UNTOUCHED ORIGINAL */}
       {/* ========================================================= */}
-      <div className="desktop-only hidden md:flex group relative bg-white w-full h-[475px] max-h-[475px] rounded-[12px] border border-slate-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex-col justify-between overflow-hidden">
+      {/* ========================================================= */}
+      {/* DESKTOP PRODUCT CARD (>= 768px) - BLUEPRINT EXACT MATCH   */}
+      {/* ========================================================= */}
+      <div className="desktop-only hidden md:flex group relative bg-white w-full h-[320px] max-h-[320px] rounded-[16px] border border-[#E5E7EB] shadow-xs hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex-col justify-between overflow-hidden">
         
-        {/* 1. Image Container - Fixed 250px Height */}
+        {/* 1. Image Container - Fixed 200px Height */}
         <div 
-          className="relative w-full h-[250px] max-h-[250px] bg-slate-50 flex items-center justify-center p-3 cursor-pointer shrink-0 overflow-hidden"
+          className="relative w-full h-[200px] max-h-[200px] bg-slate-50 flex items-center justify-center p-2 cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
@@ -62,108 +65,85 @@ export default function ProductCard({ product }) {
           />
 
           {/* Product Badges (Top-Left) */}
-          <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
             {badge && (
-              <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs ${badge.bg}`}>
+              <span className={`text-[8px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs ${badge.bg}`}>
                 {badge.label}
               </span>
             )}
           </div>
 
-          {/* Wishlist Button (Top-Right) */}
+          {/* Wishlist Button (Top-Right: 20px Icon) */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               toggleWishlist(product.id);
             }}
-            className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer ${
+            className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer ${
               isLiked
-                ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
-                : 'bg-white/90 text-slate-700 hover:text-[#B71C1C] hover:bg-red-50 border border-slate-200'
+                ? 'bg-[#D32F2F] text-white border-[#D32F2F]'
+                : 'bg-white/90 text-slate-700 hover:text-[#D32F2F] hover:bg-red-50 border border-slate-200'
             }`}
             title={isLiked ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
-            <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
+            <Heart className={`w-[20px] h-[20px] ${isLiked ? 'fill-current' : ''}`} />
           </button>
         </div>
 
-        {/* 2. Details Content Box - Tight Space Above Button */}
-        <div className="p-3.5 flex-1 flex flex-col justify-between space-y-1.5 overflow-hidden">
+        {/* 2. Details Content Box (Fixed Height 120px) */}
+        <div className="p-2.5 flex-1 flex flex-col justify-between overflow-hidden">
           
-          <div className="space-y-1.5">
+          <div className="space-y-0.5">
             
             {/* Brand Name & Rating */}
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-extrabold uppercase tracking-wider text-[#B71C1C] truncate max-w-[120px]">
+            <div className="flex items-center justify-between text-[12px]">
+              <span className="font-extrabold uppercase tracking-wider text-[#D32F2F] truncate max-w-[90px]">
                 {product.brand || 'KARVIYAM'}
               </span>
               
-              <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-slate-800 font-bold shrink-0">
+              <div className="flex items-center gap-0.5 text-slate-800 font-bold shrink-0">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                <span>{rating}</span>
-                <span className="text-[10px] text-slate-400 font-medium">({reviewsCount})</span>
+                <span className="text-[12px] font-bold">{rating}</span>
+                <span className="text-[9px] text-slate-400 font-medium">({reviewsCount})</span>
               </div>
             </div>
 
-            {/* Product Name - Strictly 2 Lines Ellipsis (34px Fixed Height) */}
+            {/* Product Name - 14px Font, 1 Line Ellipsis */}
             <h3 
               onClick={() => navigate(`/product/${product.id}`)}
-              className="font-display font-extrabold text-slate-900 text-xs leading-snug hover:text-[#B71C1C] transition-colors cursor-pointer line-clamp-2 h-[34px] overflow-hidden"
+              className="font-display font-extrabold text-slate-900 text-[14px] leading-tight hover:text-[#D32F2F] transition-colors cursor-pointer truncate"
               title={product.name}
             >
               {product.name}
             </h3>
 
-            {/* Price Section */}
-            <div className="flex items-baseline gap-2 pt-0.5">
-              <span className="font-display font-black text-slate-900 text-base">
+            {/* Price Section: 18px Bold Price, 13px Discount */}
+            <div className="flex items-baseline gap-1.5 pt-0.5">
+              <span className="font-display font-black text-slate-900 text-[18px]">
                 ₹{price}
               </span>
               {oldPrice > price && (
                 <>
-                  <span className="text-xs text-slate-400 line-through font-medium">
+                  <span className="text-[11px] text-slate-400 line-through font-medium">
                     ₹{oldPrice}
                   </span>
-                  <span className="text-[10px] text-emerald-700 font-extrabold">
+                  <span className="text-[13px] text-emerald-700 font-extrabold">
                     {discountPercent}% OFF
                   </span>
                 </>
               )}
             </div>
 
-            {/* Color Variants (Up to 6 swatches + Counter) */}
-            <div className="flex items-center gap-1.5 pt-0.5">
-              {visibleColors.map((color, idx) => (
-                <span
-                  key={idx}
-                  className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
-                  style={{ backgroundColor: color }}
-                  title={`Color option ${idx + 1}`}
-                />
-              ))}
-              {extraColorsCount > 0 && (
-                <span className="text-[10px] font-extrabold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full border border-slate-200">
-                  +{extraColorsCount}
-                </span>
-              )}
-            </div>
-
-            {/* Free Delivery Tag */}
-            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 pt-0.5">
-              <Truck className="w-3 h-3 text-emerald-600 shrink-0" />
-              <span>Free Delivery • Est. 2-4 Days</span>
-            </div>
-
           </div>
 
-          {/* 3. Full-Width Add to Cart Button (Compact Top Margin) */}
+          {/* Quick Add Button */}
           <button
             type="button"
             onClick={() => addToCart(product.id, 1)}
-            className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-[11px] uppercase tracking-wider py-2.5 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+            className="w-full bg-[#D32F2F] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-[10px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs hover:shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer mt-1"
           >
-            <ShoppingBag className="w-3.5 h-3.5" />
+            <ShoppingBag className="w-3 h-3" />
             <span>Add to Bag</span>
           </button>
 
