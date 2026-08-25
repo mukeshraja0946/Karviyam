@@ -3,8 +3,9 @@ import { useSearchParams, useParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 import MobileSortSheet from '../components/MobileSortSheet';
+import MobileCategoryBar from '../components/MobileCategoryBar';
 import api from '../utils/api';
-import { Menu, SlidersHorizontal, ChevronDown, Check, X, Filter, EyeOff, ArrowUpDown } from 'lucide-react';
+import { Menu, SlidersHorizontal, ChevronDown, Check, X, Filter, EyeOff, ArrowUpDown, Sparkles } from 'lucide-react';
 
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams();

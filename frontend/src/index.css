@@ -96,8 +96,12 @@
 /* ========================================================= */
 /* STRICT RESPONSIVE BREAKPOINT CONTROLS (< 768px vs >= 768px) */
 /* ========================================================= */
-@media (max-width: 767px) {
-  .desktop-only {
+@media screen and (max-width: 767.98px) {
+  .desktop-only,
+  div.desktop-only,
+  section.desktop-only,
+  header.desktop-only,
+  footer.desktop-only {
     display: none !important;
   }
   .mobile-only {
@@ -116,8 +120,12 @@
   }
 }
 
-@media (min-width: 768px) {
+@media screen and (min-width: 768px) {
   .mobile-only,
+  div.mobile-only,
+  section.mobile-only,
+  header.mobile-only,
+  footer.mobile-only,
   .mobile-only-flex,
   .mobile-only-grid,
   .mobile-product-grid {
