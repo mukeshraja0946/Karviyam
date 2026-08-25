@@ -35,8 +35,8 @@
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: #F1F5F9;
@@ -47,6 +47,17 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #B71C1C;
+}
+
+/* Hide scrollbars for no-scrollbar containers */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* Print-specific layout rules for clean A4 Invoice print */

@@ -16,6 +16,53 @@ export default function HomePage() {
   const [newArrivals, setNewArrivals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mobileViewMode, setMobileViewMode] = useState('grid'); // 'grid' or 'carousel'
+  const [mobileBannerIndex, setMobileBannerIndex] = useState(0);
+
+  const mobileBanners = [
+    {
+      id: 1,
+      badge: 'NEW SEASON ARRIVAL',
+      title: 'NEW STYLE\nNEW YOU',
+      subtitle: 'Explore our latest collection',
+      image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800',
+      cta: 'SHOP NOW',
+      link: '/shop'
+    },
+    {
+      id: 2,
+      badge: 'FESTIVE SPECIAL',
+      title: 'UP TO 60% OFF\nBESTSELLERS',
+      subtitle: 'Exclusive discounts on ethnic & festive wear',
+      image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800',
+      cta: 'EXPLORE SALE',
+      link: '/shop?category=Women'
+    },
+    {
+      id: 3,
+      badge: 'LUXURY JEWELLERY',
+      title: '925 STERLING\nSILVER COUTURE',
+      subtitle: 'Handcrafted royal pendants & rings',
+      image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800',
+      cta: 'SHOP JEWELLERY',
+      link: '/shop?category=Jewellery'
+    },
+    {
+      id: 4,
+      badge: 'STREETWEAR DROPS',
+      title: 'APEX SNEAKERS\n& OVERSIZED TEES',
+      subtitle: 'Trending high-street streetwear drops',
+      image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800',
+      cta: 'VIEW DROPS',
+      link: '/shop?category=Men'
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMobileBannerIndex((prev) => (prev + 1) % mobileBanners.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [mobileBanners.length]);
 
   useEffect(() => {
     fetchHomeProducts();
@@ -168,40 +215,51 @@ export default function HomePage() {
 
         {/* 3. HERO BANNER & CAROUSEL INDICATORS */}
         <div className="mx-3.5 my-2.5">
-          <div className="w-full rounded-2xl overflow-hidden relative shadow-md bg-slate-950 h-[175px] sm:h-[220px] text-white p-5 flex flex-col justify-center">
-            {/* Model Image Overlay */}
+          <div className="w-full rounded-2xl overflow-hidden relative shadow-md bg-slate-950 h-[180px] sm:h-[220px] text-white p-5 flex flex-col justify-center transition-all duration-700">
+            {/* Model Image Overlay with smooth fade */}
             <div
-              className="absolute inset-0 bg-cover bg-center opacity-50 mix-blend-luminosity"
+              key={mobileBanners[mobileBannerIndex]?.id}
+              className="absolute inset-0 bg-cover bg-center opacity-60 transition-all duration-700"
               style={{
-                backgroundImage: `url('https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800')`
+                backgroundImage: `url('${mobileBanners[mobileBannerIndex]?.image}')`
               }}
-            />
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/40 to-transparent" />
+            </div>
 
             <div className="relative z-10 max-w-[220px]">
               <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-400/20 px-2 py-0.5 rounded border border-amber-400/30">
-                NEW SEASON ARRIVAL
+                {mobileBanners[mobileBannerIndex]?.badge}
               </span>
-              <h2 className="font-display font-black text-xl sm:text-2xl leading-none text-white tracking-tight mt-2 drop-shadow-sm">
-                NEW STYLE<br />NEW YOU
+              <h2 className="font-display font-black text-xl sm:text-2xl leading-tight text-white tracking-tight mt-1.5 drop-shadow-sm whitespace-pre-line">
+                {mobileBanners[mobileBannerIndex]?.title}
               </h2>
               <p className="text-[10px] text-slate-200 font-medium mt-1">
-                Explore our latest collection
+                {mobileBanners[mobileBannerIndex]?.subtitle}
               </p>
               <button
-                onClick={() => window.location.href = '/shop'}
-                className="mt-3 bg-white text-slate-900 font-extrabold text-[10px] uppercase tracking-wider px-4 py-2 rounded-full hover:bg-amber-300 transition-colors shadow-md cursor-pointer"
+                onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
+                className="mt-2.5 bg-white text-slate-900 font-extrabold text-[10px] uppercase tracking-wider px-4 py-2 rounded-full hover:bg-amber-300 transition-colors shadow-md cursor-pointer"
               >
-                SHOP NOW
+                {mobileBanners[mobileBannerIndex]?.cta || 'SHOP NOW'}
               </button>
             </div>
           </div>
 
-          {/* Carousel Indicator Dots Directly Below */}
+          {/* Interactive Carousel Indicator Dots Directly Below */}
           <div className="flex items-center justify-center gap-1.5 mt-2.5 mb-3">
-            <span className="w-6 h-1.5 rounded-full bg-[#B71C1C]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+            {mobileBanners.map((banner, idx) => (
+              <button
+                key={banner.id}
+                onClick={() => setMobileBannerIndex(idx)}
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  idx === mobileBannerIndex
+                    ? 'w-6 h-1.5 bg-[#B71C1C]'
+                    : 'w-1.5 h-1.5 bg-slate-300 hover:bg-slate-400'
+                }`}
+                title={`Go to slide ${idx + 1}`}
+              />
+            ))}
           </div>
         </div>
 

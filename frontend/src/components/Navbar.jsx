@@ -263,44 +263,6 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Row 4: Single Line Category Navigation Tabs */}
-        {navEnabled && (
-          <div className="w-full bg-white border-t border-slate-100 pt-2 pb-1.5 px-3.5">
-            <div className="flex items-center gap-6 overflow-x-auto no-scrollbar text-xs font-bold text-slate-700 whitespace-nowrap">
-              <Link
-                to="/shop"
-                className="text-[#B71C1C] font-black border-b-2 border-[#B71C1C] pb-1 uppercase shrink-0"
-              >
-                ALL
-              </Link>
-              <Link to="/shop?category=Men" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
-                MEN
-              </Link>
-              <Link to="/shop?category=Women" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
-                WOMEN
-              </Link>
-              <Link to="/shop?category=Kids" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
-                KIDS
-              </Link>
-              <Link to="/shop?category=Unisex" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
-                UNISEX
-              </Link>
-              <Link to="/shop?category=Jewellery" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
-                JEWELS
-              </Link>
-              <Link to="/shop?category=Kitchen" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
-                KITCHEN & HOME
-              </Link>
-              <Link to="/shop?category=School" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
-                SCHOOL & OFFICE
-              </Link>
-              <Link to="/contact" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
-                CONTACT US
-              </Link>
-            </div>
-          </div>
-        )}
-
       </div>
 
       {/* ========================================================= */}
