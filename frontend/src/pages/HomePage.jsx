@@ -187,16 +187,16 @@ export default function HomePage() {
       {/* 2. DESKTOP HOMEPAGE LAYOUT (>= 768px) - UNTOUCHED ORIGINAL */}
       {/* ========================================================= */}
       {/* ========================================================= */}
-      {/* 2. DESKTOP HOMEPAGE LAYOUT (>= 768px) - MATCHES MOCKUP    */}
+      {/* 2. DESKTOP HOMEPAGE LAYOUT (>= 1280px Grid Specification) */}
       {/* ========================================================= */}
-      <div className="desktop-only hidden md:block w-full px-6 lg:px-12 py-5 space-y-6">
+      <div className="desktop-only hidden md:block w-full max-w-[1600px] mx-auto px-5 py-5 space-y-5">
         
-        {/* 1. HERO ROW (3 Columns: Left Category Sidebar, Center Hero Banner Carousel, Right Coupon & Trust Badges) */}
+        {/* ROW 1: LEFT SIDEBAR (Col 1-2), MAIN BANNER (Col 3-10), OFFER CARD (Col 11-12) */}
         <div className="grid grid-cols-12 gap-5 items-stretch">
           
-          {/* Left Vertical Category Sidebar List (Col Span 2) */}
-          <div className="col-span-12 lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-4 shadow-2xs flex flex-col justify-between">
-            <div className="space-y-1 text-xs font-extrabold text-slate-700">
+          {/* Left Sidebar: Vertical Category List (Col 1-2 / col-span-2) */}
+          <div className="col-span-2 bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex flex-col justify-between">
+            <div className="space-y-1.5 text-xs font-extrabold text-slate-700">
               {[
                 { label: 'T-Shirts', icon: '👕', query: 'T-Shirts' },
                 { label: 'Sneakers', icon: '👟', query: 'Sneakers' },
@@ -221,129 +221,121 @@ export default function HomePage() {
               ))}
             </div>
 
-            <a href="/shop" className="text-[11px] font-black text-[#B71C1C] hover:underline flex items-center justify-between px-2 pt-2 border-t border-slate-100">
+            <a href="/shop" className="text-[11px] font-black text-[#B71C1C] hover:underline flex items-center justify-between px-2 pt-3 border-t border-slate-100">
               <span>View All Categories</span>
               <span>›</span>
             </a>
           </div>
 
-          {/* Center Hero Banner Carousel (Col Span 7) */}
-          <div className="col-span-12 lg:col-span-7 rounded-3xl overflow-hidden shadow-2xs border border-slate-200">
+          {/* Main Banner: Hero Banner Carousel (Col 3-10 / col-span-8) */}
+          <div className="col-span-8 rounded-2xl overflow-hidden shadow-2xs border border-slate-200/90 bg-white">
             <HeroBanner />
           </div>
 
-          {/* Right Coupon Offer Banner & Trust Badges Card (Col Span 3) */}
-          <div className="col-span-12 lg:col-span-3 flex flex-col justify-between gap-4">
-            {/* Top Card: Coupon Offer Banner */}
-            <div className="bg-gradient-to-br from-red-50 via-pink-50 to-orange-50 border border-red-200/90 rounded-3xl p-5 shadow-2xs flex-1 flex flex-col justify-between relative overflow-hidden">
-              <div className="relative z-10">
-                <span className="font-display font-black text-2xl text-[#B71C1C] block leading-tight">
-                  Get 25% Off
-                </span>
-                <span className="font-extrabold text-sm text-slate-800 block mt-0.5">
-                  Up To ₹200 Off*
-                </span>
-              </div>
-
-              <div className="absolute right-4 top-4 text-[#B71C1C] opacity-20 font-black text-6xl pointer-events-none">
-                %
-              </div>
-
-              <div className="relative z-10 mt-4">
-                <div className="bg-white border border-dashed border-red-300 rounded-2xl p-2.5 flex items-center justify-between shadow-2xs">
-                  <div>
-                    <span className="text-[9px] text-slate-400 font-extrabold block uppercase">COUPON CODE</span>
-                    <span className="text-xs font-black text-[#B71C1C]">KARVIYAM25</span>
-                  </div>
-                  <span className="text-[#B71C1C] font-black text-lg">%</span>
-                </div>
-                <span className="text-[10px] text-slate-500 font-medium block text-center mt-2">*On your first order | T&C apply</span>
-              </div>
+          {/* Offer Card: Coupon Offer Banner (Col 11-12 / col-span-2) */}
+          <div className="col-span-2 bg-gradient-to-br from-red-50 via-pink-50 to-orange-50 border border-red-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between relative overflow-hidden">
+            <div className="relative z-10">
+              <span className="font-display font-black text-2xl text-[#B71C1C] block leading-tight">
+                Get 25% Off
+              </span>
+              <span className="font-extrabold text-xs text-slate-800 block mt-1">
+                Up To ₹200 Off*
+              </span>
             </div>
 
-            {/* Bottom Card: 3 Trust Badges */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-3.5 shadow-2xs grid grid-cols-3 gap-2 text-center text-[10px] font-bold text-slate-700">
-              <div className="flex flex-col items-center">
-                <span className="text-base">🚚</span>
-                <span className="font-black text-slate-900 mt-0.5">Free Delivery</span>
-                <span className="text-[8px] text-slate-400">On orders above ₹499</span>
+            <div className="absolute right-3 top-3 text-[#B71C1C] opacity-20 font-black text-6xl pointer-events-none">
+              %
+            </div>
+
+            <div className="relative z-10 mt-4">
+              <div className="bg-white border border-dashed border-red-300 rounded-xl p-2.5 flex items-center justify-between shadow-2xs">
+                <div>
+                  <span className="text-[8px] text-slate-400 font-black block uppercase tracking-wider">COUPON CODE</span>
+                  <span className="text-xs font-black text-[#B71C1C]">KARVIYAM25</span>
+                </div>
+                <span className="text-[#B71C1C] font-black text-base">%</span>
               </div>
-              <div className="flex flex-col items-center border-x border-slate-100 px-1">
-                <span className="text-base">🔄</span>
-                <span className="font-black text-slate-900 mt-0.5">Easy Returns</span>
-                <span className="text-[8px] text-slate-400">14 days return policy</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-base">🔒</span>
-                <span className="font-black text-slate-900 mt-0.5">100% Secure</span>
-                <span className="text-[8px] text-slate-400">Payment Protection</span>
-              </div>
+              <span className="text-[9px] text-slate-500 font-medium block text-center mt-2">*On your first order | T&C apply</span>
             </div>
           </div>
 
         </div>
 
-        {/* 2. BEST DEALS FOR YOU STRIP (Horizontal 4 Wide Cards) */}
-        <div className="grid grid-cols-4 gap-4">
-          <a
-            href="/shop?price=499"
-            className="bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-200/90 rounded-2xl p-3 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-amber-400/20 text-amber-800 flex items-center justify-center text-xl shrink-0">
-              🪙
-            </div>
-            <div>
-              <h4 className="font-black text-xs text-slate-900 uppercase tracking-wide">UNDER ₹499</h4>
-              <p className="text-[10px] text-slate-500 font-medium">Best Under Budget Finds</p>
-            </div>
-          </a>
+        {/* ROW 2: FEATURE 1, FEATURE 2, FEATURE 3 (Col 3-10) AND FEATURE 4 (Col 11-12) */}
+        <div className="grid grid-cols-12 gap-5 items-stretch">
+          
+          {/* Empty spacer for Left Sidebar alignment (Col 1-2 / col-span-2) */}
+          <div className="hidden lg:block col-span-2"></div>
 
-          <a
-            href="/shop?sort=rating"
-            className="bg-gradient-to-r from-indigo-50 to-blue-50/60 border border-indigo-200/90 rounded-2xl p-3 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-indigo-400/20 text-indigo-800 flex items-center justify-center text-xl shrink-0">
-              🏷️
-            </div>
-            <div>
-              <h4 className="font-black text-xs text-slate-900 uppercase tracking-wide">DEAL OF THE DAY</h4>
-              <p className="text-[10px] text-slate-500 font-medium">New Deals Everyday</p>
-            </div>
-          </a>
+          {/* Center Track: Feature 1, Feature 2, Feature 3 (Col 3-10 / col-span-8) */}
+          <div className="col-span-8 grid grid-cols-3 gap-5">
+            {/* Feature 1: UNDER ₹499 */}
+            <a
+              href="/shop?price=499"
+              className="bg-white border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3.5 hover:shadow-md transition-all cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-800 flex items-center justify-center text-xl shrink-0">
+                🪙
+              </div>
+              <div>
+                <h4 className="font-black text-xs text-slate-900 uppercase tracking-wide">UNDER ₹499</h4>
+                <p className="text-[10px] text-slate-500 font-medium mt-0.5">Best Under Budget Finds</p>
+              </div>
+            </a>
 
-          <a
-            href="/shop?sort=newest"
-            className="bg-gradient-to-r from-emerald-50 to-teal-50/60 border border-emerald-200/90 rounded-2xl p-3 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-emerald-400/20 text-emerald-800 flex items-center justify-center text-xl shrink-0">
-              🛍️
-            </div>
-            <div>
-              <h4 className="font-black text-xs text-slate-900 uppercase tracking-wide">WHAT'S NEW</h4>
-              <p className="text-[10px] text-slate-500 font-medium">Latest Arrivals</p>
-            </div>
-          </a>
+            {/* Feature 2: DEAL OF THE DAY */}
+            <a
+              href="/shop?sort=rating"
+              className="bg-white border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3.5 hover:shadow-md transition-all cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-xl bg-indigo-400/20 text-indigo-800 flex items-center justify-center text-xl shrink-0">
+                🏷️
+              </div>
+              <div>
+                <h4 className="font-black text-xs text-slate-900 uppercase tracking-wide">DEAL OF THE DAY</h4>
+                <p className="text-[10px] text-slate-500 font-medium mt-0.5">New Deals Everyday</p>
+              </div>
+            </a>
 
-          <a
-            href="/shop"
-            className="bg-gradient-to-r from-orange-50 to-red-50/60 border border-orange-200/90 rounded-2xl p-3 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-orange-400/20 text-orange-800 flex items-center justify-center text-xl shrink-0">
-              🚚
-            </div>
-            <div>
-              <h4 className="font-black text-xs text-slate-900 uppercase tracking-wide">EXPRESS DELIVERY</h4>
-              <p className="text-[10px] text-slate-500 font-medium">Quick & Safe Delivery</p>
-            </div>
-          </a>
+            {/* Feature 3: WHAT'S NEW */}
+            <a
+              href="/shop?sort=newest"
+              className="bg-white border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3.5 hover:shadow-md transition-all cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-xl bg-emerald-400/20 text-emerald-800 flex items-center justify-center text-xl shrink-0">
+                🛍️
+              </div>
+              <div>
+                <h4 className="font-black text-xs text-slate-900 uppercase tracking-wide">WHAT'S NEW</h4>
+                <p className="text-[10px] text-slate-500 font-medium mt-0.5">Latest Arrivals</p>
+              </div>
+            </a>
+          </div>
+
+          {/* Right Track: Feature 4 - EXPRESS DELIVERY (Col 11-12 / col-span-2) */}
+          <div className="col-span-2">
+            <a
+              href="/shop"
+              className="bg-white border border-slate-200/90 rounded-2xl p-4 flex items-center gap-3 hover:shadow-md transition-all cursor-pointer h-full"
+            >
+              <div className="w-10 h-10 rounded-xl bg-orange-400/20 text-orange-800 flex items-center justify-center text-xl shrink-0">
+                🚚
+              </div>
+              <div>
+                <h4 className="font-black text-xs text-slate-900 uppercase tracking-wide">EXPRESS DELIVERY</h4>
+                <p className="text-[10px] text-slate-500 font-medium mt-0.5">Quick & Safe Delivery</p>
+              </div>
+            </a>
+          </div>
+
         </div>
 
-        {/* 3. MAIN CONTENT SECTION (Left Festive Special Banner Poster + Center Content & Right Feature Widgets) */}
+        {/* ROW 3 & ROW 4: FESTIVE SPECIAL (Col 1-2), TOP CATEGORIES & RECOMMENDED FOR YOU (Col 3-10), RIGHT CARDS (Col 11-12) */}
         <div className="grid grid-cols-12 gap-5 items-start">
           
-          {/* Far Left Festive Poster Card Banner (Col Span 2) */}
-          <div className="col-span-12 lg:col-span-2 relative rounded-3xl overflow-hidden bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 p-5 text-white shadow-lg border border-purple-900 flex flex-col justify-between h-full min-h-[580px]">
-            <div className="relative z-10 space-y-2">
+          {/* Left Track: Festive Special Tall Banner Poster (Col 1-2 / col-span-2) */}
+          <div className="col-span-2 bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 rounded-2xl p-5 text-white shadow-lg border border-purple-900 flex flex-col justify-between min-h-[640px] sticky top-28">
+            <div className="space-y-2">
               <span className="inline-block bg-amber-400 text-slate-950 font-black text-[9px] uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-xs">
                 FESTIVE SPECIAL
               </span>
@@ -353,29 +345,29 @@ export default function HomePage() {
               <p className="text-xs text-slate-300 font-medium">On Bestsellers</p>
             </div>
 
-            <div className="relative z-10 my-4 flex-1 flex items-center justify-center">
+            <div className="my-4 flex-1 flex items-center justify-center">
               <img
                 src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600"
                 alt="Festive Collection"
-                className="w-full h-72 object-cover rounded-2xl border border-white/20 shadow-md"
+                className="w-full h-80 object-cover rounded-xl border border-white/20 shadow-md"
               />
             </div>
 
             <a
               href="/shop"
-              className="relative z-10 text-center bg-white text-slate-900 font-black text-xs uppercase tracking-wider py-3 rounded-full hover:bg-[#B71C1C] hover:text-white transition-all shadow-md block"
+              className="text-center bg-white text-slate-900 font-black text-xs uppercase tracking-wider py-3 rounded-full hover:bg-[#B71C1C] hover:text-white transition-all shadow-md block"
             >
               SHOP NOW →
             </a>
           </div>
 
-          {/* Center Main Content: Top Categories & Recommended Products (Col Span 8) */}
-          <div className="col-span-12 lg:col-span-8 space-y-6">
+          {/* Center Track: Top Categories (Row 3) & Recommended For You (Row 4) (Col 3-10 / col-span-8) */}
+          <div className="col-span-8 space-y-5">
             
-            {/* Top Categories Row */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="font-display font-black text-lg text-slate-900">
+            {/* Row 3: Top Categories */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display font-black text-base text-slate-900 uppercase tracking-wide">
                   Top Categories
                 </h2>
                 <a href="/shop" className="text-xs font-bold text-[#B71C1C] hover:underline flex items-center gap-1">
@@ -398,7 +390,7 @@ export default function HomePage() {
                     href={`/shop?category=${encodeURIComponent(cat.label)}`}
                     className="flex flex-col items-center group cursor-pointer"
                   >
-                    <div className="w-full h-24 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 group-hover:border-[#B71C1C] shadow-2xs group-hover:shadow-md transition-all">
+                    <div className="w-full h-24 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group-hover:border-[#B71C1C] shadow-2xs group-hover:shadow-md transition-all">
                       <img src={cat.img} alt={cat.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                     </div>
                     <span className="text-[10px] font-black text-slate-800 mt-1.5 text-center truncate max-w-full">
@@ -409,10 +401,10 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Recommended For You Section (6-Column Product Cards Grid) */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="font-display font-black text-lg text-slate-900">
+            {/* Row 4: Recommended For You (6-Column Grid) */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display font-black text-base text-slate-900 uppercase tracking-wide">
                   Recommended For You
                 </h2>
                 <a href="/shop" className="text-xs font-bold text-[#B71C1C] hover:underline flex items-center gap-1">
@@ -433,11 +425,11 @@ export default function HomePage() {
 
           </div>
 
-          {/* Far Right Stacked Feature Cards (Col Span 2) */}
-          <div className="col-span-12 lg:col-span-2 space-y-4">
+          {/* Right Track: Premium Collection (Row 3) & Trust Badges (Row 4) (Col 11-12 / col-span-2) */}
+          <div className="col-span-2 space-y-5">
             
-            {/* Top Card: Premium Collection Banner */}
-            <div className="bg-gradient-to-b from-slate-50 to-red-50/50 border border-slate-200 rounded-3xl p-4 text-center shadow-2xs flex flex-col justify-between min-h-[260px]">
+            {/* Row 3: Premium Collection Card */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 text-center shadow-2xs flex flex-col justify-between min-h-[290px]">
               <div>
                 <span className="font-display font-black text-xs tracking-wider text-[#B71C1C] uppercase block">
                   KARVIYAM
@@ -454,7 +446,7 @@ export default function HomePage() {
                 <img
                   src="https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400"
                   alt="Premium Collection"
-                  className="w-full h-32 object-cover rounded-2xl border border-slate-200 shadow-2xs"
+                  className="w-full h-32 object-cover rounded-xl border border-slate-200 shadow-2xs"
                 />
               </div>
 
@@ -463,8 +455,8 @@ export default function HomePage() {
               </a>
             </div>
 
-            {/* Bottom Card: Trust & Guarantee Badges */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-2xs space-y-3 text-xs">
+            {/* Row 4: Quality / Prices / Trust / Exchange Trust Badges Card */}
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3.5 text-xs">
               <div className="flex items-start gap-2.5">
                 <span className="text-base shrink-0">🛡️</span>
                 <div>
@@ -473,7 +465,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-2.5 pt-2 border-t border-slate-100">
+              <div className="flex items-start gap-2.5 pt-2.5 border-t border-slate-100">
                 <span className="text-base shrink-0">💰</span>
                 <div>
                   <h5 className="font-black text-slate-900 text-[11px]">Affordable Prices</h5>
@@ -481,7 +473,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-2.5 pt-2 border-t border-slate-100">
+              <div className="flex items-start gap-2.5 pt-2.5 border-t border-slate-100">
                 <span className="text-base shrink-0">🙌</span>
                 <div>
                   <h5 className="font-black text-slate-900 text-[11px]">Trusted by Millions</h5>
@@ -489,7 +481,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-2.5 pt-2 border-t border-slate-100">
+              <div className="flex items-start gap-2.5 pt-2.5 border-t border-slate-100">
                 <span className="text-base shrink-0">🔄</span>
                 <div>
                   <h5 className="font-black text-slate-900 text-[11px]">Easy Exchange</h5>
