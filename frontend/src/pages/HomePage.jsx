@@ -65,31 +65,46 @@ export default function HomePage() {
         {/* 3. Category Shortcut Icons */}
         <MobileCategoryShortcuts />
 
-        {/* 4. Promotional Mobile Banner */}
-        <HeroBanner />
+        {/* 3.5. Coupon Offer Banner (Matches Reference Image 1) */}
+        <div className="w-full px-3 py-2">
+          <div className="bg-gradient-to-r from-red-50 via-pink-50 to-orange-50 border border-red-200/80 rounded-2xl p-2.5 flex items-center justify-between shadow-2xs">
+            <div className="flex items-center gap-2">
+              <div className="text-left">
+                <span className="font-display font-black text-xs text-[#B71C1C] block leading-tight">
+                  Get 25% Off <span className="text-[10px] text-slate-700 font-bold">Up To ₹200 Off*</span>
+                </span>
+                <span className="text-[9px] text-slate-500 font-medium">*On your first order | T&C apply</span>
+              </div>
+            </div>
 
-        {/* 5. Promotional Section Callout */}
-        <section className="w-full px-3 my-3">
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 p-4 text-white shadow-lg border border-slate-800">
-            <div className="relative z-10">
-              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20 mb-2">
-                <Sparkles className="w-3 h-3 text-amber-400" /> LUXURY CRAFTSMANSHIP
-              </span>
-              <h3 className="font-display font-black text-lg leading-tight mb-1 text-white">
-                925 Sterling Silver Royal Emerald Pendant
-              </h3>
-              <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
-                Handcrafted by master artisans with pure sterling silver finish.
-              </p>
-              <a
-                href="/product/4"
-                className="inline-block bg-[#B71C1C] text-white font-extrabold text-[10px] uppercase tracking-wider px-4 py-2 rounded-full shadow-md"
-              >
-                CLAIM YOUR PIECE →
-              </a>
+            <div className="bg-white border border-dashed border-red-300 px-2 py-1 rounded-xl flex items-center gap-1 shadow-2xs">
+              <span className="text-[9px] text-slate-400 font-bold uppercase">COUPON CODE</span>
+              <span className="text-[10px] font-black text-[#B71C1C]">KARVIYAMSAVE</span>
+              <span className="text-[#B71C1C] font-black text-[11px]">%</span>
             </div>
           </div>
-        </section>
+        </div>
+
+        {/* 4. Promotional Mobile Hero Banner */}
+        <HeroBanner />
+
+        {/* 4.5. Bank Cashback Callout (Matches Reference Image 1) */}
+        <div className="w-full px-3 py-2">
+          <div className="bg-slate-900 text-white rounded-2xl p-2.5 flex items-center justify-between border border-slate-800 shadow-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-[#B71C1C] flex items-center justify-center font-black text-xs shrink-0">
+                7.5%
+              </div>
+              <div>
+                <p className="text-xs font-black text-white">Get 7.5%* Cashback On Karviyam</p>
+                <p className="text-[9px] text-slate-300 font-medium">With HDFC & AXIS Credit Card & UPI Payments</p>
+              </div>
+            </div>
+            <a href="/shop" className="text-[10px] font-black text-amber-400 uppercase tracking-wide underline shrink-0">
+              APPLY →
+            </a>
+          </div>
+        </div>
 
         {/* 6. Product Grid - STRICTLY 2 PRODUCTS PER ROW ON MOBILE */}
         <section className="w-full px-3 py-2">

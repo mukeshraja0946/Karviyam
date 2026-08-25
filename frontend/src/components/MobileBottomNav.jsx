@@ -1,15 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, User, Heart, ShoppingBag, Grid } from 'lucide-react';
+import { Home, Sparkles, Gem, ShoppingBag, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
-import { useAuth } from '../context/AuthContext';
 
 export default function MobileBottomNav() {
   const location = useLocation();
   const { itemCount } = useCart();
   const { wishlistCount, wishlist } = useWishlist();
-  const { user } = useAuth();
 
   const totalWishlistCount = wishlistCount || wishlist.length;
 
@@ -20,20 +18,20 @@ export default function MobileBottomNav() {
       icon: Home
     },
     {
-      label: 'Categories',
-      path: '/shop',
-      icon: Grid
+      label: 'Under ₹999',
+      path: '/shop?price=999',
+      icon: Sparkles
+    },
+    {
+      label: 'Luxury',
+      path: '/shop?category=Jewellery',
+      icon: Gem
     },
     {
       label: 'Wishlist',
       path: '/wishlist',
       icon: Heart,
       badge: totalWishlistCount
-    },
-    {
-      label: user ? 'Account' : 'Login',
-      path: user ? '/profile' : '/login',
-      icon: User
     },
     {
       label: 'Bag',
@@ -57,19 +55,19 @@ export default function MobileBottomNav() {
             <Link
               key={item.label}
               to={item.path}
-              className={`relative flex flex-col items-center justify-center flex-1 py-1 transition-all ${
-                isActive ? 'text-[#B71C1C]' : 'text-slate-500 hover:text-slate-900'
+              className={`relative flex flex-col items-center justify-center flex-1 py-1 transition-all h-full ${
+                isActive ? 'bg-gradient-to-b from-red-50/80 to-white text-[#B71C1C]' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <div className="relative">
-                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-[#B71C1C]' : ''}`} />
                 {Boolean(item.badge && item.badge > 0) && (
                   <span className="absolute -top-1.5 -right-2 bg-[#B71C1C] text-white text-[9px] font-black rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center border border-white shadow-xs">
                     {item.badge > 99 ? '99+' : item.badge}
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] font-bold mt-0.5 tracking-tight ${isActive ? 'font-black' : 'font-medium'}`}>
+              <span className={`text-[10px] mt-0.5 tracking-tight ${isActive ? 'font-black text-[#B71C1C]' : 'font-semibold text-slate-700'}`}>
                 {item.label}
               </span>
             </Link>

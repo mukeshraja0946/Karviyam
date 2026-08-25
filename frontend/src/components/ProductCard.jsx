@@ -176,9 +176,9 @@ export default function ProductCard({ product }) {
       {/* ========================================================= */}
       <div className="mobile-only flex md:hidden group relative bg-white w-full h-[330px] min-h-[330px] max-h-[330px] rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex-col justify-between overflow-hidden p-2">
         
-        {/* 1. Image Box (Fixed 165px height) */}
+        {/* 1. Image Box (Fixed 170px height) */}
         <div
-          className="relative w-full h-[165px] max-h-[165px] bg-slate-50 rounded-xl flex items-center justify-center p-1.5 cursor-pointer shrink-0 overflow-hidden"
+          className="relative w-full h-[170px] max-h-[170px] bg-slate-50/80 rounded-xl flex items-center justify-center p-1.5 cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
@@ -190,15 +190,11 @@ export default function ProductCard({ product }) {
 
           {/* Badges (Top-Left) */}
           <div className="absolute top-1.5 left-1.5 flex flex-col gap-1 z-10">
-            {badge ? (
+            {badge && (
               <span className={`text-[8px] font-black uppercase tracking-tight px-1.5 py-0.5 rounded shadow-2xs ${badge.bg}`}>
                 {badge.label}
               </span>
-            ) : discountPercent >= 15 ? (
-              <span className="bg-[#B71C1C] text-white text-[8px] font-black uppercase tracking-tight px-1.5 py-0.5 rounded shadow-2xs">
-                {discountPercent}% OFF
-              </span>
-            ) : null}
+            )}
           </div>
 
           {/* Wishlist Heart Overlay (Top-Right) */}
@@ -217,59 +213,63 @@ export default function ProductCard({ product }) {
           >
             <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
           </button>
+
+          {/* Rating Pill Chip on Image (Bottom-Left) */}
+          <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-white/95 backdrop-blur-xs px-2 py-0.5 rounded-full border border-slate-200 shadow-2xs text-[10px] font-extrabold text-slate-800 z-10">
+            <span>{rating}</span>
+            <Star className="w-2.5 h-2.5 fill-emerald-600 text-emerald-600" />
+            <span className="text-slate-400 font-bold">|</span>
+            <span className="text-slate-500 font-semibold text-[9px]">{reviewsCount > 1000 ? `${(reviewsCount/1000).toFixed(1)}k` : reviewsCount}</span>
+          </div>
+
+          {/* Quick Add Floating Plus Button on Image (Bottom-Right) */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              addToCart(product.id, 1);
+            }}
+            className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-white border border-[#B71C1C] text-[#B71C1C] hover:bg-[#B71C1C] hover:text-white flex items-center justify-center font-black text-sm shadow-xs cursor-pointer transition-all z-10"
+            title="Quick Add"
+          >
+            +
+          </button>
         </div>
 
         {/* 2. Details Content */}
-        <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5 overflow-hidden">
+        <div className="flex-1 flex flex-col justify-between pt-2 px-1 overflow-hidden">
           <div>
-            {/* Brand & Rating with Review Count */}
-            <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold mb-0.5 leading-none">
-              <span className="uppercase text-[#B71C1C] tracking-tight truncate max-w-[80px]">
-                {product.brand || 'KARVIYAM'}
-              </span>
-              <div className="flex items-center gap-0.5 text-slate-800 font-extrabold shrink-0 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
-                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                <span>{rating}</span>
-                <span className="text-[9px] text-slate-400 font-medium">({reviewsCount})</span>
-              </div>
-            </div>
+            {/* Brand Title */}
+            <p className="font-black text-slate-900 text-xs uppercase tracking-wide truncate">
+              {product.brand || 'KARVIYAM'}
+            </p>
 
-            {/* Product Name (Strict line-clamp-2 with 28px fixed height) */}
+            {/* Product Name / Subtitle */}
             <h3
               onClick={() => navigate(`/product/${product.id}`)}
-              className="font-display font-bold text-slate-900 text-[11px] leading-snug line-clamp-2 h-[28px] max-h-[28px] overflow-hidden cursor-pointer"
+              className="text-slate-500 font-medium text-[11px] leading-tight line-clamp-1 truncate cursor-pointer mt-0.5"
               title={product.name}
             >
               {product.name}
             </h3>
 
-            {/* Price Section */}
-            <div className="flex items-baseline gap-1.5 pt-1 leading-none">
+            {/* Price Row */}
+            <div className="flex items-baseline gap-1.5 pt-1.5 leading-none">
+              {oldPrice > price && (
+                <span className="text-[10px] text-slate-400 line-through font-medium">
+                  ₹{oldPrice}
+                </span>
+              )}
               <span className="font-display font-black text-slate-900 text-sm">
                 ₹{price}
               </span>
-              {oldPrice > price && (
-                <>
-                  <span className="text-[10px] text-slate-400 line-through font-medium">
-                    ₹{oldPrice}
-                  </span>
-                  <span className="text-[9px] text-emerald-700 font-extrabold">
-                    {discountPercent}% OFF
-                  </span>
-                </>
+              {discountPercent > 0 && (
+                <span className="text-[10px] text-amber-600 font-black uppercase tracking-tight">
+                  {discountPercent}% OFF
+                </span>
               )}
             </div>
           </div>
-
-          {/* 3. Add to Bag Button */}
-          <button
-            type="button"
-            onClick={() => addToCart(product.id, 1)}
-            className="w-full bg-[#B71C1C] active:bg-[#900C0C] text-white font-black text-[10px] uppercase tracking-wider py-2 rounded-xl flex items-center justify-center gap-1.5 shadow-2xs mt-1 cursor-pointer transition-all"
-          >
-            <ShoppingBag className="w-3 h-3" />
-            <span>Add to Bag</span>
-          </button>
         </div>
 
       </div>

@@ -458,35 +458,65 @@ export default function ShopPage() {
             </div>
           </div>
 
-          {/* Mobile Horizontal Filter Controls Bar (< 768px): [ ☰ Filter ] [ Categories ▼ ] [ Sort ▼ ] */}
-          <div className="mobile-only">
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-              <h1 className="font-display font-extrabold text-base text-slate-900">Catalog</h1>
-              <span className="text-[11px] font-bold text-slate-500">{products.length} items</span>
+          {/* Mobile Horizontal Filter Controls Bar (< 768px): Explore More + [ Gender ▼ ] [ Categories ▼ ] [ Sort ▼ ] */}
+          <div className="mobile-only space-y-2">
+            {/* Explore More Header & Chips */}
+            <div className="pt-1">
+              <h3 className="font-display font-black text-sm text-center text-slate-900 tracking-tight mb-2">Explore More</h3>
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 whitespace-nowrap touch-pan-x">
+                <button
+                  type="button"
+                  onClick={() => setSelectedGender('')}
+                  className="px-3.5 py-2 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 text-white font-black text-[10px] uppercase tracking-wider shrink-0 shadow-xs flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3 h-3 text-amber-400" /> FOR YOU
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPriceRange(499)}
+                  className="px-3.5 py-2 rounded-2xl bg-red-50/80 border border-red-200 text-[#B71C1C] font-black text-[10px] uppercase tracking-wider shrink-0 flex items-center gap-1"
+                >
+                  UNDER ₹499 🪙
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSortBy('rating')}
+                  className="px-3.5 py-2 rounded-2xl bg-blue-50/80 border border-blue-200 text-blue-800 font-black text-[10px] uppercase tracking-wider shrink-0 flex items-center gap-1"
+                >
+                  DEAL OF THE DAY 🏷️
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSortBy('id')}
+                  className="px-3.5 py-2 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-emerald-800 font-black text-[10px] uppercase tracking-wider shrink-0 flex items-center gap-1"
+                >
+                  WHAT'S NEW ✨
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 whitespace-nowrap touch-pan-x">
-              {/* Filter Button */}
+            {/* Filter Pills: [ Gender ▼ ] [ Categories ▼ ] [ 🎛️ Sort ▼ ] [ Under ₹999 ] */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1.5 whitespace-nowrap touch-pan-x">
+              {/* Gender Pill */}
               <button
                 type="button"
                 onClick={() => setMobileFilterOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold shrink-0 cursor-pointer shadow-2xs"
+                className={`flex items-center gap-1 px-4 py-2 rounded-2xl border text-xs font-bold shrink-0 cursor-pointer shadow-2xs ${
+                  selectedGender ? 'bg-red-50 text-[#B71C1C] border-red-300' : 'bg-white text-slate-800 border-slate-300'
+                }`}
               >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
-                <span>☰ Filter</span>
-                {activeFilterCount > 0 && (
-                  <span className="w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                    {activeFilterCount}
-                  </span>
-                )}
+                <span>Gender {selectedGender ? `(${selectedGender})` : '▼'}</span>
               </button>
 
               {/* Categories Pill */}
               <button
                 type="button"
                 onClick={() => setMobileFilterOpen(true)}
-                className={`flex items-center gap-1 px-3.5 py-1.5 rounded-full border text-xs font-bold shrink-0 cursor-pointer ${
-                  selectedCategory ? 'bg-red-50 text-[#B71C1C] border-red-200' : 'bg-white text-slate-700 border-slate-300'
+                className={`flex items-center gap-1 px-4 py-2 rounded-2xl border text-xs font-bold shrink-0 cursor-pointer shadow-2xs ${
+                  selectedCategory ? 'bg-red-50 text-[#B71C1C] border-red-300' : 'bg-white text-slate-800 border-slate-300'
                 }`}
               >
                 <span>Categories {selectedCategory ? `(${selectedCategory})` : '▼'}</span>
@@ -496,10 +526,21 @@ export default function ShopPage() {
               <button
                 type="button"
                 onClick={() => setMobileSortOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-300 text-slate-800 text-xs font-bold shrink-0 cursor-pointer shadow-2xs"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white border border-slate-300 text-slate-800 text-xs font-bold shrink-0 cursor-pointer shadow-2xs"
               >
-                <ArrowUpDown className="w-3.5 h-3.5 text-[#B71C1C]" />
+                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-700" />
                 <span>Sort ▼</span>
+              </button>
+
+              {/* Under ₹999 Pill */}
+              <button
+                type="button"
+                onClick={() => setPriceRange(999)}
+                className={`flex items-center gap-1 px-4 py-2 rounded-2xl border text-xs font-bold shrink-0 cursor-pointer shadow-2xs ${
+                  priceRange <= 999 ? 'bg-red-50 text-[#B71C1C] border-red-300' : 'bg-white text-slate-800 border-slate-300'
+                }`}
+              >
+                <span>Under ₹999</span>
               </button>
             </div>
           </div>

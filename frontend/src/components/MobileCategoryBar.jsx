@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { LayoutGrid } from 'lucide-react';
 import api from '../utils/api';
 
 export default function MobileCategoryBar() {
@@ -51,44 +52,55 @@ export default function MobileCategoryBar() {
     }
   };
 
-  const isAllActive = location.pathname === '/shop' && !activeCategoryParam;
+  const isAllActive = location.pathname === '/' || (location.pathname === '/shop' && !activeCategoryParam);
 
   return (
-    <div className="mobile-only w-full bg-white border-b border-slate-200 block md:hidden sticky top-[108px] z-30 shadow-2xs">
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x px-3 py-2 whitespace-nowrap flex-nowrap">
-        {/* ALL Pill */}
+    <div className="mobile-only w-full bg-[#FFF3F5] border-b border-[#FCE4E8] block md:hidden sticky top-[98px] z-30 shadow-2xs">
+      <div className="flex items-center justify-between px-2 py-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x flex-1 whitespace-nowrap flex-nowrap py-1">
+          {/* ALL Pill */}
+          <button
+            onClick={() => navigate('/shop')}
+            className={`px-4 py-1.5 rounded-t-xl rounded-b-md text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
+              isAllActive
+                ? 'bg-white text-[#B71C1C] border-t-2 border-[#B71C1C] shadow-2xs font-extrabold'
+                : 'text-slate-700 hover:text-[#B71C1C]'
+            }`}
+          >
+            ALL
+          </button>
+
+          {/* Dynamic Category Pills */}
+          {categories.map((cat) => {
+            const isActive =
+              activeCategoryParam.toLowerCase() === cat.fullName.toLowerCase() ||
+              activeCategoryParam.toLowerCase() === cat.name.toLowerCase() ||
+              activeCategoryParam === String(cat.id);
+
+            return (
+              <button
+                key={cat.id}
+                onClick={() => navigate(`/shop?${cat.query}`)}
+                className={`px-4 py-1.5 rounded-t-xl rounded-b-md text-xs font-extrabold uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
+                  isActive
+                    ? 'bg-white text-[#B71C1C] border-t-2 border-[#B71C1C] shadow-2xs font-black'
+                    : 'text-slate-700 hover:text-[#B71C1C]'
+                }`}
+              >
+                {cat.name}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Far Right Category Grid Icon */}
         <button
           onClick={() => navigate('/shop')}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
-            isAllActive
-              ? 'bg-[#B71C1C] text-white shadow-xs scale-105'
-              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-          }`}
+          className="p-1.5 text-slate-800 hover:text-[#B71C1C] shrink-0 bg-white/80 rounded-lg border border-slate-200 ml-1 cursor-pointer"
+          title="All Categories"
         >
-          ALL
+          <LayoutGrid className="w-4 h-4 text-slate-900" />
         </button>
-
-        {/* Dynamic Category Pills */}
-        {categories.map((cat) => {
-          const isActive =
-            activeCategoryParam.toLowerCase() === cat.fullName.toLowerCase() ||
-            activeCategoryParam.toLowerCase() === cat.name.toLowerCase() ||
-            activeCategoryParam === String(cat.id);
-
-          return (
-            <button
-              key={cat.id}
-              onClick={() => navigate(`/shop?${cat.query}`)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
-                isActive
-                  ? 'bg-[#B71C1C] text-white shadow-xs scale-105'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-              }`}
-            >
-              {cat.name}
-            </button>
-          );
-        })}
       </div>
     </div>
   );
