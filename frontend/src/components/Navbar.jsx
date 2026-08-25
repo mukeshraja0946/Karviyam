@@ -150,94 +150,75 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 bg-white shadow-xs">
       
       {/* ========================================================= */}
-      {/* MOBILE HEADER (< 768px) - COMPACT MOBILE APP HEADER        */}
+      {/* MOBILE HEADER (< 1024px / lg)                             */}
+      {/* MATCHES REFERENCE SPECIFICATION EXACTLY                    */}
       {/* ========================================================= */}
-      <div className="block md:hidden bg-white border-b border-slate-200">
-        {/* Mobile Announcement Bar */}
-        <div className="bg-gradient-to-r from-[#D32F2F] via-[#B71C1C] to-[#8E0000] text-white text-[10px] py-1 px-3 text-center font-bold tracking-wide flex justify-center items-center gap-1">
-          <Sparkles className="w-3 h-3 animate-pulse shrink-0" />
-          <span className="truncate">FESTIVE SALE LIVE! UP TO 60% OFF</span>
-        </div>
-
-        {/* Mobile Header Top Row: Hamburger, Logo, Location, Icons */}
-        <div className="px-3 py-2 flex items-center justify-between gap-2 border-b border-slate-100">
-          
-          {/* Hamburger Menu Icon */}
+      <div className="block lg:hidden bg-white border-b border-slate-200">
+        
+        {/* Row 1: Delivery Location & Cashback Chip */}
+        <div className="px-3.5 pt-2.5 pb-1 flex items-center justify-between gap-2">
+          {/* Location Delivery Selector */}
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-1 text-slate-700 hover:text-[#B71C1C] cursor-pointer shrink-0"
-            title="Menu Drawer"
+            onClick={() => setLocationModalOpen(true)}
+            className="flex items-center gap-1 text-xs font-bold text-slate-800 cursor-pointer"
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            <MapPin className="w-3.5 h-3.5 text-[#B71C1C] shrink-0" />
+            <span className="text-slate-600 font-medium">Deliver to</span>
+            <span className="font-extrabold text-slate-900 truncate max-w-[140px]">{locationCity} {locationPincode}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
           </button>
 
+          {/* Cashback / Offer Chip */}
+          <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-emerald-800 shadow-2xs shrink-0">
+            <span>upto ₹100</span>
+            <span className="text-xs">💸</span>
+          </div>
+        </div>
+
+        {/* Row 2: Brand Logo & Right Action Icons (Wishlist, Bell, Account) */}
+        <div className="px-3.5 py-1.5 flex items-center justify-between gap-2">
+          
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-1 shrink-0">
+          <Link to="/" className="flex items-center gap-1.5">
             {customLogo ? (
-              <img src={customLogo} alt="Karviyam" className="h-7 w-auto object-contain max-w-[110px]" />
+              <img src={customLogo} alt="Karviyam" className="h-7 w-auto object-contain max-w-[120px]" />
             ) : (
-              <div className="flex items-center gap-1">
-                <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-black text-base flex items-center justify-center shadow-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white flex items-center justify-center shadow-2xs">
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                     <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
                   </svg>
                 </div>
-                <span className="font-display font-black text-base tracking-tight text-[#B71C1C] leading-none">
+                <span className="font-display font-black text-lg tracking-tight text-[#B71C1C] leading-none">
                   KARVIYAM
                 </span>
               </div>
             )}
           </Link>
 
-          {/* Location Delivery Chip */}
-          <button
-            onClick={() => setLocationModalOpen(true)}
-            className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] text-slate-800 font-bold shrink truncate max-w-[120px]"
-          >
-            <MapPin className="w-3 h-3 text-[#B71C1C] shrink-0" />
-            <span className="truncate">{locationCity}</span>
-          </button>
-
-          {/* Right Icons: Bag, Wishlist, User */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Bag */}
-            <Link to="/cart" className="relative p-1.5 text-slate-700 hover:text-[#B71C1C]" title="Cart">
-              <ShoppingBag className="w-5 h-5" />
-              {itemCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                  {itemCount}
-                </span>
-              )}
-            </Link>
-
-            {/* Wishlist */}
-            <Link to="/wishlist" className="relative p-1.5 text-slate-700 hover:text-[#B71C1C]" title="Wishlist">
-              <Heart className="w-5 h-5" />
-              {(wishlistCount || wishlist.length) > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                  {wishlistCount || wishlist.length}
-                </span>
-              )}
-            </Link>
-
-            {/* User */}
-            <Link to={user ? "/profile" : "/login"} className="p-1.5 text-slate-700 hover:text-[#B71C1C]" title="Account">
-              <User className="w-5 h-5" />
-            </Link>
+          {/* Action Icon: Notification Only */}
+          <div className="flex items-center text-slate-700">
+            {/* Notification */}
+            <div className="relative p-1 hover:text-[#B71C1C] cursor-pointer" title="Notifications">
+              <Bell className="w-5 h-5 text-slate-700" />
+              <span className="absolute -top-1 -right-1 bg-[#B71C1C] text-white text-[8px] font-black rounded-full h-3.5 min-w-[14px] px-1 flex items-center justify-center">
+                3
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Mobile Full-Width Search Input */}
-        <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 relative">
-          <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+        {/* Row 3: Rounded Pill Search Bar */}
+        <div className="px-3.5 py-1.5 relative">
+          <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Oversized Tees, Silver Jewellery, Sarees..."
-              className="w-full bg-white text-slate-900 placeholder-slate-400 pl-8 pr-16 py-1.5 rounded-xl border border-slate-200 focus:border-[#B71C1C] text-xs outline-none shadow-2xs"
+              placeholder="Search for T-Shirts, Sneakers, Kurtas..."
+              className="w-full bg-slate-50 text-slate-900 placeholder-slate-400 pl-9 pr-16 py-2.5 rounded-full border border-slate-200 focus:border-[#B71C1C] focus:bg-white text-xs outline-none shadow-2xs transition-all"
             />
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
             
             <button
               type="button"
@@ -245,20 +226,22 @@ export default function Navbar() {
               className="absolute right-9 p-1 text-slate-400 hover:text-[#B71C1C]"
               title="Voice Search"
             >
-              <Mic className="w-3.5 h-3.5" />
+              <Mic className="w-4 h-4" />
             </button>
 
             <button
-              type="submit"
-              className="absolute right-1 px-2 py-0.5 bg-[#B71C1C] text-white text-[10px] font-bold rounded-lg"
+              type="button"
+              onClick={() => navigate('/shop')}
+              className="absolute right-3 p-1 text-slate-400 hover:text-[#B71C1C]"
+              title="Image Search"
             >
-              Search
+              <Camera className="w-4 h-4" />
             </button>
           </form>
 
           {/* Search suggestions dropdown */}
           {showSearchDrop && searchResults.length > 0 && (
-            <div className="absolute left-3 right-3 top-full mt-1 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50">
+            <div className="absolute left-3.5 right-3.5 top-full mt-1 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
               {searchResults.map((item) => (
                 <div
                   key={item.id}
@@ -280,56 +263,50 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile Slide-Over Menu Drawer */}
-        {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 flex bg-slate-900/60 backdrop-blur-xs">
-            <div className="relative w-4/5 max-w-xs bg-white h-full shadow-2xl p-5 overflow-y-auto flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <span className="font-display font-black text-lg text-[#B71C1C]">KARVIYAM MENU</span>
-                  <button onClick={() => setMobileMenuOpen(false)} className="p-1 text-slate-500 hover:text-slate-900">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="space-y-1 font-bold text-slate-800 text-sm">
-                  <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg">Home</Link>
-                  <Link to="/shop" onClick={() => setMobileMenuOpen(false)} className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg">All Shop Products</Link>
-                  {navEnabled && navCategories.map((cat) => (
-                    <Link
-                      key={cat.id}
-                      to={`/shop?category=${encodeURIComponent(cat.name)}`}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg uppercase"
-                    >
-                      {cat.name}
-                    </Link>
-                  ))}
-                  <Link to="/contact" onClick={() => setMobileMenuOpen(false)} className="block p-2 hover:bg-red-50 hover:text-[#B71C1C] rounded-lg">Contact Us</Link>
-                  {isAdmin && (
-                    <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="block p-2 text-[#B71C1C] hover:bg-red-50 rounded-lg">Admin Dashboard</Link>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 space-y-2 text-xs">
-                <button
-                  onClick={() => { setMobileMenuOpen(false); setLocationModalOpen(true); }}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800"
-                >
-                  <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-[#B71C1C]" /> Deliver to {locationCity}</span>
-                  <span className="text-[#B71C1C] text-[10px] uppercase">Change</span>
-                </button>
-              </div>
+        {/* Row 4: Single Line Category Navigation Tabs */}
+        {navEnabled && (
+          <div className="w-full bg-white border-t border-slate-100 pt-2 pb-1.5 px-3.5">
+            <div className="flex items-center gap-6 overflow-x-auto no-scrollbar text-xs font-bold text-slate-700 whitespace-nowrap">
+              <Link
+                to="/shop"
+                className="text-[#B71C1C] font-black border-b-2 border-[#B71C1C] pb-1 uppercase shrink-0"
+              >
+                ALL
+              </Link>
+              <Link to="/shop?category=Men" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
+                MEN
+              </Link>
+              <Link to="/shop?category=Women" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
+                WOMEN
+              </Link>
+              <Link to="/shop?category=Kids" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
+                KIDS
+              </Link>
+              <Link to="/shop?category=Unisex" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
+                UNISEX
+              </Link>
+              <Link to="/shop?category=Jewellery" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
+                JEWELS
+              </Link>
+              <Link to="/shop?category=Kitchen" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
+                KITCHEN & HOME
+              </Link>
+              <Link to="/shop?category=School" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
+                SCHOOL & OFFICE
+              </Link>
+              <Link to="/contact" className="hover:text-[#B71C1C] transition-colors uppercase shrink-0">
+                CONTACT US
+              </Link>
             </div>
           </div>
         )}
+
       </div>
 
       {/* ========================================================= */}
-      {/* DESKTOP HEADER (>= 768px) - 100% UNTOUCHED ORIGINAL         */}
+      {/* DESKTOP HEADER (>= 1024px / lg) - 100% UNTOUCHED ORIGINAL   */}
       {/* ========================================================= */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         
         {/* Top Banner Announcement */}
         <div className="bg-[#B71C1C] text-white text-xs py-1.5 px-4 text-center font-bold tracking-wide flex justify-center items-center gap-2">

@@ -64,7 +64,7 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[#FAFAFA] text-slate-900 transition-colors duration-300 pb-16 md:pb-0">
+    <div className="min-h-screen flex flex-col justify-between bg-[#FAFAFA] text-slate-900 transition-colors duration-300 pb-16 lg:pb-0">
       <Navbar />
       <main className="flex-1">
         <Outlet />
