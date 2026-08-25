@@ -153,7 +153,7 @@ export default function Navbar() {
       {/* ========================================================= */}
       {/* MOBILE HEADER (< 768px) - COMPACT MOBILE APP HEADER        */}
       {/* ========================================================= */}
-      <div className="block md:hidden bg-white border-b border-slate-200">
+      <div className="mobile-only block md:hidden bg-white border-b border-slate-200">
         {/* Mobile Header Top Section: Delivery / Location & Reward Badge */}
         <div className="bg-slate-50 px-3 py-1.5 flex items-center justify-between border-b border-slate-100 text-xs font-bold">
           <button
@@ -361,7 +361,7 @@ export default function Navbar() {
       {/* ========================================================= */}
       {/* DESKTOP HEADER (>= 768px) - 100% UNTOUCHED ORIGINAL         */}
       {/* ========================================================= */}
-      <div className="hidden md:block">
+      <div className="desktop-only hidden md:block">
         {/* Top Banner Announcement */}
         <div className="bg-gradient-to-r from-[#D32F2F] via-[#B71C1C] to-[#8E0000] text-white text-xs py-2 px-4 text-center font-bold tracking-wide flex justify-center items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 animate-pulse" />
