@@ -70,7 +70,7 @@ export default function DesktopSidebarLeft() {
       </div>
 
       {/* 3. Festive Banner */}
-      <div className="w-full h-[270px] xl:h-[290px] rounded-xl overflow-hidden relative shadow-sm text-white p-4 flex flex-col justify-between bg-gradient-to-b from-[#6D0000] via-[#8E0000] to-[#3D0000]">
+      <div className="w-full h-[330px] xl:h-[350px] rounded-xl overflow-hidden relative shadow-sm text-white p-4 xl:p-5 flex flex-col justify-between bg-gradient-to-b from-[#6D0000] via-[#8E0000] to-[#3D0000]">
         
         {/* Background Image Overlay */}
         <div
@@ -85,13 +85,13 @@ export default function DesktopSidebarLeft() {
             <Sparkles className="w-3 h-3 text-amber-300" /> FESTIVE SPECIAL
           </span>
           
-          <h3 className="font-display font-black text-2xl leading-none text-white tracking-tight mt-3 drop-shadow-md">
+          <h3 className="font-display font-black text-2xl xl:text-3xl leading-none text-white tracking-tight mt-3.5 drop-shadow-md">
             UP TO<br />
-            <span className="text-amber-300 text-3xl">60%</span><br />
+            <span className="text-amber-300 text-3xl xl:text-4xl">60%</span><br />
             OFF
           </h3>
           
-          <p className="text-[11px] text-amber-100/90 font-semibold mt-1.5">
+          <p className="text-[11px] xl:text-xs text-amber-100/90 font-semibold mt-2">
             On Bestsellers
           </p>
         </div>
@@ -99,7 +99,7 @@ export default function DesktopSidebarLeft() {
         <div className="relative z-10">
           <button
             onClick={() => navigate('/shop')}
-            className="w-full bg-white text-slate-900 font-extrabold text-[11px] uppercase tracking-wider py-2.5 rounded-full hover:bg-amber-300 transition-colors shadow-md cursor-pointer"
+            className="w-full bg-white text-slate-900 font-extrabold text-[11px] xl:text-xs uppercase tracking-wider py-2.5 xl:py-3 rounded-full hover:bg-amber-300 transition-colors shadow-md cursor-pointer"
           >
             SHOP NOW
           </button>

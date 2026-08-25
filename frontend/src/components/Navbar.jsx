@@ -198,24 +198,24 @@ export default function Navbar() {
             <span className="truncate">{locationCity}</span>
           </button>
 
-          {/* Right Icons: Wishlist, Cart, User */}
+          {/* Right Icons: Bag, Wishlist, User */}
           <div className="flex items-center gap-1 shrink-0">
+            {/* Bag */}
+            <Link to="/cart" className="relative p-1.5 text-slate-700 hover:text-[#B71C1C]" title="Cart">
+              <ShoppingBag className="w-5 h-5" />
+              {itemCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
+
             {/* Wishlist */}
             <Link to="/wishlist" className="relative p-1.5 text-slate-700 hover:text-[#B71C1C]" title="Wishlist">
               <Heart className="w-5 h-5" />
               {(wishlistCount || wishlist.length) > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center">
                   {wishlistCount || wishlist.length}
-                </span>
-              )}
-            </Link>
-
-            {/* Cart */}
-            <Link to="/cart" className="relative p-1.5 text-slate-700 hover:text-[#B71C1C]" title="Cart">
-              <ShoppingBag className="w-5 h-5" />
-              {itemCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                  {itemCount}
                 </span>
               )}
             </Link>
@@ -449,7 +449,20 @@ export default function Navbar() {
             {/* Right Header Action Icons */}
             <div className="flex items-center gap-6">
               
-              {/* Wishlist */}
+              {/* 1. Bag */}
+              <Link to="/cart" className="flex flex-col items-center group relative cursor-pointer">
+                <div className="relative">
+                  <ShoppingBag className="w-5 h-5 text-slate-700 group-hover:text-[#B71C1C] transition-colors" />
+                  <span className="absolute -top-1.5 -right-2 bg-[#B71C1C] text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+                    {itemCount || 2}
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold text-slate-600 group-hover:text-[#B71C1C] mt-0.5">
+                  Bag
+                </span>
+              </Link>
+
+              {/* 2. Wishlist */}
               <Link to="/wishlist" className="flex flex-col items-center group relative cursor-pointer">
                 <div className="relative">
                   <Heart className="w-5 h-5 text-slate-700 group-hover:text-[#B71C1C] transition-colors" />
@@ -464,7 +477,7 @@ export default function Navbar() {
                 </span>
               </Link>
 
-              {/* Notifications */}
+              {/* 3. Notifications */}
               <div className="flex flex-col items-center group relative cursor-pointer">
                 <div className="relative">
                   <Bell className="w-5 h-5 text-slate-700 group-hover:text-[#B71C1C] transition-colors" />
@@ -477,7 +490,7 @@ export default function Navbar() {
                 </span>
               </div>
 
-              {/* Account */}
+              {/* 4. Account */}
               {user ? (
                 <div className="relative">
                   <button
@@ -526,19 +539,6 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {/* Bag */}
-              <Link to="/cart" className="flex flex-col items-center group relative cursor-pointer">
-                <div className="relative">
-                  <ShoppingBag className="w-5 h-5 text-slate-700 group-hover:text-[#B71C1C] transition-colors" />
-                  <span className="absolute -top-1.5 -right-2 bg-[#B71C1C] text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">
-                    {itemCount || 2}
-                  </span>
-                </div>
-                <span className="text-[10px] font-bold text-slate-600 group-hover:text-[#B71C1C] mt-0.5">
-                  Bag
-                </span>
-              </Link>
-
             </div>
 
           </div>
@@ -547,7 +547,7 @@ export default function Navbar() {
         {/* Sub-Header Categories Menu Row */}
         {navEnabled && (
           <div className="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-1.5">
-            <div className="max-w-[1560px] w-full mx-auto flex items-center gap-8 text-xs font-bold text-slate-800">
+            <div className="max-w-[1560px] w-full mx-auto flex items-center justify-between gap-6 text-xs font-bold text-slate-800">
               
               {/* All Categories Dropdown Trigger */}
               <div
@@ -568,8 +568,8 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Category Nav Links */}
-              <div className="flex items-center gap-7 overflow-x-auto no-scrollbar py-1">
+              {/* Category Nav Links - Compact Spacing */}
+              <div className="flex items-center gap-4 xl:gap-5 overflow-x-auto no-scrollbar py-1 ml-auto">
                 {/* Active Tab ALL */}
                 <Link
                   to="/shop"
