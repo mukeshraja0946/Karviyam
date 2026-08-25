@@ -54,7 +54,7 @@ export default function MobileCategoryBar() {
   const isAllActive = location.pathname === '/shop' && !activeCategoryParam;
 
   return (
-    <div className="w-full bg-white border-b border-slate-200 block md:hidden sticky top-[108px] z-30 shadow-2xs">
+    <div className="mobile-only w-full bg-white border-b border-slate-200 block md:hidden sticky top-[108px] z-30 shadow-2xs">
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x px-3 py-2 whitespace-nowrap flex-nowrap">
         {/* ALL Pill */}
         <button

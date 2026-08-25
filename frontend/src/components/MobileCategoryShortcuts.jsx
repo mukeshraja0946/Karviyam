@@ -72,7 +72,7 @@ export default function MobileCategoryShortcuts() {
   if (shortcuts.length === 0) return null;
 
   return (
-    <div className="w-full bg-slate-50/70 py-3 px-3 border-b border-slate-200/80 block md:hidden">
+    <div className="mobile-only w-full bg-slate-50/70 py-3 px-3 border-b border-slate-200/80 block md:hidden">
       <div className="flex items-center justify-between px-1 mb-2">
         <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1">
           <Sparkles className="w-3 h-3 text-[#B71C1C]" /> Category Shortcuts

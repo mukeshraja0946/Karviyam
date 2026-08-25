@@ -47,7 +47,7 @@ export default function ProductCard({ product }) {
       {/* ========================================================= */}
       {/* DESKTOP PRODUCT CARD (>= 768px) - 100% UNTOUCHED ORIGINAL */}
       {/* ========================================================= */}
-      <div className="hidden md:flex group relative bg-white w-full h-[475px] max-h-[475px] rounded-[12px] border border-slate-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex-col justify-between overflow-hidden">
+      <div className="desktop-only hidden md:flex group relative bg-white w-full h-[475px] max-h-[475px] rounded-[12px] border border-slate-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex-col justify-between overflow-hidden">
         
         {/* 1. Image Container - Fixed 250px Height */}
         <div 
@@ -174,7 +174,7 @@ export default function ProductCard({ product }) {
       {/* ========================================================= */}
       {/* MOBILE PRODUCT CARD (< 768px) - 2-COLUMN OPTIMIZED CARD   */}
       {/* ========================================================= */}
-      <div className="flex md:hidden group relative bg-white w-full h-[330px] min-h-[330px] max-h-[330px] rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex-col justify-between overflow-hidden p-2">
+      <div className="mobile-only flex md:hidden group relative bg-white w-full h-[330px] min-h-[330px] max-h-[330px] rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex-col justify-between overflow-hidden p-2">
         
         {/* 1. Image Box (Fixed 165px height) */}
         <div

@@ -251,7 +251,7 @@ export default function Navbar() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Tees, Jewellery, Ethnic Wear..."
+                placeholder="Search Karviyam..."
                 className="w-full bg-slate-100 text-slate-900 placeholder-slate-400 pl-9 pr-20 py-2 rounded-full border border-slate-200 focus:border-[#B71C1C] focus:bg-white text-xs outline-none shadow-2xs transition-all"
               />
               <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
