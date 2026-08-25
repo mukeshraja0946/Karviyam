@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutGrid } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+
+const DEFAULT_MOBILE_PLACEHOLDER = "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400";
 
 export default function MobileCategoryBar() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [categories, setCategories] = useState([]);
-
-  // Determine current active category from query search params or path
-  const searchParams = new URLSearchParams(location.search);
-  const activeCategoryParam = searchParams.get('category') || searchParams.get('categoryId') || '';
 
   useEffect(() => {
     fetchCategories();
@@ -20,89 +16,63 @@ export default function MobileCategoryBar() {
 
   const fetchCategories = async () => {
     try {
-      const res = await api.get('/categories/tree').catch(() => null);
-      const apiData = res?.data ? res.data : res;
-      let list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
-
-      if (list.length === 0) {
-        const altRes = await api.get('/categories?activeOnly=true').catch(() => null);
-        const altData = altRes?.data ? altRes.data : altRes;
-        list = Array.isArray(altData?.data) ? altData.data : (Array.isArray(altData) ? altData : []);
-      }
+      const res = await api.get('/categories/tree');
+      const apiData = res.data ? res.data : res;
+      const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
 
       if (list.length > 0) {
         const formatted = list.map((cat) => ({
           id: cat.id,
-          name: cat.name.toUpperCase(),
+          name: cat.name.split(' ')[0], // Compact first word
           fullName: cat.name,
+          image: cat.imageUrl || cat.iconUrl || DEFAULT_MOBILE_PLACEHOLDER,
           query: `category=${encodeURIComponent(cat.name)}`
         }));
         setCategories(formatted);
       } else {
-        setCategories([
-          { id: 1, name: 'MEN', fullName: 'Men', query: 'category=Men' },
-          { id: 2, name: 'WOMEN', fullName: 'Women', query: 'category=Women' },
-          { id: 3, name: 'KIDS', fullName: 'Kids', query: 'category=Kids' },
-          { id: 4, name: 'ACCESSORIES', fullName: 'Accessories', query: 'category=Accessories' },
-          { id: 5, name: 'JEWELLERY', fullName: 'Jewellery', query: 'category=Jewellery' }
-        ]);
+        setCategories([]);
       }
     } catch (e) {
-      console.error('Error fetching mobile nav categories:', e);
+      console.error(e);
     }
   };
 
-  const isAllActive = location.pathname === '/' || (location.pathname === '/shop' && !activeCategoryParam);
-
   return (
-    <div className="mobile-only w-full bg-[#FFF3F5] border-b border-[#FCE4E8] block md:hidden sticky top-[138px] z-30 shadow-2xs">
-      <div className="flex items-center justify-between px-3 py-1">
-        <div className="flex items-center gap-5 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x flex-1 whitespace-nowrap flex-nowrap py-1.5">
-          {/* ALL Tab */}
-          <button
-            onClick={() => navigate('/shop')}
-            className={`pb-1 text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
-              isAllActive
-                ? 'text-[#B71C1C] border-b-2 border-[#B71C1C]'
-                : 'text-slate-700 hover:text-[#B71C1C] font-extrabold'
-            }`}
-          >
-            ALL
-          </button>
-
-          {/* Dynamic Category Tabs */}
-          {categories.map((cat) => {
-            const isActive =
-              activeCategoryParam.toLowerCase() === cat.fullName.toLowerCase() ||
-              activeCategoryParam.toLowerCase() === cat.name.toLowerCase() ||
-              activeCategoryParam === String(cat.id);
-
-            return (
-              <button
-                key={cat.id}
-                onClick={() => navigate(`/shop?${cat.query}`)}
-                className={`pb-1 text-xs uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
-                  isActive
-                    ? 'text-[#B71C1C] font-black border-b-2 border-[#B71C1C]'
-                    : 'text-slate-700 hover:text-[#B71C1C] font-extrabold'
-                }`}
-              >
-                {cat.name}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Far Right Category Grid Icon */}
+    <div className="w-full bg-white py-2.5 px-3 border-b border-slate-100 block md:hidden overflow-hidden">
+      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth">
+        {/* All Products Quick Pill */}
         <button
           onClick={() => navigate('/shop')}
-          className="p-1.5 text-slate-800 hover:text-[#B71C1C] shrink-0 bg-white/90 rounded-lg border border-slate-200 ml-1 cursor-pointer shadow-2xs"
-          title="All Categories"
+          className="flex flex-col items-center shrink-0 group focus:outline-none"
         >
-          <LayoutGrid className="w-4 h-4 text-slate-900" />
+          <div className="w-12 h-12 rounded-full bg-red-50 border border-red-200 flex items-center justify-center text-[#B71C1C] font-black text-xs shadow-2xs group-active:scale-95 transition-transform">
+            ALL
+          </div>
+          <span className="text-[10px] font-bold text-slate-700 mt-1 text-center truncate max-w-[56px]">
+            Explore
+          </span>
         </button>
+
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => navigate(`/shop?${cat.query}`)}
+            className="flex flex-col items-center shrink-0 group focus:outline-none"
+          >
+            <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 bg-slate-100 p-0.5 shadow-2xs group-active:scale-95 transition-transform">
+              <img
+                src={cat.image}
+                alt={cat.name}
+                className="w-full h-full object-cover rounded-full"
+                loading="lazy"
+              />
+            </div>
+            <span className="text-[10px] font-bold text-slate-700 mt-1 text-center truncate max-w-[58px]" title={cat.fullName || cat.name}>
+              {cat.name}
+            </span>
+          </button>
+        ))}
       </div>
     </div>
   );
 }
-

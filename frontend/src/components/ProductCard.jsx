@@ -47,17 +47,11 @@ export default function ProductCard({ product }) {
       {/* ========================================================= */}
       {/* DESKTOP PRODUCT CARD (>= 768px) - 100% UNTOUCHED ORIGINAL */}
       {/* ========================================================= */}
-      {/* ========================================================= */}
-      {/* DESKTOP PRODUCT CARD (>= 768px) - BLUEPRINT EXACT MATCH   */}
-      {/* ========================================================= */}
-      {/* ========================================================= */}
-      {/* DESKTOP PRODUCT CARD (>= 768px) - EXACT 362px HEIGHT SPEC  */}
-      {/* ========================================================= */}
-      <div className="desktop-only hidden md:flex group relative bg-white w-full h-[362px] max-h-[362px] rounded-[16px] border border-[#E5E7EB] shadow-xs hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex-col justify-between overflow-hidden">
+      <div className="hidden md:flex group relative bg-white w-full h-[360px] max-h-[360px] rounded-[12px] border border-slate-200/90 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex-col justify-between overflow-hidden">
         
-        {/* 1. Image Container - Fixed 220px Height */}
+        {/* 1. Image Container - Square Aspect Ratio */}
         <div 
-          className="relative w-full h-[220px] max-h-[220px] bg-slate-50 flex items-center justify-center p-2 cursor-pointer shrink-0 overflow-hidden"
+          className="relative w-full h-[200px] max-h-[200px] aspect-square bg-slate-50 flex items-center justify-center p-2.5 cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
@@ -68,85 +62,108 @@ export default function ProductCard({ product }) {
           />
 
           {/* Product Badges (Top-Left) */}
-          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+          <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
             {badge && (
-              <span className={`text-[8px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs ${badge.bg}`}>
+              <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs ${badge.bg}`}>
                 {badge.label}
               </span>
             )}
           </div>
 
-          {/* Wishlist Button (Top-Right: 20px Icon) */}
+          {/* Wishlist Button (Top-Right) */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               toggleWishlist(product.id);
             }}
-            className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer ${
+            className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer ${
               isLiked
-                ? 'bg-[#D32F2F] text-white border-[#D32F2F]'
-                : 'bg-white/90 text-slate-700 hover:text-[#D32F2F] hover:bg-red-50 border border-slate-200'
+                ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
+                : 'bg-white/90 text-slate-700 hover:text-[#B71C1C] hover:bg-red-50 border border-slate-200'
             }`}
             title={isLiked ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
-            <Heart className={`w-[20px] h-[20px] ${isLiked ? 'fill-current' : ''}`} />
+            <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
           </button>
         </div>
 
-        {/* 2. Details Content Box (Fixed Height 142px) */}
-        <div className="p-2.5 flex-1 flex flex-col justify-between overflow-hidden">
+        {/* 2. Details Content Box - Tight Space Above Button */}
+        <div className="p-3.5 flex-1 flex flex-col justify-between space-y-1.5 overflow-hidden">
           
-          <div className="space-y-0.5">
+          <div className="space-y-1.5">
             
             {/* Brand Name & Rating */}
             <div className="flex items-center justify-between text-[11px]">
-              <span className="font-extrabold uppercase tracking-wider text-[#D32F2F] truncate max-w-[90px]">
+              <span className="font-extrabold uppercase tracking-wider text-[#B71C1C] truncate max-w-[120px]">
                 {product.brand || 'KARVIYAM'}
               </span>
               
-              <div className="flex items-center gap-0.5 text-slate-800 font-bold shrink-0">
+              <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-slate-800 font-bold shrink-0">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                <span className="text-[11px] font-bold">{rating}</span>
-                <span className="text-[9px] text-slate-400 font-medium">({reviewsCount})</span>
+                <span>{rating}</span>
+                <span className="text-[10px] text-slate-400 font-medium">({reviewsCount})</span>
               </div>
             </div>
 
-            {/* Product Name - 13px Font, 1 Line Ellipsis */}
+            {/* Product Name - Strictly 2 Lines Ellipsis (34px Fixed Height) */}
             <h3 
               onClick={() => navigate(`/product/${product.id}`)}
-              className="font-display font-extrabold text-slate-900 text-[13px] leading-tight hover:text-[#D32F2F] transition-colors cursor-pointer truncate"
+              className="font-display font-extrabold text-slate-900 text-xs leading-snug hover:text-[#B71C1C] transition-colors cursor-pointer line-clamp-2 h-[34px] overflow-hidden"
               title={product.name}
             >
               {product.name}
             </h3>
 
-            {/* Price Section: 16px Bold Price, 12px Discount */}
-            <div className="flex items-baseline gap-1.5 pt-0.5">
-              <span className="font-display font-black text-slate-900 text-[16px]">
+            {/* Price Section */}
+            <div className="flex items-baseline gap-2 pt-0.5">
+              <span className="font-display font-black text-slate-900 text-base">
                 ₹{price}
               </span>
               {oldPrice > price && (
                 <>
-                  <span className="text-[10px] text-slate-400 line-through font-medium">
+                  <span className="text-xs text-slate-400 line-through font-medium">
                     ₹{oldPrice}
                   </span>
-                  <span className="text-[12px] text-emerald-700 font-extrabold">
+                  <span className="text-[10px] text-emerald-700 font-extrabold">
                     {discountPercent}% OFF
                   </span>
                 </>
               )}
             </div>
 
+            {/* Color Variants (Up to 6 swatches + Counter) */}
+            <div className="flex items-center gap-1.5 pt-0.5">
+              {visibleColors.map((color, idx) => (
+                <span
+                  key={idx}
+                  className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
+                  style={{ backgroundColor: color }}
+                  title={`Color option ${idx + 1}`}
+                />
+              ))}
+              {extraColorsCount > 0 && (
+                <span className="text-[10px] font-extrabold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full border border-slate-200">
+                  +{extraColorsCount}
+                </span>
+              )}
+            </div>
+
+            {/* Free Delivery Tag */}
+            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 pt-0.5">
+              <Truck className="w-3 h-3 text-emerald-600 shrink-0" />
+              <span>Free Delivery • Est. 2-4 Days</span>
+            </div>
+
           </div>
 
-          {/* Quick Add Button */}
+          {/* 3. Full-Width Add to Cart Button (Compact Top Margin) */}
           <button
             type="button"
             onClick={() => addToCart(product.id, 1)}
-            className="w-full bg-[#D32F2F] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-[10px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs hover:shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer mt-1"
+            className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-[11px] uppercase tracking-wider py-2.5 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2"
           >
-            <ShoppingBag className="w-3 h-3" />
+            <ShoppingBag className="w-3.5 h-3.5" />
             <span>Add to Bag</span>
           </button>
 
@@ -155,106 +172,91 @@ export default function ProductCard({ product }) {
       </div>
 
       {/* ========================================================= */}
-      {/* MOBILE PRODUCT CARD (< 768px) - 2-COLUMN OPTIMIZED CARD   */}
+      {/* MOBILE PRODUCT CARD (< 768px) - STRICT 3-COL EQUAL HEIGHT */}
       {/* ========================================================= */}
-      <div className="mobile-only flex md:hidden group relative bg-white w-full h-[320px] min-h-[320px] max-h-[320px] rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex-col justify-between overflow-hidden p-2">
+      <div className="flex md:hidden group relative bg-white w-full h-[240px] min-h-[240px] max-h-[240px] rounded-xl border border-slate-200/80 shadow-2xs flex-col justify-between overflow-hidden p-1.5">
         
-        {/* 1. Image Box (Fixed 180px height) */}
+        {/* 1. Image Box (Fixed 105px height) */}
         <div
-          className="relative w-full h-[180px] max-h-[180px] bg-slate-50/70 rounded-xl flex items-center justify-center p-1 cursor-pointer shrink-0 overflow-hidden"
+          className="relative w-full h-[105px] max-h-[105px] bg-slate-50/80 rounded-lg flex items-center justify-center p-1 cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
             src={product.imageUrl || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400'}
             alt={product.name}
-            className="w-full h-full object-contain group-active:scale-105 transition-transform"
+            className="w-full h-full object-contain"
             loading="lazy"
           />
 
-          {/* Badges (Top-Left) */}
-          <div className="absolute top-1.5 left-1.5 flex flex-col gap-1 z-10">
-            {badge && (
-              <span className={`text-[8px] font-black uppercase tracking-tight px-1.5 py-0.5 rounded shadow-2xs ${badge.bg}`}>
-                {badge.label}
-              </span>
-            )}
-          </div>
+          {/* Discount Badge */}
+          {discountPercent >= 15 && (
+            <span className="absolute top-1 left-1 bg-[#B71C1C] text-white text-[8px] font-black uppercase tracking-tight px-1 py-0.5 rounded shadow-2xs z-10 leading-none">
+              {discountPercent}% OFF
+            </span>
+          )}
 
-          {/* Wishlist Heart Overlay (Top-Right) */}
+          {/* Wishlist Heart Overlay */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               toggleWishlist(product.id);
             }}
-            className={`absolute top-1.5 right-1.5 p-1.5 rounded-full backdrop-blur-md transition-all shadow-2xs cursor-pointer ${
+            className={`absolute top-1 right-1 p-1 rounded-full backdrop-blur-md transition-all shadow-xs cursor-pointer ${
               isLiked
                 ? 'bg-[#B71C1C] text-white'
-                : 'bg-white/95 text-slate-700 border border-slate-200'
+                : 'bg-white/95 text-slate-600 border border-slate-200'
             }`}
-            title={isLiked ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
-            <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
+            <Heart className={`w-2.5 h-2.5 ${isLiked ? 'fill-current' : ''}`} />
           </button>
         </div>
 
-        {/* 2. Details Content */}
-        <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5 overflow-hidden">
+        {/* 2. Details Content (Strict line-clamping & fixed spacing) */}
+        <div className="flex-1 flex flex-col justify-between pt-1 px-0.5 overflow-hidden">
           <div>
-            {/* Brand Logo & Tag */}
-            <div className="flex items-center gap-1 text-[10px] font-black text-[#B71C1C] uppercase tracking-wide">
-              <span>🪷</span>
-              <span className="truncate max-w-[100px]">{product.brand || 'KARVIYAM'}</span>
+            {/* Rating / Brand Header */}
+            <div className="flex items-center justify-between text-[9px] text-slate-500 font-bold leading-none mb-0.5">
+              <span className="uppercase text-[#B71C1C] tracking-tight truncate max-w-[55px]">
+                {product.brand || 'KARVIYAM'}
+              </span>
+              <div className="flex items-center gap-0.5 text-slate-700 font-extrabold shrink-0">
+                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                <span>{rating}</span>
+              </div>
             </div>
 
-            {/* Product Title */}
+            {/* Product Name (Strict line-clamp-2 with 26px fixed height) */}
             <h3
               onClick={() => navigate(`/product/${product.id}`)}
-              className="text-slate-900 font-bold text-xs leading-snug line-clamp-1 truncate cursor-pointer mt-0.5"
+              className="font-display font-bold text-slate-900 text-[10px] leading-tight line-clamp-2 h-[26px] max-h-[26px] overflow-hidden cursor-pointer"
               title={product.name}
             >
               {product.name}
             </h3>
 
-            {/* Rating Row */}
-            <div className="flex items-center gap-1 text-[10px] font-extrabold text-slate-800 pt-0.5">
-              <span className="font-black text-slate-900">{rating}</span>
-              <Star className="w-2.5 h-2.5 fill-emerald-600 text-emerald-600" />
-              <span className="text-slate-400 font-medium">({reviewsCount > 1000 ? `${(reviewsCount/1000).toFixed(1)}k` : reviewsCount})</span>
-            </div>
-
-            {/* Price & Quick Add Button Row */}
-            <div className="flex items-center justify-between pt-1 leading-none">
-              <div className="flex items-baseline gap-1">
-                <span className="font-display font-black text-slate-900 text-sm">
-                  ₹{price}
+            {/* Price Section */}
+            <div className="flex items-baseline gap-1 pt-1 leading-none">
+              <span className="font-display font-black text-slate-900 text-xs">
+                ₹{price}
+              </span>
+              {oldPrice > price && (
+                <span className="text-[9px] text-slate-400 line-through font-medium">
+                  ₹{oldPrice}
                 </span>
-                {oldPrice > price && (
-                  <span className="text-[10px] text-slate-400 line-through font-medium">
-                    ₹{oldPrice}
-                  </span>
-                )}
-                {discountPercent > 0 && (
-                  <span className="text-[9px] text-emerald-700 font-black uppercase tracking-tight ml-0.5">
-                    {discountPercent}% OFF
-                  </span>
-                )}
-              </div>
-
-              {/* Quick Add Shopping Bag Icon */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  addToCart(product.id, 1);
-                }}
-                className="w-7 h-7 rounded-xl border border-red-200 bg-red-50 text-[#B71C1C] hover:bg-[#B71C1C] hover:text-white flex items-center justify-center cursor-pointer transition-all shrink-0 shadow-2xs"
-                title="Add to Bag"
-              >
-                <ShoppingBag className="w-3.5 h-3.5" />
-              </button>
+              )}
             </div>
           </div>
+
+          {/* 3. Add to Cart Button (Bottom of card) */}
+          <button
+            type="button"
+            onClick={() => addToCart(product.id, 1)}
+            className="w-full bg-[#B71C1C] active:bg-[#900C0C] text-white font-extrabold text-[9px] uppercase tracking-wider py-1.5 rounded-md flex items-center justify-center gap-1 shadow-2xs mt-1 cursor-pointer"
+          >
+            <ShoppingBag className="w-2.5 h-2.5" />
+            <span>Add</span>
+          </button>
         </div>
 
       </div>

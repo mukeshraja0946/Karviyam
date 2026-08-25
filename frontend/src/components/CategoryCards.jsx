@@ -70,7 +70,7 @@ export default function CategoryCards() {
   }
 
   return (
-    <div className="desktop-only w-full px-4 sm:px-8 lg:px-12 pt-6 pb-2">
+    <div className="w-full px-4 sm:px-8 lg:px-12 pt-6 pb-2">
       <div className="flex items-center justify-between mb-4">
         <div>
           <span className="text-xs uppercase font-extrabold tracking-widest text-[#B71C1C]">CURATED SELECTIONS</span>

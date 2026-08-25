@@ -87,7 +87,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="desktop-only bg-white border-t border-slate-200 text-slate-700">
+    <footer className="bg-white border-t border-slate-200 text-slate-700">
       
       {/* Top Value Proposition Trust Badges (Dynamic Admin Content) */}
       <div className="bg-slate-50 border-b border-slate-200 py-6 px-4 sm:px-8">
