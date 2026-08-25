@@ -6,10 +6,10 @@ import api from '../utils/api';
 const DEFAULT_BANNERS = [
   {
     id: 1,
-    title: "GALAXY OF ELEGANCE",
-    subtitle: "Discover the 2026 High-Fashion & Streetwear Collection",
+    title: "NEW STYLE NEW YOU",
+    subtitle: "Explore our latest collection",
     image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600",
-    cta: "SHOP COLLECTION",
+    cta: "SHOP NOW",
     link: "/shop"
   },
   {
@@ -17,7 +17,7 @@ const DEFAULT_BANNERS = [
     title: "ROYAL EMERALD JEWELLERY",
     subtitle: "925 Sterling Silver Handcrafted Couture",
     image: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=1600",
-    cta: "EXPLORE JEWELLERY",
+    cta: "SHOP NOW",
     link: "/shop?category=Jewellery"
   }
 ];

@@ -65,7 +65,7 @@ export default function HomePage() {
         {/* 3. Category Shortcut Icons */}
         <MobileCategoryShortcuts />
 
-        {/* 3.5. Coupon Offer Banner (Matches Reference Image 1) */}
+        {/* 3.5. Coupon Offer Banner (Matches Mockup Image) */}
         <div className="w-full px-3 py-2">
           <div className="bg-gradient-to-r from-red-50 via-pink-50 to-orange-50 border border-red-200/80 rounded-2xl p-2.5 flex items-center justify-between shadow-2xs">
             <div className="flex items-center gap-2">
@@ -79,7 +79,7 @@ export default function HomePage() {
 
             <div className="bg-white border border-dashed border-red-300 px-2 py-1 rounded-xl flex items-center gap-1 shadow-2xs">
               <span className="text-[9px] text-slate-400 font-bold uppercase">COUPON CODE</span>
-              <span className="text-[10px] font-black text-[#B71C1C]">KARVIYAMSAVE</span>
+              <span className="text-[10px] font-black text-[#B71C1C]">KARVIYAM25</span>
               <span className="text-[#B71C1C] font-black text-[11px]">%</span>
             </div>
           </div>
@@ -88,33 +88,85 @@ export default function HomePage() {
         {/* 4. Promotional Mobile Hero Banner */}
         <HeroBanner />
 
-        {/* 4.5. Bank Cashback Callout (Matches Reference Image 1) */}
-        <div className="w-full px-3 py-2">
-          <div className="bg-slate-900 text-white rounded-2xl p-2.5 flex items-center justify-between border border-slate-800 shadow-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#B71C1C] flex items-center justify-center font-black text-xs shrink-0">
-                7.5%
-              </div>
-              <div>
-                <p className="text-xs font-black text-white">Get 7.5%* Cashback On Karviyam</p>
-                <p className="text-[9px] text-slate-300 font-medium">With HDFC & AXIS Credit Card & UPI Payments</p>
-              </div>
-            </div>
-            <a href="/shop" className="text-[10px] font-black text-amber-400 uppercase tracking-wide underline shrink-0">
-              APPLY →
+        {/* 5. Top Categories Section (Matches Mockup Image) */}
+        <section className="w-full px-3 py-3">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <h2 className="font-display font-black text-sm text-slate-900">
+              Top Categories
+            </h2>
+            <a href="/shop" className="text-[10px] font-bold text-[#B71C1C] hover:underline flex items-center gap-0.5">
+              View All →
             </a>
           </div>
-        </div>
 
-        {/* 6. Product Grid - STRICTLY 2 PRODUCTS PER ROW ON MOBILE */}
+          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x py-1">
+            {[
+              { label: 'MEN', img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=300' },
+              { label: 'WOMEN', img: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300' },
+              { label: 'KIDS & BABY', img: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=300' },
+              { label: 'UNISEX', img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=300' },
+              { label: 'ACCESSORIES', img: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=300' },
+              { label: 'KITCHEN & HOME', img: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=300' }
+            ].map((cat, idx) => (
+              <a
+                key={idx}
+                href={`/shop?category=${encodeURIComponent(cat.label)}`}
+                className="flex flex-col items-center shrink-0 cursor-pointer"
+              >
+                <div className="w-16 h-20 rounded-2xl overflow-hidden bg-slate-100 shadow-2xs border border-slate-200">
+                  <img src={cat.img} alt={cat.label} className="w-full h-full object-cover" />
+                </div>
+                <span className="text-[9px] font-black text-slate-800 mt-1.5 text-center tracking-tight truncate max-w-[68px]">
+                  {cat.label}
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        {/* 6. Best Deals For You Section (Matches Mockup Image) */}
         <section className="w-full px-3 py-2">
+          <h2 className="font-display font-black text-sm text-slate-900 mb-2 px-1">
+            Best Deals For You
+          </h2>
+
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x py-1">
+            <a
+              href="/shop?price=499"
+              className="px-3.5 py-2 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-900 font-extrabold text-[10px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 shadow-2xs"
+            >
+              <span>🪙</span> UNDER ₹499
+            </a>
+
+            <a
+              href="/shop?sort=rating"
+              className="px-3.5 py-2 rounded-2xl bg-indigo-50/80 border border-indigo-200 text-indigo-900 font-extrabold text-[10px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 shadow-2xs"
+            >
+              <span>🏷️</span> DEAL OF THE DAY
+            </a>
+
+            <a
+              href="/shop?sort=newest"
+              className="px-3.5 py-2 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-emerald-900 font-extrabold text-[10px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 shadow-2xs"
+            >
+              <span>🛍️</span> WHAT'S NEW
+            </a>
+
+            <a
+              href="/shop"
+              className="px-3.5 py-2 rounded-2xl bg-orange-50/80 border border-orange-200 text-orange-900 font-extrabold text-[10px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 shadow-2xs"
+            >
+              <span>🚚</span> EXPRESS DELIVERY
+            </a>
+          </div>
+        </section>
+
+        {/* 7. Recommended For You Product Grid (Matches Mockup Image) */}
+        <section className="w-full px-3 py-3">
           <div className="flex items-center justify-between mb-2.5 px-0.5">
             <div>
-              <span className="flex items-center gap-1 text-[10px] font-black tracking-widest text-[#B71C1C] uppercase">
-                <Flame className="w-3 h-3 fill-[#B71C1C]" /> HOT DROPS
-              </span>
-              <h2 className="font-display font-black text-base text-slate-900 mt-0.5">
-                Trending Releases
+              <h2 className="font-display font-black text-base text-slate-900">
+                Recommended for You
               </h2>
             </div>
           </div>

@@ -174,11 +174,11 @@ export default function ProductCard({ product }) {
       {/* ========================================================= */}
       {/* MOBILE PRODUCT CARD (< 768px) - 2-COLUMN OPTIMIZED CARD   */}
       {/* ========================================================= */}
-      <div className="mobile-only flex md:hidden group relative bg-white w-full h-[330px] min-h-[330px] max-h-[330px] rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex-col justify-between overflow-hidden p-2">
+      <div className="mobile-only flex md:hidden group relative bg-white w-full h-[320px] min-h-[320px] max-h-[320px] rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex-col justify-between overflow-hidden p-2">
         
-        {/* 1. Image Box (Fixed 170px height) */}
+        {/* 1. Image Box (Fixed 180px height) */}
         <div
-          className="relative w-full h-[170px] max-h-[170px] bg-slate-50/80 rounded-xl flex items-center justify-center p-1.5 cursor-pointer shrink-0 overflow-hidden"
+          className="relative w-full h-[180px] max-h-[180px] bg-slate-50/70 rounded-xl flex items-center justify-center p-1 cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
@@ -213,61 +213,63 @@ export default function ProductCard({ product }) {
           >
             <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
           </button>
-
-          {/* Rating Pill Chip on Image (Bottom-Left) */}
-          <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-white/95 backdrop-blur-xs px-2 py-0.5 rounded-full border border-slate-200 shadow-2xs text-[10px] font-extrabold text-slate-800 z-10">
-            <span>{rating}</span>
-            <Star className="w-2.5 h-2.5 fill-emerald-600 text-emerald-600" />
-            <span className="text-slate-400 font-bold">|</span>
-            <span className="text-slate-500 font-semibold text-[9px]">{reviewsCount > 1000 ? `${(reviewsCount/1000).toFixed(1)}k` : reviewsCount}</span>
-          </div>
-
-          {/* Quick Add Floating Plus Button on Image (Bottom-Right) */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              addToCart(product.id, 1);
-            }}
-            className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-white border border-[#B71C1C] text-[#B71C1C] hover:bg-[#B71C1C] hover:text-white flex items-center justify-center font-black text-sm shadow-xs cursor-pointer transition-all z-10"
-            title="Quick Add"
-          >
-            +
-          </button>
         </div>
 
         {/* 2. Details Content */}
-        <div className="flex-1 flex flex-col justify-between pt-2 px-1 overflow-hidden">
+        <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5 overflow-hidden">
           <div>
-            {/* Brand Title */}
-            <p className="font-black text-slate-900 text-xs uppercase tracking-wide truncate">
-              {product.brand || 'KARVIYAM'}
-            </p>
+            {/* Brand Logo & Tag */}
+            <div className="flex items-center gap-1 text-[10px] font-black text-[#B71C1C] uppercase tracking-wide">
+              <span>🪷</span>
+              <span className="truncate max-w-[100px]">{product.brand || 'KARVIYAM'}</span>
+            </div>
 
-            {/* Product Name / Subtitle */}
+            {/* Product Title */}
             <h3
               onClick={() => navigate(`/product/${product.id}`)}
-              className="text-slate-500 font-medium text-[11px] leading-tight line-clamp-1 truncate cursor-pointer mt-0.5"
+              className="text-slate-900 font-bold text-xs leading-snug line-clamp-1 truncate cursor-pointer mt-0.5"
               title={product.name}
             >
               {product.name}
             </h3>
 
-            {/* Price Row */}
-            <div className="flex items-baseline gap-1.5 pt-1.5 leading-none">
-              {oldPrice > price && (
-                <span className="text-[10px] text-slate-400 line-through font-medium">
-                  ₹{oldPrice}
+            {/* Rating Row */}
+            <div className="flex items-center gap-1 text-[10px] font-extrabold text-slate-800 pt-0.5">
+              <span className="font-black text-slate-900">{rating}</span>
+              <Star className="w-2.5 h-2.5 fill-emerald-600 text-emerald-600" />
+              <span className="text-slate-400 font-medium">({reviewsCount > 1000 ? `${(reviewsCount/1000).toFixed(1)}k` : reviewsCount})</span>
+            </div>
+
+            {/* Price & Quick Add Button Row */}
+            <div className="flex items-center justify-between pt-1 leading-none">
+              <div className="flex items-baseline gap-1">
+                <span className="font-display font-black text-slate-900 text-sm">
+                  ₹{price}
                 </span>
-              )}
-              <span className="font-display font-black text-slate-900 text-sm">
-                ₹{price}
-              </span>
-              {discountPercent > 0 && (
-                <span className="text-[10px] text-amber-600 font-black uppercase tracking-tight">
-                  {discountPercent}% OFF
-                </span>
-              )}
+                {oldPrice > price && (
+                  <span className="text-[10px] text-slate-400 line-through font-medium">
+                    ₹{oldPrice}
+                  </span>
+                )}
+                {discountPercent > 0 && (
+                  <span className="text-[9px] text-emerald-700 font-black uppercase tracking-tight ml-0.5">
+                    {discountPercent}% OFF
+                  </span>
+                )}
+              </div>
+
+              {/* Quick Add Shopping Bag Icon */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToCart(product.id, 1);
+                }}
+                className="w-7 h-7 rounded-xl border border-red-200 bg-red-50 text-[#B71C1C] hover:bg-[#B71C1C] hover:text-white flex items-center justify-center cursor-pointer transition-all shrink-0 shadow-2xs"
+                title="Add to Bag"
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>

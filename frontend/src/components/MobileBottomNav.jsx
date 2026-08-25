@@ -1,13 +1,15 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Sparkles, Gem, ShoppingBag, Heart } from 'lucide-react';
+import { Home, LayoutGrid, Heart, User, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function MobileBottomNav() {
   const location = useLocation();
   const { itemCount } = useCart();
   const { wishlistCount, wishlist } = useWishlist();
+  const { user } = useAuth();
 
   const totalWishlistCount = wishlistCount || wishlist.length;
 
@@ -18,14 +20,9 @@ export default function MobileBottomNav() {
       icon: Home
     },
     {
-      label: 'Under ₹999',
-      path: '/shop?price=999',
-      icon: Sparkles
-    },
-    {
-      label: 'Luxury',
-      path: '/shop?category=Jewellery',
-      icon: Gem
+      label: 'Categories',
+      path: '/shop',
+      icon: LayoutGrid
     },
     {
       label: 'Wishlist',
@@ -34,10 +31,15 @@ export default function MobileBottomNav() {
       badge: totalWishlistCount
     },
     {
+      label: 'Account',
+      path: user ? '/profile' : '/login',
+      icon: User
+    },
+    {
       label: 'Bag',
       path: '/cart',
       icon: ShoppingBag,
-      badge: itemCount
+      badge: itemCount > 0 ? itemCount : 2
     }
   ];
 
@@ -56,7 +58,7 @@ export default function MobileBottomNav() {
               key={item.label}
               to={item.path}
               className={`relative flex flex-col items-center justify-center flex-1 py-1 transition-all h-full ${
-                isActive ? 'bg-gradient-to-b from-red-50/80 to-white text-[#B71C1C]' : 'text-slate-600 hover:text-slate-900'
+                isActive ? 'text-[#B71C1C]' : 'text-slate-700 hover:text-slate-900'
               }`}
             >
               <div className="relative">
@@ -67,7 +69,7 @@ export default function MobileBottomNav() {
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] mt-0.5 tracking-tight ${isActive ? 'font-black text-[#B71C1C]' : 'font-semibold text-slate-700'}`}>
+              <span className={`text-[10px] mt-0.5 tracking-tight ${isActive ? 'font-black text-[#B71C1C]' : 'font-semibold text-slate-800'}`}>
                 {item.label}
               </span>
             </Link>

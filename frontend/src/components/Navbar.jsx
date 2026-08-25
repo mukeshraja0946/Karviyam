@@ -154,14 +154,14 @@ export default function Navbar() {
       {/* MOBILE HEADER (< 768px) - COMPACT MOBILE APP HEADER        */}
       {/* ========================================================= */}
       <div className="mobile-only block md:hidden bg-[#FFF3F5] border-b border-[#FCE4E8]">
-        {/* Mobile Header Top Section: Deliver To Location & Cashback Badge */}
-        <div className="px-3.5 py-1.5 flex items-center justify-between border-b border-[#FBE3E7] text-xs font-bold">
+        {/* Row 1: Deliver to Location & Cashback Badge */}
+        <div className="px-3.5 py-1.5 flex items-center justify-between text-xs font-bold border-b border-[#FCE4E8]/60">
           <button
             onClick={() => setLocationModalOpen(true)}
-            className="flex items-center gap-1.5 text-slate-900 hover:text-[#B71C1C] transition-colors cursor-pointer text-xs font-extrabold truncate max-w-[220px]"
+            className="flex items-center gap-1.5 text-slate-900 hover:text-[#B71C1C] transition-colors cursor-pointer text-xs font-extrabold truncate max-w-[230px]"
           >
-            <MapPin className="w-3.5 h-3.5 text-slate-900 shrink-0 fill-slate-900" />
-            <span className="truncate">Deliver to <strong className="text-slate-900 font-black">{locationPincode || '600001'}</strong></span>
+            <MapPin className="w-3.5 h-3.5 text-[#B71C1C] shrink-0 fill-[#B71C1C]" />
+            <span className="truncate">Deliver to <strong className="text-slate-900 font-black">{locationCity || 'Chennai'} {locationPincode || '600001'}</strong></span>
             <ChevronDown className="w-3.5 h-3.5 text-slate-700 shrink-0" />
           </button>
 
@@ -171,108 +171,107 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Header Main Row: Logo, Search Bar, Notifications, Wishlist, Account */}
-        <div className="px-3 py-2 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            
-            {/* Search Input Bar with Embedded Brand Logo */}
-            <div className="flex-1 relative">
-              <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-                <div className="absolute left-2.5 flex items-center gap-1.5 z-10">
-                  <Link to="/" className="flex items-center shrink-0">
-                    {customLogo ? (
-                      <img src={customLogo} alt="Karviyam" className="h-6 w-auto object-contain max-w-[75px]" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-lg bg-[#B71C1C] text-white font-black text-xs flex items-center justify-center">
-                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                          <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
-                        </svg>
-                      </div>
-                    )}
-                  </Link>
+        {/* Row 2: Brand Logo & Right Action Icons (Wishlist, Bell, Account) */}
+        <div className="px-3.5 pt-2 pb-1 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-1.5 shrink-0">
+            {customLogo ? (
+              <img src={customLogo} alt="Karviyam" className="h-7 w-auto object-contain max-w-[120px]" />
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white flex items-center justify-center shadow-xs">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
+                  </svg>
                 </div>
+                <span className="font-display font-black text-lg tracking-tight text-[#B71C1C]">
+                  KARVIYAM
+                </span>
+              </div>
+            )}
+          </Link>
 
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search Karviyam..."
-                  className="w-full bg-white text-slate-900 placeholder-slate-400 pl-11 pr-16 py-2 rounded-2xl border border-slate-200 focus:border-[#B71C1C] text-xs outline-none shadow-2xs font-semibold"
-                />
-
-                <div className="absolute right-2 flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setVoiceModalOpen(true)}
-                    className="p-1 text-slate-500 hover:text-[#B71C1C] cursor-pointer"
-                    title="Voice Search"
-                  >
-                    <Mic className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => toast('Image search ready! Upload photo to search.', { icon: '📷' })}
-                    className="p-1 text-slate-500 hover:text-[#B71C1C] cursor-pointer"
-                    title="Search by Image"
-                  >
-                    <Camera className="w-4 h-4" />
-                  </button>
-                </div>
-              </form>
-
-              {/* Search suggestions dropdown */}
-              {showSearchDrop && searchResults.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-                  {searchResults.map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => {
-                        setShowSearchDrop(false);
-                        setSearchQuery('');
-                        navigate(`/product/${item.id}`);
-                      }}
-                      className="flex items-center gap-2.5 p-2.5 hover:bg-red-50/50 cursor-pointer border-b border-slate-100 last:border-0"
-                    >
-                      <img src={item.imageUrl} alt={item.name} className="w-8 h-8 object-cover rounded-md" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate">{item.name}</p>
-                        <p className="text-[11px] text-[#B71C1C] font-black">₹{item.price}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link to="/wishlist" className="relative p-1 text-slate-800 hover:text-[#B71C1C]" title="Wishlist">
+              <Heart className="w-5 h-5" />
+              {(wishlistCount || wishlist.length) > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  {wishlistCount || wishlist.length}
+                </span>
               )}
-            </div>
+            </Link>
 
-            {/* Right Action Icons: Notification Bell, Wishlist, Account */}
-            <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => toast.success('Festive offer: Extra 10% off automatically applied!')}
+              className="relative p-1 text-slate-800 hover:text-[#B71C1C] cursor-pointer"
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-0 right-0 w-2 h-2 bg-[#B71C1C] rounded-full animate-ping" />
+              <span className="absolute top-0 right-0 w-2 h-2 bg-[#B71C1C] rounded-full" />
+            </button>
+
+            <Link to={user ? "/profile" : "/login"} className="p-1 text-slate-800 hover:text-[#B71C1C]" title="Account">
+              <User className="w-5 h-5" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Row 3: Full Width Search Input Bar */}
+        <div className="px-3.5 pb-2.5 pt-1 relative">
+          <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search for T-Shirts, Sneakers, Kurtas..."
+              className="w-full bg-white text-slate-900 placeholder-slate-400 pl-10 pr-16 py-2.5 rounded-full border border-slate-200 focus:border-[#B71C1C] text-xs outline-none shadow-2xs font-semibold"
+            />
+
+            <div className="absolute right-3 flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => toast.success('Festive offer: Extra 10% off automatically applied!')}
-                className="relative p-1.5 text-slate-800 hover:text-[#B71C1C] cursor-pointer"
-                title="Notifications"
+                onClick={() => setVoiceModalOpen(true)}
+                className="p-1 text-slate-500 hover:text-[#B71C1C] cursor-pointer"
+                title="Voice Search"
               >
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[#B71C1C] rounded-full animate-ping" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[#B71C1C] rounded-full" />
+                <Mic className="w-4 h-4" />
               </button>
 
-              <Link to="/wishlist" className="relative p-1.5 text-slate-800 hover:text-[#B71C1C]" title="Wishlist">
-                <Heart className="w-5 h-5" />
-                {(wishlistCount || wishlist.length) > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#B71C1C] text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                    {wishlistCount || wishlist.length}
-                  </span>
-                )}
-              </Link>
-
-              <Link to={user ? "/profile" : "/login"} className="p-1.5 text-slate-800 hover:text-[#B71C1C]" title="Account">
-                <User className="w-5 h-5" />
-              </Link>
+              <button
+                type="button"
+                onClick={() => toast('Image search ready! Upload photo to search.', { icon: '📷' })}
+                className="p-1 text-slate-500 hover:text-[#B71C1C] cursor-pointer"
+                title="Search by Image"
+              >
+                <Camera className="w-4 h-4" />
+              </button>
             </div>
+          </form>
 
-          </div>
+          {/* Search suggestions dropdown */}
+          {showSearchDrop && searchResults.length > 0 && (
+            <div className="absolute left-3.5 right-3.5 top-full mt-1 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+              {searchResults.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    setShowSearchDrop(false);
+                    setSearchQuery('');
+                    navigate(`/product/${item.id}`);
+                  }}
+                  className="flex items-center gap-2.5 p-2.5 hover:bg-red-50/50 cursor-pointer border-b border-slate-100 last:border-0"
+                >
+                  <img src={item.imageUrl} alt={item.name} className="w-8 h-8 object-cover rounded-md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-900 truncate">{item.name}</p>
+                    <p className="text-[11px] text-[#B71C1C] font-black">₹{item.price}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Mobile Slide-Over Menu Drawer */}

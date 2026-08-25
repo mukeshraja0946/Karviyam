@@ -55,22 +55,22 @@ export default function MobileCategoryBar() {
   const isAllActive = location.pathname === '/' || (location.pathname === '/shop' && !activeCategoryParam);
 
   return (
-    <div className="mobile-only w-full bg-[#FFF3F5] border-b border-[#FCE4E8] block md:hidden sticky top-[98px] z-30 shadow-2xs">
-      <div className="flex items-center justify-between px-2 py-1">
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x flex-1 whitespace-nowrap flex-nowrap py-1">
-          {/* ALL Pill */}
+    <div className="mobile-only w-full bg-[#FFF3F5] border-b border-[#FCE4E8] block md:hidden sticky top-[138px] z-30 shadow-2xs">
+      <div className="flex items-center justify-between px-3 py-1">
+        <div className="flex items-center gap-5 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x flex-1 whitespace-nowrap flex-nowrap py-1.5">
+          {/* ALL Tab */}
           <button
             onClick={() => navigate('/shop')}
-            className={`px-4 py-1.5 rounded-t-xl rounded-b-md text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
+            className={`pb-1 text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
               isAllActive
-                ? 'bg-white text-[#B71C1C] border-t-2 border-[#B71C1C] shadow-2xs font-extrabold'
-                : 'text-slate-700 hover:text-[#B71C1C]'
+                ? 'text-[#B71C1C] border-b-2 border-[#B71C1C]'
+                : 'text-slate-700 hover:text-[#B71C1C] font-extrabold'
             }`}
           >
             ALL
           </button>
 
-          {/* Dynamic Category Pills */}
+          {/* Dynamic Category Tabs */}
           {categories.map((cat) => {
             const isActive =
               activeCategoryParam.toLowerCase() === cat.fullName.toLowerCase() ||
@@ -81,10 +81,10 @@ export default function MobileCategoryBar() {
               <button
                 key={cat.id}
                 onClick={() => navigate(`/shop?${cat.query}`)}
-                className={`px-4 py-1.5 rounded-t-xl rounded-b-md text-xs font-extrabold uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
+                className={`pb-1 text-xs uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
                   isActive
-                    ? 'bg-white text-[#B71C1C] border-t-2 border-[#B71C1C] shadow-2xs font-black'
-                    : 'text-slate-700 hover:text-[#B71C1C]'
+                    ? 'text-[#B71C1C] font-black border-b-2 border-[#B71C1C]'
+                    : 'text-slate-700 hover:text-[#B71C1C] font-extrabold'
                 }`}
               >
                 {cat.name}
@@ -96,7 +96,7 @@ export default function MobileCategoryBar() {
         {/* Far Right Category Grid Icon */}
         <button
           onClick={() => navigate('/shop')}
-          className="p-1.5 text-slate-800 hover:text-[#B71C1C] shrink-0 bg-white/80 rounded-lg border border-slate-200 ml-1 cursor-pointer"
+          className="p-1.5 text-slate-800 hover:text-[#B71C1C] shrink-0 bg-white/90 rounded-lg border border-slate-200 ml-1 cursor-pointer shadow-2xs"
           title="All Categories"
         >
           <LayoutGrid className="w-4 h-4 text-slate-900" />
