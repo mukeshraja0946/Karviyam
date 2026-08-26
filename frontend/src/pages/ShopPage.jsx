@@ -77,89 +77,141 @@ export default function ShopPage() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const params = {
-        category: selectedCategory,
-        categoryId: selectedCategory,
-        subcategory: selectedSubcategory,
-        brand: selectedBrand,
-        gender: selectedGender,
-        search: searchKeyword,
-        maxPrice: priceRange,
-        sort: sortBy,
-        dir: sortDir,
-        size: 50
-      };
+      // 1. Single Source of Truth: Fetch all catalog products from API
+      let list = [];
+      try {
+        const res = await api.get('/products?size=200').catch(() => api.get('/products'));
+        const apiData = res?.data ? res.data : res;
+        list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData?.content) ? apiData.content : (Array.isArray(apiData) ? apiData : []));
+      } catch (eApi) {}
 
-      const res = await api.get('/products', { params }).catch(() => null);
-      const apiData = res?.data ? res.data : res;
-      let list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
-
-      // Merge Admin Saved Products for live Admin sync
+      // 2. Merge Admin Saved Products (localStorage cache from Admin Product Management)
       try {
         const savedAdmin = localStorage.getItem('karviyam_admin_products');
         if (savedAdmin) {
           const parsed = JSON.parse(savedAdmin);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const activeAdminProds = parsed.filter(p => p.isActive !== false);
-            if (activeAdminProds.length > 0) {
-              list = [...activeAdminProds, ...list.filter(p => !activeAdminProds.some(a => String(a.id) === String(p.id)))];
-            }
+            // Unshift Admin products so newest Admin edits take immediate precedence
+            parsed.forEach(adminProd => {
+              if (adminProd && adminProd.id) {
+                const existingIdx = list.findIndex(p => String(p.id) === String(adminProd.id) || (p.sku && adminProd.sku && String(p.sku) === String(adminProd.sku)));
+                if (existingIdx >= 0) {
+                  list[existingIdx] = { ...list[existingIdx], ...adminProd };
+                } else {
+                  list.unshift(adminProd);
+                }
+              }
+            });
           }
         }
       } catch (eSaved) {}
 
-      // Strict Active Status Filter
-      list = list.filter(p => p.isActive !== false);
+      // 3. Filter out inactive products
+      list = list.filter(p => p && p.isActive !== false);
 
-      // Strict Category Filtering
-      if (selectedCategory && selectedCategory.toUpperCase() !== 'ALL') {
-        const catLower = selectedCategory.toLowerCase();
+      // 4. Robust Category Matching Filter
+      if (selectedCategory && selectedCategory.trim() !== '' && selectedCategory.toUpperCase() !== 'ALL') {
+        const catClean = String(selectedCategory).trim().toLowerCase();
+        
         list = list.filter(p => {
-          const pCat = (p.categoryName || p.category_name || p.type || '').toLowerCase();
-          const pSubcat = (p.subcategoryName || p.subcategory_id || '').toLowerCase();
-          const pGender = (p.gender || '').toLowerCase();
-          const pName = (p.name || '').toLowerCase();
-          const pDesc = (p.description || '').toLowerCase();
-          const pBrand = (p.brand || '').toLowerCase();
+          const pCatId = String(p.categoryId || p.category_id || '');
+          const pSubcatId = String(p.subcategoryId || p.subcategory_id || '');
+          const pCatName = String(p.categoryName || p.category_name || p.category || p.type || '').toLowerCase();
+          const pSubcatName = String(p.subcategoryName || p.subcategory_name || '').toLowerCase();
+          const pGender = String(p.gender || '').toLowerCase();
+          const pName = String(p.name || '').toLowerCase();
+          const pDesc = String(p.description || '').toLowerCase();
+          const pTags = String(p.tags || '').toLowerCase();
+          const pBrand = String(p.brand || '').toLowerCase();
 
-          if (catLower === 'men') {
-            const isWomenExclusive = pGender === 'women' || pName.includes('saree') || pName.includes('lehenga') || pName.includes('women');
-            if (isWomenExclusive) return false;
-            return pGender === 'men' || pCat.includes('men') || pName.includes('shirt') || pName.includes('polo') || pName.includes('kurta') || pName.includes('t-shirt') || pName.includes('men') || pBrand.includes('deelmo') || pBrand.includes('noble monk');
-          }
-          if (catLower === 'women') {
-            return pGender === 'women' || pCat.includes('women') || pName.includes('saree') || pName.includes('lehenga') || pName.includes('dress') || pName.includes('women');
-          }
-          if (catLower === 'kids') {
-            return pGender === 'kids' || pCat.includes('kids') || pName.includes('kids') || pName.includes('baby');
-          }
-          if (catLower === 'unisex') {
-            return pGender === 'unisex' || pCat.includes('unisex') || pName.includes('sneakers') || pName.includes('t-shirt');
-          }
-          if (catLower === 'jewellery' || catLower === 'jewels') {
-            return pCat.includes('jewel') || pName.includes('jewel') || pName.includes('silver') || pName.includes('pendant') || pName.includes('ring');
-          }
-          if (catLower === 'kitchen') {
-            return pCat.includes('kitchen') || pName.includes('cookware') || pName.includes('decor') || pName.includes('home');
-          }
-          if (catLower === 'school') {
-            return pCat.includes('school') || pName.includes('stationery') || pName.includes('office');
+          // Direct Category ID Match
+          if (pCatId === catClean || pSubcatId === catClean) return true;
+
+          // Special Category Filters
+          if (catClean === 'men') {
+            if (pGender === 'women' || pCatName.includes('women') || pName.includes('saree') || pName.includes('lehenga') || pName.includes('women dress')) {
+              return false;
+            }
+            return pGender === 'men' || pCatName.includes('men') || pName.includes('shirt') || pName.includes('polo') || pName.includes('kurta') || pName.includes('t-shirt') || pName.includes('men') || pBrand.includes('deelmo') || pBrand.includes('noble monk');
           }
 
-          return pCat.includes(catLower) || pSubcat.includes(catLower) || pGender.includes(catLower) || pName.includes(catLower) || pDesc.includes(catLower);
+          if (catClean === 'women') {
+            return pGender === 'women' || pCatName.includes('women') || pName.includes('saree') || pName.includes('lehenga') || pName.includes('dress') || pName.includes('women');
+          }
+
+          if (catClean === 'kids' || catClean === 'kids & baby') {
+            return pGender === 'kids' || pCatName.includes('kids') || pName.includes('kids') || pName.includes('baby');
+          }
+
+          if (catClean === 'unisex') {
+            return pGender === 'unisex' || pCatName.includes('unisex') || pName.includes('sneakers') || pName.includes('t-shirt');
+          }
+
+          if (catClean.includes('t-shirt') || catClean.includes('tshirt')) {
+            return pName.includes('t-shirt') || pName.includes('tshirt') || pCatName.includes('t-shirt') || pSubcatName.includes('t-shirt') || pTags.includes('t-shirt') || pCatName.includes('men');
+          }
+
+          if (catClean.includes('shirt')) {
+            return pName.includes('shirt') || pCatName.includes('shirt') || pSubcatName.includes('shirt');
+          }
+
+          if (catClean.includes('kurta') || catClean.includes('ethnic')) {
+            return pName.includes('kurta') || pName.includes('ethnic') || pCatName.includes('kurta') || pSubcatName.includes('ethnic');
+          }
+
+          if (catClean.includes('jewel') || catClean.includes('accessory')) {
+            return pCatName.includes('jewel') || pCatName.includes('accessory') || pName.includes('jewel') || pName.includes('silver') || pName.includes('pendant') || pName.includes('ring');
+          }
+
+          if (catClean.includes('kitchen') || catClean.includes('home')) {
+            return pCatName.includes('kitchen') || pCatName.includes('home') || pName.includes('cookware') || pName.includes('decor');
+          }
+
+          if (catClean.includes('school') || catClean.includes('office')) {
+            return pCatName.includes('school') || pCatName.includes('office') || pName.includes('stationery');
+          }
+
+          // Broad text match fallback
+          return (
+            pCatName.includes(catClean) ||
+            pSubcatName.includes(catClean) ||
+            pGender.includes(catClean) ||
+            pName.includes(catClean) ||
+            pDesc.includes(catClean) ||
+            pTags.includes(catClean)
+          );
         });
       }
 
+      // 5. Search Keyword Filter
+      if (searchKeyword && searchKeyword.trim() !== '') {
+        const kw = searchKeyword.trim().toLowerCase();
+        list = list.filter(p => {
+          const pName = String(p.name || '').toLowerCase();
+          const pBrand = String(p.brand || '').toLowerCase();
+          const pDesc = String(p.description || '').toLowerCase();
+          const pSku = String(p.sku || '').toLowerCase();
+          return pName.includes(kw) || pBrand.includes(kw) || pDesc.includes(kw) || pSku.includes(kw);
+        });
+      }
+
+      // 6. Secondary Filters (Brand, Free Shipping, Rating, Price)
+      if (selectedBrand && selectedBrand.trim() !== '') {
+        list = list.filter(p => String(p.brand || '').toLowerCase().includes(selectedBrand.toLowerCase()));
+      }
       if (freeShippingOnly) {
         list = list.filter(p => p.freeShipping || p.price > 499);
       }
       if (selectedRating > 0) {
         list = list.filter(p => (p.rating || 4.0) >= selectedRating);
       }
+      if (priceRange && priceRange > 0) {
+        list = list.filter(p => (p.price || 0) <= priceRange);
+      }
 
       setProducts(list);
     } catch (e) {
-      console.error(e);
+      console.error('Failed to fetch shop products:', e);
     } finally {
       setLoading(false);
     }
