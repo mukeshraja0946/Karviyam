@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useWishlist } from '../../context/WishlistContext';
 import api from '../../utils/api';
+import { resolveImageUrl } from '../../utils/imageUtils';
 
 const HERO_SLIDES = [
   {
@@ -137,8 +138,15 @@ export default function DesktopCenterContent() {
   const fetchBanners = async () => {
     try {
       const res = await api.get('/banners').catch(() => null);
-      const apiData = res?.data?.data || res?.data || res;
-      let list = Array.isArray(apiData) ? apiData : [];
+      const apiData = res?.data ? res.data : res;
+      const rawData = apiData?.data !== undefined ? apiData.data : apiData;
+
+      let list = [];
+      if (Array.isArray(rawData)) {
+        list = rawData;
+      } else if (rawData && typeof rawData === 'object' && Array.isArray(rawData.banners)) {
+        list = rawData.banners;
+      }
 
       if (!list || list.length === 0) {
         const saved = localStorage.getItem('karviyam_admin_banners');
@@ -153,19 +161,16 @@ export default function DesktopCenterContent() {
       if (list && list.length > 0) {
         const activeBanners = list.filter(b => b.isActive !== false && b.status !== 'inactive');
         if (activeBanners.length > 0) {
-          const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
           const formatted = activeBanners.map(b => {
-            let img = b.imageUrl || b.imagePath || b.image || '';
-            if (img.startsWith('/')) {
-              img = `${apiOrigin}${img}`;
-            }
+            const rawImg = b.imageUrl || b.imagePath || b.image || '';
+            const resolvedImg = resolveImageUrl(rawImg);
             return {
               id: b.id,
-              tag: 'NEW SEASON ARRIVAL',
+              tag: 'OFFICIAL DROP',
               title: b.title || 'NEW STYLE NEW YOU',
               subtitle: b.subtitle || 'Explore our latest collection',
-              image: img || HERO_SLIDES[0].image,
-              link: b.link || b.buttonLink || '/shop'
+              image: resolvedImg || HERO_SLIDES[0].image,
+              link: b.buttonLink || b.link || '/shop'
             };
           });
           setHeroSlides(formatted);

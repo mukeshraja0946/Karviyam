@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { resolveImageUrl } from '../utils/imageUtils';
 
 const DEFAULT_PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800";
 
@@ -39,7 +40,6 @@ export default function CategoryCards() {
       }
 
       if (list.length > 0) {
-        const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
         const formatted = list.map((cat) => {
           const catType = (cat.type || cat.name || '').toUpperCase();
           const fallbackImg = CATEGORY_TYPE_IMAGES[catType] || DEFAULT_PLACEHOLDER_IMAGE;
@@ -48,10 +48,8 @@ export default function CategoryCards() {
             ? cat.description
             : (subCount > 0 ? `${subCount} Collections` : 'Exclusive Collection');
 
-          let img = cat.imageUrl || cat.iconUrl || fallbackImg;
-          if (img.startsWith('/')) {
-            img = `${apiOrigin}${img}`;
-          }
+          const rawImg = cat.imageUrl || cat.iconUrl || fallbackImg;
+          const img = resolveImageUrl(rawImg);
 
           return {
             id: cat.id,

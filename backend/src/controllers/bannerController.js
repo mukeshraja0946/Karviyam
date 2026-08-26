@@ -87,7 +87,24 @@ exports.getActiveBanners = async (req, res, next) => {
       rows = r;
     }
     const banners = rows.map(mapBannerRow).filter(Boolean);
-    return res.status(200).json(ApiResponse.success(banners, 'Active banners retrieved successfully'));
+
+    let autoScroll = true;
+    let speed = 5000;
+    try {
+      const [sRows] = await pool.query("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('banner_autoscroll', 'banner_speed')");
+      sRows.forEach(s => {
+        if (s.setting_key === 'banner_autoscroll') autoScroll = s.setting_value !== 'false' && s.setting_value !== '0';
+        if (s.setting_key === 'banner_speed') speed = parseInt(s.setting_value, 10) || 5000;
+      });
+    } catch (eSettings) {}
+
+    const payload = {
+      banners,
+      autoScroll,
+      speed
+    };
+
+    return res.status(200).json(ApiResponse.success(payload, 'Active banners retrieved successfully'));
   } catch (err) {
     next(err);
   }
@@ -105,7 +122,39 @@ exports.getAllBanners = async (req, res, next) => {
       rows = r;
     }
     const banners = rows.map(mapBannerRow).filter(Boolean);
-    return res.status(200).json(ApiResponse.success(banners, 'All banners retrieved successfully'));
+
+    let autoScroll = true;
+    let speed = 5000;
+    try {
+      const [sRows] = await pool.query("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('banner_autoscroll', 'banner_speed')");
+      sRows.forEach(s => {
+        if (s.setting_key === 'banner_autoscroll') autoScroll = s.setting_value !== 'false' && s.setting_value !== '0';
+        if (s.setting_key === 'banner_speed') speed = parseInt(s.setting_value, 10) || 5000;
+      });
+    } catch (eSettings) {}
+
+    return res.status(200).json(ApiResponse.success({ banners, autoScroll, speed }, 'All banners retrieved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateBannerSettings = async (req, res, next) => {
+  try {
+    const { autoScroll, speed } = req.body || {};
+    if (autoScroll !== undefined) {
+      await pool.query(
+        "INSERT INTO settings (setting_key, setting_value) VALUES ('banner_autoscroll', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
+        [String(autoScroll)]
+      );
+    }
+    if (speed !== undefined) {
+      await pool.query(
+        "INSERT INTO settings (setting_key, setting_value) VALUES ('banner_speed', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
+        [String(speed)]
+      );
+    }
+    return res.status(200).json(ApiResponse.success({ autoScroll, speed }, 'Banner slider settings saved successfully'));
   } catch (err) {
     next(err);
   }

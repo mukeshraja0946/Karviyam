@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../utils/api';
+import { resolveImageUrl } from '../utils/imageUtils';
 
 const DEFAULT_BANNERS = [
   {
@@ -27,6 +28,7 @@ export default function HeroBanner() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [autoScroll, setAutoScroll] = useState(true);
   const [speed, setSpeed] = useState(5000);
+  const [imageError, setImageError] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,15 +40,27 @@ export default function HeroBanner() {
   const loadBanners = async () => {
     try {
       const savedAuto = localStorage.getItem('karviyam_banner_autoscroll');
-      setAutoScroll(savedAuto !== null ? JSON.parse(savedAuto) : true);
+      let currentAuto = savedAuto !== null ? JSON.parse(savedAuto) : true;
 
       const savedSpeed = localStorage.getItem('karviyam_banner_speed');
-      setSpeed(savedSpeed ? Number(savedSpeed) : 5000);
+      let currentSpeed = savedSpeed ? Number(savedSpeed) : 5000;
 
       const res = await api.get('/banners').catch(() => null);
       const apiData = res?.data ? res.data : res;
-      let list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
-      
+      const rawData = apiData?.data !== undefined ? apiData.data : apiData;
+
+      let list = [];
+      if (Array.isArray(rawData)) {
+        list = rawData;
+      } else if (rawData && typeof rawData === 'object') {
+        if (Array.isArray(rawData.banners)) list = rawData.banners;
+        if (rawData.autoScroll !== undefined) currentAuto = Boolean(rawData.autoScroll);
+        if (rawData.speed !== undefined) currentSpeed = Number(rawData.speed);
+      }
+
+      setAutoScroll(currentAuto);
+      setSpeed(currentSpeed);
+
       if (!list || list.length === 0) {
         const saved = localStorage.getItem('karviyam_admin_banners');
         if (saved) {
@@ -62,29 +76,27 @@ export default function HeroBanner() {
       if (list && list.length > 0) {
         const activeList = list.filter(b => b.isActive !== false && b.status !== 'inactive');
         if (activeList.length > 0) {
-          const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
           const formatted = activeList.map(b => {
-            let img = b.imagePath || b.imageUrl || b.image || '';
-            if (img.startsWith('/')) {
-              img = `${apiOrigin}${img}`;
-            }
+            const rawImg = b.imageUrl || b.imagePath || b.image || '';
+            const resolvedImg = resolveImageUrl(rawImg);
             return {
               id: b.id,
               title: b.title || 'GALAXY OF ELEGANCE',
               subtitle: b.subtitle || 'Discover the 2026 Collection',
-              image: img || DEFAULT_BANNERS[0].image,
-              cta: 'EXPLORE COLLECTION',
-              link: b.link || b.buttonLink || '/shop'
+              image: resolvedImg || DEFAULT_BANNERS[0].image,
+              cta: b.buttonText || b.button_text || b.cta || 'Shop Now',
+              link: b.buttonLink || b.link || '/shop'
             };
           });
           setBanners(formatted);
+          setImageError(false);
           return;
         }
       }
 
       setBanners(DEFAULT_BANNERS);
     } catch (e) {
-      console.error(e);
+      console.error('[HeroBanner] Error loading banners:', e);
       setBanners(DEFAULT_BANNERS);
     }
   };
@@ -100,13 +112,24 @@ export default function HeroBanner() {
   const current = banners[currentIndex] || DEFAULT_BANNERS[0];
 
   return (
-    <div className="relative w-full h-[450px] sm:h-[550px] bg-slate-100 overflow-hidden">
-      {/* Background Image */}
+    <div className="relative w-full h-[450px] sm:h-[550px] bg-slate-900 overflow-hidden">
+      {/* Background Image with Fallback */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-all duration-1000 transform scale-105"
-        style={{ backgroundImage: `url(${current.image})` }}
+        style={{ backgroundImage: `url(${imageError ? DEFAULT_BANNERS[0].image : current.image})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/40 to-transparent" />
+        {/* Hidden img to test load error */}
+        <img
+          src={current.image}
+          alt=""
+          className="hidden"
+          onError={() => {
+            console.warn(`[HeroBanner Image Load Warning] Failed to load banner image: ${current.image}`);
+            setImageError(true);
+          }}
+          onLoad={() => setImageError(false)}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-transparent" />
       </div>
 
       {/* Content */}

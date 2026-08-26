@@ -9,6 +9,7 @@ import DesktopCenterContent from '../components/desktop/DesktopCenterContent';
 import DesktopSidebarRight from '../components/desktop/DesktopSidebarRight';
 import DesktopTrustBar from '../components/desktop/DesktopTrustBar';
 import api from '../utils/api';
+import { resolveImageUrl } from '../utils/imageUtils';
 import { Flame, Sparkles, Grid, SlidersHorizontal } from 'lucide-react';
 
 const DEFAULT_MOBILE_BANNERS = [
@@ -84,8 +85,15 @@ export default function HomePage() {
   const fetchBanners = async () => {
     try {
       const res = await api.get('/banners').catch(() => null);
-      const apiData = res?.data?.data || res?.data || res;
-      let list = Array.isArray(apiData) ? apiData : [];
+      const apiData = res?.data ? res.data : res;
+      const rawData = apiData?.data !== undefined ? apiData.data : apiData;
+
+      let list = [];
+      if (Array.isArray(rawData)) {
+        list = rawData;
+      } else if (rawData && typeof rawData === 'object' && Array.isArray(rawData.banners)) {
+        list = rawData.banners;
+      }
 
       if (!list || list.length === 0) {
         const saved = localStorage.getItem('karviyam_admin_banners');
@@ -100,20 +108,17 @@ export default function HomePage() {
       if (list && list.length > 0) {
         const activeBanners = list.filter(b => b.isActive !== false && b.status !== 'inactive');
         if (activeBanners.length > 0) {
-          const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
           const formatted = activeBanners.map(b => {
-            let img = b.imageUrl || b.imagePath || b.image || '';
-            if (img.startsWith('/')) {
-              img = `${apiOrigin}${img}`;
-            }
+            const rawImg = b.imageUrl || b.imagePath || b.image || '';
+            const resolvedImg = resolveImageUrl(rawImg);
             return {
               id: b.id,
-              badge: 'NEW SEASON ARRIVAL',
+              badge: 'OFFICIAL DROP',
               title: b.title || 'NEW STYLE NEW YOU',
               subtitle: b.subtitle || 'Explore our latest collection',
-              image: img || DEFAULT_MOBILE_BANNERS[0].image,
-              cta: 'SHOP NOW',
-              link: b.link || b.buttonLink || '/shop'
+              image: resolvedImg || DEFAULT_MOBILE_BANNERS[0].image,
+              cta: b.buttonText || b.button_text || b.cta || 'SHOP NOW',
+              link: b.buttonLink || b.link || '/shop'
             };
           });
           setMobileBanners(formatted);

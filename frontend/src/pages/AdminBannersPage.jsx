@@ -66,11 +66,16 @@ export default function AdminBannersPage() {
     }
   };
 
-  const handleUpdateScrollSettings = (enabled, speed) => {
+  const handleUpdateScrollSettings = async (enabled, speed) => {
     setAutoScrollEnabled(enabled);
     setScrollSpeed(speed);
     localStorage.setItem('karviyam_banner_autoscroll', JSON.stringify(enabled));
     localStorage.setItem('karviyam_banner_speed', String(speed));
+
+    try {
+      await api.post('/banners/settings', { autoScroll: enabled, speed }).catch(() => null);
+    } catch (e) {}
+
     window.dispatchEvent(new Event('karviyam_banners_updated'));
     toast.success(`Banner auto-scroll ${enabled ? 'ENABLED' : 'DISABLED'} (${speed / 1000}s speed)!`, { id: 'banner-toast' });
   };

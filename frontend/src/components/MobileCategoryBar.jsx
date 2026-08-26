@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { resolveImageUrl } from '../utils/imageUtils';
 
 const DEFAULT_MOBILE_PLACEHOLDER = "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400";
 
@@ -21,12 +22,9 @@ export default function MobileCategoryBar() {
       const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
 
       if (list.length > 0) {
-        const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
         const formatted = list.map((cat) => {
-          let img = cat.imageUrl || cat.iconUrl || DEFAULT_MOBILE_PLACEHOLDER;
-          if (img.startsWith('/')) {
-            img = `${apiOrigin}${img}`;
-          }
+          const rawImg = cat.imageUrl || cat.iconUrl || DEFAULT_MOBILE_PLACEHOLDER;
+          const img = resolveImageUrl(rawImg);
           return {
             id: cat.id,
             name: cat.name.split(' ')[0], // Compact first word
