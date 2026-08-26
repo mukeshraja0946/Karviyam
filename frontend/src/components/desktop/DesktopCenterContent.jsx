@@ -298,15 +298,15 @@ export default function DesktopCenterContent() {
           </button>
         </div>
 
-        {/* 7 Identical Category Cards */}
+        {/* 7 Identical Category Cards (No Image Background Box) */}
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 xl:gap-2.5 w-full">
           {categories.map((cat) => (
             <div
               key={cat.id}
               onClick={() => navigate(`/shop?${cat.query}`)}
-              className="h-[115px] xl:h-[125px] bg-[#F4F4F6] hover:bg-[#EAEAEA] rounded-xl p-1.5 flex flex-col items-center justify-between cursor-pointer transition-all border border-slate-200/50 hover:shadow-xs group"
+              className="h-[115px] xl:h-[125px] bg-white rounded-xl p-1.5 flex flex-col items-center justify-between cursor-pointer transition-all border border-slate-200/80 hover:shadow-xs group"
             >
-              <div className="w-full h-[78px] xl:h-[86px] bg-white/70 rounded-lg overflow-hidden flex items-center justify-center p-1">
+              <div className="w-full h-[78px] xl:h-[86px] bg-white rounded-lg overflow-hidden flex items-center justify-center">
                 <img
                   src={cat.image}
                   alt={cat.name}
@@ -335,7 +335,7 @@ export default function DesktopCenterContent() {
           </button>
         </div>
 
-        {/* Product Cards Grid */}
+        {/* Product Cards Grid (No Image Background Box) */}
         <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 xl:gap-2.5 w-full">
           {products.map((prod) => {
             const liked = isInWishlist(prod.id);
@@ -345,8 +345,8 @@ export default function DesktopCenterContent() {
                 onClick={() => navigate(`/product/${prod.id}`)}
                 className="h-[215px] xl:h-[230px] bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-1.5 flex flex-col justify-between overflow-hidden cursor-pointer group"
               >
-                {/* Product Image Box */}
-                <div className="relative w-full h-[120px] xl:h-[130px] bg-[#F8FAFC] rounded-lg overflow-hidden flex items-center justify-center p-1.5 shrink-0">
+                {/* Product Image Box (Directly on White Card Background) */}
+                <div className="relative w-full h-[120px] xl:h-[130px] bg-white rounded-lg overflow-hidden flex items-center justify-center shrink-0">
                   <img
                     src={prod.image}
                     alt={prod.name}
