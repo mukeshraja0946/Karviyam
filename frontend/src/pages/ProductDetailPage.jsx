@@ -192,9 +192,8 @@ export default function ProductDetailPage() {
 
   return (
     <div className="w-full bg-[#FAFAFA] min-h-screen text-slate-900 pb-12 font-sans">
-      
       {/* 1. BREADCRUMB ROW */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-2 text-[11px] font-semibold text-slate-500 text-left">
+      <div className="max-w-[1750px] mx-auto px-4 sm:px-8 py-2 text-[11px] font-semibold text-slate-500 text-left">
         <div className="flex items-center gap-1.5">
           <Link to="/" className="hover:text-[#B71C1C]">Home</Link>
           <span>/</span>
@@ -205,17 +204,17 @@ export default function ProductDetailPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. STRICT 3-COLUMN PRODUCT DETAIL LAYOUT (MATCHING REFERENCE IMAGE)        */}
-      {/* COLUMN 1: IMAGE GALLERY | COLUMN 2: CONTROLS | COLUMN 3: DETAILS & SPECS    */}
+      {/* 2. STRICT 3-COLUMN PRODUCT DETAIL LAYOUT (FULL DESKTOP WIDTH)               */}
+      {/* COLUMN 1: IMAGE GALLERY (FIXED) | COLUMN 2: CONTROLS (FIXED) | COLUMN 3: SCROLLABLE DETAILS */}
       {/* ========================================================================= */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-2">
+      <div className="max-w-[1750px] mx-auto px-4 sm:px-8 py-2">
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left items-start">
           
           {/* ======================================================= */}
-          {/* COLUMN 1: LEFT IMAGE GALLERY (1/3 Width / lg:col-span-4) */}
+          {/* COLUMN 1: LEFT IMAGE GALLERY (STATIONARY / FIXED)       */}
           {/* ======================================================= */}
-          <div className="lg:col-span-4 flex flex-col sm:flex-row gap-3">
+          <div className="lg:col-span-4 flex flex-col sm:flex-row gap-3 lg:sticky lg:top-[135px] self-start">
             
             {/* Vertical Thumbnail Strip (Desktop) */}
             <div className="hidden sm:flex flex-col gap-2 w-14 shrink-0">
@@ -260,9 +259,9 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ======================================================= */}
-          {/* COLUMN 2: CENTER CONTROLS & PRICING (~32% / lg:col-span-4) */}
+          {/* COLUMN 2: CENTER CONTROLS & PRICING (STATIONARY / FIXED) */}
           {/* ======================================================= */}
-          <div className="lg:col-span-4 space-y-3">
+          <div className="lg:col-span-4 space-y-3 lg:sticky lg:top-[135px] self-start">
             
             {/* Karviyam Premium Badge */}
             <div className="inline-flex items-center gap-1.5 bg-rose-50 text-[#B71C1C] px-2.5 py-0.5 rounded-full border border-rose-200/80 font-black text-[9.5px] uppercase tracking-wider shadow-2xs">
@@ -453,10 +452,10 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ======================================================= */}
-          {/* COLUMN 3: RIGHT SPECIFICATIONS & DETAILS (1/3 Width / lg:col-span-4) */}
+          {/* COLUMN 3: RIGHT SPECIFICATIONS & DETAILS (INDEPENDENT SCROLLABLE) */}
           {/* DIRECTLY BESIDE THE MAIN IMAGE & CONTROLS                */}
           {/* ======================================================= */}
-          <div className="lg:col-span-4 space-y-4 max-h-[640px] overflow-y-auto pr-1 scrollbar-thin text-xs">
+          <div className="lg:col-span-4 space-y-4 h-[calc(100vh-160px)] overflow-y-auto overscroll-contain pr-2 scrollbar-thin text-xs">
             
             {/* 1. TOP HIGHLIGHTS */}
             <div className="space-y-1.5">
