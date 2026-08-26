@@ -37,6 +37,20 @@ export default function ShopPage() {
   }, []);
 
   useEffect(() => {
+    const cat = slug || searchParams.get('category') || searchParams.get('categoryId') || '';
+    const sub = searchParams.get('subcategory') || searchParams.get('subcategoryId') || '';
+    const brd = searchParams.get('brand') || '';
+    const gnd = searchParams.get('gender') || '';
+    const srch = searchParams.get('search') || searchParams.get('keyword') || '';
+
+    setSelectedCategory(cat);
+    setSelectedSubcategory(sub);
+    setSelectedBrand(brd);
+    setSelectedGender(gnd);
+    setSearchKeyword(srch);
+  }, [searchParams, slug]);
+
+  useEffect(() => {
     fetchProducts();
   }, [selectedCategory, selectedSubcategory, selectedBrand, selectedGender, searchKeyword, priceRange, sortBy, sortDir, freeShippingOnly, deliveryDayFilter, selectedRating]);
 

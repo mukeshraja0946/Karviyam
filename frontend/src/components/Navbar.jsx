@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Search,
   ShoppingBag,
@@ -30,6 +30,23 @@ export default function Navbar() {
   const { itemCount } = useCart();
   const { wishlist, wishlistCount } = useWishlist();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  const activeCatParam = searchParams.get('category') || searchParams.get('categoryId') || '';
+
+  const isCategoryActive = (catKey, path = '/shop') => {
+    if (path === '/contact') {
+      return location.pathname === '/contact';
+    }
+    if (location.pathname !== '/shop' && location.pathname !== '/') {
+      return false;
+    }
+    if (!catKey || catKey === 'ALL') {
+      return !activeCatParam && !location.search.includes('category=');
+    }
+    return activeCatParam.toLowerCase() === catKey.toLowerCase();
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -507,38 +524,68 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Category Nav Links - Compact Spacing */}
+              {/* Category Nav Links - Dynamic Red Underline Active State */}
               <div className="flex items-center gap-4 xl:gap-5 overflow-x-auto no-scrollbar py-1 ml-auto">
-                {/* Active Tab ALL */}
                 <Link
                   to="/shop"
-                  className="text-[#B71C1C] font-extrabold border-b-2 border-[#B71C1C] pb-1 uppercase whitespace-nowrap"
+                  className={isCategoryActive('ALL') ? "text-[#B71C1C] font-extrabold border-b-2 border-[#B71C1C] pb-1 uppercase whitespace-nowrap" : "hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase pb-1 text-slate-700 font-bold"}
                 >
                   ALL
                 </Link>
 
-                <Link to="/shop?category=Men" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase">
+                <Link
+                  to="/shop?category=Men"
+                  className={isCategoryActive('Men') ? "text-[#B71C1C] font-extrabold border-b-2 border-[#B71C1C] pb-1 uppercase whitespace-nowrap" : "hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase pb-1 text-slate-700 font-bold"}
+                >
                   MEN
                 </Link>
-                <Link to="/shop?category=Women" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase">
+                
+                <Link
+                  to="/shop?category=Women"
+                  className={isCategoryActive('Women') ? "text-[#B71C1C] font-extrabold border-b-2 border-[#B71C1C] pb-1 uppercase whitespace-nowrap" : "hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase pb-1 text-slate-700 font-bold"}
+                >
                   WOMEN
                 </Link>
-                <Link to="/shop?category=Kids" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase">
+
+                <Link
+                  to="/shop?category=Kids"
+                  className={isCategoryActive('Kids') ? "text-[#B71C1C] font-extrabold border-b-2 border-[#B71C1C] pb-1 uppercase whitespace-nowrap" : "hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase pb-1 text-slate-700 font-bold"}
+                >
                   KIDS
                 </Link>
-                <Link to="/shop?category=Unisex" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase">
+
+                <Link
+                  to="/shop?category=Unisex"
+                  className={isCategoryActive('Unisex') ? "text-[#B71C1C] font-extrabold border-b-2 border-[#B71C1C] pb-1 uppercase whitespace-nowrap" : "hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase pb-1 text-slate-700 font-bold"}
+                >
                   UNISEX
                 </Link>
-                <Link to="/shop?category=Jewellery" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase">
+
+                <Link
+                  to="/shop?category=Jewellery"
+                  className={isCategoryActive('Jewellery') ? "text-[#B71C1C] font-extrabold border-b-2 border-[#B71C1C] pb-1 uppercase whitespace-nowrap" : "hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase pb-1 text-slate-700 font-bold"}
+                >
                   JEWELS
                 </Link>
-                <Link to="/shop?category=Kitchen" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase">
+
+                <Link
+                  to="/shop?category=Kitchen"
+                  className={isCategoryActive('Kitchen') ? "text-[#B71C1C] font-extrabold border-b-2 border-[#B71C1C] pb-1 uppercase whitespace-nowrap" : "hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase pb-1 text-slate-700 font-bold"}
+                >
                   KITCHEN & HOME
                 </Link>
-                <Link to="/shop?category=School" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase">
+
+                <Link
+                  to="/shop?category=School"
+                  className={isCategoryActive('School') ? "text-[#B71C1C] font-extrabold border-b-2 border-[#B71C1C] pb-1 uppercase whitespace-nowrap" : "hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase pb-1 text-slate-700 font-bold"}
+                >
                   SCHOOL & OFFICE
                 </Link>
-                <Link to="/contact" className="hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase">
+
+                <Link
+                  to="/contact"
+                  className={isCategoryActive('', '/contact') ? "text-[#B71C1C] font-extrabold border-b-2 border-[#B71C1C] pb-1 uppercase whitespace-nowrap" : "hover:text-[#B71C1C] transition-colors whitespace-nowrap uppercase pb-1 text-slate-700 font-bold"}
+                >
                   CONTACT US
                 </Link>
               </div>
