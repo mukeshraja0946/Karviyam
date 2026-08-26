@@ -114,7 +114,7 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
   const formattedDate = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
   
   const cleanCustomerName = customerName || 'Valued Customer';
-  const formattedReplyText = String(replyMessage || '').split('\n').map(p => p.trim()).filter(Boolean).map(p => `<p style="margin: 0 0 12px 0;">${p}</p>`).join('');
+  const formattedReplyText = String(replyMessage || '').split('\n').map(p => p.trim()).filter(Boolean).map(p => `<p style="margin: 0 0 14px 0; font-size: 14.5px; line-height: 1.6; color: #1e293b;">${p}</p>`).join('');
 
   const mailOptions = {
     from: `"Karviyam Support" <${fromUser}>`,
@@ -130,26 +130,21 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Karviyam Customer Support</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
   
-  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 20px 10px;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; padding: 20px 10px;">
     <tr>
       <td align="center">
         
-        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 720px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 680px; background-color: #ffffff;">
           
-          <!-- 1. Top Red Bar -->
+          <!-- 1. Header Logo & Brand -->
           <tr>
-            <td style="height: 6px; background-color: #B71C1C; font-size: 0; line-height: 0;">&nbsp;</td>
-          </tr>
-
-          <!-- 2. Logo & Brand Header -->
-          <tr>
-            <td align="center" style="padding: 24px 20px 16px 20px; background-color: #ffffff;">
+            <td align="center" style="padding: 10px 0 20px 0;">
               <table role="presentation" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td align="center">
-                    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: 0 auto;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: 0 auto;">
                       <path d="M12 3C12 3 8.5 7.5 8.5 12C8.5 14.5 10 16.5 12 17.5C14 16.5 15.5 14.5 15.5 12C15.5 7.5 12 3 12 3Z" fill="#B71C1C"/>
                       <path d="M12 17.5C9.5 16.8 6 14 6 11C6 9 7.5 7.5 7.5 7.5C7.5 7.5 5 10.5 5 13.5C5 16.5 8 18.5 12 19C16 18.5 19 16.5 19 13.5C19 10.5 16.5 7.5 16.5 7.5C16.5 7.5 18 9 18 11C18 14 14.5 16.8 12 17.5Z" fill="#B71C1C"/>
                       <path d="M12 19C7 18.5 3 15.5 3 13.5C3 12 4 10.5 4 10.5C4 10.5 2 12.5 2 15C2 17.5 6 20.5 12 21C18 20.5 22 17.5 22 15C22 12.5 20 10.5 20 10.5C20 10.5 21 12 21 13.5C21 15.5 17 18.5 12 19Z" fill="#B71C1C"/>
@@ -163,40 +158,19 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
                 </tr>
                 <tr>
                   <td align="center" style="padding-top: 2px;">
-                    <span style="font-size: 11px; color: #64748b; font-weight: 500; letter-spacing: 0.5px;">Timeless Style. Trusted Quality.</span>
+                    <span style="font-size: 12px; color: #64748b; font-weight: 500; letter-spacing: 0.5px;">Timeless Style. Trusted Quality.</span>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- 3. Red Banner Section -->
+          <!-- 2. Greeting & Time Header -->
           <tr>
-            <td align="center" style="background-color: #B71C1C; padding: 14px 20px;">
-              <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+            <td style="padding: 10px 0;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td style="vertical-align: middle; padding-right: 8px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
-                      <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
-                    </svg>
-                  </td>
-                  <td style="vertical-align: middle; font-size: 18px; font-weight: 700; color: #ffffff; letter-spacing: 0.3px;">
-                    Karviyam Customer Support
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- 4. Email Main Content -->
-          <tr>
-            <td style="padding: 24px 28px; background-color: #ffffff;">
-              
-              <!-- Greeting & Date/Time -->
-              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 18px;">
-                <tr>
-                  <td align="left" style="font-size: 15px; color: #1e293b; font-weight: 400;">
+                  <td align="left" style="font-size: 15px; color: #0f172a; font-weight: 400;">
                     Hello <strong style="color: #0f172a; font-weight: 700;">${cleanCustomerName}</strong>,
                   </td>
                   <td align="right" style="font-size: 12px; color: #64748b; font-weight: 500; line-height: 1.4;">
@@ -204,58 +178,61 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
                   </td>
                 </tr>
               </table>
+            </td>
+          </tr>
 
-              <p style="font-size: 13.5px; color: #334155; line-height: 1.6; margin: 0 0 16px 0;">
-                Thank you for contacting Karviyam. We have reviewed your support inquiry and provided an update below:
+          <!-- 3. Divider Line -->
+          <tr>
+            <td style="padding: 12px 0 20px 0;">
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 0;" />
+            </td>
+          </tr>
+
+          <!-- 4. Email Body Text -->
+          <tr>
+            <td style="padding: 0 0 10px 0; font-size: 14.5px; color: #1e293b; line-height: 1.6;">
+              
+              <p style="margin: 0 0 16px 0;">Hello from Karviyam Customer Support,</p>
+
+              ${(subject || originalMessage || orderId) ? `
+              <p style="margin: 0 0 16px 0;">
+                We understand that you have an issue with <strong style="color: #B71C1C;">${subject || 'your support inquiry'}</strong>${orderId ? ` regarding Order <strong style="color: #B71C1C;">#${orderId}</strong>` : ''}.
               </p>
-
-              <!-- Original Customer Message Alert Callout -->
-              ${(subject || originalMessage) ? `
-              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 20px; background-color: #fff5f5; border-left: 4px solid #B71C1C; border-radius: 6px;">
-                <tr>
-                  <td style="padding: 14px 16px;">
-                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
-                      <tr>
-                        <td width="30" style="vertical-align: top; padding-right: 10px;">
-                          <div style="width: 24px; height: 24px; background-color: #B71C1C; border-radius: 50%; text-align: center; line-height: 24px; color: #ffffff; font-weight: bold; font-size: 13px;">!</div>
-                        </td>
-                        <td style="font-size: 13px; color: #1e293b; line-height: 1.5;">
-                          We understand that you have an issue with <strong style="color: #B71C1C;">${subject || 'your inquiry'}</strong>${orderId ? ` regarding Order <strong style="color: #B71C1C;">#${orderId}</strong>` : ''}.
-                          ${originalMessage ? `<div style="margin-top: 6px; font-style: italic; color: #475569;">"${originalMessage}"</div>` : ''}
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
               ` : ''}
 
-              <!-- Support Team Reply Text -->
-              <div style="font-size: 14px; color: #1e293b; line-height: 1.65; margin-bottom: 20px;">
-                ${formattedReplyText}
-              </div>
+              <!-- Dynamic Support Reply Paragraphs -->
+              ${formattedReplyText}
 
               <!-- Sign Off -->
-              <p style="font-size: 13.5px; color: #334155; line-height: 1.6; margin: 24px 0 0 0;">
-                We know how important this is to you, rest assured that we are here to assist you.<br/><br/>
-                Thank you for choosing Karviyam,<br/>
-                <strong style="color: #B71C1C; font-size: 14.5px; display: block; margin-top: 4px;">Karviyam Support Team</strong>
-                <a href="mailto:${supportEmail}" style="color: #64748b; text-decoration: none; font-size: 13px;">${supportEmail}</a>
+              <p style="margin: 24px 0 0 0; font-size: 14.5px; color: #1e293b; line-height: 1.6;">
+                We appreciate your cooperation and understanding in this regard.<br/><br/>
+                Thank you for choosing Karviyam,<br/><br/>
+                <strong style="color: #B71C1C; font-size: 15px; display: block; margin-bottom: 2px;">Karviyam Support Team</strong>
+                <a href="mailto:${supportEmail}" style="color: #334155; text-decoration: none; font-size: 13.5px;">${supportEmail}</a>
               </p>
 
             </td>
           </tr>
 
-          <!-- 5. Pre-Footer Support Information -->
+          <!-- 5. Bottom Divider Line -->
           <tr>
-            <td style="padding: 20px 28px; background-color: #ffffff; border-top: 1px solid #f1f5f9;">
+            <td style="padding: 24px 0 20px 0;">
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 0;" />
+            </td>
+          </tr>
+
+          <!-- 6. Pre-Footer Support Info Section (3 Columns on White) -->
+          <tr>
+            <td style="padding: 10px 0 24px 0;">
               <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td width="50%" style="vertical-align: top; padding-right: 16px; border-right: 1px solid #f1f5f9;">
+                  
+                  <!-- Column 1: We're here to help -->
+                  <td width="33%" style="vertical-align: top; padding-right: 12px;">
                     <table role="presentation" border="0" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td width="34" style="vertical-align: top; padding-right: 8px;">
-                          <div style="width: 28px; height: 28px; background-color: #fff5f5; border-radius: 50%; text-align: center; line-height: 28px; color: #B71C1C; font-size: 14px;">♥</div>
+                        <td width="30" style="vertical-align: top; padding-right: 8px;">
+                          <div style="width: 26px; height: 26px; background-color: #fff5f5; border-radius: 50%; text-align: center; line-height: 26px; color: #B71C1C; font-size: 14px;">🎧</div>
                         </td>
                         <td style="font-size: 12px; color: #475569; line-height: 1.4;">
                           <strong style="font-size: 13px; color: #0f172a; display: block; margin-bottom: 2px;">We're here to help!</strong>
@@ -265,59 +242,66 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
                     </table>
                   </td>
 
-                  <td width="50%" style="vertical-align: top; padding-left: 16px;">
-                    <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 8px;">
-                      <tr>
-                        <td width="26" style="vertical-align: middle; padding-right: 6px;">
-                          <div style="width: 22px; height: 22px; background-color: #fff5f5; border-radius: 50%; text-align: center; line-height: 22px; color: #B71C1C; font-size: 11px;">🎧</div>
-                        </td>
-                        <td style="font-size: 12px; color: #0f172a;">
-                          <strong style="display: inline;">Need more help?</strong>
-                          <a href="https://karviyam.com/contact" style="color: #B71C1C; text-decoration: none; font-weight: 600; display: block;">Visit our Help Center</a>
-                        </td>
-                      </tr>
-                    </table>
-
+                  <!-- Column 2: Need more help? -->
+                  <td width="33%" style="vertical-align: top; padding: 0 10px;">
                     <table role="presentation" border="0" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td width="26" style="vertical-align: middle; padding-right: 6px;">
-                          <div style="width: 22px; height: 22px; background-color: #fff5f5; border-radius: 50%; text-align: center; line-height: 22px; color: #B71C1C; font-size: 11px;">✉</div>
+                        <td width="30" style="vertical-align: top; padding-right: 8px;">
+                          <div style="width: 26px; height: 26px; background-color: #fff5f5; border-radius: 50%; text-align: center; line-height: 26px; color: #B71C1C; font-size: 13px;">📖</div>
                         </td>
-                        <td style="font-size: 12px; color: #0f172a;">
-                          <strong style="display: inline;">Reply to this email</strong>
-                          <a href="mailto:${supportEmail}" style="color: #B71C1C; text-decoration: none; font-weight: 600; display: block;">${supportEmail}</a>
+                        <td style="font-size: 12px; color: #475569; line-height: 1.4;">
+                          <strong style="font-size: 13px; color: #0f172a; display: block; margin-bottom: 2px;">Need more help?</strong>
+                          <a href="https://karviyam.com/contact" style="color: #B71C1C; text-decoration: none; font-weight: 600;">Visit our Help Center</a>
                         </td>
                       </tr>
                     </table>
                   </td>
+
+                  <!-- Column 3: Reply to this email -->
+                  <td width="33%" style="vertical-align: top; padding-left: 12px;">
+                    <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td width="30" style="vertical-align: top; padding-right: 8px;">
+                          <div style="width: 26px; height: 26px; background-color: #fff5f5; border-radius: 50%; text-align: center; line-height: 26px; color: #B71C1C; font-size: 13px;">✉</div>
+                        </td>
+                        <td style="font-size: 12px; color: #475569; line-height: 1.4;">
+                          <strong style="font-size: 13px; color: #0f172a; display: block; margin-bottom: 2px;">Reply to this email</strong>
+                          <a href="mailto:${supportEmail}" style="color: #B71C1C; text-decoration: none; font-weight: 600;">${supportEmail}</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- 6. Dark Red Bottom Footer -->
+          <!-- 7. Footer Social Icons & Copyright -->
           <tr>
-            <td align="center" style="background-color: #B71C1C; padding: 18px 20px;">
-              <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 10px;">
+            <td align="center" style="padding: 10px 0 20px 0;">
+              
+              <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 12px;">
                 <tr>
                   <td style="padding: 0 6px;">
-                    <a href="https://facebook.com" style="display: inline-block; width: 26px; height: 26px; background-color: #ffffff; border-radius: 50%; text-align: center; line-height: 26px; color: #B71C1C; text-decoration: none; font-weight: bold; font-size: 12px;">f</a>
+                    <a href="https://facebook.com" style="display: inline-block; width: 28px; height: 28px; background-color: #B71C1C; border-radius: 50%; text-align: center; line-height: 28px; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 13px;">f</a>
                   </td>
                   <td style="padding: 0 6px;">
-                    <a href="https://instagram.com" style="display: inline-block; width: 26px; height: 26px; background-color: #ffffff; border-radius: 50%; text-align: center; line-height: 26px; color: #B71C1C; text-decoration: none; font-weight: bold; font-size: 12px;">📷</a>
+                    <a href="https://instagram.com" style="display: inline-block; width: 28px; height: 28px; background-color: #B71C1C; border-radius: 50%; text-align: center; line-height: 28px; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 13px;">📷</a>
                   </td>
                   <td style="padding: 0 6px;">
-                    <a href="https://youtube.com" style="display: inline-block; width: 26px; height: 26px; background-color: #ffffff; border-radius: 50%; text-align: center; line-height: 26px; color: #B71C1C; text-decoration: none; font-weight: bold; font-size: 12px;">▶</a>
+                    <a href="https://youtube.com" style="display: inline-block; width: 28px; height: 28px; background-color: #B71C1C; border-radius: 50%; text-align: center; line-height: 28px; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 13px;">▶</a>
                   </td>
                   <td style="padding: 0 6px;">
-                    <a href="https://x.com" style="display: inline-block; width: 26px; height: 26px; background-color: #ffffff; border-radius: 50%; text-align: center; line-height: 26px; color: #B71C1C; text-decoration: none; font-weight: bold; font-size: 12px;">𝕏</a>
+                    <a href="https://x.com" style="display: inline-block; width: 28px; height: 28px; background-color: #B71C1C; border-radius: 50%; text-align: center; line-height: 28px; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 13px;">𝕏</a>
                   </td>
                 </tr>
               </table>
 
-              <p style="margin: 0; font-size: 11px; color: #ffffff; font-weight: 500; letter-spacing: 0.5px;">
+              <p style="margin: 0; font-size: 12px; color: #64748b; font-weight: 500;">
                 © ${new Date().getFullYear()} Karviyam. All rights reserved.
               </p>
+
             </td>
           </tr>
 
