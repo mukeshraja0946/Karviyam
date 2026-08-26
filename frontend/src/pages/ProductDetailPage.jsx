@@ -49,7 +49,11 @@ export default function ProductDetailPage() {
   useEffect(() => {
     fetchProduct();
     window.addEventListener('karviyam_products_updated', fetchProduct);
-    return () => window.removeEventListener('karviyam_products_updated', fetchProduct);
+    window.addEventListener('storage', fetchProduct);
+    return () => {
+      window.removeEventListener('karviyam_products_updated', fetchProduct);
+      window.removeEventListener('storage', fetchProduct);
+    };
   }, [id]);
 
   const fetchProduct = async () => {
@@ -62,40 +66,41 @@ export default function ProductDetailPage() {
         item = apiData.data || apiData;
       } catch (e1) {}
 
-      if (!item || !item.id) {
-        try {
-          const savedAdmin = localStorage.getItem('karviyam_admin_products');
-          if (savedAdmin) {
-            const parsed = JSON.parse(savedAdmin);
-            if (Array.isArray(parsed)) {
-              item = parsed.find(p => String(p.id) === String(id) || String(p.sku) === String(id) || String(p.name) === String(id));
+      // Always check Admin saved products for real-time Admin edits!
+      try {
+        const savedAdmin = localStorage.getItem('karviyam_admin_products');
+        if (savedAdmin) {
+          const parsed = JSON.parse(savedAdmin);
+          if (Array.isArray(parsed)) {
+            const found = parsed.find(p => String(p.id) === String(id) || String(p.sku) === String(id) || String(p.name) === String(id));
+            if (found) {
+              item = { ...item, ...found };
             }
           }
-        } catch (eSaved) {}
-      }
+        }
+      } catch (eSaved) {}
 
-      // Default fallback item matching reference image
+      // Default fallback item if no item exists in database or admin cache
       if (!item || !item.id) {
         item = {
           id: id || 195,
           sku: 'KV-DEM-195',
-          name: 'Designer demo Edition 5',
-          price: 1128,
-          oldPrice: 1614,
-          discountPercent: 40,
+          name: 'Handcrafted demo Edition 4',
+          price: 1212,
+          oldPrice: 1564,
+          discountPercent: 23,
           rating: 4.5,
           ratingsCount: 128,
           reviewsCount: 45,
-          brand: 'DEELMO',
+          brand: 'KARVIYAM',
           imageUrl: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800',
           images: [
             'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800',
             'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800',
             'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800',
-            'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
-            'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800'
+            'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'
           ],
-          description: 'Premium textured linen casual button down shirt for men.'
+          description: 'Premium handcrafted apparel designed with fine attention to detail and traditional couture.'
         };
       }
 
@@ -458,128 +463,132 @@ export default function ProductDetailPage() {
           <div className="lg:col-span-4 space-y-4 h-[calc(100vh-160px)] overflow-y-auto overscroll-contain pr-2 scrollbar-thin text-xs">
             
             {/* 1. TOP HIGHLIGHTS */}
-            <div className="space-y-1.5">
-              <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
-                Top highlights
-              </h3>
+            {(() => {
+              const items = [
+                { label: 'Material composition', val: product?.material || product?.fabric || 'Cotton Blend' },
+                { label: 'Fit type', val: product?.fitType || 'Regular Fit' },
+                { label: 'Sleeve type', val: product?.sleeveType || 'Long Sleeve' },
+                { label: 'Collar style', val: product?.collarStyle || 'Spread Collar' },
+                { label: 'Neck style', val: product?.neckStyle || 'Collared Neck' },
+                { label: 'Style', val: product?.style || 'Western' },
+                { label: 'Country of Origin', val: product?.countryOfOrigin || 'India' }
+              ].filter(i => i.val && String(i.val).trim() !== '');
 
-              <div className="space-y-1 text-[11px]">
-                {[
-                  { label: 'Material composition', val: 'Cotton Blend' },
-                  { label: 'Fit type', val: 'Regular Fit' },
-                  { label: 'Sleeve type', val: 'Long Sleeve' },
-                  { label: 'Collar style', val: 'Spread Collar' },
-                  { label: 'Neck style', val: 'Collared Neck' },
-                  { label: 'Style', val: 'Western' },
-                  { label: 'Country of Origin', val: 'India' }
-                ].map((row, idx) => (
-                  <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
-                    <span className="font-bold text-slate-900 w-1/2">{row.label}</span>
-                    <span className="text-slate-700 font-medium w-1/2 text-right">{row.val}</span>
+              if (items.length === 0) return null;
+
+              return (
+                <div className="space-y-1.5">
+                  <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
+                    Top highlights
+                  </h3>
+                  <div className="space-y-1 text-[11px]">
+                    {items.map((row, idx) => (
+                      <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
+                        <span className="font-bold text-slate-900 w-1/2">{row.label}</span>
+                        <span className="text-slate-700 font-medium w-1/2 text-right">{row.val}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              );
+            })()}
 
             {/* 2. ABOUT THIS ITEM */}
-            <div className="space-y-1.5 pt-1">
-              <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
-                About this item
-              </h3>
+            {(() => {
+              let bullets = [];
+              if (Array.isArray(product?.aboutThisItem) && product.aboutThisItem.length > 0) {
+                bullets = product.aboutThisItem;
+              } else if (product?.description && typeof product.description === 'string') {
+                bullets = product.description.split('\n').map(l => l.trim()).filter(Boolean);
+              }
 
-              <ul className="space-y-1.5 text-[10.5px] text-slate-700 font-medium leading-normal">
-                <li className="flex items-start gap-1">
-                  <span className="text-[#B71C1C] font-bold shrink-0">•</span>
-                  <span>
-                    <strong className="text-slate-900">【Premium Material】</strong> This mens button down shirt is made of premium textured fabric, which is breathable, lightweight, soft, skin-friendly, keeping you cool and comfortable in the summer.
-                  </span>
-                </li>
+              if (bullets.length === 0) {
+                bullets = [
+                  "【Premium Quality】 Handcrafted with premium fabric and precise stitching for maximum comfort.",
+                  "【Versatile Design】 Elegant and stylish design suitable for casual, festive, and formal occasions.",
+                  "【Easy Care】 Easy to care for with standard washing instructions."
+                ];
+              }
 
-                <li className="flex items-start gap-1">
-                  <span className="text-[#B71C1C] font-bold shrink-0">•</span>
-                  <span>
-                    <strong className="text-slate-900">【Unique Design】</strong> Mens casual shirts feature long sleeve, spread collar, solid color, slight vertical ribbing, relaxed fit, simple and fashion.
-                  </span>
-                </li>
-
-                <li className="flex items-start gap-1">
-                  <span className="text-[#B71C1C] font-bold shrink-0">•</span>
-                  <span>
-                    <strong className="text-slate-900">【Various Outfits】</strong> Men linen shirts could be easy to match with linen shorts/pants, casual pants or shorts to create a simple but fashionable style.
-                  </span>
-                </li>
-
-                <li className="flex items-start gap-1">
-                  <span className="text-[#B71C1C] font-bold shrink-0">•</span>
-                  <span>
-                    <strong className="text-slate-900">【Occasions】</strong> Mens untucked shirts is a great choice for beach, wedding, vacation, cruises, tropical aloha theme, party, yoga, work or daily casual wear. Perfect great for all seasons, Just enjoy your vacation.
-                  </span>
-                </li>
-
-                <li className="flex items-start gap-1">
-                  <span className="text-[#B71C1C] font-bold shrink-0">•</span>
-                  <span>
-                    <strong className="text-slate-900">【Garment Care】</strong> Machine washable. Please refer to the size chart before ordering.
-                  </span>
-                </li>
-              </ul>
-            </div>
+              return (
+                <div className="space-y-1.5 pt-1">
+                  <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
+                    About this item
+                  </h3>
+                  <ul className="space-y-1.5 text-[10.5px] text-slate-700 font-medium leading-normal">
+                    {bullets.map((bullet, idx) => (
+                      <li key={idx} className="flex items-start gap-1">
+                        <span className="text-[#B71C1C] font-bold shrink-0">•</span>
+                        <span>{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
 
             {/* 3. ADDITIONAL INFORMATION */}
-            <div className="space-y-1.5 pt-1">
-              <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
-                Additional Information
-              </h3>
+            {(() => {
+              const info = [
+                { label: 'Manufacturer', val: product?.manufacturer || (product?.brand ? `${product.brand}, India` : 'Karviyam Couture, Surat, Gujarat') },
+                { label: 'Packer', val: product?.packer || 'Karviyam Fulfillment, India' },
+                { label: 'Importer', val: product?.importer || 'Karviyam Retail, India' },
+                { label: 'Item Weight', val: product?.weight ? `${product.weight} g` : '230 g' },
+                { label: 'Item Dimensions LxWxH', val: product?.dimensions || '23 x 22 x 1.8 Centimeters' },
+                { label: 'Net Quantity', val: '1.00 Count' },
+                { label: 'Generic Name', val: product?.categoryName || product?.type || 'Apparel' }
+              ].filter(i => i.val && String(i.val).trim() !== '');
 
-              <div className="space-y-1 text-[11px]">
-                {[
-                  { label: 'Manufacturer', val: 'DEELMO, DEELMO, Surat, Gujarat-395006' },
-                  { label: 'Packer', val: 'DEELMO, Surat, Gujarat-395006' },
-                  { label: 'Importer', val: 'DEELMO, Surat, Gujarat-395006' },
-                  { label: 'Item Weight', val: '230 g' },
-                  { label: 'Item Dimensions LxWxH', val: '23 x 22 x 1.8 Centimeters' },
-                  { label: 'Net Quantity', val: '1.00 Count' },
-                  { label: 'Generic Name', val: 'Shirt' }
-                ].map((row, idx) => (
-                  <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
-                    <span className="font-bold text-slate-900 w-2/5 shrink-0">{row.label}</span>
-                    <span className="text-slate-700 font-medium text-right truncate pl-2" title={row.val}>{row.val}</span>
+              if (info.length === 0) return null;
+
+              return (
+                <div className="space-y-1.5 pt-1">
+                  <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
+                    Additional Information
+                  </h3>
+                  <div className="space-y-1 text-[11px]">
+                    {info.map((row, idx) => (
+                      <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
+                        <span className="font-bold text-slate-900 w-2/5 shrink-0">{row.label}</span>
+                        <span className="text-slate-700 font-medium text-right truncate pl-2" title={row.val}>{row.val}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              );
+            })()}
 
             {/* 4. STYLE SPECIFICATIONS */}
-            <div className="space-y-1.5 pt-1">
-              <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
-                Style
-              </h3>
+            {(() => {
+              const styleList = [
+                { label: 'Brand Name', val: product?.brand || 'Karviyam' },
+                { label: 'Model Name', val: product?.modelName || product?.size || 'Standard' },
+                { label: 'Style Number', val: product?.sku || `KV-SKU-${product?.id || 195}` },
+                { label: 'Unit Count', val: '1.00 Count' },
+                { label: 'Country Of Origin', val: product?.countryOfOrigin || 'India' },
+                { label: 'Item Type Name', val: product?.type || product?.categoryName || 'Fashion' },
+                { label: 'Item Weight', val: product?.weight ? `${product.weight} Grams` : '230 Grams' },
+                { label: 'Manufacturer', val: product?.manufacturer || 'Karviyam' }
+              ].filter(i => i.val && String(i.val).trim() !== '');
 
-              <div className="space-y-1 text-[11px]">
-                {[
-                  { label: 'Brand Name', val: 'DEELMO' },
-                  { label: 'Model Name', val: 'S' },
-                  { label: 'Style Number', val: 'POP901_LINEN_F_SLEEVE_PP' },
-                  { label: 'Unit Count', val: '1.00 Count' },
-                  { label: 'Country Of Origin', val: 'India' },
-                  { label: 'number-of-items', val: '1' },
-                  { label: 'Age Range Description', val: 'Adult' },
-                  { label: 'Importer Contact Info', val: 'DEELMO, Surat, Gujarat-395006' },
-                  { label: 'Item Type Name', val: 'Shirt' },
-                  { label: 'Item Weight', val: '230 Grams' },
-                  { label: 'Manufacturer Contact Info', val: 'DEELMO, Surat, Gujarat-395006' },
-                  { label: 'Manufacturer', val: 'DEELMO, Surat, Gujarat-395006' },
-                  { label: 'Packer Contact Info', val: 'DEELMO, Surat, Gujarat-395006' },
-                  { label: 'Manufacturer Part Number', val: 'POP901_LINEN_F_SLEEVE_PP' },
-                  { label: 'Best Sellers Rank', val: '#27 in Clothing & Accessories (See Top 100 in Clothing & Accessories)' }
-                ].map((row, idx) => (
-                  <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
-                    <span className="font-bold text-slate-900 w-1/2 shrink-0">{row.label}</span>
-                    <span className="text-slate-700 font-medium text-right truncate pl-1" title={row.val}>{row.val}</span>
+              if (styleList.length === 0) return null;
+
+              return (
+                <div className="space-y-1.5 pt-1">
+                  <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
+                    Style
+                  </h3>
+                  <div className="space-y-1 text-[11px]">
+                    {styleList.map((row, idx) => (
+                      <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
+                        <span className="font-bold text-slate-900 w-1/2 shrink-0">{row.label}</span>
+                        <span className="text-slate-700 font-medium text-right truncate pl-1" title={row.val}>{row.val}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              );
+            })()}
 
           </div>
 

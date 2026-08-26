@@ -120,6 +120,14 @@ export default function DesktopCenterContent() {
 
   useEffect(() => {
     fetchProductsAndCategories();
+    window.addEventListener('karviyam_products_updated', fetchProductsAndCategories);
+    window.addEventListener('karviyam_categories_updated', fetchProductsAndCategories);
+    window.addEventListener('storage', fetchProductsAndCategories);
+    return () => {
+      window.removeEventListener('karviyam_products_updated', fetchProductsAndCategories);
+      window.removeEventListener('karviyam_categories_updated', fetchProductsAndCategories);
+      window.removeEventListener('storage', fetchProductsAndCategories);
+    };
   }, []);
 
   const fetchProductsAndCategories = async () => {
@@ -130,13 +138,27 @@ export default function DesktopCenterContent() {
       let list = Array.isArray(featData) ? featData : (Array.isArray(featData?.content) ? featData.content : []);
       
       if (!list || list.length === 0) {
-        const fallRes = await api.get('/products?size=6').catch(() => null);
+        const fallRes = await api.get('/products?size=10').catch(() => null);
         const fallData = fallRes?.data?.data || fallRes?.data;
         list = Array.isArray(fallData?.content) ? fallData.content : (Array.isArray(fallData) ? fallData : []);
       }
 
+      // Check Admin Saved Products for live updates
+      try {
+        const savedAdmin = localStorage.getItem('karviyam_admin_products');
+        if (savedAdmin) {
+          const parsed = JSON.parse(savedAdmin);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const activeAdminProds = parsed.filter(p => p.isActive !== false);
+            if (activeAdminProds.length > 0) {
+              list = [...activeAdminProds, ...list.filter(p => !activeAdminProds.some(a => String(a.id) === String(p.id)))];
+            }
+          }
+        }
+      } catch (eSaved) {}
+
       if (list && list.length > 0) {
-        const formatted = list.slice(0, 6).map((p, idx) => {
+        const formatted = list.filter(p => p.isActive !== false).slice(0, 6).map((p, idx) => {
           const price = p.price || DEFAULT_RECOMMENDED[idx % 6].price;
           const oldPrice = p.oldPrice || Math.round(price * 1.45);
           const disc = Math.round(((oldPrice - price) / oldPrice) * 100);
@@ -149,7 +171,7 @@ export default function DesktopCenterContent() {
             price: price,
             oldPrice: oldPrice,
             discount: `${disc}% OFF`,
-            image: p.imageUrl || DEFAULT_RECOMMENDED[idx % 6].image
+            image: p.imageUrl || (Array.isArray(p.images) && p.images[0]) || DEFAULT_RECOMMENDED[idx % 6].image
           };
         });
         
@@ -164,12 +186,23 @@ export default function DesktopCenterContent() {
       // Fetch Categories
       const catRes = await api.get('/categories/tree').catch(() => null);
       const catData = catRes?.data?.data || catRes?.data;
-      const catList = Array.isArray(catData) ? catData : [];
-      if (catList.length >= 7) {
+      let catList = Array.isArray(catData) ? catData : [];
+
+      try {
+        const savedCats = localStorage.getItem('karviyam_admin_categories');
+        if (savedCats) {
+          const parsedCats = JSON.parse(savedCats);
+          if (Array.isArray(parsedCats) && parsedCats.length > 0) {
+            catList = [...parsedCats, ...catList.filter(c => !parsedCats.some(s => String(s.id) === String(c.id)))];
+          }
+        }
+      } catch (eCats) {}
+
+      if (catList.length > 0) {
         const formattedCats = catList.slice(0, 7).map((c, i) => ({
           id: c.id,
-          name: (c.name || CATEGORIES_DATA[i].name).toUpperCase(),
-          image: c.imageUrl || CATEGORIES_DATA[i].image,
+          name: (c.name || CATEGORIES_DATA[i % CATEGORIES_DATA.length].name).toUpperCase(),
+          image: c.imageUrl || CATEGORIES_DATA[i % CATEGORIES_DATA.length].image,
           query: `category=${encodeURIComponent(c.name)}`
         }));
         setCategories(formattedCats);
