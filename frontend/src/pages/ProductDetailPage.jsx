@@ -229,7 +229,7 @@ export default function ProductDetailPage() {
       {/* ========================================================================= */}
       <div className="max-w-[1750px] mx-auto px-2 sm:px-8 py-1">
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 text-left items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-4 lg:gap-6 text-left items-start">
           
           {/* ======================================================= */}
           {/* COLUMN 1: LEFT IMAGE GALLERY (STATIONARY / FIXED)       */}
@@ -475,9 +475,9 @@ export default function ProductDetailPage() {
           {/* COLUMN 3: RIGHT SPECIFICATIONS & DETAILS                */}
           {/* DESKTOP: FIXED SCROLLABLE PANEL | MOBILE: NATURAL CONTINUOUS DOCUMENT SCROLL */}
           {/* ======================================================= */}
-          <div className="lg:col-span-4 space-y-4 lg:h-[calc(100vh-160px)] lg:overflow-y-auto lg:overscroll-contain pr-0 lg:pr-2 scrollbar-thin text-xs overflow-visible h-auto px-3.5 sm:px-6 lg:px-0 max-w-xl mx-auto lg:mx-0 w-full">
+          <div className="lg:col-span-4 space-y-2.5 sm:space-y-3.5 lg:space-y-4 lg:h-[calc(100vh-160px)] lg:overflow-y-auto lg:overscroll-contain pr-0 lg:pr-2 scrollbar-thin text-xs overflow-visible h-auto px-3.5 sm:px-6 lg:px-0 max-w-xl mx-auto lg:mx-0 w-full">
             
-            <div className="space-y-4">
+            <div className="space-y-2.5 sm:space-y-3">
               {/* 1. TOP HIGHLIGHTS */}
               {(() => {
                 const items = [
