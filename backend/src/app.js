@@ -101,6 +101,21 @@ app.use(
 );
 
 // --------------------------------------------------
+// AUTO-DECODE BASE64 IMAGES MIDDLEWARE
+// --------------------------------------------------
+const { processBase64Images } = require('./utils/base64Helper');
+app.use(async (req, res, next) => {
+  if (req.body && ['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    try {
+      req.body = await processBase64Images(req.body);
+    } catch (err) {
+      console.error('[Base64 Body Interceptor Error]:', err);
+    }
+  }
+  next();
+});
+
+// --------------------------------------------------
 // LOGGING
 // --------------------------------------------------
 
