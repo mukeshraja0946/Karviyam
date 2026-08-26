@@ -532,8 +532,8 @@ async function initDb() {
       }
 
       await pool.query(
-        `UPDATE users SET full_name = 'Karviyam Admin', password = ?, role = 'admin', status = 'Active', enabled = true WHERE id = ?`,
-        [passToKeep, adminId]
+        `UPDATE users SET role = 'admin', status = 'Active', enabled = true WHERE id = ?`,
+        [adminId]
       );
     }
 

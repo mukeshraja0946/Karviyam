@@ -28,22 +28,14 @@ export default function UserProfilePage() {
           orderCode: o.orderCode || o.trackingNumber || `#ORD${o.id}`,
           trackingNumber: o.trackingNumber || o.orderCode || `KV-TRK-${o.id}`,
           status: o.status || 'PENDING',
-          items: Array.isArray(o.items) && o.items.length > 0 ? o.items.map(i => ({
+          items: Array.isArray(o.items) ? o.items.map(i => ({
             id: i.id || Date.now(),
-            productName: i.productName || (i.product ? i.product.name : 'Product'),
-            productImage: i.productImage || (i.product ? i.product.imageUrl : 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'),
-            priceAtTime: i.priceAtTime != null ? i.priceAtTime : (i.price != null ? i.price : (i.product ? i.product.price : 899)),
+            productName: i.productName || (i.product ? i.product.name : 'Item'),
+            productImage: i.productImage || (i.product ? i.product.imageUrl : ''),
+            priceAtTime: i.priceAtTime != null ? i.priceAtTime : (i.price != null ? i.price : (i.product ? i.product.price : 0)),
             quantity: i.quantity || 1
-          })) : [
-            {
-              id: 1,
-              productName: 'Karviyam Cyberpunk Oversized Tee',
-              productImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
-              priceAtTime: 899,
-              quantity: 1
-            }
-          ],
-          totalAmount: o.totalAmount != null ? o.totalAmount : o.amount || 899,
+          })) : [],
+          totalAmount: o.totalAmount != null ? o.totalAmount : o.amount || 0,
           createdAt: o.createdAt || o.date || new Date().toISOString()
         }));
       }
@@ -68,21 +60,13 @@ export default function UserProfilePage() {
             orderCode: o.orderCode || `#ORD${o.id}`,
             trackingNumber: o.trackingNumber || o.orderCode || `KV-TRK-${o.id}`,
             status: o.status || 'PENDING',
-            items: Array.isArray(o.items) && o.items.length > 0 ? o.items.map(i => ({
+            items: Array.isArray(o.items) ? o.items.map(i => ({
               id: i.id || Date.now(),
-              productName: i.productName || (i.product ? i.product.name : 'Karviyam Item'),
-              productImage: i.productImage || (i.product ? i.product.imageUrl : 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'),
-              priceAtTime: i.priceAtTime != null ? i.priceAtTime : (i.price != null ? i.price : (i.product ? i.product.price : 899)),
+              productName: i.productName || (i.product ? i.product.name : 'Item'),
+              productImage: i.productImage || (i.product ? i.product.imageUrl : ''),
+              priceAtTime: i.priceAtTime != null ? i.priceAtTime : (i.price != null ? i.price : (i.product ? i.product.price : 0)),
               quantity: i.quantity || 1
-            })) : [
-              {
-                id: 1,
-                productName: 'Karviyam Cyberpunk Oversized Tee',
-                productImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
-                priceAtTime: 899,
-                quantity: 1
-              }
-            ],
+            })) : [],
             totalAmount: o.totalAmount != null ? o.totalAmount : o.amount || 899,
             createdAt: o.createdAt || o.date || new Date().toISOString()
           }));

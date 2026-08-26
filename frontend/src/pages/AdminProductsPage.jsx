@@ -233,30 +233,18 @@ export default function AdminProductsPage() {
       const prodData = prodRes.data?.data || prodRes.data || prodRes;
       const list = prodData.content || (Array.isArray(prodData) ? prodData : []);
 
-      setProducts(prev => {
-        if (list.length > 0) {
-          const merged = [...list];
-          prev.forEach(p => {
-            if (p && p.id && !merged.some(m => String(m.id) === String(p.id))) {
-              merged.unshift(p);
-            }
-          });
-          try { localStorage.setItem('karviyam_admin_products', JSON.stringify(merged)); } catch (e) {}
-          return merged;
-        } else if (prev.length > 0) {
-          try { localStorage.setItem('karviyam_admin_products', JSON.stringify(prev)); } catch (e) {}
-          return prev;
-        } else {
-          try {
-            const saved = localStorage.getItem('karviyam_admin_products');
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-            }
-          } catch (eSaved) {}
-          return [];
-        }
-      });
+      if (Array.isArray(list) && list.length > 0) {
+        setProducts(list);
+        try { localStorage.setItem('karviyam_admin_products', JSON.stringify(list)); } catch (e) {}
+      } else {
+        try {
+          const saved = localStorage.getItem('karviyam_admin_products');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
+          }
+        } catch (eSaved) {}
+      }
 
       const catData = catRes.data?.data || catRes.data || catRes;
       if (catData) {
