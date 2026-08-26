@@ -19,6 +19,7 @@ import {
   CornerDownLeft,
   ShieldAlert
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import ExportDropdown from '../components/ExportDropdown';
@@ -356,7 +357,15 @@ export default function AdminHelpSupportPage() {
           </h1>
           <p className="text-xs text-slate-500">Manage customer inquiries and send support messages to vanakkam@karviyam.com</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to="/admin/settings?tab=general"
+            className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 hover:text-[#B71C1C] text-xs font-bold rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Configure Customer Support Email Branding Logo"
+          >
+            <Mail className="w-3.5 h-3.5 text-[#B71C1C]" />
+            <span>Email Logo Settings</span>
+          </Link>
           <button
             onClick={handleCreateTestMessage}
             className="px-3 py-2 bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"

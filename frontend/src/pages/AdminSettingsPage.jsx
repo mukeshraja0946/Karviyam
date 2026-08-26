@@ -23,6 +23,7 @@ import api from '../utils/api';
 
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState('company'); // 'company', 'payment', 'sequence', 'general'
+  const [showEmailPreviewModal, setShowEmailPreviewModal] = useState(false);
 
   const [settings, setSettings] = useState({
     // Company Information
@@ -58,6 +59,7 @@ export default function AdminSettingsPage() {
     footerAbout: 'Karviyam is a premium marketplace destination for high-street streetwear, 925 sterling silver jewellery, luxury kicks, and lifestyle products.',
     announcementText: 'FESTIVE SALE IS LIVE! UP TO 60% OFF ON HIGH-STREET WEAR & FINE JEWELLERY.',
     logoUrl: '',
+    emailLogoUrl: '',
     maxProductImages: '6',
     
     // Category Navigation Setting
@@ -142,6 +144,7 @@ export default function AdminSettingsPage() {
           footerAbout: dataMap.footerAbout || prev.footerAbout,
           announcementText: dataMap.announcementText || prev.announcementText,
           logoUrl: dataMap.logoUrl || prev.logoUrl,
+          emailLogoUrl: dataMap.email_logo_url || dataMap.emailLogoUrl || prev.emailLogoUrl,
           maxProductImages: dataMap.maxProductImages || prev.maxProductImages,
           maintenanceMode: dataMap.maintenanceMode === 'true' || dataMap.maintenanceMode === true,
           maintenanceTitle: dataMap.maintenanceTitle || prev.maintenanceTitle,
@@ -181,6 +184,32 @@ export default function AdminSettingsPage() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleEmailLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+        toast.error('Invalid image type. Please upload a PNG, JPG, or WebP image.');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Email logo file size must be less than 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Logo = reader.result;
+        setSettings(prev => ({ ...prev, emailLogoUrl: base64Logo }));
+        toast.success('Custom email logo loaded! Click Save Settings to apply.');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveEmailLogo = () => {
+    setSettings(prev => ({ ...prev, emailLogoUrl: '' }));
+    toast.success('Custom email logo removed. Default Karviyam logo will be used.');
   };
 
   const handleSave = async (e) => {
@@ -278,6 +307,8 @@ export default function AdminSettingsPage() {
         footerAbout: settings.footerAbout,
         announcementText: settings.announcementText,
         logoUrl: settings.logoUrl || '',
+        email_logo_url: settings.emailLogoUrl || '',
+        emailLogoUrl: settings.emailLogoUrl || '',
         maxProductImages: String(settings.maxProductImages),
         maintenanceMode: String(settings.maintenanceMode),
         maintenanceLogoUrl: settings.maintenanceLogoUrl || '',
@@ -794,6 +825,87 @@ export default function AdminSettingsPage() {
                   <p className="text-[11px] text-slate-500 mt-1">Recommended format: PNG / SVG with transparent background</p>
                 </div>
               </div>
+
+              {/* Customer Support Email Header Logo Settings Box */}
+              <div className="border border-slate-200 p-5 rounded-2xl bg-white space-y-4 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-[#B71C1C]" />
+                      <span>Customer Support Email Branding Logo</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Upload a custom logo to display at the top of all customer support response emails.
+                    </p>
+                  </div>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
+                    settings.emailLogoUrl ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
+                  }`}>
+                    {settings.emailLogoUrl ? '✓ Active Custom Email Logo' : 'ℹ Default Karviyam Logo Active'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                  {/* Email Logo Preview Box */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center space-y-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Email Header Logo Preview</span>
+                    <div className="h-[85px] w-full max-w-[260px] mx-auto bg-white border border-slate-200 rounded-lg p-2 flex items-center justify-center shadow-2xs overflow-hidden">
+                      {settings.emailLogoUrl ? (
+                        <img src={settings.emailLogoUrl} alt="Active Email Logo" className="max-h-full max-w-full object-contain" />
+                      ) : (
+                        <div className="flex flex-col items-center">
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 3C12 3 8.5 7.5 8.5 12C8.5 14.5 10 16.5 12 17.5C14 16.5 15.5 14.5 15.5 12C15.5 7.5 12 3 12 3Z" fill="#B71C1C"/>
+                            <path d="M12 17.5C9.5 16.8 6 14 6 11C6 9 7.5 7.5 7.5 7.5C7.5 7.5 5 10.5 5 13.5C5 16.5 8 18.5 12 19C16 18.5 19 16.5 19 13.5C19 10.5 16.5 7.5 16.5 7.5C16.5 7.5 18 9 18 11C18 14 14.5 16.8 12 17.5Z" fill="#B71C1C"/>
+                            <path d="M12 19C7 18.5 3 15.5 3 13.5C3 12 4 10.5 4 10.5C4 10.5 2 12.5 2 15C2 17.5 6 20.5 12 21C18 20.5 22 17.5 22 15C22 12.5 20 10.5 20 10.5C20 10.5 21 12 21 13.5C21 15.5 17 18.5 12 19Z" fill="#B71C1C"/>
+                          </svg>
+                          <span className="font-serif font-black text-xs text-[#B71C1C] tracking-widest uppercase">KARVIYAM</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label htmlFor="emailLogoFileInput" className="bg-[#B71C1C] hover:bg-[#8E1414] text-white px-4 py-2 rounded-xl font-bold text-xs transition-colors cursor-pointer inline-flex items-center gap-2 shadow-2xs">
+                        <Upload className="w-4 h-4" />
+                        <span>{settings.emailLogoUrl ? 'Change Email Logo' : 'Upload Email Logo'}</span>
+                      </label>
+                      <input
+                        type="file"
+                        id="emailLogoFileInput"
+                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                        onChange={handleEmailLogoUpload}
+                        className="hidden"
+                      />
+
+                      {settings.emailLogoUrl && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveEmailLogo}
+                          className="bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-[#B71C1C] border border-slate-200 px-3.5 py-2 rounded-xl font-bold text-xs transition-colors"
+                        >
+                          Remove Logo
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setShowEmailPreviewModal(true)}
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl font-bold text-xs transition-colors inline-flex items-center gap-1.5"
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>Preview Email</span>
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500">
+                      Supported formats: <strong>PNG, JPG/JPEG, WebP</strong> (Max 5MB). Image max-width in email: <strong>250px</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -999,6 +1111,94 @@ export default function AdminSettingsPage() {
         </div>
 
       </form>
+
+      {/* ========================================================= */}
+      {/* CUSTOMER SUPPORT EMAIL PREVIEW MODAL                      */}
+      {/* ========================================================= */}
+      {showEmailPreviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-4 shadow-2xl border border-slate-200 text-left max-h-[90vh] overflow-y-auto">
+            
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-[#B71C1C]" />
+                <h3 className="font-bold text-slate-900 text-base">Customer Support Response Email Live Preview</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEmailPreviewModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              This preview shows how customer support response emails appear in Gmail, Outlook, and mobile apps using your active email logo configuration.
+            </p>
+
+            {/* Email Canvas Preview Box */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 text-xs font-sans">
+              
+              {/* Header Logo */}
+              <div className="text-center pb-3 border-b border-slate-100 flex items-center justify-center">
+                {settings.emailLogoUrl ? (
+                  <img src={settings.emailLogoUrl} alt="Karviyam Logo" className="max-h-16 max-w-[240px] object-contain mx-auto" />
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 3C12 3 8.5 7.5 8.5 12C8.5 14.5 10 16.5 12 17.5C14 16.5 15.5 14.5 15.5 12C15.5 7.5 12 3 12 3Z" fill="#B71C1C"/>
+                      <path d="M12 17.5C9.5 16.8 6 14 6 11C6 9 7.5 7.5 7.5 7.5C7.5 7.5 5 10.5 5 13.5C5 16.5 8 18.5 12 19C16 18.5 19 16.5 19 13.5C19 10.5 16.5 7.5 16.5 7.5C16.5 7.5 18 9 18 11C18 14 14.5 16.8 12 17.5Z" fill="#B71C1C"/>
+                      <path d="M12 19C7 18.5 3 15.5 3 13.5C3 12 4 10.5 4 10.5C4 10.5 2 12.5 2 15C2 17.5 6 20.5 12 21C18 20.5 22 17.5 22 15C22 12.5 20 10.5 20 10.5C20 10.5 21 12 21 13.5C21 15.5 17 18.5 12 19Z" fill="#B71C1C"/>
+                    </svg>
+                    <span className="font-serif font-black text-xl text-[#B71C1C] tracking-widest uppercase mt-1">KARVIYAM</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Timeless Style. Trusted Quality.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Subject & Header Info */}
+              <div className="flex justify-between items-center text-slate-600 text-[11px] pb-2 border-b border-slate-100">
+                <span>Subject: <strong className="text-slate-900">Re: Customer Support Inquiry (#5000001)</strong></span>
+                <span>{new Date().toLocaleDateString('en-GB')}</span>
+              </div>
+
+              {/* Body Content */}
+              <div className="space-y-3 text-slate-700 leading-relaxed text-xs">
+                <p>Hello <strong>Valued Customer</strong>,</p>
+                <p>Hello from Karviyam Customer Support,</p>
+                <p>We understand that you have an issue regarding Order <strong className="text-[#B71C1C]">#5000001</strong>.</p>
+                <div className="bg-slate-50 border-l-4 border-[#B71C1C] p-3 rounded-r-xl font-medium text-slate-800">
+                  We have verified your request. Your inquiry has been processed and resolved by our support team.
+                </div>
+                <p>We appreciate your cooperation and understanding in this regard.</p>
+                <p>Thank you for choosing Karviyam,</p>
+                <div>
+                  <strong className="text-[#B71C1C] block font-bold text-sm">Karviyam Support Team</strong>
+                  <span className="text-slate-500 font-mono text-[11px]">vanakkam@karviyam.com</span>
+                </div>
+              </div>
+
+              {/* Pre-footer Info & Social Links */}
+              <div className="border-t border-slate-100 pt-4 text-center text-[10px] text-slate-400 space-y-1">
+                <p>© {new Date().getFullYear()} Karviyam. All rights reserved.</p>
+              </div>
+
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowEmailPreviewModal(false)}
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs hover:bg-slate-800 transition-colors"
+              >
+                Close Preview
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

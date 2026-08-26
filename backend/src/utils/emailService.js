@@ -129,6 +129,60 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
   const cleanCustomerName = customerName || 'Valued Customer';
   const formattedReplyText = String(replyMessage || '').split('\n').map(p => p.trim()).filter(Boolean).map(p => `<p style="margin: 0 0 14px 0; font-size: 14.5px; line-height: 1.6; color: #1e293b;">${p}</p>`).join('');
 
+  // Dynamically load Admin Email Logo setting from database
+  let customEmailLogoUrl = '';
+  try {
+    const [logoRows] = await pool.query(
+      "SELECT setting_value FROM settings WHERE setting_key IN ('email_logo_url', 'emailLogoUrl') AND setting_value IS NOT NULL AND setting_value != '' LIMIT 1"
+    );
+    if (logoRows && logoRows.length > 0 && logoRows[0].setting_value) {
+      customEmailLogoUrl = String(logoRows[0].setting_value).trim();
+    }
+  } catch (eLogo) {}
+
+  let logoHeaderHtml = '';
+  if (customEmailLogoUrl) {
+    let fullLogoUrl = customEmailLogoUrl;
+    if (fullLogoUrl.startsWith('/')) {
+      const baseUrl = process.env.BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com';
+      fullLogoUrl = `${baseUrl.replace(/\/$/, '')}${fullLogoUrl}`;
+    }
+
+    logoHeaderHtml = `
+      <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+        <tr>
+          <td align="center" style="padding: 10px 0 16px 0;">
+            <img src="${fullLogoUrl}" alt="Karviyam" style="max-width: 250px; max-height: 80px; width: auto; height: auto; display: block; border: 0; outline: none; text-decoration: none;" />
+          </td>
+        </tr>
+      </table>
+    `;
+  } else {
+    logoHeaderHtml = `
+      <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+        <tr>
+          <td align="center">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: 0 auto;">
+              <path d="M12 3C12 3 8.5 7.5 8.5 12C8.5 14.5 10 16.5 12 17.5C14 16.5 15.5 14.5 15.5 12C15.5 7.5 12 3 12 3Z" fill="#B71C1C"/>
+              <path d="M12 17.5C9.5 16.8 6 14 6 11C6 9 7.5 7.5 7.5 7.5C7.5 7.5 5 10.5 5 13.5C5 16.5 8 18.5 12 19C16 18.5 19 16.5 19 13.5C19 10.5 16.5 7.5 16.5 7.5C16.5 7.5 18 9 18 11C18 14 14.5 16.8 12 17.5Z" fill="#B71C1C"/>
+              <path d="M12 19C7 18.5 3 15.5 3 13.5C3 12 4 10.5 4 10.5C4 10.5 2 12.5 2 15C2 17.5 6 20.5 12 21C18 20.5 22 17.5 22 15C22 12.5 20 10.5 20 10.5C20 10.5 21 12 21 13.5C21 15.5 17 18.5 12 19Z" fill="#B71C1C"/>
+            </svg>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding-top: 6px;">
+            <span style="font-family: Georgia, 'Times New Roman', serif; font-size: 28px; font-weight: 900; color: #B71C1C; letter-spacing: 3px; text-transform: uppercase;">KARVIYAM</span>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding-top: 2px;">
+            <span style="font-size: 12px; color: #64748b; font-weight: 500; letter-spacing: 0.5px;">Timeless Style. Trusted Quality.</span>
+          </td>
+        </tr>
+      </table>
+    `;
+  }
+
   const mailOptions = {
     from: `"Karviyam Support" <${fromUser}>`,
     to: toEmail,
@@ -154,27 +208,7 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
           <!-- 1. Header Logo & Brand -->
           <tr>
             <td align="center" style="padding: 10px 0 20px 0;">
-              <table role="presentation" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td align="center">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: 0 auto;">
-                      <path d="M12 3C12 3 8.5 7.5 8.5 12C8.5 14.5 10 16.5 12 17.5C14 16.5 15.5 14.5 15.5 12C15.5 7.5 12 3 12 3Z" fill="#B71C1C"/>
-                      <path d="M12 17.5C9.5 16.8 6 14 6 11C6 9 7.5 7.5 7.5 7.5C7.5 7.5 5 10.5 5 13.5C5 16.5 8 18.5 12 19C16 18.5 19 16.5 19 13.5C19 10.5 16.5 7.5 16.5 7.5C16.5 7.5 18 9 18 11C18 14 14.5 16.8 12 17.5Z" fill="#B71C1C"/>
-                      <path d="M12 19C7 18.5 3 15.5 3 13.5C3 12 4 10.5 4 10.5C4 10.5 2 12.5 2 15C2 17.5 6 20.5 12 21C18 20.5 22 17.5 22 15C22 12.5 20 10.5 20 10.5C20 10.5 21 12 21 13.5C21 15.5 17 18.5 12 19Z" fill="#B71C1C"/>
-                    </svg>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center" style="padding-top: 6px;">
-                    <span style="font-family: Georgia, 'Times New Roman', serif; font-size: 28px; font-weight: 900; color: #B71C1C; letter-spacing: 3px; text-transform: uppercase;">KARVIYAM</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center" style="padding-top: 2px;">
-                    <span style="font-size: 12px; color: #64748b; font-weight: 500; letter-spacing: 0.5px;">Timeless Style. Trusted Quality.</span>
-                  </td>
-                </tr>
-              </table>
+              ${logoHeaderHtml}
             </td>
           </tr>
 
