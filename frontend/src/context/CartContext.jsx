@@ -72,9 +72,9 @@ export const CartProvider = ({ children }) => {
   const loadLocalStorageCart = () => {
     try {
       const saved = localStorage.getItem('karviyam_cart_items');
-      if (saved) {
+      if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           setCart({ items: parsed });
           return;
         }
@@ -82,9 +82,7 @@ export const CartProvider = ({ children }) => {
     } catch (e) {
       console.error(e);
     }
-    // Fallback if empty
-    setCart({ items: DEFAULT_SAMPLE_ITEMS });
-    localStorage.setItem('karviyam_cart_items', JSON.stringify(DEFAULT_SAMPLE_ITEMS));
+    setCart({ items: [] });
   };
 
   const addToCart = async (target, quantity = 1, selectedSize = 'M', selectedColor = 'Standard') => {
@@ -183,11 +181,11 @@ export const CartProvider = ({ children }) => {
         await api.delete('/cart/clear').catch(() => {});
       }
       setCart({ items: [] });
-      localStorage.removeItem('karviyam_cart_items');
+      localStorage.setItem('karviyam_cart_items', JSON.stringify([]));
     } catch (err) {
       console.error('Clear cart error:', err);
       setCart({ items: [] });
-      localStorage.removeItem('karviyam_cart_items');
+      localStorage.setItem('karviyam_cart_items', JSON.stringify([]));
     }
   };
 
