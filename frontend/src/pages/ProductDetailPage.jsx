@@ -499,9 +499,9 @@ export default function ProductDetailPage() {
                     </h3>
                     <div className="space-y-0.5 text-[11px]">
                       {items.map((row, idx) => (
-                        <div key={idx} className="grid grid-cols-[140px_1fr] sm:grid-cols-[165px_1fr] items-center py-1 px-1 border-b border-slate-100/80">
+                        <div key={idx} className="grid grid-cols-[140px_1fr] lg:grid-cols-[165px_1fr] items-center py-1 px-1 border-b border-slate-100/80">
                           <span className="font-bold text-slate-900 pr-2 truncate">{row.label}</span>
-                          <span className="text-slate-700 font-medium text-right truncate" title={row.val}>{row.val}</span>
+                          <span className="text-slate-700 font-medium text-left lg:text-right truncate" title={row.val}>{row.val}</span>
                         </div>
                       ))}
                     </div>
@@ -564,9 +564,9 @@ export default function ProductDetailPage() {
                     </h3>
                     <div className="space-y-0.5 text-[11px]">
                       {info.map((row, idx) => (
-                        <div key={idx} className="grid grid-cols-[140px_1fr] sm:grid-cols-[165px_1fr] items-center py-1 px-1 border-b border-slate-100/80">
+                        <div key={idx} className="grid grid-cols-[140px_1fr] lg:grid-cols-[165px_1fr] items-center py-1 px-1 border-b border-slate-100/80">
                           <span className="font-bold text-slate-900 pr-2 truncate">{row.label}</span>
-                          <span className="text-slate-700 font-medium text-right truncate" title={row.val}>{row.val}</span>
+                          <span className="text-slate-700 font-medium text-left lg:text-right truncate" title={row.val}>{row.val}</span>
                         </div>
                       ))}
                     </div>
@@ -596,9 +596,9 @@ export default function ProductDetailPage() {
                     </h3>
                     <div className="space-y-0.5 text-[11px]">
                       {styleList.map((row, idx) => (
-                        <div key={idx} className="grid grid-cols-[140px_1fr] sm:grid-cols-[165px_1fr] items-center py-1 px-1 border-b border-slate-100/80">
+                        <div key={idx} className="grid grid-cols-[140px_1fr] lg:grid-cols-[165px_1fr] items-center py-1 px-1 border-b border-slate-100/80">
                           <span className="font-bold text-slate-900 pr-2 truncate">{row.label}</span>
-                          <span className="text-slate-700 font-medium text-right truncate" title={row.val}>{row.val}</span>
+                          <span className="text-slate-700 font-medium text-left lg:text-right truncate" title={row.val}>{row.val}</span>
                         </div>
                       ))}
                     </div>
