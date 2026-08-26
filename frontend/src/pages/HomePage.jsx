@@ -141,9 +141,6 @@ export default function HomePage() {
           {/* Column 3: Right Column */}
           <DesktopSidebarRight />
         </div>
-
-        {/* Bottom Trust Strip */}
-        <DesktopTrustBar />
       </div>
 
       {/* ========================================================= */}
