@@ -54,6 +54,119 @@ export default function CheckoutPage() {
     };
   }, []);
 
+  // Dynamic Payment Method Settings (Controlled by Admin → Database)
+  const [paymentSettings, setPaymentSettings] = useState({
+    codEnabled: true,
+    onlinePaymentEnabled: false,
+    razorpayEnabled: false,
+    stripeEnabled: false,
+    defaultPaymentMethod: 'COD'
+  });
+
+  const fetchPaymentSettings = async () => {
+    try {
+      const payRes = await api.get('/settings/payment').catch(() => null);
+      const payData = payRes?.data?.data || payRes?.data || {};
+
+      const res = await api.get('/settings').catch(() => null);
+      const apiData = res?.data ? res.data : (res || {});
+      const dataMap = apiData.data || apiData || {};
+
+      let localPay = {};
+      try {
+        const saved = localStorage.getItem('karviyam_admin_payment_settings');
+        if (saved) localPay = JSON.parse(saved);
+      } catch (e) {}
+
+      const checkB = (val, defaultVal = true) => {
+        if (val === undefined || val === null) return defaultVal;
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'number') return val === 1;
+        if (typeof val === 'string') {
+          const l = val.trim().toLowerCase();
+          if (l === 'true' || l === '1') return true;
+          if (l === 'false' || l === '0') return false;
+        }
+        return defaultVal;
+      };
+
+      const codVal = payData.codEnabled !== undefined ? payData.codEnabled : (dataMap.codEnabled !== undefined ? dataMap.codEnabled : localPay.codEnabled);
+      const onlineVal = payData.onlinePaymentEnabled !== undefined ? payData.onlinePaymentEnabled : (dataMap.onlinePaymentEnabled !== undefined ? dataMap.onlinePaymentEnabled : localPay.onlinePaymentEnabled);
+      const rzpVal = payData.razorpayEnabled !== undefined ? payData.razorpayEnabled : (dataMap.razorpayEnabled !== undefined ? dataMap.razorpayEnabled : localPay.razorpayEnabled);
+      const stpVal = payData.stripeEnabled !== undefined ? payData.stripeEnabled : (dataMap.stripeEnabled !== undefined ? dataMap.stripeEnabled : localPay.stripeEnabled);
+      const defVal = payData.defaultPaymentMethod || dataMap.defaultPaymentMethod || localPay.defaultPaymentMethod || 'COD';
+
+      setPaymentSettings({
+        codEnabled: checkB(codVal, true),
+        onlinePaymentEnabled: checkB(onlineVal, false),
+        razorpayEnabled: checkB(rzpVal, false),
+        stripeEnabled: checkB(stpVal, false),
+        defaultPaymentMethod: defVal
+      });
+    } catch (e) {
+      console.error('Failed to fetch payment settings:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchPaymentSettings();
+    window.addEventListener('karviyam_settings_updated', fetchPaymentSettings);
+    window.addEventListener('storage', fetchPaymentSettings);
+    return () => {
+      window.removeEventListener('karviyam_settings_updated', fetchPaymentSettings);
+      window.removeEventListener('storage', fetchPaymentSettings);
+    };
+  }, []);
+
+  // Compute strictly allowed payment methods based on Admin Settings
+  const isCodAvailable = paymentSettings.codEnabled === true;
+  const isOnlineMasterEnabled = paymentSettings.onlinePaymentEnabled === true;
+  const isRazorpayAvailable = isOnlineMasterEnabled && paymentSettings.razorpayEnabled === true;
+  const isStripeAvailable = isOnlineMasterEnabled && paymentSettings.stripeEnabled === true;
+
+  const availablePaymentMethods = [];
+  if (isCodAvailable) {
+    availablePaymentMethods.push({
+      id: 'COD',
+      name: 'Cash on Delivery (COD)',
+      desc: 'Pay cash upon doorstep delivery',
+      badge: 'Popular',
+      iconClass: 'bg-amber-50 text-amber-700',
+      IconComponent: Banknote
+    });
+  }
+  if (isRazorpayAvailable) {
+    availablePaymentMethods.push({
+      id: 'UPI',
+      name: 'UPI / GPay / PhonePe / Razorpay',
+      desc: 'Instant QR & App payment via Razorpay',
+      iconClass: 'bg-purple-50 text-purple-700',
+      IconComponent: Smartphone
+    });
+  }
+  if (isStripeAvailable) {
+    availablePaymentMethods.push({
+      id: 'CARD',
+      name: 'Credit / Debit Card (Stripe)',
+      desc: 'Visa, Mastercard, RuPay via Stripe',
+      iconClass: 'bg-blue-50 text-blue-700',
+      IconComponent: CreditCard
+    });
+  }
+
+  // Pre-select default payment method or first available
+  useEffect(() => {
+    if (availablePaymentMethods.length > 0) {
+      const defMethod = (paymentSettings.defaultPaymentMethod || '').toUpperCase();
+      const match = availablePaymentMethods.find(m => m.id === defMethod || m.name.toUpperCase().includes(defMethod));
+      if (match) {
+        setSelectedPaymentMethod(match.id);
+      } else if (!availablePaymentMethods.some(m => m.id === selectedPaymentMethod)) {
+        setSelectedPaymentMethod(availablePaymentMethods[0].id);
+      }
+    }
+  }, [paymentSettings.defaultPaymentMethod, availablePaymentMethods.length, paymentModalOpen]);
+
   const [selectedAddrId, setSelectedAddrId] = useState(1);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
 
@@ -664,83 +777,46 @@ export default function CheckoutPage() {
               </div>
 
               <div className="space-y-2.5 pt-1">
-                
-                {/* 1. Cash on Delivery */}
-                <label 
-                  onClick={() => setSelectedPaymentMethod('COD')}
-                  className={`flex items-center justify-between p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
-                    selectedPaymentMethod === 'COD' ? 'border-[#B71C1C] bg-red-50/40 shadow-xs' : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="pmethod"
-                      checked={selectedPaymentMethod === 'COD'}
-                      onChange={() => setSelectedPaymentMethod('COD')}
-                      className="accent-[#B71C1C] w-4 h-4"
-                    />
-                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-                      <Banknote className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-xs text-slate-900 block leading-tight">Cash on Delivery (COD)</span>
-                      <span className="text-[10px] text-slate-500 font-medium block leading-tight">Pay cash upon doorstep delivery</span>
-                    </div>
+                {availablePaymentMethods.length === 0 ? (
+                  <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs font-bold text-center space-y-1">
+                    <p>⚠️ Payment options are currently unavailable.</p>
+                    <p className="text-[10px] font-normal text-amber-700">Please contact store administration to enable payment options.</p>
                   </div>
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Popular</span>
-                </label>
-
-                {/* 2. UPI / GPay / PhonePe */}
-                <label 
-                  onClick={() => setSelectedPaymentMethod('UPI')}
-                  className={`flex items-center justify-between p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
-                    selectedPaymentMethod === 'UPI' ? 'border-[#B71C1C] bg-red-50/40 shadow-xs' : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="pmethod"
-                      checked={selectedPaymentMethod === 'UPI'}
-                      onChange={() => setSelectedPaymentMethod('UPI')}
-                      className="accent-[#B71C1C] w-4 h-4"
-                    />
-                    <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
-                      <Smartphone className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-xs text-slate-900 block leading-tight">UPI / GPay / PhonePe</span>
-                      <span className="text-[10px] text-slate-500 font-medium block leading-tight">Instant QR & App payment</span>
-                    </div>
-                  </div>
-                </label>
-
-                {/* 3. Credit / Debit Card */}
-                <label 
-                  onClick={() => setSelectedPaymentMethod('CARD')}
-                  className={`flex items-center justify-between p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
-                    selectedPaymentMethod === 'CARD' ? 'border-[#B71C1C] bg-red-50/40 shadow-xs' : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="pmethod"
-                      checked={selectedPaymentMethod === 'CARD'}
-                      onChange={() => setSelectedPaymentMethod('CARD')}
-                      className="accent-[#B71C1C] w-4 h-4"
-                    />
-                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
-                      <CreditCard className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-xs text-slate-900 block leading-tight">Credit / Debit Card</span>
-                      <span className="text-[10px] text-slate-500 font-medium block leading-tight">Visa, Mastercard, RuPay</span>
-                    </div>
-                  </div>
-                </label>
-
+                ) : (
+                  availablePaymentMethods.map((pm) => {
+                    const IconComp = pm.IconComponent;
+                    const isSelected = selectedPaymentMethod === pm.id;
+                    return (
+                      <label 
+                        key={pm.id}
+                        onClick={() => setSelectedPaymentMethod(pm.id)}
+                        className={`flex items-center justify-between p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                          isSelected ? 'border-[#B71C1C] bg-red-50/40 shadow-xs' : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="pmethod"
+                            checked={isSelected}
+                            onChange={() => setSelectedPaymentMethod(pm.id)}
+                            className="accent-[#B71C1C] w-4 h-4"
+                          />
+                          <div className={`w-8 h-8 rounded-xl ${pm.iconClass} flex items-center justify-center shrink-0`}>
+                            <IconComp className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="font-bold text-xs text-slate-900 block leading-tight">{pm.name}</span>
+                            <span className="text-[10px] text-slate-500 font-medium block leading-tight">{pm.desc}</span>
+                          </div>
+                        </div>
+                        {pm.badge && (
+                          <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">{pm.badge}</span>
+                        )}
+                      </label>
+                    );
+                  })
+                )}
               </div>
 
               {/* Action Buttons */}
@@ -748,8 +824,8 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={handleConfirmAndPlaceOrder}
-                  disabled={submitting}
-                  className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                  disabled={submitting || availablePaymentMethods.length === 0}
+                  className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] disabled:opacity-50 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>

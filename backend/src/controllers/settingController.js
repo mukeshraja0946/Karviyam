@@ -75,11 +75,23 @@ exports.getPaymentSettings = async (req, res, next) => {
       settingsObj[r.setting_key] = val;
     });
 
-    const cod = settingsObj.codEnabled !== false && settingsObj.codEnabled !== 'false';
-    const online = settingsObj.onlinePaymentEnabled !== false && settingsObj.onlinePaymentEnabled !== 'false';
-    const rzp = online && settingsObj.razorpayEnabled !== false && settingsObj.razorpayEnabled !== 'false';
-    const stp = online && settingsObj.stripeEnabled !== false && settingsObj.stripeEnabled !== 'false';
-    const def = settingsObj.defaultPaymentMethod || (cod ? 'COD' : (rzp ? 'Razorpay' : (stp ? 'Stripe' : 'COD')));
+    const checkB = (val, defaultVal = true) => {
+      if (val === undefined || val === null) return defaultVal;
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'number') return val === 1;
+      if (typeof val === 'string') {
+        const l = val.trim().toLowerCase();
+        if (l === 'true' || l === '1') return true;
+        if (l === 'false' || l === '0') return false;
+      }
+      return defaultVal;
+    };
+
+    const cod = checkB(settingsObj.codEnabled, true);
+    const online = checkB(settingsObj.onlinePaymentEnabled, false);
+    const rzp = checkB(settingsObj.razorpayEnabled, false);
+    const stp = checkB(settingsObj.stripeEnabled, false);
+    const def = settingsObj.defaultPaymentMethod || (cod ? 'COD' : (online && rzp ? 'Razorpay' : (online && stp ? 'Stripe' : 'COD')));
 
     const data = {
       cod_enabled: cod,

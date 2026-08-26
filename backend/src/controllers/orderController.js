@@ -95,19 +95,31 @@ exports.checkout = async (req, res, next) => {
         settingsMap[r.setting_key] = val;
       });
 
-      const cod = settingsMap.codEnabled !== false && settingsMap.codEnabled !== 'false';
-      const online = settingsMap.onlinePaymentEnabled !== false && settingsMap.onlinePaymentEnabled !== 'false';
-      const rzp = online && settingsMap.razorpayEnabled !== false && settingsMap.razorpayEnabled !== 'false';
-      const stp = online && settingsMap.stripeEnabled !== false && settingsMap.stripeEnabled !== 'false';
+      const checkB = (val, defaultVal = true) => {
+        if (val === undefined || val === null) return defaultVal;
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'number') return val === 1;
+        if (typeof val === 'string') {
+          const l = val.trim().toLowerCase();
+          if (l === 'true' || l === '1') return true;
+          if (l === 'false' || l === '0') return false;
+        }
+        return defaultVal;
+      };
+
+      const cod = checkB(settingsMap.codEnabled, true);
+      const online = checkB(settingsMap.onlinePaymentEnabled, false);
+      const rzp = online && checkB(settingsMap.razorpayEnabled, false);
+      const stp = online && checkB(settingsMap.stripeEnabled, false);
 
       if (normalizedMethod === 'COD' && !cod) {
         return res.status(400).json(ApiResponse.error('Cash on Delivery (COD) is currently disabled by administrator.'));
       }
       if ((normalizedMethod === 'RAZORPAY' || normalizedMethod === 'UPI') && (!online || !rzp)) {
-        return res.status(400).json(ApiResponse.error('Razorpay payment gateway is currently disabled by administrator.'));
+        return res.status(400).json(ApiResponse.error('Selected online payment method is currently disabled by administrator.'));
       }
       if ((normalizedMethod === 'STRIPE' || normalizedMethod === 'CARD') && (!online || !stp)) {
-        return res.status(400).json(ApiResponse.error('Stripe payment gateway is currently disabled by administrator.'));
+        return res.status(400).json(ApiResponse.error('Selected card payment method is currently disabled by administrator.'));
       }
     } catch (eSettings) {}
 
