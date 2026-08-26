@@ -1,8 +1,20 @@
-const getTransporters = () => {
-  const host = process.env.SMTP_HOST || 'smtp.hostinger.com';
-  const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465;
-  const user = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
-  const pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.HOSTINGER_SMTP_PASS || process.env.MAIL_PASS || '';
+const nodemailer = require('nodemailer');
+const pool = require('../config/db');
+
+const getTransporters = async () => {
+  let host = process.env.SMTP_HOST || 'smtp.hostinger.com';
+  let port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465;
+  let user = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+  let pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.HOSTINGER_SMTP_PASS || process.env.MAIL_PASS || '';
+
+  if (!pass) {
+    try {
+      const [rows] = await pool.query("SELECT setting_value FROM settings WHERE setting_key IN ('smtp_pass', 'smtp_password', 'email_password') AND setting_value IS NOT NULL AND setting_value != '' LIMIT 1");
+      if (rows && rows.length > 0 && rows[0].setting_value) {
+        pass = rows[0].setting_value;
+      }
+    } catch (eDb) {}
+  }
 
   const list = [];
 
@@ -91,7 +103,7 @@ exports.sendContactEmail = async ({ name, email, subject, message, source = 'Cus
     `
   };
 
-  const transporters = getTransporters();
+  const transporters = await getTransporters();
   for (const transporter of transporters) {
     try {
       const info = await transporter.sendMail(mailOptions);
@@ -317,7 +329,7 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
     `
   };
 
-  const transporters = getTransporters();
+  const transporters = await getTransporters();
   let lastErr = null;
 
   for (const transporter of transporters) {
