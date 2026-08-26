@@ -39,6 +39,7 @@ export default function CategoryCards() {
       }
 
       if (list.length > 0) {
+        const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
         const formatted = list.map((cat) => {
           const catType = (cat.type || cat.name || '').toUpperCase();
           const fallbackImg = CATEGORY_TYPE_IMAGES[catType] || DEFAULT_PLACEHOLDER_IMAGE;
@@ -47,11 +48,16 @@ export default function CategoryCards() {
             ? cat.description
             : (subCount > 0 ? `${subCount} Collections` : 'Exclusive Collection');
 
+          let img = cat.imageUrl || cat.iconUrl || fallbackImg;
+          if (img.startsWith('/')) {
+            img = `${apiOrigin}${img}`;
+          }
+
           return {
             id: cat.id,
             name: cat.name,
             count: countText,
-            image: cat.imageUrl || cat.iconUrl || fallbackImg,
+            image: img,
             query: `category=${encodeURIComponent(cat.name)}`
           };
         });

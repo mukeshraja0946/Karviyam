@@ -32,6 +32,22 @@ const DEFAULT_MOBILE_BANNERS = [
   }
 ];
 
+const DEFAULT_CATEGORY_IMAGES = {
+  'FASHION': 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300',
+  'MEN': 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=300',
+  'WOMEN': 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300',
+  'T-SHIRTS': 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300',
+  'SNEAKERS': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300',
+  'KURTA SETS': 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300',
+  'JEWELLERY': 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=300',
+  'JEWELS': 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=300',
+  'ACCESSORIES': 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+  'KITCHEN & HOME': 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=300',
+  'UNISEX': 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300'
+};
+
+const DEFAULT_CATEGORY_PLACEHOLDER = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300';
+
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
@@ -39,6 +55,7 @@ export default function HomePage() {
   const [mobileViewMode, setMobileViewMode] = useState('grid');
   const [mobileBannerIndex, setMobileBannerIndex] = useState(0);
   const [mobileBanners, setMobileBanners] = useState(DEFAULT_MOBILE_BANNERS);
+  const [homeCategories, setHomeCategories] = useState([]);
 
   const fetchBanners = async () => {
     try {
@@ -83,6 +100,58 @@ export default function HomePage() {
     }
   };
 
+  const fetchHomeCategories = async () => {
+    try {
+      const res = await api.get('/categories/tree').catch(() => null);
+      const apiData = res?.data?.data || res?.data || res;
+      let list = Array.isArray(apiData) ? apiData : [];
+
+      if (!list || list.length === 0) {
+        const altRes = await api.get('/categories?activeOnly=true').catch(() => null);
+        const altData = altRes?.data?.data || altRes?.data || altRes;
+        const allCats = Array.isArray(altData) ? altData : [];
+        list = allCats.filter(c => !c.parentId && (c.isActive === undefined || c.isActive === true));
+      }
+
+      try {
+        const savedCats = localStorage.getItem('karviyam_admin_categories');
+        if (savedCats) {
+          const parsed = JSON.parse(savedCats);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const adminRoots = parsed.filter(c => !c.parentId && (c.isActive === undefined || c.isActive === true || c.is_active === 1));
+            if (adminRoots.length > 0) {
+              list = [...adminRoots, ...list.filter(c => !adminRoots.some(a => String(a.id) === String(c.id)))];
+            }
+          }
+        }
+      } catch (eSaved) {}
+
+      if (list && list.length > 0) {
+        const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
+        const activeRoots = list
+          .filter(c => c.isActive !== false && c.is_active !== 0 && c.enabled !== false)
+          .sort((a, b) => (a.orderIndex || a.order_index || 0) - (b.orderIndex || b.order_index || 0));
+
+        const formatted = activeRoots.map(c => {
+          let img = c.imageUrl || c.iconUrl || c.bannerUrl || DEFAULT_CATEGORY_IMAGES[c.name.toUpperCase()] || DEFAULT_CATEGORY_PLACEHOLDER;
+          if (img.startsWith('/')) {
+            img = `${apiOrigin}${img}`;
+          }
+          return {
+            id: c.id,
+            name: c.name,
+            slug: c.slug || c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            image: img,
+            query: `category=${encodeURIComponent(c.name)}`
+          };
+        });
+        setHomeCategories(formatted);
+      }
+    } catch (e) {
+      console.error('Error fetching home categories in HomePage:', e);
+    }
+  };
+
   useEffect(() => {
     const timer = setInterval(() => {
       setMobileBannerIndex((prev) => (prev + 1) % Math.max(mobileBanners.length, 1));
@@ -93,13 +162,18 @@ export default function HomePage() {
   useEffect(() => {
     fetchHomeProducts();
     fetchBanners();
+    fetchHomeCategories();
     window.addEventListener('karviyam_products_updated', fetchHomeProducts);
     window.addEventListener('karviyam_banners_updated', fetchBanners);
-    window.addEventListener('storage', fetchHomeProducts);
+    window.addEventListener('karviyam_categories_updated', fetchHomeCategories);
+    window.addEventListener('storage', () => {
+      fetchHomeProducts();
+      fetchHomeCategories();
+    });
     return () => {
       window.removeEventListener('karviyam_products_updated', fetchHomeProducts);
       window.removeEventListener('karviyam_banners_updated', fetchBanners);
-      window.removeEventListener('storage', fetchHomeProducts);
+      window.removeEventListener('karviyam_categories_updated', fetchHomeCategories);
     };
   }, []);
 
@@ -181,17 +255,15 @@ export default function HomePage() {
         {/* 1. CATEGORY SHORTCUTS (Horizontal Squircle Cards) */}
         <div className="w-full bg-white py-3 px-3.5 border-b border-slate-100 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-3.5 whitespace-nowrap">
-            {[
-              { id: 'fashion', name: 'Fashion', active: true, image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300' },
+            {(homeCategories.length > 0 ? homeCategories : [
+              { id: 'fashion', name: 'Fashion', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300', query: 'category=Women' },
               { id: 'tshirts', name: 'T-Shirts', query: 'category=Men', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300' },
               { id: 'sneakers', name: 'Sneakers', query: 'category=Unisex', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300' },
               { id: 'kurta', name: 'Kurta Sets', query: 'category=Women', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300' },
-              { id: 'jewels', name: 'Jewellery', query: 'category=Jewellery', image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=300' },
-              { id: 'acc', name: 'Accessories', query: 'category=Accessories', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300' },
-              { id: 'kitchen', name: 'Kitchen & Home', query: 'category=Kitchen', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=300' }
-            ].map((cat) => (
+              { id: 'jewels', name: 'Jewellery', query: 'category=Jewellery', image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=300' }
+            ]).map((cat, idx) => (
               <div
-                key={cat.id}
+                key={cat.id || idx}
                 onClick={() => window.location.href = `/shop${cat.query ? `?${cat.query}` : ''}`}
                 className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group"
               >
@@ -202,7 +274,7 @@ export default function HomePage() {
                     className="w-full h-full object-cover rounded-xl"
                   />
                 </div>
-                <span className={`text-[10px] font-bold tracking-tight truncate max-w-[68px] ${cat.active ? 'text-[#B71C1C] font-extrabold' : 'text-slate-700'}`}>
+                <span className={`text-[10px] font-bold tracking-tight truncate max-w-[72px] ${idx === 0 ? 'text-[#B71C1C] font-extrabold' : 'text-slate-700'}`}>
                   {cat.name}
                 </span>
               </div>

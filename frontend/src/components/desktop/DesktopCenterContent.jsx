@@ -239,18 +239,32 @@ export default function DesktopCenterContent() {
         if (savedCats) {
           const parsedCats = JSON.parse(savedCats);
           if (Array.isArray(parsedCats) && parsedCats.length > 0) {
-            catList = [...parsedCats, ...catList.filter(c => !parsedCats.some(s => String(s.id) === String(c.id)))];
+            const adminRoots = parsedCats.filter(c => !c.parentId && (c.isActive === undefined || c.isActive === true || c.is_active === 1));
+            if (adminRoots.length > 0) {
+              catList = [...adminRoots, ...catList.filter(c => !adminRoots.some(s => String(s.id) === String(c.id)))];
+            }
           }
         }
       } catch (eCats) {}
 
       if (catList.length > 0) {
-        const formattedCats = catList.slice(0, 7).map((c, i) => ({
-          id: c.id,
-          name: (c.name || CATEGORIES_DATA[i % CATEGORIES_DATA.length].name).toUpperCase(),
-          image: c.imageUrl || CATEGORIES_DATA[i % CATEGORIES_DATA.length].image,
-          query: `category=${encodeURIComponent(c.name)}`
-        }));
+        const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
+        const activeRoots = catList
+          .filter(c => !c.parentId && c.isActive !== false && c.is_active !== 0 && c.enabled !== false)
+          .sort((a, b) => (a.orderIndex || a.order_index || 0) - (b.orderIndex || b.order_index || 0));
+
+        const formattedCats = activeRoots.slice(0, 7).map((c, i) => {
+          let img = c.imageUrl || c.iconUrl || CATEGORIES_DATA[i % CATEGORIES_DATA.length].image;
+          if (img.startsWith('/')) {
+            img = `${apiOrigin}${img}`;
+          }
+          return {
+            id: c.id,
+            name: (c.name || CATEGORIES_DATA[i % CATEGORIES_DATA.length].name).toUpperCase(),
+            image: img,
+            query: `category=${encodeURIComponent(c.name)}`
+          };
+        });
         setCategories(formattedCats);
       }
     } catch (e) {
