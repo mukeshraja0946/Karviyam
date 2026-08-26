@@ -312,16 +312,29 @@ async function initDb() {
         user_id BIGINT NOT NULL,
         full_name VARCHAR(100),
         phone VARCHAR(20),
+        alternate_phone VARCHAR(20),
+        house_flat_no VARCHAR(255),
         street_address TEXT,
+        area VARCHAR(255),
+        landmark VARCHAR(255),
         city VARCHAR(100),
+        district VARCHAR(100),
         state VARCHAR(100),
         pincode VARCHAR(20),
         country VARCHAR(100) DEFAULT 'India',
+        address_type VARCHAR(50) DEFAULT 'HOME',
         is_default BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
     `);
+
+    try { await pool.query(`ALTER TABLE addresses ADD COLUMN alternate_phone VARCHAR(20)`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE addresses ADD COLUMN house_flat_no VARCHAR(255)`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE addresses ADD COLUMN area VARCHAR(255)`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE addresses ADD COLUMN landmark VARCHAR(255)`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE addresses ADD COLUMN district VARCHAR(100)`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE addresses ADD COLUMN address_type VARCHAR(50) DEFAULT 'HOME'`); } catch (e) {}
 
     // 14. Coupons table
     await pool.query(`
