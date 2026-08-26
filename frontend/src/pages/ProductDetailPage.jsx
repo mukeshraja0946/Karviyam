@@ -211,7 +211,7 @@ export default function ProductDetailPage() {
   const discountPercent = product.discountPercent || Math.round(((oldPrice - price) / oldPrice) * 100) || 40;
 
   return (
-    <div className="w-full bg-[#FAFAFA] min-h-screen text-slate-900 pb-28 md:pb-12 font-sans">
+    <div className="w-full bg-[#FAFAFA] text-slate-900 pb-14 sm:pb-8 lg:pb-12 font-sans">
       {/* 1. BREADCRUMB ROW */}
       <div className="max-w-[1750px] mx-auto px-2 sm:px-8 py-1.5 text-[10.5px] sm:text-[11px] font-semibold text-slate-500 text-left">
         <div className="flex items-center gap-1.5">
