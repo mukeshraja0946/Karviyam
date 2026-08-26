@@ -8,7 +8,7 @@ import confetti from 'canvas-confetti';
 import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, Lock, CreditCard, Smartphone, Banknote, Building, X, RefreshCw, Trash2 } from 'lucide-react';
 
 export default function CheckoutPage() {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const { cart, cartSubtotal, clearCart, removeItem } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,6 +21,17 @@ export default function CheckoutPage() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('COD');
   const [submitting, setSubmitting] = useState(false);
+
+  // Auth Modal State for Checkout
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authStep, setAuthStep] = useState('IDENTIFY'); // 'IDENTIFY', 'LOGIN', 'REGISTER'
+  const [authIdentifier, setAuthIdentifier] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authFullName, setAuthFullName] = useState('');
+  const [authPhone, setAuthPhone] = useState('');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
 
   const [removedItemKeys, setRemovedItemKeys] = useState([]);
 
@@ -191,24 +202,168 @@ export default function CheckoutPage() {
   const activeDiscount = couponApplied ? couponDiscount : 0;
   const orderTotal = Math.max(0, rawItemTotal + shippingCharge - activeDiscount);
 
-  // Trigger Payment Modal when user clicks "Proceed to Payment"
+  // Step 1: Check if account exists
+  const handleCheckAccount = async (e) => {
+    if (e) e.preventDefault();
+    const cleanId = authIdentifier.trim();
+    if (!cleanId) {
+      setAuthError('Please enter your Mobile Number or Email Address');
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError('');
+
+    try {
+      const res = await api.post('/auth/check-account', { identifier: cleanId });
+      const apiData = res.data ? res.data : res;
+      const result = apiData.data || apiData || {};
+
+      if (result.exists) {
+        setAuthEmail(result.email || cleanId);
+        setAuthPhone(result.phone || '');
+        setAuthFullName(result.fullName || '');
+        setAuthStep('LOGIN');
+      } else {
+        setAuthEmail(cleanId.includes('@') ? cleanId : '');
+        setAuthPhone(!cleanId.includes('@') ? cleanId : '');
+        setAuthFullName('');
+        setAuthStep('REGISTER');
+      }
+    } catch (err) {
+      console.error(err);
+      setAuthEmail(cleanId);
+      setAuthStep('LOGIN');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Step 2: Login Existing Customer
+  const handleLoginSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!authPassword || !authPassword.trim()) {
+      setAuthError('Please enter your password');
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError('');
+
+    try {
+      const res = await api.post('/auth/login', {
+        email: authEmail || authIdentifier,
+        identifier: authIdentifier,
+        password: authPassword
+      });
+      const apiData = res.data ? res.data : res;
+      const authResult = apiData.data || apiData || {};
+
+      if (authResult.token || authResult.user || authResult.id) {
+        if (login) login(authResult);
+        toast.success(`Welcome back, ${authResult.fullName || authResult.user?.fullName || 'Customer'}! 🎉`);
+        setAuthModalOpen(false);
+
+        // Update formData from authenticated user profile
+        setFormData(prev => ({
+          ...prev,
+          fullName: authResult.fullName || authResult.user?.fullName || prev.fullName,
+          email: authResult.email || authResult.user?.email || prev.email,
+          phone: authResult.phone || authResult.user?.phone || prev.phone,
+          address: authResult.address || authResult.user?.address || prev.address,
+        }));
+
+        // Proceed to payment selection directly
+        setPaymentModalOpen(true);
+      } else {
+        setAuthError('Invalid credentials. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || err.message || 'Login failed. Please check your password.';
+      setAuthError(msg);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Step 3: Register New Customer
+  const handleRegisterSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!authFullName || !authFullName.trim()) {
+      setAuthError('Please enter your Full Name');
+      return;
+    }
+    if (!authPhone || !authPhone.trim() || authPhone.trim().length < 10) {
+      setAuthError('Please enter a valid 10-digit Mobile Number');
+      return;
+    }
+    if (!authEmail || !authEmail.trim() || !authEmail.includes('@')) {
+      setAuthError('Please enter a valid Email Address');
+      return;
+    }
+    if (!authPassword || authPassword.trim().length < 4) {
+      setAuthError('Password must be at least 4 characters long');
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError('');
+
+    try {
+      const res = await api.post('/auth/register', {
+        fullName: authFullName.trim(),
+        email: authEmail.trim(),
+        phone: authPhone.trim(),
+        password: authPassword.trim(),
+        address: formData.address || ''
+      });
+      const apiData = res.data ? res.data : res;
+      const authResult = apiData.data || apiData || {};
+
+      if (authResult.token || authResult.user || authResult.id) {
+        if (login) login(authResult);
+        toast.success(`Account created successfully! Welcome to Karviyam, ${authFullName.trim()} 🎉`);
+        setAuthModalOpen(false);
+
+        setFormData(prev => ({
+          ...prev,
+          fullName: authFullName.trim(),
+          email: authEmail.trim(),
+          phone: authPhone.trim(),
+        }));
+
+        // Proceed to payment selection directly
+        setPaymentModalOpen(true);
+      } else {
+        setAuthError('Account creation failed. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || err.message || 'Registration failed. Please try again.';
+      setAuthError(msg);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Trigger Payment Modal or Auth Modal when user clicks "Proceed to Payment"
   const handleProceedToPayment = () => {
     if (!itemsList || itemsList.length === 0) {
       toast.error('Your Bag is empty! Please add products before checking out.');
       return;
     }
-    if (!formData.fullName || !formData.fullName.trim()) {
-      toast.error('Please enter your Full Name');
+
+    // 1. CHECK AUTHENTICATION STATUS FIRST!
+    if (!user) {
+      setAuthStep('IDENTIFY');
+      setAuthIdentifier('');
+      setAuthError('');
+      setAuthModalOpen(true);
       return;
     }
-    if (!formData.phone || !formData.phone.trim() || formData.phone.trim().length < 10) {
-      toast.error('Please enter a valid 10-digit Mobile Number');
-      return;
-    }
-    if (!formData.email || !formData.email.trim() || !formData.email.includes('@')) {
-      toast.error('Please enter a valid Email Address');
-      return;
-    }
+
+    // 2. Customer IS authenticated -> Validate delivery address fields for order fulfillment
     if (!formData.address || !formData.address.trim()) {
       toast.error('Please enter your Delivery Address');
       return;
@@ -221,6 +376,8 @@ export default function CheckoutPage() {
       toast.error('Please enter a valid 6-digit Pincode');
       return;
     }
+
+    // Open Payment Method Selection
     setPaymentModalOpen(true);
   };
 
@@ -743,6 +900,171 @@ export default function CheckoutPage() {
         </div>
 
       </div>
+      {/* 3. CHECKOUT AUTHENTICATION / LOGIN / CREATE ACCOUNT MODAL  */}
+      {/* ========================================================= */}
+      {authModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-6">
+            
+            {/* Modal Header */}
+            <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white">
+              <div>
+                <h3 className="font-display font-black text-base flex items-center gap-1.5">
+                  <span className="text-[#B71C1C]">KARVIYAM</span>
+                  <span className="text-slate-300 font-normal">| Checkout Login</span>
+                </h3>
+                <p className="text-[10.5px] text-slate-400">Authenticate your account to proceed to payment</p>
+              </div>
+              <button
+                onClick={() => setAuthModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {authError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-bold">
+                  {authError}
+                </div>
+              )}
+
+              {/* STEP 1: IDENTIFY (Mobile Number / Email) */}
+              {authStep === 'IDENTIFY' && (
+                <form onSubmit={handleCheckAccount} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                      Mobile Number or Email Address <span className="text-[#B71C1C]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={authIdentifier}
+                      onChange={(e) => { setAuthIdentifier(e.target.value); setAuthError(''); }}
+                      placeholder="e.g. 9876543210 or name@example.com"
+                      className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C] focus:bg-white transition-all"
+                      autoFocus
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">We will check whether you already have a Karviyam account.</p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>CONTINUE TO CHECKOUT</span>}
+                  </button>
+                </form>
+              )}
+
+              {/* STEP 2: LOGIN (Password) */}
+              {authStep === 'LOGIN' && (
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-xs flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Account Found</span>
+                      <span className="font-bold text-slate-900">{authFullName || authEmail || authIdentifier}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAuthStep('IDENTIFY')}
+                      className="text-[10.5px] font-bold text-[#B71C1C] hover:underline"
+                    >
+                      Change
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                      Password <span className="text-[#B71C1C]">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={authPassword}
+                      onChange={(e) => { setAuthPassword(e.target.value); setAuthError(''); }}
+                      placeholder="Enter your account password"
+                      className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C] focus:bg-white transition-all"
+                      autoFocus
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>LOGIN & CONTINUE TO PAYMENT</span>}
+                  </button>
+                </form>
+              )}
+
+              {/* STEP 3: CREATE ACCOUNT */}
+              {authStep === 'REGISTER' && (
+                <form onSubmit={handleRegisterSubmit} className="space-y-3">
+                  <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs">
+                    <p className="font-bold">Account Not Found</p>
+                    <p className="text-[10.5px] font-medium text-amber-700">Create a Karviyam account below to complete your order.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-800 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      value={authFullName}
+                      onChange={(e) => setAuthFullName(e.target.value)}
+                      placeholder="Enter your full name"
+                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C] focus:bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-800 mb-1">Mobile Number *</label>
+                    <input
+                      type="text"
+                      value={authPhone}
+                      onChange={(e) => setAuthPhone(e.target.value)}
+                      placeholder="10-digit mobile number"
+                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C] focus:bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-800 mb-1">Email Address *</label>
+                    <input
+                      type="email"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C] focus:bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-800 mb-1">Create Password *</label>
+                    <input
+                      type="password"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      placeholder="At least 4 characters"
+                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C] focus:bg-white"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
+                  >
+                    {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>CREATE ACCOUNT & CONTINUE TO PAYMENT</span>}
+                  </button>
+                </form>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================= */}
       {/* 4. PAYMENT METHOD MODAL (STEP 3: PAYMENT)                */}

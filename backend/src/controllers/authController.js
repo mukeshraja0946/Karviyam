@@ -4,22 +4,58 @@ const pool = require('../config/db');
 const jwtConfig = require('../config/jwt');
 const ApiResponse = require('../utils/apiResponse');
 
-exports.login = async (req, res, next) => {
+exports.checkAccount = async (req, res, next) => {
   try {
-    const { email, password } = req.body || {};
-    if (!email || !password || !String(email).trim() || !String(password).trim()) {
-      return res.status(400).json(ApiResponse.error('Email and password are required'));
+    const { identifier } = req.body || req.query || {};
+    if (!identifier || !String(identifier).trim()) {
+      return res.status(400).json(ApiResponse.error('Identifier (Email or Phone) is required'));
     }
 
-    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanId = String(identifier).trim().toLowerCase();
+    const cleanDigits = cleanId.replace(/\D/g, '');
+
+    const [users] = await pool.query(
+      'SELECT id, full_name, email, phone FROM users WHERE LOWER(email) = ? OR (phone IS NOT NULL AND (phone = ? OR REPLACE(phone, " ", "") = ? OR REPLACE(phone, "+", "") LIKE ?))',
+      [cleanId, cleanId, cleanDigits, `%${cleanDigits}%`]
+    );
+
+    if (users && users.length > 0) {
+      const u = users[0];
+      return res.status(200).json(ApiResponse.success({
+        exists: true,
+        email: u.email,
+        phone: u.phone,
+        fullName: u.full_name
+      }, 'Account found'));
+    }
+
+    return res.status(200).json(ApiResponse.success({ exists: false }, 'Account not found'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.login = async (req, res, next) => {
+  try {
+    const { email, identifier, password } = req.body || {};
+    const inputId = email || identifier;
+    if (!inputId || !password || !String(inputId).trim() || !String(password).trim()) {
+      return res.status(400).json(ApiResponse.error('Email/Mobile number and password are required'));
+    }
+
+    const cleanEmail = String(inputId).trim().toLowerCase();
+    const cleanDigits = cleanEmail.replace(/\D/g, '');
     const cleanPassword = String(password).trim();
 
-    // 1. Fetch user record from database
+    // 1. Fetch user record from database (by email or phone)
     let user = null;
     let dbConnectionError = null;
 
     try {
-      const [users] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [cleanEmail]);
+      const [users] = await pool.query(
+        'SELECT * FROM users WHERE LOWER(email) = ? OR (phone IS NOT NULL AND (phone = ? OR REPLACE(phone, " ", "") = ? OR REPLACE(phone, "+", "") LIKE ?))',
+        [cleanEmail, cleanEmail, cleanDigits, `%${cleanDigits}%`]
+      );
       if (users && users.length > 0) {
         user = users[0];
       }
@@ -296,17 +332,22 @@ exports.register = async (req, res, next) => {
       }
     } catch (e) {}
 
-    const userDto = {
+    const roles = ['ROLE_USER'];
+    const tokenPayload = { id: userId, email: cleanEmail, role: 'customer', roles };
+    const token = jwt.sign(tokenPayload, jwtConfig.secret, { expiresIn: '7d' });
+
+    const jwtResponse = {
+      token,
+      type: 'Bearer',
       id: userId,
-      fullName: cleanName,
       email: cleanEmail,
+      fullName: cleanName,
       phone: phone || null,
       address: address || null,
-      role: 'customer',
-      roles: ['ROLE_USER']
+      roles
     };
 
-    return res.status(200).json(ApiResponse.success(userDto, 'Registration successful! Please sign in.'));
+    return res.status(200).json(ApiResponse.success(jwtResponse, 'Account created successfully!'));
   } catch (err) {
     console.error('Registration Error:', err);
     return res.status(400).json(ApiResponse.error(err.message || 'Registration failed. Please try again.'));
