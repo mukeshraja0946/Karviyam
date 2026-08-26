@@ -255,8 +255,8 @@ export default function ProductDetailPage() {
                 >
                   <Heart className={`w-3.5 h-3.5 ${isWish ? 'fill-current' : ''}`} />
                 </button>
+              </div>
             </div>
-
           </div>
 
           {/* ======================================================= */}
