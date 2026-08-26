@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, X, Upload, AlertCircle, Eye, EyeOff, Film, FileSpreadsheet } from 'lucide-react';
 import api from '../utils/api';
+import { resolveImageUrl } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import BulkImportModal from '../components/BulkImportModal';
 import ExportDropdown from '../components/ExportDropdown';
@@ -118,6 +119,51 @@ export default function AdminProductsPage() {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [selectedSkus, setSelectedSkus] = useState([]);
+
+  const handleUploadVariantImage = async (file, vIdx, imgIdx) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file (PNG, JPG, WEBP)');
+      return;
+    }
+    toast.loading('Uploading image file...', { id: 'prod-upload' });
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+      const res = await api.post('/upload', formDataUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const apiData = res?.data ? res.data : res;
+      const uploadedUrl = apiData?.data?.url || apiData?.url;
+      if (uploadedUrl) {
+        const updated = [...formData.colorVariants];
+        if (imgIdx >= updated[vIdx].imageUrls.length) {
+          updated[vIdx].imageUrls.push(uploadedUrl);
+        } else {
+          updated[vIdx].imageUrls[imgIdx] = uploadedUrl;
+        }
+        setFormData({ ...formData, colorVariants: updated });
+        toast.success('Image uploaded successfully!', { id: 'prod-upload' });
+        return;
+      }
+    } catch (err) {
+      console.warn('[Upload API error, using compressed base64 fallback]:', err);
+    }
+
+    try {
+      const compressed = await compressImage(file, 1000, 1000, 0.8);
+      const updated = [...formData.colorVariants];
+      if (imgIdx >= updated[vIdx].imageUrls.length) {
+        updated[vIdx].imageUrls.push(compressed || '');
+      } else {
+        updated[vIdx].imageUrls[imgIdx] = compressed || '';
+      }
+      setFormData({ ...formData, colorVariants: updated });
+      toast.success('Image file attached!', { id: 'prod-upload' });
+    } catch (eComp) {
+      toast.error('Failed to read image file');
+    }
+  };
 
   const handleBulkDeleteSelected = async () => {
     if (!selectedSkus.length) return;
@@ -944,37 +990,76 @@ export default function AdminProductsPage() {
 
                       {/* Separate Image Gallery Box for this Color */}
                       <div className="space-y-1.5 pt-1 border-t border-slate-100">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                           <label className="block font-bold text-slate-700 text-[10px]">
                             {variant.colorName || 'Color'} Image Gallery ({variant.imageUrls.length})
                           </label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const updated = [...formData.colorVariants];
-                              updated[vIdx].imageUrls.push('');
-                              setFormData({ ...formData, colorVariants: updated });
-                            }}
-                            className="text-[10px] font-bold text-slate-600 hover:text-[#B71C1C] cursor-pointer"
-                          >
-                            + Add Image URL
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <label className="text-[10px] font-extrabold text-[#B71C1C] hover:bg-red-50 px-2 py-0.5 rounded border border-red-200 cursor-pointer flex items-center gap-1 transition-all">
+                              <Upload className="w-3 h-3" />
+                              <span>+ Upload Image File</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleUploadVariantImage(file, vIdx, variant.imageUrls.length);
+                                }}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...formData.colorVariants];
+                                updated[vIdx].imageUrls.push('');
+                                setFormData({ ...formData, colorVariants: updated });
+                              }}
+                              className="text-[10px] font-bold text-slate-600 hover:text-[#B71C1C] cursor-pointer"
+                            >
+                              + Add Image URL
+                            </button>
+                          </div>
                         </div>
 
                         <div className="space-y-1.5">
                           {variant.imageUrls.map((imgUrl, imgIdx) => (
                             <div key={imgIdx} className="flex items-center gap-2">
+                              {imgUrl ? (
+                                <img
+                                  src={resolveImageUrl(imgUrl)}
+                                  alt=""
+                                  className="w-8 h-8 rounded-md border border-slate-200 object-cover shrink-0 bg-slate-100"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                              ) : null}
                               <input
-                                type="url"
+                                type="text"
                                 value={imgUrl}
                                 onChange={(e) => {
                                   const updated = [...formData.colorVariants];
                                   updated[vIdx].imageUrls[imgIdx] = e.target.value;
                                   setFormData({ ...formData, colorVariants: updated });
                                 }}
-                                placeholder={`Image URL ${imgIdx + 1} for ${variant.colorName}`}
+                                placeholder={`Image URL / path ${imgIdx + 1} for ${variant.colorName}`}
                                 className="flex-1 bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs"
                               />
+                              <label className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg cursor-pointer flex items-center gap-1 shrink-0 text-[11px]" title="Upload file from disk">
+                                <Upload className="w-3.5 h-3.5 text-[#B71C1C]" />
+                                <span className="hidden sm:inline">Upload</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleUploadVariantImage(file, vIdx, imgIdx);
+                                  }}
+                                />
+                              </label>
                               {variant.imageUrls.length > 1 && (
                                 <button
                                   type="button"
@@ -983,7 +1068,7 @@ export default function AdminProductsPage() {
                                     updated[vIdx].imageUrls = updated[vIdx].imageUrls.filter((_, i) => i !== imgIdx);
                                     setFormData({ ...formData, colorVariants: updated });
                                   }}
-                                  className="text-red-500 p-1 hover:bg-red-50 rounded cursor-pointer"
+                                  className="text-red-500 p-1 hover:bg-red-50 rounded cursor-pointer shrink-0"
                                 >
                                   ✕
                                 </button>

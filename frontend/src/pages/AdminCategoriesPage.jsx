@@ -762,16 +762,16 @@ export default function AdminCategoriesPage() {
                 </div>
               </div>
 
-              {/* Row 2: File Uploads (3 Columns) */}
+              {/* Row 2: File Uploads & URL Inputs (3 Columns) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* Main Image */}
                 <div className="space-y-1">
-                  <label className="block font-bold text-slate-700 text-[11px]">Main Image File</label>
+                  <label className="block font-bold text-slate-700 text-[11px]">Main Image</label>
                   {formData.imageUrl ? (
-                    <div className="relative border border-slate-200 rounded-xl p-1.5 flex items-center gap-2 bg-slate-50 h-14">
-                      <img src={formData.imageUrl} alt="Preview" className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0" />
+                    <div className="relative border border-slate-200 rounded-xl p-1.5 flex items-center gap-2 bg-slate-50 h-11">
+                      <img src={formData.imageUrl} alt="Preview" className="w-8 h-8 object-cover rounded-lg border border-slate-200 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-800 text-[11px] truncate">Selected</p>
+                        <p className="font-bold text-slate-800 text-[10px] truncate">{formData.imageUrl.substring(0, 30)}...</p>
                       </div>
                       <button
                         type="button"
@@ -782,22 +782,29 @@ export default function AdminCategoriesPage() {
                       </button>
                     </div>
                   ) : (
-                    <label className="border-2 border-dashed border-slate-300 hover:border-[#B71C1C] rounded-xl p-2.5 flex items-center justify-center gap-2 bg-slate-50 hover:bg-red-50/20 cursor-pointer h-14 transition-all">
+                    <label className="border-2 border-dashed border-slate-300 hover:border-[#B71C1C] rounded-xl p-2 flex items-center justify-center gap-2 bg-slate-50 hover:bg-red-50/20 cursor-pointer h-11 transition-all">
                       <Upload className="w-4 h-4 text-[#B71C1C]" />
-                      <span className="font-bold text-slate-700 text-[11px]">Upload Image</span>
+                      <span className="font-bold text-slate-700 text-[11px]">Upload Image File</span>
                       <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'imageUrl')} className="hidden" />
                     </label>
                   )}
+                  <input
+                    type="text"
+                    value={formData.imageUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                    placeholder="Or paste Image URL..."
+                    className="w-full bg-slate-50 border border-slate-200 p-1.5 rounded-lg text-[11px] outline-none"
+                  />
                 </div>
 
                 {/* Icon */}
                 <div className="space-y-1">
                   <label className="block font-bold text-slate-700 text-[11px]">Category Icon</label>
                   {formData.iconUrl ? (
-                    <div className="relative border border-slate-200 rounded-xl p-1.5 flex items-center gap-2 bg-slate-50 h-14">
-                      <img src={formData.iconUrl} alt="Icon" className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0" />
+                    <div className="relative border border-slate-200 rounded-xl p-1.5 flex items-center gap-2 bg-slate-50 h-11">
+                      <img src={formData.iconUrl} alt="Icon" className="w-8 h-8 object-cover rounded-lg border border-slate-200 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-800 text-[11px] truncate">Selected</p>
+                        <p className="font-bold text-slate-800 text-[10px] truncate">{formData.iconUrl.substring(0, 30)}...</p>
                       </div>
                       <button
                         type="button"
@@ -808,22 +815,29 @@ export default function AdminCategoriesPage() {
                       </button>
                     </div>
                   ) : (
-                    <label className="border-2 border-dashed border-slate-300 hover:border-[#B71C1C] rounded-xl p-2.5 flex items-center justify-center gap-2 bg-slate-50 hover:bg-red-50/20 cursor-pointer h-14 transition-all">
+                    <label className="border-2 border-dashed border-slate-300 hover:border-[#B71C1C] rounded-xl p-2 flex items-center justify-center gap-2 bg-slate-50 hover:bg-red-50/20 cursor-pointer h-11 transition-all">
                       <Upload className="w-4 h-4 text-slate-400" />
-                      <span className="font-bold text-slate-700 text-[11px]">Upload Icon</span>
+                      <span className="font-bold text-slate-700 text-[11px]">Upload Icon File</span>
                       <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'iconUrl')} className="hidden" />
                     </label>
                   )}
+                  <input
+                    type="text"
+                    value={formData.iconUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, iconUrl: e.target.value })}
+                    placeholder="Or paste Icon URL..."
+                    className="w-full bg-slate-50 border border-slate-200 p-1.5 rounded-lg text-[11px] outline-none"
+                  />
                 </div>
 
                 {/* Banner */}
                 <div className="space-y-1">
                   <label className="block font-bold text-slate-700 text-[11px]">Category Banner</label>
                   {formData.bannerUrl ? (
-                    <div className="relative border border-slate-200 rounded-xl p-1.5 flex items-center gap-2 bg-slate-50 h-14">
-                      <img src={formData.bannerUrl} alt="Banner" className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0" />
+                    <div className="relative border border-slate-200 rounded-xl p-1.5 flex items-center gap-2 bg-slate-50 h-11">
+                      <img src={formData.bannerUrl} alt="Banner" className="w-8 h-8 object-cover rounded-lg border border-slate-200 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-800 text-[11px] truncate">Selected</p>
+                        <p className="font-bold text-slate-800 text-[10px] truncate">{formData.bannerUrl.substring(0, 30)}...</p>
                       </div>
                       <button
                         type="button"
@@ -834,12 +848,19 @@ export default function AdminCategoriesPage() {
                       </button>
                     </div>
                   ) : (
-                    <label className="border-2 border-dashed border-slate-300 hover:border-[#B71C1C] rounded-xl p-2.5 flex items-center justify-center gap-2 bg-slate-50 hover:bg-red-50/20 cursor-pointer h-14 transition-all">
+                    <label className="border-2 border-dashed border-slate-300 hover:border-[#B71C1C] rounded-xl p-2 flex items-center justify-center gap-2 bg-slate-50 hover:bg-red-50/20 cursor-pointer h-11 transition-all">
                       <Upload className="w-4 h-4 text-slate-400" />
-                      <span className="font-bold text-slate-700 text-[11px]">Upload Banner</span>
+                      <span className="font-bold text-slate-700 text-[11px]">Upload Banner File</span>
                       <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'bannerUrl')} className="hidden" />
                     </label>
                   )}
+                  <input
+                    type="text"
+                    value={formData.bannerUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, bannerUrl: e.target.value })}
+                    placeholder="Or paste Banner URL..."
+                    className="w-full bg-slate-50 border border-slate-200 p-1.5 rounded-lg text-[11px] outline-none"
+                  />
                 </div>
               </div>
 
