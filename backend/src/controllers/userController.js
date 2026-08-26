@@ -166,6 +166,62 @@ exports.addAddress = async (req, res, next) => {
   }
 };
 
+exports.updateAddress = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const {
+      fullName, phone, alternatePhone, houseFlatNo, streetAddress,
+      area, landmark, city, district, state, pincode, country, addressType, isDefault
+    } = req.body;
+
+    if (isDefault) {
+      await pool.query('UPDATE addresses SET is_default = 0 WHERE user_id = ?', [userId]);
+    }
+
+    await pool.query(
+      `UPDATE addresses SET 
+        full_name = ?, phone = ?, alternate_phone = ?, house_flat_no = ?, street_address = ?,
+        area = ?, landmark = ?, city = ?, district = ?, state = ?, pincode = ?, country = ?, address_type = ?, is_default = ?
+       WHERE id = ? AND user_id = ?`,
+      [
+        fullName, phone, alternatePhone || null, houseFlatNo || null, streetAddress || '',
+        area || null, landmark || null, city || 'Chennai', district || city || 'Chennai', state || 'Tamil Nadu',
+        pincode || '600001', country || 'India', addressType || 'HOME', isDefault ? 1 : 0,
+        id, userId
+      ]
+    );
+
+    const [updated] = await pool.query('SELECT * FROM addresses WHERE id = ? AND user_id = ?', [id, userId]);
+    if (!updated || updated.length === 0) {
+      return res.status(404).json(ApiResponse.error('Address not found'));
+    }
+    const a = updated[0];
+    const dto = {
+      id: a.id,
+      userId: a.user_id,
+      fullName: a.full_name,
+      phone: a.phone,
+      alternatePhone: a.alternate_phone,
+      houseFlatNo: a.house_flat_no,
+      streetAddress: a.street_address,
+      area: a.area,
+      landmark: a.landmark,
+      city: a.city,
+      district: a.district,
+      state: a.state,
+      pincode: a.pincode,
+      country: a.country,
+      addressType: a.address_type || 'HOME',
+      isDefault: Boolean(a.is_default)
+    };
+
+    return res.status(200).json(ApiResponse.success(dto, 'Address updated successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.deleteAddress = async (req, res, next) => {
   try {
     const userId = req.user.id;

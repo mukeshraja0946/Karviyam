@@ -7,6 +7,7 @@ router.get('/profile', authenticateToken, userController.getProfile);
 router.put('/profile', authenticateToken, userController.updateProfile);
 router.get('/addresses', authenticateToken, userController.getAddresses);
 router.post('/addresses', authenticateToken, userController.addAddress);
+router.put('/addresses/:id', authenticateToken, userController.updateAddress);
 router.delete('/addresses/:id', authenticateToken, userController.deleteAddress);
 
 module.exports = router;
