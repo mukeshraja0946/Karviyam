@@ -242,56 +242,6 @@ export default function ShopPage() {
       
       <div className="block md:hidden bg-slate-50 min-h-screen pb-32">
         
-        <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-2xs px-3 py-2 space-y-2">
-          <div className="flex items-center gap-2">
-            <button onClick={() => navigate(-1)} className="p-1 text-[#B71C1C] shrink-0">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-
-            <div className="flex-1 flex items-center bg-slate-100/90 rounded-full px-3 py-1.5 gap-2 border border-slate-200 shadow-inner">
-              <Search className="w-4 h-4 text-slate-400 shrink-0" />
-              <input
-                type="text"
-                placeholder="mens shirt"
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                className="w-full bg-transparent text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none"
-              />
-              <Camera className="w-4 h-4 text-[#B71C1C]/80 shrink-0 cursor-pointer" />
-              <Mic className="w-4 h-4 text-[#B71C1C]/80 shrink-0 cursor-pointer" />
-              <QrCode className="w-4 h-4 text-[#B71C1C]/80 shrink-0 cursor-pointer" />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between px-1 pt-0.5">
-            <div onClick={() => navigate('/')} className="flex items-center gap-1.5 cursor-pointer">
-              <svg className="w-5 h-5 fill-[#B71C1C]" viewBox="0 0 24 24">
-                <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
-              </svg>
-              <span className="font-display font-black text-lg tracking-tight text-[#B71C1C] uppercase leading-none">
-                KARVIYAM
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4 text-slate-700">
-              <div className="relative cursor-pointer">
-                <Bell className="w-5 h-5 text-slate-800" />
-                <span className="absolute -top-1 -right-1 bg-[#B71C1C] text-white text-[9px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                  3
-                </span>
-              </div>
-              <div onClick={() => navigate('/cart')} className="relative cursor-pointer">
-                <ShoppingBag className="w-5 h-5 text-slate-800" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#B71C1C] text-white text-[9px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                    {itemCount}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
-
         <div className="bg-white border-b border-slate-200 px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap text-xs font-bold text-slate-800">
           <button
             onClick={() => setMobileFilterOpen(true)}
