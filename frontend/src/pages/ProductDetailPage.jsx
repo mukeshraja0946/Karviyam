@@ -613,64 +613,7 @@ export default function ProductDetailPage() {
 
       </div>
 
-      {/* 3. BOTTOM FULL-WIDTH VALUE PROPOSITION TRUST STRIP */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-4">
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 text-left">
-            
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">100% Original Products</h4>
-                <p className="text-[10px] text-slate-500">Sourced Directly</p>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0">
-                <RotateCcw className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">Easy Returns & Refunds</h4>
-                <p className="text-[10px] text-slate-500">Hassle Free Process</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0">
-                <Lock className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">Secure Payments</h4>
-                <p className="text-[10px] text-slate-500">Multiple Payment Options</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0">
-                <Headphones className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">Customer Support</h4>
-                <p className="text-[10px] text-slate-500">24/7 Support</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0">
-                <Tag className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">Best Price Guarantee</h4>
-                <p className="text-[10px] text-slate-500">We Promise the Best</p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
 
     </div>
   );
