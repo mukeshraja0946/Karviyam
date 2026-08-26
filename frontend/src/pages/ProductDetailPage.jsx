@@ -475,9 +475,9 @@ export default function ProductDetailPage() {
           {/* COLUMN 3: RIGHT SPECIFICATIONS & DETAILS                */}
           {/* DESKTOP: FIXED SCROLLABLE PANEL | MOBILE: NATURAL CONTINUOUS DOCUMENT SCROLL */}
           {/* ======================================================= */}
-          <div className="lg:col-span-4 space-y-4 lg:h-[calc(100vh-160px)] lg:overflow-y-auto lg:overscroll-contain pr-0 lg:pr-2 scrollbar-thin text-xs overflow-visible h-auto px-3 sm:px-6 lg:px-0 max-w-3xl mx-auto lg:mx-0 w-full">
+          <div className="lg:col-span-4 space-y-4 lg:h-[calc(100vh-160px)] lg:overflow-y-auto lg:overscroll-contain pr-0 lg:pr-2 scrollbar-thin text-xs overflow-visible h-auto px-4 sm:px-6 lg:px-0 max-w-3xl mx-auto lg:mx-0 w-full">
             
-            <div className="bg-white lg:bg-transparent rounded-2xl lg:rounded-none p-4 sm:p-6 lg:p-0 border border-slate-200/80 lg:border-none shadow-xs lg:shadow-none space-y-4">
+            <div className="space-y-4">
               {/* 1. TOP HIGHLIGHTS */}
               {(() => {
                 const items = [
@@ -499,7 +499,7 @@ export default function ProductDetailPage() {
                     </h3>
                     <div className="space-y-0.5 text-[11px]">
                       {items.map((row, idx) => (
-                        <div key={idx} className="flex justify-between items-center py-1.5 px-2.5 rounded-lg hover:bg-slate-50 transition-colors border-b border-slate-100/80">
+                        <div key={idx} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-100/80">
                           <span className="font-bold text-slate-900 shrink-0 pr-2">{row.label}</span>
                           <span className="text-slate-700 font-medium text-right truncate pl-2" title={row.val}>{row.val}</span>
                         </div>
@@ -564,7 +564,7 @@ export default function ProductDetailPage() {
                     </h3>
                     <div className="space-y-0.5 text-[11px]">
                       {info.map((row, idx) => (
-                        <div key={idx} className="flex justify-between items-center py-1.5 px-2.5 rounded-lg hover:bg-slate-50 transition-colors border-b border-slate-100/80">
+                        <div key={idx} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-100/80">
                           <span className="font-bold text-slate-900 shrink-0 pr-2">{row.label}</span>
                           <span className="text-slate-700 font-medium text-right truncate pl-2" title={row.val}>{row.val}</span>
                         </div>
@@ -596,7 +596,7 @@ export default function ProductDetailPage() {
                     </h3>
                     <div className="space-y-0.5 text-[11px]">
                       {styleList.map((row, idx) => (
-                        <div key={idx} className="flex justify-between items-center py-1.5 px-2.5 rounded-lg hover:bg-slate-50 transition-colors border-b border-slate-100/80">
+                        <div key={idx} className="flex justify-between items-center py-1.5 px-1 border-b border-slate-100/80">
                           <span className="font-bold text-slate-900 shrink-0 pr-2">{row.label}</span>
                           <span className="text-slate-700 font-medium text-right truncate pl-2" title={row.val}>{row.val}</span>
                         </div>
