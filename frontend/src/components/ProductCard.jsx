@@ -46,7 +46,7 @@ export default function ProductCard({ product }) {
         
         {/* 1. Image Container (Fixed 230px Height) */}
         <div 
-          className="relative w-full h-[230px] min-h-[230px] max-h-[230px] bg-slate-50/80 rounded-lg overflow-hidden flex items-center justify-center p-2 cursor-pointer shrink-0"
+          className="relative w-full h-[230px] min-h-[230px] max-h-[230px] bg-white rounded-lg overflow-hidden flex items-center justify-center cursor-pointer shrink-0"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
@@ -182,7 +182,7 @@ export default function ProductCard({ product }) {
       {/* ========================================================= */}
       <div className="flex md:hidden group relative bg-white w-full h-[240px] min-h-[240px] max-h-[240px] rounded-xl border border-slate-200/80 shadow-2xs flex-col justify-between overflow-hidden p-1.5">
         <div
-          className="relative w-full h-[105px] max-h-[105px] bg-slate-50/80 rounded-lg flex items-center justify-center p-1 cursor-pointer shrink-0 overflow-hidden"
+          className="relative w-full h-[105px] max-h-[105px] bg-white rounded-lg flex items-center justify-center cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
