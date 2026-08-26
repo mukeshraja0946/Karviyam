@@ -1,162 +1,106 @@
 const nodemailer = require('nodemailer');
 const pool = require('../config/db');
+const fs = require('fs');
+const path = require('path');
 
-const getTransporters = async () => {
-  let host = process.env.SMTP_HOST || 'smtp.hostinger.com';
-  let port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465;
-  let user = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
-  let pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.HOSTINGER_SMTP_PASS || process.env.MAIL_PASS || '';
-
-  if (!pass) {
-    try {
-      const [rows] = await pool.query("SELECT setting_value FROM settings WHERE setting_key IN ('smtp_pass', 'smtp_password', 'email_password') AND setting_value IS NOT NULL AND setting_value != '' LIMIT 1");
-      if (rows && rows.length > 0 && rows[0].setting_value) {
-        pass = rows[0].setting_value;
-      }
-    } catch (eDb) {}
-  }
-
-  const list = [];
-
-  if (pass) {
-    // 1. Primary Configured SMTP
-    list.push(nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-      tls: { rejectUnauthorized: false },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000
-    }));
-
-    // 2. Hostinger SSL (Port 465)
-    list.push(nodemailer.createTransport({
-      host: 'smtp.hostinger.com',
-      port: 465,
-      secure: true,
-      auth: { user, pass },
-      tls: { rejectUnauthorized: false },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000
-    }));
-
-    // 3. Hostinger TLS (Port 587)
-    list.push(nodemailer.createTransport({
-      host: 'smtp.hostinger.com',
-      port: 587,
-      secure: false,
-      auth: { user, pass },
-      tls: { rejectUnauthorized: false },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000
-    }));
-  } else {
-    console.warn(`⚠️ [SMTP Configuration Warning]: SMTP_PASS is missing in backend/.env for ${user}. Hostinger SMTP requires authentication password.`);
-  }
-
-  // 4. Server Sendmail Binary Fallback
-  try {
-    list.push(nodemailer.createTransport({
-      sendmail: true,
-      newline: 'unix',
-      path: '/usr/sbin/sendmail'
-    }));
-  } catch (e) {}
-
-  return list;
-};
-
-exports.sendContactEmail = async ({ name, email, subject, message, source = 'Customer' }) => {
-  const recipient = process.env.CONTACT_RECEIVER_EMAIL || 'vanakkam@karviyam.com';
-  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
-  const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-
-  const mailOptions = {
-    from: `"Karviyam ${source}" <${fromUser}>`,
-    to: recipient,
-    replyTo: email,
-    subject: `[${source}] ${subject || 'Contact Request from ' + name}`,
-    text: `Customer Contact Message\n\nName: ${name}\nEmail: ${email}\nSubject: ${subject || 'N/A'}\nDate/Time: ${timestamp}\n\nMessage:\n${message}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px;">
-        <div style="background-color: #B71C1C; padding: 15px 20px; border-radius: 12px 12px 0 0; color: #ffffff;">
-          <h2 style="margin: 0; font-size: 18px;">Karviyam ${source} Message</h2>
-        </div>
-        <div style="padding: 20px 10px;">
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-          <p><strong>Subject:</strong> ${subject || 'General Inquiry'}</p>
-          <p><strong>Date/Time:</strong> ${timestamp}</p>
-          <p><strong>Message:</strong></p>
-          <div style="background-color: #f8fafc; padding: 15px; border-radius: 12px; border-left: 4px solid #B71C1C; font-size: 14px; line-height: 1.5; color: #1e293b;">
-            ${String(message || '').replace(/\n/g, '<br/>')}
-          </div>
-        </div>
-        <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; font-size: 11px; color: #64748b; text-align: center;">
-          Sent to <strong>${recipient}</strong> | Reply-To: ${email}
-        </div>
-      </div>
-    `
-  };
-
-  const transporters = await getTransporters();
-  for (const transporter of transporters) {
-    try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`✅ [SMTP Success] Contact email delivered to ${recipient}! ID: ${info.messageId || 'OK'}`);
-      return true;
-    } catch (err) {
-      console.warn(`⚠️ [SMTP Transport Warning]: ${err.message}`);
-    }
-  }
-
-  console.error(`❌ [SMTP Final Failure]: Could not deliver email to ${recipient}. Please check SMTP_PASS in backend/.env`);
-  return false;
-};
-
-exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMessage, originalMessage = '', orderId = '' }) => {
-  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
-  const supportEmail = process.env.SUPPORT_EMAIL || 'vanakkam@karviyam.com';
-  
-  const now = new Date();
-  const formattedTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
-  const formattedDate = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
-  
-  const cleanCustomerName = customerName || 'Valued Customer';
-  const formattedReplyText = String(replyMessage || '').split('\n').map(p => p.trim()).filter(Boolean).map(p => `<p style="margin: 0 0 14px 0; font-size: 14.5px; line-height: 1.6; color: #1e293b;">${p}</p>`).join('');
-
-  // Dynamically load Admin Email Logo setting from database or use bulletproof brand header
+const getEmailLogoHeader = async () => {
   let customEmailLogoUrl = '';
   try {
     const [logoRows] = await pool.query(
-      "SELECT setting_value FROM settings WHERE setting_key IN ('email_logo_url', 'emailLogoUrl', 'logo_url', 'logoUrl') AND setting_value IS NOT NULL AND setting_value != '' LIMIT 1"
+      "SELECT setting_value FROM settings WHERE setting_key IN ('email_logo_url', 'emailLogoUrl', 'logo_url', 'logoUrl') AND setting_value IS NOT NULL AND setting_value != '' ORDER BY id DESC LIMIT 1"
     );
     if (logoRows && logoRows.length > 0 && logoRows[0].setting_value) {
       customEmailLogoUrl = String(logoRows[0].setting_value).trim();
     }
   } catch (eLogo) {}
 
-  const isPublicUrl = typeof customEmailLogoUrl === 'string' &&
-    (customEmailLogoUrl.startsWith('http://') || customEmailLogoUrl.startsWith('https://')) &&
-    !customEmailLogoUrl.includes('localhost') &&
-    !customEmailLogoUrl.includes('127.0.0.1');
-
+  const attachments = [];
   let logoHeaderHtml = '';
-  if (isPublicUrl) {
-    logoHeaderHtml = `
-      <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
-        <tr>
-          <td align="center" style="padding: 10px 0 16px 0;">
-            <img src="${customEmailLogoUrl}" alt="Karviyam" style="max-width: 240px; max-height: 75px; width: auto; height: auto; display: block; border: 0; outline: none; text-decoration: none;" />
-          </td>
-        </tr>
-      </table>
-    `;
-  } else {
+
+  if (customEmailLogoUrl) {
+    let logoSrc = '';
+
+    if (customEmailLogoUrl.startsWith('data:image/')) {
+      const matches = customEmailLogoUrl.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        attachments.push({
+          filename: `email-logo.${ext}`,
+          content: Buffer.from(matches[2], 'base64'),
+          cid: 'admin_custom_email_logo'
+        });
+        logoSrc = 'cid:admin_custom_email_logo';
+      }
+    } else if (customEmailLogoUrl.startsWith('http://') || customEmailLogoUrl.startsWith('https://')) {
+      if (!customEmailLogoUrl.includes('localhost') && !customEmailLogoUrl.includes('127.0.0.1')) {
+        logoSrc = customEmailLogoUrl;
+      } else {
+        const relativePath = customEmailLogoUrl.replace(/^https?:\/\/[^\/]+/, '');
+        const possibleDirs = [
+          path.join(process.cwd(), relativePath),
+          path.join(__dirname, '../..', relativePath),
+          path.join(__dirname, '..', relativePath)
+        ];
+        let foundPath = null;
+        for (const p of possibleDirs) {
+          if (fs.existsSync(p)) {
+            foundPath = p;
+            break;
+          }
+        }
+        if (foundPath) {
+          attachments.push({
+            filename: 'email-logo.png',
+            path: foundPath,
+            cid: 'admin_custom_email_logo'
+          });
+          logoSrc = 'cid:admin_custom_email_logo';
+        } else {
+          const publicBaseUrl = process.env.BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com';
+          logoSrc = `${publicBaseUrl.replace(/\/$/, '')}${relativePath.startsWith('/') ? relativePath : '/' + relativePath}`;
+        }
+      }
+    } else if (customEmailLogoUrl.startsWith('/') || customEmailLogoUrl.startsWith('uploads/')) {
+      const cleanPath = customEmailLogoUrl.startsWith('/') ? customEmailLogoUrl : `/${customEmailLogoUrl}`;
+      const possibleDirs = [
+        path.join(process.cwd(), cleanPath),
+        path.join(__dirname, '../..', cleanPath),
+        path.join(__dirname, '..', cleanPath)
+      ];
+      let foundPath = null;
+      for (const p of possibleDirs) {
+        if (fs.existsSync(p)) {
+          foundPath = p;
+          break;
+        }
+      }
+      if (foundPath) {
+        attachments.push({
+          filename: 'email-logo.png',
+          path: foundPath,
+          cid: 'admin_custom_email_logo'
+        });
+        logoSrc = 'cid:admin_custom_email_logo';
+      } else {
+        const publicBaseUrl = process.env.BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com';
+        logoSrc = `${publicBaseUrl.replace(/\/$/, '')}${cleanPath}`;
+      }
+    }
+
+    if (logoSrc) {
+      logoHeaderHtml = `
+        <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td align="center" style="padding: 10px 0 16px 0;">
+              <img src="${logoSrc}" alt="Karviyam Logo" style="max-width: 240px; max-height: 85px; width: auto; height: auto; display: block; border: 0; outline: none; text-decoration: none;" />
+            </td>
+          </tr>
+        </table>
+      `;
+    }
+  }
+
+  if (!logoHeaderHtml) {
     logoHeaderHtml = `
       <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto; text-align: center;">
         <tr>
@@ -180,12 +124,29 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
     `;
   }
 
+  return { logoHeaderHtml, attachments };
+};
+
+exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMessage, originalMessage = '', orderId = '' }) => {
+  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+  const supportEmail = process.env.SUPPORT_EMAIL || 'vanakkam@karviyam.com';
+
+  const now = new Date();
+  const formattedTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
+  const formattedDate = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+
+  const cleanCustomerName = customerName || 'Valued Customer';
+  const formattedReplyText = String(replyMessage || '').split('\n').map(p => p.trim()).filter(Boolean).map(p => `<p style="margin: 0 0 14px 0; font-size: 14.5px; line-height: 1.6; color: #1e293b;">${p}</p>`).join('');
+
+  const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
+
   const mailOptions = {
     from: `"Karviyam Support" <${fromUser}>`,
     to: toEmail,
     replyTo: supportEmail,
     subject: `Re: ${subject || 'Karviyam Support Request'}`,
     text: `Hello ${cleanCustomerName},\n\n${replyMessage}\n\n----------------------------\nKarviyam Support Team\n${supportEmail}`,
+    attachments,
     html: `
 <!DOCTYPE html>
 <html>

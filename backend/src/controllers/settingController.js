@@ -133,6 +133,43 @@ exports.updatePaymentSettings = async (req, res, next) => {
   }
 };
 
+const fs = require('fs');
+const path = require('path');
+
+const saveBase64Image = (base64Str, prefix = 'logo') => {
+  if (typeof base64Str !== 'string' || !base64Str.startsWith('data:image/')) {
+    return base64Str;
+  }
+  try {
+    const matches = base64Str.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+    if (!matches) return base64Str;
+    const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+    const base64Data = matches[2];
+    const fileName = `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}.${ext}`;
+
+    const possibleDirs = [
+      path.join(__dirname, '../../uploads'),
+      path.join(__dirname, '../uploads'),
+      path.join(process.cwd(), 'uploads'),
+      path.join(process.cwd(), 'backend/uploads')
+    ];
+
+    for (const uDir of possibleDirs) {
+      try {
+        if (!fs.existsSync(uDir)) {
+          fs.mkdirSync(uDir, { recursive: true });
+        }
+        const filePath = path.join(uDir, fileName);
+        fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+        return `/uploads/${fileName}`;
+      } catch (eWrite) {}
+    }
+  } catch (e) {
+    console.error('[saveBase64Image Error]:', e);
+  }
+  return base64Str;
+};
+
 exports.updateSettings = async (req, res, next) => {
   try {
     await ensureSettingsTable();
@@ -144,7 +181,10 @@ exports.updateSettings = async (req, res, next) => {
 
     for (const [key, value] of Object.entries(settingsData)) {
       if (value !== undefined && value !== null) {
-        const strVal = typeof value === 'object' ? JSON.stringify(value) : String(value);
+        let strVal = typeof value === 'object' ? JSON.stringify(value) : String(value);
+        if (['emailLogoUrl', 'email_logo_url', 'logoUrl', 'maintenanceLogoUrl'].includes(key) && strVal.startsWith('data:image/')) {
+          strVal = saveBase64Image(strVal, key.toLowerCase());
+        }
         await pool.query(
           `INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)
            ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
