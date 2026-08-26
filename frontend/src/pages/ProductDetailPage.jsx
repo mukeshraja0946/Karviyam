@@ -39,12 +39,27 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState('');
   const [selectedSize, setSelectedSize] = useState('M');
   const [selectedColor, setSelectedColor] = useState('Karviyam Crimson');
-  const [pincode, setPincode] = useState('');
+  const [pincode, setPincode] = useState(() => localStorage.getItem('karviyam_user_pincode') || '600001');
 
   // Pincode Verification State
   const [pincodeResult, setPincodeResult] = useState(null);
   const [pincodeChecking, setPincodeChecking] = useState(false);
   const [pincodeError, setPincodeError] = useState('');
+
+  useEffect(() => {
+    const syncLocationPincode = () => {
+      const savedPin = localStorage.getItem('karviyam_user_pincode') || '600001';
+      setPincode(savedPin);
+      setPincodeResult(null);
+      setPincodeError('');
+    };
+    window.addEventListener('karviyam_location_updated', syncLocationPincode);
+    window.addEventListener('storage', syncLocationPincode);
+    return () => {
+      window.removeEventListener('karviyam_location_updated', syncLocationPincode);
+      window.removeEventListener('storage', syncLocationPincode);
+    };
+  }, []);
 
   useEffect(() => {
     fetchProduct();

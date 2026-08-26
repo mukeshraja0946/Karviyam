@@ -190,8 +190,24 @@ export default function Navbar() {
 
   // Delivery Location Modal State
   const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [locationPincode, setLocationPincode] = useState('600001');
-  const [locationCity, setLocationCity] = useState('Chennai');
+  const [locationPincode, setLocationPincode] = useState(() => localStorage.getItem('karviyam_user_pincode') || '600001');
+  const [locationCity, setLocationCity] = useState(() => localStorage.getItem('karviyam_user_city') || 'Chennai');
+
+  useEffect(() => {
+    const syncLocation = () => {
+      const savedPin = localStorage.getItem('karviyam_user_pincode') || '600001';
+      const savedCity = localStorage.getItem('karviyam_user_city') || 'Chennai';
+      setLocationPincode(savedPin);
+      setLocationCity(savedCity);
+    };
+
+    window.addEventListener('karviyam_location_updated', syncLocation);
+    window.addEventListener('storage', syncLocation);
+    return () => {
+      window.removeEventListener('karviyam_location_updated', syncLocation);
+      window.removeEventListener('storage', syncLocation);
+    };
+  }, []);
 
   // Voice Search Modal State
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
