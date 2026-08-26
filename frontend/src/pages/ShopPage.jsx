@@ -220,7 +220,7 @@ export default function ShopPage() {
   );
 
   return (
-    <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-8 py-6">
+    <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-8 py-3">
       
       {/* Mobile Filter Button Bar (< 1024px) */}
       <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200 mb-4">
@@ -241,12 +241,12 @@ export default function ShopPage() {
       <div className="flex gap-8 items-start">
         
         {/* Left Sidebar (Desktop Sticky Independent Scroll Container) */}
-        <div className="hidden lg:block w-[230px] shrink-0 border-r border-slate-200/90 pr-4 space-y-6 sticky top-[90px] h-[calc(100vh-110px)] overflow-y-auto scrollbar-thin">
+        <div className="hidden lg:block w-[230px] shrink-0 border-r border-slate-200/90 pr-4 space-y-6 sticky top-[130px] h-[calc(100vh-145px)] overflow-y-auto overscroll-contain scrollbar-thin">
           <SidebarFilterContent />
         </div>
 
         {/* Right Main Catalogue Product Grid (Independent Scroll Container) */}
-        <div className="flex-1 space-y-4 h-[calc(100vh-110px)] overflow-y-auto pr-2 scrollbar-thin">
+        <div className="flex-1 space-y-4 h-[calc(100vh-145px)] overflow-y-auto overscroll-contain pr-2 scrollbar-thin">
           
           {/* Results Header Banner */}
           <div className="border-b border-slate-200 pb-3">
