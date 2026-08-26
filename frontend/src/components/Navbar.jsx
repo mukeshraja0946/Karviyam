@@ -55,6 +55,68 @@ export default function Navbar() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
 
+  // Customer Notifications System
+  const defaultCustomerNotifs = [
+    {
+      id: 1,
+      title: "Order Confirmed! 🛍️",
+      description: "Your order #ORD-9821 has been placed successfully. Track your shipment live.",
+      time: "10m ago",
+      read: false,
+      link: "/cart",
+      type: "order"
+    },
+    {
+      id: 2,
+      title: "Festive Sale Live! 🎉",
+      description: "Up to 60% OFF on High-Street Wear & Fine Jewellery. Use code KARVIYAM25.",
+      time: "2h ago",
+      read: false,
+      link: "/shop",
+      type: "offer"
+    },
+    {
+      id: 3,
+      title: "Customer Support Reply 🎧",
+      description: "Karviyam Support Team has replied to your inquiry.",
+      time: "1d ago",
+      read: false,
+      link: "/contact",
+      type: "support"
+    }
+  ];
+
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('karviyam_customer_notifications');
+      return saved ? JSON.parse(saved) : defaultCustomerNotifs;
+    } catch (e) {
+      return defaultCustomerNotifs;
+    }
+  });
+
+  const unreadNotifCount = notifications.filter(n => !n.read).length;
+
+  const markAllNotifsRead = () => {
+    const updated = notifications.map(n => ({ ...n, read: true }));
+    setNotifications(updated);
+    localStorage.setItem('karviyam_customer_notifications', JSON.stringify(updated));
+  };
+
+  const markNotifRead = (id, link) => {
+    const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
+    setNotifications(updated);
+    localStorage.setItem('karviyam_customer_notifications', JSON.stringify(updated));
+    setNotifOpen(false);
+    if (link) navigate(link);
+  };
+
+  const clearAllNotifs = () => {
+    setNotifications([]);
+    localStorage.setItem('karviyam_customer_notifications', JSON.stringify([]));
+  };
+
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
 
   // Category Navigation Setting & Dynamic Categories
@@ -214,13 +276,19 @@ export default function Navbar() {
           </Link>
 
           {/* Action Icon: Notification Only */}
-          <div className="flex items-center text-slate-700">
+          <div className="flex items-center text-slate-700 relative">
             {/* Notification */}
-            <div className="relative p-1 hover:text-[#B71C1C] cursor-pointer" title="Notifications">
+            <div 
+              onClick={() => setNotifOpen(!notifOpen)}
+              className="relative p-1 hover:text-[#B71C1C] cursor-pointer" 
+              title="Notifications"
+            >
               <Bell className="w-5 h-5 text-slate-700" />
-              <span className="absolute -top-1 -right-1 bg-[#B71C1C] text-white text-[8px] font-black rounded-full h-3.5 min-w-[14px] px-1 flex items-center justify-center">
-                3
-              </span>
+              {unreadNotifCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#B71C1C] text-white text-[8px] font-black rounded-full h-3.5 min-w-[14px] px-1 flex items-center justify-center animate-pulse">
+                  {unreadNotifCount}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -434,16 +502,93 @@ export default function Navbar() {
               </Link>
 
               {/* 3. Notifications */}
-              <div className="flex flex-col items-center group relative cursor-pointer">
-                <div className="relative">
-                  <Bell className="w-5 h-5 text-slate-700 group-hover:text-[#B71C1C] transition-colors" />
-                  <span className="absolute -top-1.5 -right-2 bg-[#B71C1C] text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">
-                    3
+              <div className="relative">
+                <div 
+                  onClick={() => setNotifOpen(!notifOpen)}
+                  className="flex flex-col items-center group cursor-pointer"
+                  title="Notifications"
+                >
+                  <div className="relative">
+                    <Bell className="w-5 h-5 text-slate-700 group-hover:text-[#B71C1C] transition-colors" />
+                    {unreadNotifCount > 0 && (
+                      <span className="absolute -top-1.5 -right-2 bg-[#B71C1C] text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center animate-pulse">
+                        {unreadNotifCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-600 group-hover:text-[#B71C1C] mt-0.5">
+                    Notifications
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-slate-600 group-hover:text-[#B71C1C] mt-0.5">
-                  Notifications
-                </span>
+
+                {/* Notifications Popover Dropdown */}
+                {notifOpen && (
+                  <div className="absolute right-0 top-full mt-3 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 animate-in fade-in-80 zoom-in-95 duration-150 text-left">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Bell className="w-4 h-4 text-[#B71C1C]" />
+                        <h4 className="font-extrabold text-sm text-slate-900">Notifications</h4>
+                        {unreadNotifCount > 0 && (
+                          <span className="bg-red-100 text-[#B71C1C] text-[10px] font-black px-2 py-0.5 rounded-full">
+                            {unreadNotifCount} New
+                          </span>
+                        )}
+                      </div>
+                      {notifications.length > 0 && (
+                        <button 
+                          onClick={markAllNotifsRead}
+                          className="text-[11px] font-bold text-[#B71C1C] hover:underline cursor-pointer"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    {notifications.length === 0 ? (
+                      <div className="py-8 text-center text-slate-400 text-xs font-semibold">
+                        🔔 No new notifications right now.
+                      </div>
+                    ) : (
+                      <div className="max-h-72 overflow-y-auto space-y-2 pr-1 no-scrollbar">
+                        {notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            onClick={() => markNotifRead(n.id, n.link)}
+                            className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
+                              n.read ? 'bg-slate-50/60 border-slate-100 opacity-75' : 'bg-rose-50/40 border-rose-100 shadow-2xs'
+                            }`}
+                          >
+                            <div className="w-8 h-8 rounded-full bg-red-100 text-[#B71C1C] flex items-center justify-center shrink-0 text-sm font-bold mt-0.5">
+                              {n.type === 'order' ? '🛍️' : n.type === 'offer' ? '🎉' : '🎧'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h5 className="text-xs font-bold text-slate-900 truncate">{n.title}</h5>
+                                <span className="text-[9.5px] text-slate-400 font-medium shrink-0 ml-2">{n.time}</span>
+                              </div>
+                              <p className="text-[11px] text-slate-600 leading-snug mt-0.5">{n.description}</p>
+                            </div>
+                            {!n.read && (
+                              <span className="w-2 h-2 rounded-full bg-[#B71C1C] shrink-0 mt-2" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {notifications.length > 0 && (
+                      <div className="border-t border-slate-100 pt-2.5 mt-2 flex items-center justify-between text-[11px]">
+                        <button 
+                          onClick={clearAllNotifs}
+                          className="text-slate-400 hover:text-slate-600 font-semibold cursor-pointer"
+                        >
+                          Clear all
+                        </button>
+                        <span className="text-slate-400 font-medium">Karviyam Support</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* 4. Account */}

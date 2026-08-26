@@ -46,6 +46,67 @@ export default function AdminLayout() {
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Admin Dynamic Notifications System
+  const defaultAdminNotifs = [
+    {
+      id: 1,
+      title: "New Order Received 🛒",
+      description: "Order #ORD-8492 placed by Arun Kumar (₹2,849).",
+      time: "5m ago",
+      read: false,
+      link: "/admin/orders",
+      type: "order"
+    },
+    {
+      id: 2,
+      title: "Low Stock Warning ⚠️",
+      description: "8 products (including 'Test Silk Shirt') reached minimum stock threshold.",
+      time: "25m ago",
+      read: false,
+      link: "/admin/products",
+      type: "stock"
+    },
+    {
+      id: 3,
+      title: "New Support Submission ✉️",
+      description: "Customer Arun Kumar sent a support message regarding Order #ORD123456.",
+      time: "1h ago",
+      read: false,
+      link: "/admin/help-support",
+      type: "support"
+    }
+  ];
+
+  const [adminNotifs, setAdminNotifs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('karviyam_admin_notifications');
+      return saved ? JSON.parse(saved) : defaultAdminNotifs;
+    } catch (e) {
+      return defaultAdminNotifs;
+    }
+  });
+
+  const unreadAdminCount = adminNotifs.filter(n => !n.read).length;
+
+  const markAllAdminRead = () => {
+    const updated = adminNotifs.map(n => ({ ...n, read: true }));
+    setAdminNotifs(updated);
+    localStorage.setItem('karviyam_admin_notifications', JSON.stringify(updated));
+  };
+
+  const handleAdminNotifClick = (id, link) => {
+    const updated = adminNotifs.map(n => n.id === id ? { ...n, read: true } : n);
+    setAdminNotifs(updated);
+    localStorage.setItem('karviyam_admin_notifications', JSON.stringify(updated));
+    setNotificationsOpen(false);
+    if (link) navigate(link);
+  };
+
+  const clearAllAdminNotifs = () => {
+    setAdminNotifs([]);
+    localStorage.setItem('karviyam_admin_notifications', JSON.stringify([]));
+  };
+
   // Custom Admin Logo State
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
 
@@ -259,26 +320,80 @@ export default function AdminLayout() {
           <div className="relative">
             <button
               onClick={() => setNotificationsOpen(!notificationsOpen)}
-              className="p-2 text-slate-500 hover:text-slate-800 hover:bg-[#F5F5F5] rounded-xl transition-colors relative"
+              className="p-2 text-slate-500 hover:text-[#B71C1C] hover:bg-red-50 rounded-xl transition-colors relative cursor-pointer"
+              title="System Notifications"
             >
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#B71C1C] rounded-full animate-pulse" />
+              {unreadAdminCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-[#B71C1C] rounded-full ring-2 ring-white animate-pulse" />
+              )}
             </button>
 
             {notificationsOpen && (
-              <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#E5E7EB] p-3 z-50 text-xs space-y-2">
-                <div className="flex justify-between items-center pb-2 border-b border-slate-100 font-bold">
-                  <span>System Alerts</span>
-                  <span className="text-[10px] text-[#B71C1C]">3 New</span>
+              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-[#E5E7EB] p-4 z-50 animate-in fade-in-80 zoom-in-95 duration-150 text-left">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-[#B71C1C]" />
+                    <h4 className="font-extrabold text-sm text-slate-900">Admin System Alerts</h4>
+                    {unreadAdminCount > 0 && (
+                      <span className="bg-red-100 text-[#B71C1C] text-[10px] font-black px-2 py-0.5 rounded-full">
+                        {unreadAdminCount} New
+                      </span>
+                    )}
+                  </div>
+                  {adminNotifs.length > 0 && (
+                    <button
+                      onClick={markAllAdminRead}
+                      className="text-[11px] font-bold text-[#B71C1C] hover:underline cursor-pointer"
+                    >
+                      Mark all read
+                    </button>
+                  )}
                 </div>
-                <div className="p-2 rounded-xl bg-red-50 text-slate-800">
-                  <p className="font-bold text-[#B71C1C]">Low Stock Alert</p>
-                  <p className="text-[11px] text-slate-600">8 products have reached minimum stock threshold.</p>
-                </div>
-                <div className="p-2 rounded-xl bg-blue-50 text-slate-800">
-                  <p className="font-bold text-blue-700">New Order Received</p>
-                  <p className="text-[11px] text-slate-600">Order #ORD12345 placed by Ravi Kumar.</p>
-                </div>
+
+                {adminNotifs.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 text-xs font-semibold">
+                    ✨ All system alerts cleared!
+                  </div>
+                ) : (
+                  <div className="max-h-72 overflow-y-auto space-y-2 pr-1 no-scrollbar">
+                    {adminNotifs.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={() => handleAdminNotifClick(n.id, n.link)}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
+                          n.read ? 'bg-slate-50/60 border-slate-100 opacity-75' : 'bg-rose-50/40 border-rose-100 shadow-2xs'
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-red-100 text-[#B71C1C] flex items-center justify-center shrink-0 text-sm font-bold mt-0.5">
+                          {n.type === 'order' ? '🛒' : n.type === 'stock' ? '⚠️' : '✉️'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-xs font-bold text-slate-900 truncate">{n.title}</h5>
+                            <span className="text-[9.5px] text-slate-400 font-medium shrink-0 ml-2">{n.time}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-snug mt-0.5">{n.description}</p>
+                        </div>
+                        {!n.read && (
+                          <span className="w-2 h-2 rounded-full bg-[#B71C1C] shrink-0 mt-2" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {adminNotifs.length > 0 && (
+                  <div className="border-t border-slate-100 pt-2.5 mt-2 flex items-center justify-between text-[11px]">
+                    <button
+                      onClick={clearAllAdminNotifs}
+                      className="text-slate-400 hover:text-slate-600 font-semibold cursor-pointer"
+                    >
+                      Clear all
+                    </button>
+                    <span className="text-slate-400 font-medium">Karviyam Admin Panel</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
