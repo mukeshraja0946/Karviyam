@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -12,17 +12,23 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { login, loading, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const searchParams = new URLSearchParams(location.search);
+  const redirectTarget = location.state?.from || searchParams.get('redirect') || '';
 
   // Redirect authenticated user if visiting /login
   useEffect(() => {
     if (isAuthenticated) {
       if (isAdmin) {
         window.location.href = '/admin';
+      } else if (redirectTarget) {
+        window.location.href = redirectTarget;
       } else {
         window.location.href = '/';
       }
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, redirectTarget]);
 
   // Custom Admin Uploaded Logo
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
@@ -59,6 +65,8 @@ export default function LoginPage() {
       if (res && res.success) {
         if (res.isAdmin) {
           window.location.href = '/admin';
+        } else if (redirectTarget) {
+          window.location.href = redirectTarget;
         } else {
           window.location.href = '/';
         }

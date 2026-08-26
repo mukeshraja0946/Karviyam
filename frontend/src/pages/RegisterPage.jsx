@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, Lock, Phone, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import GoogleSignInButton from '../components/GoogleSignInButton';
@@ -15,6 +15,10 @@ export default function RegisterPage() {
 
   const { register, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const searchParams = new URLSearchParams(location.search);
+  const redirectTarget = location.state?.from || searchParams.get('redirect') || '';
 
   // Custom Admin Uploaded Logo
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
@@ -35,7 +39,11 @@ export default function RegisterPage() {
     e.preventDefault();
     const res = await register(formData);
     if (res && res.success) {
-      navigate('/login');
+      if (redirectTarget) {
+        window.location.href = redirectTarget;
+      } else {
+        navigate('/login');
+      }
     }
   };
 
