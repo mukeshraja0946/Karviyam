@@ -306,6 +306,76 @@ export default function Navbar() {
                 </span>
               )}
             </div>
+
+            {/* Mobile Notifications Dropdown Modal */}
+            {notifOpen && (
+              <div 
+                className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-28px)] bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 animate-in fade-in slide-in-from-top-2 text-left"
+              >
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-display font-extrabold text-sm text-slate-900">Notifications</h4>
+                    {unreadNotifCount > 0 && (
+                      <span className="bg-[#B71C1C] text-white text-[9px] font-black px-2 py-0.5 rounded-full">
+                        {unreadNotifCount} NEW
+                      </span>
+                    )}
+                  </div>
+                  {notifications.length > 0 && (
+                    <button 
+                      onClick={markAllNotifsRead}
+                      className="text-[11px] font-bold text-[#B71C1C] hover:underline cursor-pointer"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                {notifications.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 text-xs font-semibold">
+                    🔔 No new notifications right now.
+                  </div>
+                ) : (
+                  <div className="max-h-72 overflow-y-auto space-y-2 pr-1 no-scrollbar">
+                    {notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={() => markNotifRead(n.id, n.link)}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
+                          n.read ? 'bg-slate-50/60 border-slate-100 opacity-75' : 'bg-rose-50/40 border-rose-100 shadow-2xs'
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-red-100 text-[#B71C1C] flex items-center justify-center shrink-0 text-sm font-bold mt-0.5">
+                          {n.type === 'order' ? '🛍️' : n.type === 'offer' ? '🎉' : '🎧'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-xs font-bold text-slate-900 truncate">{n.title}</h5>
+                            <span className="text-[9.5px] text-slate-400 font-medium shrink-0 ml-2">{n.time}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-snug mt-0.5">{n.description}</p>
+                        </div>
+                        {!n.read && (
+                          <span className="w-2 h-2 rounded-full bg-[#B71C1C] shrink-0 mt-2" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {notifications.length > 0 && (
+                  <div className="border-t border-slate-100 pt-2.5 mt-2 flex items-center justify-between text-[11px]">
+                    <button 
+                      onClick={clearAllNotifs}
+                      className="text-slate-400 hover:text-slate-600 font-semibold cursor-pointer"
+                    >
+                      Clear all
+                    </button>
+                    <span className="text-slate-400 font-medium">Karviyam Support</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
