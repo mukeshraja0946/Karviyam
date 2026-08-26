@@ -1,51 +1,52 @@
-const nodemailer = require('nodemailer');
-
 const getTransporters = () => {
   const host = process.env.SMTP_HOST || 'smtp.hostinger.com';
   const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465;
   const user = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
-  const pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || '';
+  const pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.HOSTINGER_SMTP_PASS || process.env.MAIL_PASS || '';
 
   const list = [];
 
   if (pass) {
+    // 1. Primary Configured SMTP
     list.push(nodemailer.createTransport({
       host,
       port,
       secure: port === 465,
       auth: { user, pass },
       tls: { rejectUnauthorized: false },
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 8000
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
     }));
+
+    // 2. Hostinger SSL (Port 465)
+    list.push(nodemailer.createTransport({
+      host: 'smtp.hostinger.com',
+      port: 465,
+      secure: true,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
+    }));
+
+    // 3. Hostinger TLS (Port 587)
+    list.push(nodemailer.createTransport({
+      host: 'smtp.hostinger.com',
+      port: 587,
+      secure: false,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
+    }));
+  } else {
+    console.warn(`⚠️ [SMTP Configuration Warning]: SMTP_PASS is missing in backend/.env for ${user}. Hostinger SMTP requires authentication password.`);
   }
 
-  // Hostinger SSL (Port 465)
-  list.push(nodemailer.createTransport({
-    host: 'smtp.hostinger.com',
-    port: 465,
-    secure: true,
-    auth: pass ? { user, pass } : undefined,
-    tls: { rejectUnauthorized: false },
-    connectionTimeout: 8000,
-    greetingTimeout: 8000,
-    socketTimeout: 8000
-  }));
-
-  // Hostinger TLS (Port 587)
-  list.push(nodemailer.createTransport({
-    host: 'smtp.hostinger.com',
-    port: 587,
-    secure: false,
-    auth: pass ? { user, pass } : undefined,
-    tls: { rejectUnauthorized: false },
-    connectionTimeout: 8000,
-    greetingTimeout: 8000,
-    socketTimeout: 8000
-  }));
-
-  // Server Sendmail Binary
+  // 4. Server Sendmail Binary Fallback
   try {
     list.push(nodemailer.createTransport({
       sendmail: true,
