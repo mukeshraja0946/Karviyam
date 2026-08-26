@@ -115,20 +115,66 @@ export default function DesktopCenterContent() {
   const { isInWishlist, toggleWishlist } = useWishlist();
 
   const [currentHero, setCurrentHero] = useState(0);
+  const [heroSlides, setHeroSlides] = useState(HERO_SLIDES);
   const [products, setProducts] = useState(DEFAULT_RECOMMENDED);
   const [categories, setCategories] = useState(CATEGORIES_DATA);
 
   useEffect(() => {
     fetchProductsAndCategories();
+    fetchBanners();
     window.addEventListener('karviyam_products_updated', fetchProductsAndCategories);
     window.addEventListener('karviyam_categories_updated', fetchProductsAndCategories);
+    window.addEventListener('karviyam_banners_updated', fetchBanners);
     window.addEventListener('storage', fetchProductsAndCategories);
     return () => {
       window.removeEventListener('karviyam_products_updated', fetchProductsAndCategories);
       window.removeEventListener('karviyam_categories_updated', fetchProductsAndCategories);
+      window.removeEventListener('karviyam_banners_updated', fetchBanners);
       window.removeEventListener('storage', fetchProductsAndCategories);
     };
   }, []);
+
+  const fetchBanners = async () => {
+    try {
+      const res = await api.get('/banners').catch(() => null);
+      const apiData = res?.data?.data || res?.data || res;
+      let list = Array.isArray(apiData) ? apiData : [];
+
+      if (!list || list.length === 0) {
+        const saved = localStorage.getItem('karviyam_admin_banners');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
+          } catch (eP) {}
+        }
+      }
+
+      if (list && list.length > 0) {
+        const activeBanners = list.filter(b => b.isActive !== false && b.status !== 'inactive');
+        if (activeBanners.length > 0) {
+          const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
+          const formatted = activeBanners.map(b => {
+            let img = b.imageUrl || b.imagePath || b.image || '';
+            if (img.startsWith('/')) {
+              img = `${apiOrigin}${img}`;
+            }
+            return {
+              id: b.id,
+              tag: 'NEW SEASON ARRIVAL',
+              title: b.title || 'NEW STYLE NEW YOU',
+              subtitle: b.subtitle || 'Explore our latest collection',
+              image: img || HERO_SLIDES[0].image,
+              link: b.link || b.buttonLink || '/shop'
+            };
+          });
+          setHeroSlides(formatted);
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching hero banners in DesktopCenterContent:', e);
+    }
+  };
 
   const fetchProductsAndCategories = async () => {
     try {
@@ -212,7 +258,7 @@ export default function DesktopCenterContent() {
     }
   };
 
-  const slide = HERO_SLIDES[currentHero] || HERO_SLIDES[0];
+  const slide = heroSlides[currentHero] || heroSlides[0] || HERO_SLIDES[0];
 
   return (
     <main className="flex-1 min-w-0 flex flex-col gap-3">

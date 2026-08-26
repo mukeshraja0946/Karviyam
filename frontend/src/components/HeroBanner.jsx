@@ -43,57 +43,48 @@ export default function HeroBanner() {
       const savedSpeed = localStorage.getItem('karviyam_banner_speed');
       setSpeed(savedSpeed ? Number(savedSpeed) : 5000);
 
-      const res = await api.get('/banners');
-      const apiData = res.data ? res.data : res;
-      const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      const res = await api.get('/banners').catch(() => null);
+      const apiData = res?.data ? res.data : res;
+      let list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
       
-      if (list.length > 0) {
-        const formatted = list.map(b => ({
-          id: b.id,
-          title: b.title,
-          subtitle: b.subtitle,
-          image: b.imagePath || b.imageUrl || b.image,
-          cta: 'EXPLORE COLLECTION',
-          link: b.link || '/shop'
-        }));
-        setBanners(formatted);
-      } else {
+      if (!list || list.length === 0) {
         const saved = localStorage.getItem('karviyam_admin_banners');
         if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setBanners(parsed.map(b => ({
-              id: b.id,
-              title: b.title,
-              subtitle: b.subtitle,
-              image: b.imagePath || b.imageUrl || b.image,
-              cta: 'EXPLORE COLLECTION',
-              link: b.link || '/shop'
-            })));
-            return;
-          }
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              list = parsed;
+            }
+          } catch (eParsed) {}
         }
-        setBanners(DEFAULT_BANNERS);
       }
+
+      if (list && list.length > 0) {
+        const activeList = list.filter(b => b.isActive !== false && b.status !== 'inactive');
+        if (activeList.length > 0) {
+          const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
+          const formatted = activeList.map(b => {
+            let img = b.imagePath || b.imageUrl || b.image || '';
+            if (img.startsWith('/')) {
+              img = `${apiOrigin}${img}`;
+            }
+            return {
+              id: b.id,
+              title: b.title || 'GALAXY OF ELEGANCE',
+              subtitle: b.subtitle || 'Discover the 2026 Collection',
+              image: img || DEFAULT_BANNERS[0].image,
+              cta: 'EXPLORE COLLECTION',
+              link: b.link || b.buttonLink || '/shop'
+            };
+          });
+          setBanners(formatted);
+          return;
+        }
+      }
+
+      setBanners(DEFAULT_BANNERS);
     } catch (e) {
       console.error(e);
-      const saved = localStorage.getItem('karviyam_admin_banners');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setBanners(parsed.map(b => ({
-              id: b.id,
-              title: b.title,
-              subtitle: b.subtitle,
-              image: b.imagePath || b.imageUrl || b.image,
-              cta: 'EXPLORE COLLECTION',
-              link: b.link || '/shop'
-            })));
-            return;
-          }
-        } catch (errSaved) {}
-      }
       setBanners(DEFAULT_BANNERS);
     }
   };
@@ -106,7 +97,7 @@ export default function HeroBanner() {
     return () => clearInterval(timer);
   }, [banners.length, autoScroll, speed]);
 
-  const current = banners[currentIndex] || BANNERS[0];
+  const current = banners[currentIndex] || DEFAULT_BANNERS[0];
 
   return (
     <div className="relative w-full h-[450px] sm:h-[550px] bg-slate-100 overflow-hidden">

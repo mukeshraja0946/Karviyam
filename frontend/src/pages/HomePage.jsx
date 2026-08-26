@@ -11,65 +11,94 @@ import DesktopTrustBar from '../components/desktop/DesktopTrustBar';
 import api from '../utils/api';
 import { Flame, Sparkles, Grid, SlidersHorizontal } from 'lucide-react';
 
+const DEFAULT_MOBILE_BANNERS = [
+  {
+    id: 1,
+    badge: 'NEW SEASON ARRIVAL',
+    title: 'NEW STYLE\nNEW YOU',
+    subtitle: 'Explore our latest collection',
+    image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800',
+    cta: 'SHOP NOW',
+    link: '/shop'
+  },
+  {
+    id: 2,
+    badge: 'FESTIVE SPECIAL',
+    title: 'UP TO 60% OFF\nBESTSELLERS',
+    subtitle: 'Exclusive discounts on ethnic & festive wear',
+    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800',
+    cta: 'EXPLORE SALE',
+    link: '/shop?category=Women'
+  }
+];
+
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [mobileViewMode, setMobileViewMode] = useState('grid'); // 'grid' or 'carousel'
+  const [mobileViewMode, setMobileViewMode] = useState('grid');
   const [mobileBannerIndex, setMobileBannerIndex] = useState(0);
+  const [mobileBanners, setMobileBanners] = useState(DEFAULT_MOBILE_BANNERS);
 
-  const mobileBanners = [
-    {
-      id: 1,
-      badge: 'NEW SEASON ARRIVAL',
-      title: 'NEW STYLE\nNEW YOU',
-      subtitle: 'Explore our latest collection',
-      image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800',
-      cta: 'SHOP NOW',
-      link: '/shop'
-    },
-    {
-      id: 2,
-      badge: 'FESTIVE SPECIAL',
-      title: 'UP TO 60% OFF\nBESTSELLERS',
-      subtitle: 'Exclusive discounts on ethnic & festive wear',
-      image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800',
-      cta: 'EXPLORE SALE',
-      link: '/shop?category=Women'
-    },
-    {
-      id: 3,
-      badge: 'LUXURY JEWELLERY',
-      title: '925 STERLING\nSILVER COUTURE',
-      subtitle: 'Handcrafted royal pendants & rings',
-      image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800',
-      cta: 'SHOP JEWELLERY',
-      link: '/shop?category=Jewellery'
-    },
-    {
-      id: 4,
-      badge: 'STREETWEAR DROPS',
-      title: 'APEX SNEAKERS\n& OVERSIZED TEES',
-      subtitle: 'Trending high-street streetwear drops',
-      image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800',
-      cta: 'VIEW DROPS',
-      link: '/shop?category=Men'
+  const fetchBanners = async () => {
+    try {
+      const res = await api.get('/banners').catch(() => null);
+      const apiData = res?.data?.data || res?.data || res;
+      let list = Array.isArray(apiData) ? apiData : [];
+
+      if (!list || list.length === 0) {
+        const saved = localStorage.getItem('karviyam_admin_banners');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
+          } catch (eP) {}
+        }
+      }
+
+      if (list && list.length > 0) {
+        const activeBanners = list.filter(b => b.isActive !== false && b.status !== 'inactive');
+        if (activeBanners.length > 0) {
+          const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
+          const formatted = activeBanners.map(b => {
+            let img = b.imageUrl || b.imagePath || b.image || '';
+            if (img.startsWith('/')) {
+              img = `${apiOrigin}${img}`;
+            }
+            return {
+              id: b.id,
+              badge: 'NEW SEASON ARRIVAL',
+              title: b.title || 'NEW STYLE NEW YOU',
+              subtitle: b.subtitle || 'Explore our latest collection',
+              image: img || DEFAULT_MOBILE_BANNERS[0].image,
+              cta: 'SHOP NOW',
+              link: b.link || b.buttonLink || '/shop'
+            };
+          });
+          setMobileBanners(formatted);
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching mobile banners in HomePage:', e);
     }
-  ];
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setMobileBannerIndex((prev) => (prev + 1) % mobileBanners.length);
+      setMobileBannerIndex((prev) => (prev + 1) % Math.max(mobileBanners.length, 1));
     }, 4000);
     return () => clearInterval(timer);
   }, [mobileBanners.length]);
 
   useEffect(() => {
     fetchHomeProducts();
+    fetchBanners();
     window.addEventListener('karviyam_products_updated', fetchHomeProducts);
+    window.addEventListener('karviyam_banners_updated', fetchBanners);
     window.addEventListener('storage', fetchHomeProducts);
     return () => {
       window.removeEventListener('karviyam_products_updated', fetchHomeProducts);
+      window.removeEventListener('karviyam_banners_updated', fetchBanners);
       window.removeEventListener('storage', fetchHomeProducts);
     };
   }, []);
