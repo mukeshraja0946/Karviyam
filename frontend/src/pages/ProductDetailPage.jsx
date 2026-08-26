@@ -213,9 +213,9 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left items-start">
           
           {/* ======================================================= */}
-          {/* COLUMN 1: LEFT IMAGE GALLERY (~36% / lg:col-span-[4.5])  */}
+          {/* COLUMN 1: LEFT IMAGE GALLERY (1/3 Width / lg:col-span-4) */}
           {/* ======================================================= */}
-          <div className="lg:col-span-[4.5] flex flex-col sm:flex-row gap-3">
+          <div className="lg:col-span-4 flex flex-col sm:flex-row gap-3">
             
             {/* Vertical Thumbnail Strip (Desktop) */}
             <div className="hidden sm:flex flex-col gap-2 w-14 shrink-0">
@@ -236,11 +236,11 @@ export default function ProductDetailPage() {
 
             {/* Main Image Display Container (Clean White, No Gray Box) */}
             <div className="flex-1 space-y-2">
-              <div className="relative w-full h-[440px] sm:h-[460px] bg-white rounded-2xl border border-slate-200/80 p-2 shadow-2xs flex items-center justify-center overflow-hidden">
+              <div className="relative w-full h-[400px] sm:h-[420px] bg-white rounded-2xl border border-slate-200/80 p-2 shadow-2xs flex items-center justify-center overflow-hidden">
                 <img
                   src={selectedImage}
                   alt={product.name}
-                  className="w-full h-full object-cover rounded-xl transition-transform duration-300 hover:scale-105"
+                  className="max-h-full max-w-full object-contain rounded-xl transition-transform duration-300 hover:scale-105"
                 />
 
                 {/* Wishlist Button (Top-Right Circle) */}
@@ -477,10 +477,10 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ======================================================= */}
-          {/* COLUMN 3: RIGHT SPECIFICATIONS & DETAILS (~32% / lg:col-span-[3.5]) */}
+          {/* COLUMN 3: RIGHT SPECIFICATIONS & DETAILS (1/3 Width / lg:col-span-4) */}
           {/* DIRECTLY BESIDE THE MAIN IMAGE & CONTROLS                */}
           {/* ======================================================= */}
-          <div className="lg:col-span-[3.5] space-y-4 max-h-[640px] overflow-y-auto pr-1 scrollbar-thin text-xs">
+          <div className="lg:col-span-4 space-y-4 max-h-[640px] overflow-y-auto pr-1 scrollbar-thin text-xs">
             
             {/* 1. TOP HIGHLIGHTS */}
             <div className="space-y-1.5">
