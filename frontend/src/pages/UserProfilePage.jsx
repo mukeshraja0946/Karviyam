@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { Package, User, MapPin, Clock, RefreshCw } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Package, User, MapPin, Clock, RefreshCw, LogOut } from 'lucide-react';
 
 export default function UserProfilePage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully 👋');
+    navigate('/login');
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -110,6 +119,17 @@ export default function UserProfilePage() {
               <MapPin className="w-4 h-4 text-[#B71C1C] shrink-0" />
               <span>{user?.address || '123 Karviyam Street, Chennai 600001'}</span>
             </p>
+          </div>
+
+          {/* Logout Button */}
+          <div className="mt-6 border-t border-slate-100 pt-4">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-rose-50 hover:bg-rose-100 text-[#B71C1C] border border-rose-200 rounded-2xl text-xs font-black transition-all shadow-2xs cursor-pointer active:scale-95"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>LOGOUT ACCOUNT</span>
+            </button>
           </div>
         </div>
 
