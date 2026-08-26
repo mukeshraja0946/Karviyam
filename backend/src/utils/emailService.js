@@ -3,6 +3,75 @@ const pool = require('../config/db');
 const fs = require('fs');
 const path = require('path');
 
+const getTransporters = async () => {
+  let host = process.env.SMTP_HOST || 'smtp.hostinger.com';
+  let port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465;
+  let user = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+  let pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.HOSTINGER_SMTP_PASS || process.env.MAIL_PASS || '';
+
+  if (!pass) {
+    try {
+      const [rows] = await pool.query("SELECT setting_value FROM settings WHERE setting_key IN ('smtp_pass', 'smtp_password', 'email_password') AND setting_value IS NOT NULL AND setting_value != '' LIMIT 1");
+      if (rows && rows.length > 0 && rows[0].setting_value) {
+        pass = rows[0].setting_value;
+      }
+    } catch (eDb) {}
+  }
+
+  const list = [];
+
+  if (pass) {
+    // 1. Primary Configured SMTP
+    list.push(nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
+    }));
+
+    // 2. Hostinger SSL (Port 465)
+    list.push(nodemailer.createTransport({
+      host: 'smtp.hostinger.com',
+      port: 465,
+      secure: true,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
+    }));
+
+    // 3. Hostinger TLS (Port 587)
+    list.push(nodemailer.createTransport({
+      host: 'smtp.hostinger.com',
+      port: 587,
+      secure: false,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
+    }));
+  } else {
+    console.warn(`⚠️ [SMTP Configuration Warning]: SMTP_PASS is missing in backend/.env for ${user}. Hostinger SMTP requires authentication password.`);
+  }
+
+  // 4. Server Sendmail Binary Fallback
+  try {
+    list.push(nodemailer.createTransport({
+      sendmail: true,
+      newline: 'unix',
+      path: '/usr/sbin/sendmail'
+    }));
+  } catch (e) {}
+
+  return list;
+};
+
 const getEmailLogoHeader = async () => {
   let customEmailLogoUrl = '';
   try {
