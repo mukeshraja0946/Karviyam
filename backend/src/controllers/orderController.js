@@ -62,7 +62,7 @@ const mapOrderRowToDTO = async (order) => {
 
 exports.checkout = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user ? req.user.id : null;
     const {
       items, fullName, email, phone, address, city, pincode,
       paymentMethod = 'COD', discountAmount = 0, shippingCost = 0
@@ -70,7 +70,21 @@ exports.checkout = async (req, res, next) => {
 
     const normalizedMethod = String(paymentMethod || 'COD').trim().toUpperCase();
 
-    // 1. Validate payment method against MySQL database settings
+    // 1. Validate customer details for guest checkout
+    if (!fullName || !String(fullName).trim()) {
+      return res.status(400).json(ApiResponse.error('Full Name is required for delivery'));
+    }
+    if (!phone || !String(phone).trim()) {
+      return res.status(400).json(ApiResponse.error('Mobile Number is required for delivery'));
+    }
+    if (!address || !String(address).trim()) {
+      return res.status(400).json(ApiResponse.error('Delivery Address is required'));
+    }
+    if (!pincode || !String(pincode).trim()) {
+      return res.status(400).json(ApiResponse.error('Pincode is required'));
+    }
+
+    // 2. Validate payment method against MySQL database settings
     try {
       const [settingRows] = await pool.query('SELECT setting_key, setting_value FROM settings');
       const settingsMap = {};
@@ -99,8 +113,8 @@ exports.checkout = async (req, res, next) => {
 
     let orderItemsData = items;
 
-    // If items not directly supplied, fetch from cart
-    if (!orderItemsData || orderItemsData.length === 0) {
+    // If items not directly supplied and logged in, fetch from user cart
+    if ((!orderItemsData || orderItemsData.length === 0) && userId) {
       const [cartRows] = await pool.query('SELECT id FROM cart WHERE user_id = ?', [userId]);
       if (cartRows.length > 0) {
         const cartId = cartRows[0].id;
@@ -127,7 +141,7 @@ exports.checkout = async (req, res, next) => {
     for (const item of orderItemsData) {
       if (!item.priceAtTime) {
         const [pRows] = await pool.query('SELECT price FROM products WHERE id = ?', [item.productId]);
-        item.priceAtTime = pRows.length > 0 ? pRows[0].price : 0;
+        item.priceAtTime = pRows.length > 0 ? pRows[0].price : (item.price || 0);
       }
       calculatedTotal += parseFloat(item.priceAtTime) * parseInt(item.quantity);
     }
@@ -143,10 +157,10 @@ exports.checkout = async (req, res, next) => {
         finalTotal,
         parseFloat(discountAmount),
         parseFloat(shippingCost),
-        fullName || req.user.full_name,
-        email || req.user.email,
-        phone || req.user.phone,
-        address || req.user.address || 'Address provided at checkout',
+        fullName || (req.user ? req.user.full_name : 'Guest Customer'),
+        email || (req.user ? req.user.email : 'guest@karviyam.com'),
+        phone || (req.user ? req.user.phone : ''),
+        address || (req.user ? req.user.address : 'Address provided at checkout'),
         city || 'City',
         pincode || '600001'
       ]
@@ -158,11 +172,11 @@ exports.checkout = async (req, res, next) => {
       await pool.query(
         `INSERT INTO order_items (order_id, product_id, quantity, price_at_time, selected_size, selected_color)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [orderId, item.productId, item.quantity, item.priceAtTime, item.selectedSize || null, item.selectedColor || null]
+        [orderId, item.productId || item.id, item.quantity, item.priceAtTime || item.price, item.selectedSize || null, item.selectedColor || null]
       );
 
       // Reduce product stock quantity safely
-      await pool.query('UPDATE products SET stock_quantity = GREATEST(0, stock_quantity - ?) WHERE id = ?', [item.quantity, item.productId]);
+      await pool.query('UPDATE products SET stock_quantity = GREATEST(0, stock_quantity - ?) WHERE id = ?', [item.quantity, item.productId || item.id]);
     }
 
     // Insert payment record
@@ -173,12 +187,14 @@ exports.checkout = async (req, res, next) => {
       [orderId, txnId, paymentMethod, finalTotal, paymentMethod === 'COD' ? 'Pending' : 'Pending']
     );
 
-    // Clear user cart
-    const [cartRows] = await pool.query('SELECT id FROM cart WHERE user_id = ?', [userId]);
-    if (cartRows.length > 0) {
-      await pool.query('DELETE FROM cart_items WHERE cart_id = ?', [cartRows[0].id]);
+    // Clear user cart if logged in
+    if (userId) {
+      const [cartRows] = await pool.query('SELECT id FROM cart WHERE user_id = ?', [userId]);
+      if (cartRows.length > 0) {
+        await pool.query('DELETE FROM cart_items WHERE cart_id = ?', [cartRows[0].id]);
+      }
+      await pool.query('DELETE FROM cart WHERE user_id = ?', [userId]);
     }
-    await pool.query('DELETE FROM cart WHERE user_id = ?', [userId]);
 
     const [createdOrder] = await pool.query('SELECT * FROM orders WHERE id = ?', [orderId]);
     const dto = await mapOrderRowToDTO(createdOrder[0]);
@@ -203,14 +219,15 @@ exports.getMyOrders = async (req, res, next) => {
 exports.getOrderById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
+    const [orders] = await pool.query('SELECT * FROM orders WHERE id = ? OR id = ?', [id, id.replace(/\D/g, '')]);
     if (orders.length === 0) {
       return res.status(404).json(ApiResponse.error('Order not found'));
     }
 
-    // Verify ownership unless admin
     const order = orders[0];
-    if (order.user_id !== req.user.id && !req.user.roles.includes('ROLE_ADMIN')) {
+    
+    // Verify ownership if logged in and not admin
+    if (req.user && order.user_id && order.user_id !== req.user.id && !req.user.roles?.includes('ROLE_ADMIN')) {
       return res.status(403).json(ApiResponse.error('Access denied'));
     }
 

@@ -23,7 +23,7 @@ export default function DeliveryLocationModal({ isOpen, onClose, currentPincode,
 
   if (!isOpen) return null;
 
-  const handleApplyPincode = (e) => {
+  const handleApplyPincode = async (e) => {
     if (e) e.preventDefault();
     const cleanPin = String(pincode || '').trim().replace(/\D/g, '');
     if (!/^\d{6}$/.test(cleanPin)) {
@@ -33,21 +33,41 @@ export default function DeliveryLocationModal({ isOpen, onClose, currentPincode,
     setError('');
     setLoading(true);
 
-    const targetCity = city || 'Detected Location';
-    
-    // Save to local storage for global persistence across header, PDP, checkout
+    let targetCity = city;
+
+    // Lookup city/district from Indian postal API if available
+    try {
+      const pinRes = await fetch(`https://api.postalpincode.in/pincode/${cleanPin}`);
+      const pinData = await pinRes.json();
+      if (pinData && pinData[0] && pinData[0].Status === 'Success' && pinData[0].PostOffice?.length > 0) {
+        const po = pinData[0].PostOffice[0];
+        const dist = po.District || po.Block || po.Circle || '';
+        const st = po.State || '';
+        if (dist || st) {
+          targetCity = dist && st ? `${dist}, ${st}` : (dist || st);
+        }
+      }
+    } catch (ePin) {}
+
+    if (!targetCity || targetCity === 'Detected Location' || targetCity === 'Chennai, Tamil Nadu') {
+      targetCity = `PIN ${cleanPin}`;
+    }
+
+    setCity(targetCity);
+
+    // Save to local storage for global persistence across mobile/desktop header, PDP, checkout
     localStorage.setItem('karviyam_user_pincode', cleanPin);
     localStorage.setItem('karviyam_user_city', targetCity);
-    window.dispatchEvent(new Event('karviyam_location_updated'));
+    
+    window.dispatchEvent(new CustomEvent('karviyam_location_updated', { detail: { pincode: cleanPin, city: targetCity } }));
+    window.dispatchEvent(new Event('storage'));
 
-    setTimeout(() => {
-      setLoading(false);
-      if (onSelectLocation) {
-        onSelectLocation(cleanPin, targetCity);
-      }
-      toast.success(`Delivery location updated to ${targetCity} (${cleanPin})`);
-      onClose();
-    }, 300);
+    setLoading(false);
+    if (onSelectLocation) {
+      onSelectLocation(cleanPin, targetCity);
+    }
+    toast.success(`Delivery location updated to ${targetCity} (${cleanPin})`);
+    onClose();
   };
 
   const handleUseCurrentLocation = async () => {

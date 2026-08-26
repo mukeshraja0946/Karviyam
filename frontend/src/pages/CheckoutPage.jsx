@@ -24,66 +24,43 @@ export default function CheckoutPage() {
 
   const [removedItemKeys, setRemovedItemKeys] = useState([]);
 
-  const [formData, setFormData] = useState({
-    fullName: user?.fullName || user?.name || 'Arun Kumar',
-    email: user?.email || 'arunkumar@example.com',
-    phone: user?.phone || '9876543210',
-    address: user?.address || 'Door No. 12, Sai Nagar, Peelamedu',
-    city: user?.city || 'Coimbatore',
-    state: 'Tamil Nadu',
-    pincode: user?.pincode || '641015',
-  });
+  const [formData, setFormData] = useState(() => ({
+    fullName: user?.fullName || user?.name || user?.full_name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
+    city: user?.city || (localStorage.getItem('karviyam_user_city') || '').split(',')[0] || '',
+    state: user?.state || 'Tamil Nadu',
+    pincode: user?.pincode || localStorage.getItem('karviyam_user_pincode') || '',
+  }));
+
+  useEffect(() => {
+    const syncPincode = () => {
+      const savedPin = localStorage.getItem('karviyam_user_pincode');
+      const savedCity = localStorage.getItem('karviyam_user_city');
+      if (savedPin) {
+        setFormData(prev => ({
+          ...prev,
+          pincode: prev.pincode || savedPin,
+          city: prev.city || (savedCity || '').split(',')[0] || ''
+        }));
+      }
+    };
+    window.addEventListener('karviyam_location_updated', syncPincode);
+    window.addEventListener('storage', syncPincode);
+    return () => {
+      window.removeEventListener('karviyam_location_updated', syncPincode);
+      window.removeEventListener('storage', syncPincode);
+    };
+  }, []);
 
   const [selectedAddrId, setSelectedAddrId] = useState(1);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
 
-  const savedAddresses = [
-    {
-      id: 1,
-      fullName: 'Arun Kumar',
-      addressType: 'HOME',
-      houseFlatNo: 'Door No. 12',
-      streetAddress: 'Sai Nagar, Peelamedu',
-      city: 'Coimbatore',
-      state: 'Tamil Nadu',
-      pincode: '641015',
-      phone: '9876543210',
-      isDefault: true
-    }
-  ];
-
   // Effective items matching reference screenshot
   const rawItemsList = Array.isArray(cart.items) && cart.items.length > 0
     ? cart.items
-    : [
-        {
-          id: 101,
-          productName: "Karviyam Cyberpunk Oversized Tee",
-          productImage: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800",
-          price: 899,
-          quantity: 1,
-          selectedSize: 'L',
-          selectedColor: 'Neon Black'
-        },
-        {
-          id: 102,
-          productName: "Elegant Printers Edition 3",
-          productImage: "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800",
-          price: 1058,
-          quantity: 1,
-          selectedSize: 'M',
-          selectedColor: 'Standard'
-        },
-        {
-          id: 103,
-          productName: "Test Silk Shirt",
-          productImage: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800",
-          price: 1299,
-          quantity: 3,
-          selectedSize: 'M',
-          selectedColor: 'Karviyam Crimson'
-        }
-      ];
+    : [];
 
   const itemsList = rawItemsList.filter((item, idx) => !removedItemKeys.includes(item.id || idx));
 
@@ -103,6 +80,34 @@ export default function CheckoutPage() {
 
   // Trigger Payment Modal when user clicks "Proceed to Payment"
   const handleProceedToPayment = () => {
+    if (!itemsList || itemsList.length === 0) {
+      toast.error('Your Bag is empty! Please add products before checking out.');
+      return;
+    }
+    if (!formData.fullName || !formData.fullName.trim()) {
+      toast.error('Please enter your Full Name');
+      return;
+    }
+    if (!formData.phone || !formData.phone.trim() || formData.phone.trim().length < 10) {
+      toast.error('Please enter a valid 10-digit Mobile Number');
+      return;
+    }
+    if (!formData.email || !formData.email.trim() || !formData.email.includes('@')) {
+      toast.error('Please enter a valid Email Address');
+      return;
+    }
+    if (!formData.address || !formData.address.trim()) {
+      toast.error('Please enter your Delivery Address');
+      return;
+    }
+    if (!formData.city || !formData.city.trim()) {
+      toast.error('Please enter your City');
+      return;
+    }
+    if (!formData.pincode || !formData.pincode.trim() || formData.pincode.trim().length !== 6) {
+      toast.error('Please enter a valid 6-digit Pincode');
+      return;
+    }
     setPaymentModalOpen(true);
   };
 
