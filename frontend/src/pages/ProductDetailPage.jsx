@@ -196,7 +196,7 @@ export default function ProductDetailPage() {
   const discountPercent = product.discountPercent || Math.round(((oldPrice - price) / oldPrice) * 100) || 40;
 
   return (
-    <div className="w-full bg-[#FAFAFA] min-h-screen text-slate-900 pb-12 font-sans">
+    <div className="w-full bg-[#FAFAFA] min-h-screen text-slate-900 pb-28 md:pb-12 font-sans">
       {/* 1. BREADCRUMB ROW */}
       <div className="max-w-[1750px] mx-auto px-2 sm:px-8 py-1.5 text-[10.5px] sm:text-[11px] font-semibold text-slate-500 text-left">
         <div className="flex items-center gap-1.5">
@@ -457,10 +457,10 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ======================================================= */}
-          {/* COLUMN 3: RIGHT SPECIFICATIONS & DETAILS (INDEPENDENT SCROLLABLE) */}
-          {/* DIRECTLY BESIDE THE MAIN IMAGE & CONTROLS                */}
+          {/* COLUMN 3: RIGHT SPECIFICATIONS & DETAILS                */}
+          {/* DESKTOP: FIXED SCROLLABLE PANEL | MOBILE: NATURAL CONTINUOUS DOCUMENT SCROLL */}
           {/* ======================================================= */}
-          <div className="lg:col-span-4 space-y-4 h-[calc(100vh-160px)] overflow-y-auto overscroll-contain pr-2 scrollbar-thin text-xs">
+          <div className="lg:col-span-4 space-y-4 lg:h-[calc(100vh-160px)] lg:overflow-y-auto lg:overscroll-contain pr-0 lg:pr-2 scrollbar-thin text-xs overflow-visible h-auto">
             
             {/* 1. TOP HIGHLIGHTS */}
             {(() => {
