@@ -61,6 +61,7 @@ export default function App() {
                   <Route path="/category/:slug" element={<ShopPage />} />
                   <Route path="/product/:id" element={<ProductDetailPage />} />
                   <Route path="/cart" element={<CartPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
@@ -68,7 +69,6 @@ export default function App() {
 
                   {/* Protected Customer Routes */}
                   <Route element={<ProtectedRoute />}>
-                    <Route path="/checkout" element={<CheckoutPage />} />
                     <Route path="/order-success" element={<OrderSuccessPage />} />
                     <Route path="/profile" element={<UserProfilePage />} />
                     <Route path="/settings" element={<CustomerSettingsPage />} />
