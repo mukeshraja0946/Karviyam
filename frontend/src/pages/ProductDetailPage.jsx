@@ -40,7 +40,6 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState('M');
   const [selectedColor, setSelectedColor] = useState('Karviyam Crimson');
   const [pincode, setPincode] = useState('');
-  const [showMoreInfo, setShowMoreInfo] = useState(true);
 
   // Pincode Verification State
   const [pincodeResult, setPincodeResult] = useState(null);
@@ -178,7 +177,7 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+      <div className="max-w-[1440px] mx-auto px-4 py-16 text-center">
         <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#B71C1C]" />
         <p className="text-xs font-bold text-slate-500 mt-2">Loading product details...</p>
       </div>
@@ -192,11 +191,11 @@ export default function ProductDetailPage() {
   const discountPercent = product.discountPercent || Math.round(((oldPrice - price) / oldPrice) * 100) || 40;
 
   return (
-    <div className="w-full bg-[#FAFAFA] min-h-screen text-slate-900 pb-16 font-sans">
+    <div className="w-full bg-[#FAFAFA] min-h-screen text-slate-900 pb-12 font-sans">
       
       {/* 1. BREADCRUMB ROW */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-1.5 text-xs font-semibold text-slate-500 text-left">
-        <div className="flex items-center gap-2">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-2 text-[11px] font-semibold text-slate-500 text-left">
+        <div className="flex items-center gap-1.5">
           <Link to="/" className="hover:text-[#B71C1C]">Home</Link>
           <span>/</span>
           <Link to="/shop" className="hover:text-[#B71C1C]">Shop</Link>
@@ -205,15 +204,18 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      {/* 2. MAIN PRODUCT SECTION (TWO COLUMNS) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-2">
+      {/* ========================================================================= */}
+      {/* 2. STRICT 3-COLUMN PRODUCT DETAIL LAYOUT (MATCHING REFERENCE IMAGE)        */}
+      {/* COLUMN 1: IMAGE GALLERY | COLUMN 2: CONTROLS | COLUMN 3: DETAILS & SPECS    */}
+      {/* ========================================================================= */}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-2">
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left items-start">
           
           {/* ======================================================= */}
-          {/* LEFT COLUMN: PRODUCT IMAGES & GALLERY (~50% / lg:col-span-6) */}
+          {/* COLUMN 1: LEFT IMAGE GALLERY (~36% / lg:col-span-[4.5])  */}
           {/* ======================================================= */}
-          <div className="lg:col-span-6 flex flex-col sm:flex-row gap-3">
+          <div className="lg:col-span-[4.5] flex flex-col sm:flex-row gap-3">
             
             {/* Vertical Thumbnail Strip (Desktop) */}
             <div className="hidden sm:flex flex-col gap-2 w-14 shrink-0">
@@ -221,9 +223,9 @@ export default function ProductDetailPage() {
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(img)}
-                  className={`w-13 h-13 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white p-0.5 ${
+                  className={`w-12 h-12 rounded-xl overflow-hidden border transition-all shrink-0 bg-white ${
                     selectedImage === img
-                      ? 'border-[#B71C1C] scale-105 shadow-2xs'
+                      ? 'border-[#B71C1C] ring-1 ring-[#B71C1C]'
                       : 'border-slate-200 opacity-70 hover:opacity-100'
                   }`}
                 >
@@ -232,48 +234,49 @@ export default function ProductDetailPage() {
               ))}
             </div>
 
-            {/* Main Image Display Container */}
-            <div className="flex-1 space-y-2.5">
-              <div className="relative w-full h-[410px] sm:h-[430px] bg-slate-50/80 rounded-2xl border border-slate-200/90 p-2 shadow-2xs flex items-center justify-center overflow-hidden">
+            {/* Main Image Display Container (Clean White, No Gray Box) */}
+            <div className="flex-1 space-y-2">
+              <div className="relative w-full h-[440px] sm:h-[460px] bg-white rounded-2xl border border-slate-200/80 p-2 shadow-2xs flex items-center justify-center overflow-hidden">
                 <img
                   src={selectedImage}
                   alt={product.name}
                   className="w-full h-full object-cover rounded-xl transition-transform duration-300 hover:scale-105"
                 />
 
-                {/* Share Button (Top-Right) */}
+                {/* Wishlist Button (Top-Right Circle) */}
                 <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    toast.success('Product link copied to clipboard!');
-                  }}
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-red-50 text-slate-700 hover:text-[#B71C1C] flex items-center justify-center border border-slate-200 shadow-2xs cursor-pointer transition-colors"
-                  title="Share product link"
+                  onClick={() => toggleWishlist(product.id)}
+                  className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-xs transition-colors cursor-pointer border ${
+                    isWish
+                      ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
+                      : 'bg-white text-slate-700 hover:text-[#B71C1C] border-slate-200'
+                  }`}
+                  title={isWish ? 'Remove from Wishlist' : 'Add to Wishlist'}
                 >
-                  <Share2 className="w-3.5 h-3.5" />
+                  <Heart className={`w-3.5 h-3.5 ${isWish ? 'fill-current' : ''}`} />
                 </button>
               </div>
 
-              {/* Horizontal Thumbnail Bar (Mobile/Sub-bar) */}
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+              {/* Horizontal Thumbnail Strip (Sub Carousel Bar) */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                 <button className="p-1 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-[#B71C1C]">
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
-                <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
                   {galleryImages.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImage(img)}
-                      className={`w-12 h-12 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white p-0.5 ${
+                      className={`w-11 h-11 rounded-lg overflow-hidden border transition-all shrink-0 bg-white ${
                         selectedImage === img ? 'border-[#B71C1C]' : 'border-slate-200'
                       }`}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
+                      <img src={img} alt="" className="w-full h-full object-cover rounded-md" />
                     </button>
                   ))}
                 </div>
                 <button className="p-1 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-[#B71C1C]">
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -281,19 +284,19 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ======================================================= */}
-          {/* RIGHT COLUMN: PRODUCT CONTROLS & PRICING (~50% / lg:col-span-6) */}
+          {/* COLUMN 2: CENTER CONTROLS & PRICING (~32% / lg:col-span-4) */}
           {/* ======================================================= */}
-          <div className="lg:col-span-6 space-y-3">
+          <div className="lg:col-span-4 space-y-3">
             
             {/* Karviyam Premium Badge */}
-            <div className="inline-flex items-center gap-1.5 bg-rose-50 text-[#B71C1C] px-2.5 py-0.5 rounded-full border border-rose-200/80 font-black text-[10px] uppercase tracking-wider shadow-2xs">
+            <div className="inline-flex items-center gap-1.5 bg-rose-50 text-[#B71C1C] px-2.5 py-0.5 rounded-full border border-rose-200/80 font-black text-[9.5px] uppercase tracking-wider shadow-2xs">
               <span>🌸</span>
               <span>KARVIYAM PREMIUM</span>
             </div>
 
             {/* Product Title & SKU */}
             <div>
-              <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 leading-tight tracking-tight">
+              <h1 className="font-display font-black text-2xl text-slate-900 leading-tight tracking-tight">
                 {product.name}
               </h1>
               <p className="text-[11px] text-slate-400 font-mono font-bold mt-0.5">
@@ -302,32 +305,32 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Rating & Reviews Line */}
-            <div className="flex items-center gap-2.5 text-xs">
-              <span className="bg-emerald-700 text-white font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs text-[11px]">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="bg-emerald-700 text-white font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs text-[10.5px]">
                 <span>{product.rating || 4.5}</span>
                 <span>★</span>
               </span>
-              <span className="font-semibold text-slate-600 text-[11.5px]">
+              <span className="font-semibold text-slate-600 text-[11px]">
                 {product.ratingsCount || 128} Verified Ratings & {product.reviewsCount || 45} Customer Reviews
               </span>
             </div>
 
             {/* Price Banner Box */}
             <div className="bg-[#FAFAFA] border border-slate-200/90 rounded-2xl py-2 px-3.5 flex items-baseline gap-3">
-              <span className="font-display font-black text-2xl sm:text-3xl text-[#B71C1C]">
+              <span className="font-display font-black text-2xl text-[#B71C1C]">
                 ₹{price}
               </span>
               <span className="text-slate-400 line-through font-bold text-sm">
                 ₹{oldPrice}
               </span>
-              <span className="bg-emerald-100 text-emerald-800 font-black text-[11px] px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+              <span className="bg-emerald-100 text-emerald-800 font-black text-[10.5px] px-2 py-0.5 rounded-md uppercase tracking-wider">
                 {discountPercent}% OFF
               </span>
             </div>
 
             {/* Select Size Selector */}
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-900">
+              <label className="block text-[10.5px] font-bold uppercase tracking-wider text-slate-900">
                 SELECT SIZE
               </label>
               <div className="flex items-center gap-2">
@@ -336,7 +339,7 @@ export default function ProductDetailPage() {
                     key={sz}
                     type="button"
                     onClick={() => setSelectedSize(sz)}
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl font-extrabold text-xs transition-all cursor-pointer border flex items-center justify-center ${
+                    className={`w-9 h-9 rounded-xl font-extrabold text-xs transition-all cursor-pointer border flex items-center justify-center ${
                       selectedSize === sz
                         ? 'bg-[#B71C1C] text-white border-[#B71C1C] shadow-md'
                         : 'bg-white text-slate-800 border-slate-200 hover:border-slate-300'
@@ -350,7 +353,7 @@ export default function ProductDetailPage() {
 
             {/* Select Color Variant Selector */}
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-900">
+              <label className="block text-[10.5px] font-bold uppercase tracking-wider text-slate-900">
                 SELECT COLOR VARIANT
               </label>
               <div className="flex items-center gap-2 flex-wrap">
@@ -370,7 +373,7 @@ export default function ProductDetailPage() {
                     }`}
                   >
                     <span
-                      className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
+                      className="w-3 h-3 rounded-full border border-slate-300 shadow-2xs shrink-0"
                       style={{ backgroundColor: c.dot }}
                     />
                     <span>{c.name}</span>
@@ -382,11 +385,11 @@ export default function ProductDetailPage() {
             {/* Mandatory Pincode Serviceability Box */}
             <div className="bg-[#FFFBEB] border-2 border-amber-300 rounded-2xl p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-1">
+                <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-1">
                   <span>CHECK SERVICEABLE PINCODE & DELIVERY AVAILABILITY</span>
                   <span className="text-[#B71C1C] font-black">*</span>
                 </span>
-                <span className="bg-red-100 text-[#B71C1C] text-[8.5px] font-black px-2 py-0.5 rounded-full uppercase">
+                <span className="bg-red-100 text-[#B71C1C] text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase">
                   MANDATORY
                 </span>
               </div>
@@ -403,7 +406,7 @@ export default function ProductDetailPage() {
                     setPincodeError('');
                   }}
                   placeholder="Enter 6-digit Pincode"
-                  className="bg-white text-xs px-3.5 py-2 rounded-xl border border-slate-300 font-mono font-bold flex-1 outline-none focus:border-[#B71C1C]"
+                  className="bg-white text-xs px-3 py-2 rounded-xl border border-slate-300 font-mono font-bold flex-1 outline-none focus:border-[#B71C1C]"
                 />
                 <button
                   type="button"
@@ -416,87 +419,76 @@ export default function ProductDetailPage() {
               </div>
 
               {pincodeResult && (
-                <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-xs text-emerald-800 font-bold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Delivery is available for pincode {pincode}! (Est. 3-5 Days)</span>
+                <div className="bg-emerald-50 border border-emerald-200 p-2 rounded-xl text-[11px] text-emerald-800 font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Delivery is available for pincode {pincode}!</span>
                 </div>
               )}
 
               {pincodeError && (
-                <p className="text-xs text-red-600 font-bold">{pincodeError}</p>
+                <p className="text-[10.5px] text-red-600 font-bold">{pincodeError}</p>
               )}
             </div>
 
             {/* Primary Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={() => handleActionWithMandatoryPincode(false)}
-                className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md hover:shadow-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
+                className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-[11px] uppercase tracking-wider py-3 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <ShoppingBag className="w-4 h-4" />
+                <ShoppingBag className="w-3.5 h-3.5" />
                 <span>ADD TO SHOPPING BAG</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleActionWithMandatoryPincode(true)}
-                className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md hover:shadow-lg transition-colors cursor-pointer text-center"
+                className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-[11px] uppercase tracking-wider py-3 rounded-xl shadow-xs transition-colors cursor-pointer text-center"
               >
                 BUY NOW
               </button>
             </div>
 
             {/* 5 Delivery/Trust Feature Badges Row */}
-            <div className="grid grid-cols-5 gap-1.5 pt-4 border-t border-slate-200/80 text-center text-[10px] font-bold text-slate-600">
-              <div className="flex flex-col items-center gap-1">
-                <RotateCcw className="w-4 h-4 text-[#B71C1C]" />
+            <div className="grid grid-cols-5 gap-1 pt-3 border-t border-slate-200/80 text-center text-[9.5px] font-bold text-slate-600">
+              <div className="flex flex-col items-center gap-0.5">
+                <RotateCcw className="w-3.5 h-3.5 text-[#B71C1C]" />
                 <span>10 days Return & Exchange</span>
               </div>
-              <div className="flex flex-col items-center gap-1">
-                <ShieldCheck className="w-4 h-4 text-[#B71C1C]" />
+              <div className="flex flex-col items-center gap-0.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#B71C1C]" />
                 <span>Pay on Delivery</span>
               </div>
-              <div className="flex flex-col items-center gap-1">
-                <Truck className="w-4 h-4 text-[#B71C1C]" />
+              <div className="flex flex-col items-center gap-0.5">
+                <Truck className="w-3.5 h-3.5 text-[#B71C1C]" />
                 <span>Free Delivery</span>
               </div>
-              <div className="flex flex-col items-center gap-1">
-                <Award className="w-4 h-4 text-[#B71C1C]" />
+              <div className="flex flex-col items-center gap-0.5">
+                <Award className="w-3.5 h-3.5 text-[#B71C1C]" />
                 <span>Top Brand</span>
               </div>
-              <div className="flex flex-col items-center gap-1">
-                <Box className="w-4 h-4 text-[#B71C1C]" />
-                <span>Karviyam Delivered</span>
+              <div className="flex flex-col items-center gap-0.5">
+                <Box className="w-3.5 h-3.5 text-[#B71C1C]" />
+                <span>Amazon Delivered</span>
               </div>
             </div>
 
           </div>
 
-        </div>
-
-      </div>
-
-      {/* ========================================================= */}
-      {/* 3. PRODUCT DETAILS & ADDITIONAL INFORMATION               */}
-      {/* ========================================================= */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
-        
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 space-y-6 text-left shadow-2xs">
-          
-          <h2 className="font-display font-black text-xl text-slate-900 border-b border-slate-100 pb-3">
-            Product details
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* ======================================================= */}
+          {/* COLUMN 3: RIGHT SPECIFICATIONS & DETAILS (~32% / lg:col-span-[3.5]) */}
+          {/* DIRECTLY BESIDE THE MAIN IMAGE & CONTROLS                */}
+          {/* ======================================================= */}
+          <div className="lg:col-span-[3.5] space-y-4 max-h-[640px] overflow-y-auto pr-1 scrollbar-thin text-xs">
             
-            {/* Top Highlights Table */}
-            <div className="space-y-3">
-              <h3 className="font-extrabold text-sm text-slate-900">
+            {/* 1. TOP HIGHLIGHTS */}
+            <div className="space-y-1.5">
+              <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
                 Top highlights
               </h3>
 
-              <div className="border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 text-xs">
+              <div className="space-y-1 text-[11px]">
                 {[
                   { label: 'Material composition', val: 'Cotton Blend' },
                   { label: 'Fit type', val: 'Regular Fit' },
@@ -506,45 +498,112 @@ export default function ProductDetailPage() {
                   { label: 'Style', val: 'Western' },
                   { label: 'Country of Origin', val: 'India' }
                 ].map((row, idx) => (
-                  <div key={idx} className="flex p-3 bg-white odd:bg-slate-50/50">
-                    <span className="w-1/2 font-bold text-slate-900">{row.label}</span>
-                    <span className="w-1/2 font-medium text-slate-700">{row.val}</span>
+                  <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
+                    <span className="font-bold text-slate-900 w-1/2">{row.label}</span>
+                    <span className="text-slate-700 font-medium w-1/2 text-right">{row.val}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Additional Information Table */}
-            <div className="space-y-3">
-              <h3 className="font-extrabold text-sm text-slate-900">
+            {/* 2. ABOUT THIS ITEM */}
+            <div className="space-y-1.5 pt-1">
+              <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
+                About this item
+              </h3>
+
+              <ul className="space-y-1.5 text-[10.5px] text-slate-700 font-medium leading-normal">
+                <li className="flex items-start gap-1">
+                  <span className="text-[#B71C1C] font-bold shrink-0">•</span>
+                  <span>
+                    <strong className="text-slate-900">【Premium Material】</strong> This mens button down shirt is made of premium textured fabric, which is breathable, lightweight, soft, skin-friendly, keeping you cool and comfortable in the summer.
+                  </span>
+                </li>
+
+                <li className="flex items-start gap-1">
+                  <span className="text-[#B71C1C] font-bold shrink-0">•</span>
+                  <span>
+                    <strong className="text-slate-900">【Unique Design】</strong> Mens casual shirts feature long sleeve, spread collar, solid color, slight vertical ribbing, relaxed fit, simple and fashion.
+                  </span>
+                </li>
+
+                <li className="flex items-start gap-1">
+                  <span className="text-[#B71C1C] font-bold shrink-0">•</span>
+                  <span>
+                    <strong className="text-slate-900">【Various Outfits】</strong> Men linen shirts could be easy to match with linen shorts/pants, casual pants or shorts to create a simple but fashionable style.
+                  </span>
+                </li>
+
+                <li className="flex items-start gap-1">
+                  <span className="text-[#B71C1C] font-bold shrink-0">•</span>
+                  <span>
+                    <strong className="text-slate-900">【Occasions】</strong> Mens untucked shirts is a great choice for beach, wedding, vacation, cruises, tropical aloha theme, party, yoga, work or daily casual wear. Perfect great for all seasons, Just enjoy your vacation.
+                  </span>
+                </li>
+
+                <li className="flex items-start gap-1">
+                  <span className="text-[#B71C1C] font-bold shrink-0">•</span>
+                  <span>
+                    <strong className="text-slate-900">【Garment Care】</strong> Machine washable. Please refer to the size chart before ordering.
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            {/* 3. ADDITIONAL INFORMATION */}
+            <div className="space-y-1.5 pt-1">
+              <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
                 Additional Information
               </h3>
 
-              <div className="border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 text-xs">
+              <div className="space-y-1 text-[11px]">
                 {[
-                  { label: 'Manufacturer', val: 'DEELMO, DEELMO, Manufacturer Surat, Gujarat-395006' },
-                  { label: 'Packer', val: 'DEELMO, Manufacturer Surat, Gujarat-395006' },
-                  { label: 'Importer', val: 'DEELMO, Manufacturer Surat, Gujarat-395006' },
+                  { label: 'Manufacturer', val: 'DEELMO, DEELMO, Surat, Gujarat-395006' },
+                  { label: 'Packer', val: 'DEELMO, Surat, Gujarat-395006' },
+                  { label: 'Importer', val: 'DEELMO, Surat, Gujarat-395006' },
                   { label: 'Item Weight', val: '230 g' },
                   { label: 'Item Dimensions LxWxH', val: '23 x 22 x 1.8 Centimeters' },
                   { label: 'Net Quantity', val: '1.00 Count' },
                   { label: 'Generic Name', val: 'Shirt' }
                 ].map((row, idx) => (
-                  <div key={idx} className="flex p-3 bg-white odd:bg-slate-50/50">
-                    <span className="w-1/2 font-bold text-slate-900">{row.label}</span>
-                    <span className="w-1/2 font-medium text-slate-700">{row.val}</span>
+                  <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
+                    <span className="font-bold text-slate-900 w-2/5 shrink-0">{row.label}</span>
+                    <span className="text-slate-700 font-medium text-right truncate pl-2" title={row.val}>{row.val}</span>
                   </div>
                 ))}
               </div>
+            </div>
 
-              <button
-                type="button"
-                onClick={() => setShowMoreInfo(!showMoreInfo)}
-                className="text-xs font-bold text-[#B71C1C] hover:underline flex items-center gap-1 pt-1 cursor-pointer"
-              >
-                {showMoreInfo ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                <span>{showMoreInfo ? 'See less' : 'See more'}</span>
-              </button>
+            {/* 4. STYLE SPECIFICATIONS */}
+            <div className="space-y-1.5 pt-1">
+              <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
+                Style
+              </h3>
+
+              <div className="space-y-1 text-[11px]">
+                {[
+                  { label: 'Brand Name', val: 'DEELMO' },
+                  { label: 'Model Name', val: 'S' },
+                  { label: 'Style Number', val: 'POP901_LINEN_F_SLEEVE_PP' },
+                  { label: 'Unit Count', val: '1.00 Count' },
+                  { label: 'Country Of Origin', val: 'India' },
+                  { label: 'number-of-items', val: '1' },
+                  { label: 'Age Range Description', val: 'Adult' },
+                  { label: 'Importer Contact Info', val: 'DEELMO, Surat, Gujarat-395006' },
+                  { label: 'Item Type Name', val: 'Shirt' },
+                  { label: 'Item Weight', val: '230 Grams' },
+                  { label: 'Manufacturer Contact Info', val: 'DEELMO, Surat, Gujarat-395006' },
+                  { label: 'Manufacturer', val: 'DEELMO, Surat, Gujarat-395006' },
+                  { label: 'Packer Contact Info', val: 'DEELMO, Surat, Gujarat-395006' },
+                  { label: 'Manufacturer Part Number', val: 'POP901_LINEN_F_SLEEVE_PP' },
+                  { label: 'Best Sellers Rank', val: '#27 in Clothing & Accessories (See Top 100 in Clothing & Accessories)' }
+                ].map((row, idx) => (
+                  <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
+                    <span className="font-bold text-slate-900 w-1/2 shrink-0">{row.label}</span>
+                    <span className="text-slate-700 font-medium text-right truncate pl-1" title={row.val}>{row.val}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
           </div>
@@ -553,98 +612,9 @@ export default function ProductDetailPage() {
 
       </div>
 
-      {/* ========================================================= */}
-      {/* 4. ABOUT THIS ITEM & STYLE SECTIONS                       */}
-      {/* ========================================================= */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-2">
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-          
-          {/* ABOUT THIS ITEM */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 space-y-4 shadow-2xs">
-            <h3 className="font-display font-black text-lg text-slate-900 border-b border-slate-100 pb-3">
-              About this item
-            </h3>
-
-            <ul className="space-y-3 text-xs text-slate-700 font-medium leading-relaxed">
-              <li className="flex items-start gap-2">
-                <span className="text-[#B71C1C] font-bold shrink-0">•</span>
-                <span>
-                  <strong className="text-slate-900">【Premium Material】</strong> This mens button down shirt is made of premium textured fabric, which is breathable, lightweight, soft, skin-friendly, keeping you cool and comfortable in the summer.
-                </span>
-              </li>
-
-              <li className="flex items-start gap-2">
-                <span className="text-[#B71C1C] font-bold shrink-0">•</span>
-                <span>
-                  <strong className="text-slate-900">【Unique Design】</strong> Mens casual shirts feature long sleeve, spread collar, solid color, slight vertical ribbing, relaxed fit, simple and fashion.
-                </span>
-              </li>
-
-              <li className="flex items-start gap-2">
-                <span className="text-[#B71C1C] font-bold shrink-0">•</span>
-                <span>
-                  <strong className="text-slate-900">【Various Outfits】</strong> Men linen shirts could be easy to match with linen shorts/pants, casual pants or shorts to create a simple but fashionable style.
-                </span>
-              </li>
-
-              <li className="flex items-start gap-2">
-                <span className="text-[#B71C1C] font-bold shrink-0">•</span>
-                <span>
-                  <strong className="text-slate-900">【Occasions】</strong> Mens untucked shirts is a great choice for beach, wedding, vacation, cruises, tropical aloha theme, party, yoga, work or daily casual wear. Perfect great for all seasons, Just enjoy your vacation.
-                </span>
-              </li>
-
-              <li className="flex items-start gap-2">
-                <span className="text-[#B71C1C] font-bold shrink-0">•</span>
-                <span>
-                  <strong className="text-slate-900">【Garment Care】</strong>: Machine washable. Please refer to the size chart before ordering.
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          {/* STYLE SPECIFICATIONS TABLE */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 space-y-4 shadow-2xs">
-            <h3 className="font-display font-black text-lg text-slate-900 border-b border-slate-100 pb-3">
-              Style
-            </h3>
-
-            <div className="border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 text-[11.5px]">
-              {[
-                { label: 'Brand Name', val: 'DEELMO' },
-                { label: 'Model Name', val: 'S' },
-                { label: 'Style Number', val: 'POP901_LINEN_F_SLEEVE_PP' },
-                { label: 'Unit Count', val: '1.00 Count' },
-                { label: 'Country Of Origin', val: 'India' },
-                { label: 'number-of-items', val: '1' },
-                { label: 'Age Range Description', val: 'Adult' },
-                { label: 'Importer Contact Information', val: 'DEELMO, Manufacturer Surat, Gujarat-395006' },
-                { label: 'Item Type Name', val: 'Shirt' },
-                { label: 'Item Weight', val: '230 Grams' },
-                { label: 'Manufacturer Contact Information', val: 'DEELMO, Manufacturer Surat, Gujarat-395006' },
-                { label: 'Manufacturer', val: 'DEELMO, DEELMO, Manufacturer Surat, Gujarat-395006' },
-                { label: 'Packer Contact Information', val: 'DEELMO, Manufacturer Surat, Gujarat-395006' },
-                { label: 'Manufacturer Part Number', val: 'POP901_LINEN_F_SLEEVE_PP' },
-                { label: 'Best Sellers Rank', val: '#27 in Clothing & Accessories (See Top 100 in Clothing & Accessories)' }
-              ].map((row, idx) => (
-                <div key={idx} className="flex p-2.5 bg-white odd:bg-slate-50/50">
-                  <span className="w-1/2 font-bold text-slate-900">{row.label}</span>
-                  <span className="w-1/2 font-medium text-slate-700 truncate" title={row.val}>{row.val}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* ========================================================= */}
-      {/* 5. BOTTOM FULL-WIDTH VALUE PROPOSITION TRUST STRIP       */}
-      {/* ========================================================= */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6">
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-2xs">
+      {/* 3. BOTTOM FULL-WIDTH VALUE PROPOSITION TRUST STRIP */}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6 text-left">
             
             <div className="flex items-center gap-3">
