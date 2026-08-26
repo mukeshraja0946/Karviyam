@@ -26,6 +26,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import api from '../utils/api';
+import { resolveImageUrl } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 
 export default function ProductDetailPage() {
@@ -248,7 +249,7 @@ export default function ProductDetailPage() {
                       : 'border-slate-200 opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
+                  <img src={resolveImageUrl(img)} alt="" className="w-full h-full object-cover rounded-lg" />
                 </button>
               ))}
             </div>
@@ -257,7 +258,7 @@ export default function ProductDetailPage() {
             <div className="flex-1 space-y-1">
               <div className="relative w-full h-[280px] sm:h-[400px] lg:h-[420px] bg-white rounded-2xl border border-slate-200/80 p-1 sm:p-2 shadow-2xs flex items-center justify-center overflow-hidden">
                 <img
-                  src={selectedImage}
+                  src={resolveImageUrl(selectedImage)}
                   alt={product.name}
                   className="max-h-full max-w-full object-contain rounded-xl transition-transform duration-300 hover:scale-105"
                 />
