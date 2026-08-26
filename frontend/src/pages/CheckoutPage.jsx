@@ -131,8 +131,8 @@ export default function CheckoutPage() {
         phone: addrToEdit.phone || '',
         houseFlatNo: addrToEdit.houseFlatNo || '',
         streetAddress: addrToEdit.streetAddress || '',
-        city: addrToEdit.city || 'Chennai',
-        state: addrToEdit.state || 'Tamil Nadu',
+        city: addrToEdit.city || '',
+        state: addrToEdit.state || '',
         pincode: addrToEdit.pincode || '',
         country: addrToEdit.country || 'India',
         addressType: addrToEdit.addressType || 'HOME'
@@ -140,18 +140,40 @@ export default function CheckoutPage() {
     } else {
       setEditingAddress(null);
       setAddrForm({
-        fullName: user?.fullName || user?.name || user?.full_name || formData.fullName || '',
-        phone: user?.phone || formData.phone || '',
+        fullName: '',
+        phone: '',
         houseFlatNo: '',
         streetAddress: '',
-        city: formData.city || 'Chennai',
-        state: formData.state || 'Tamil Nadu',
-        pincode: formData.pincode || '',
+        city: '',
+        state: '',
+        pincode: '',
         country: 'India',
         addressType: 'HOME'
       });
     }
     setAddressModalOpen(true);
+  };
+
+  const handlePincodeChange = async (val) => {
+    const cleanPin = val.replace(/\D/g, '').slice(0, 6);
+    setAddrForm(prev => ({ ...prev, pincode: cleanPin }));
+
+    if (cleanPin.length === 6) {
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${cleanPin}`);
+        const data = await res.json();
+        if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice?.length > 0) {
+          const po = data[0].PostOffice[0];
+          const dist = po.District || po.Block || po.Circle || '';
+          const st = po.State || '';
+          setAddrForm(prev => ({
+            ...prev,
+            city: dist || prev.city,
+            state: st || prev.state
+          }));
+        }
+      } catch (e) {}
+    }
   };
 
   const handleSaveAddress = async (e) => {
@@ -686,7 +708,7 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     value={addrForm.pincode}
-                    onChange={(e) => setAddrForm(prev => ({ ...prev, pincode: e.target.value }))}
+                    onChange={(e) => handlePincodeChange(e.target.value)}
                     placeholder="6-digit PIN"
                     maxLength={6}
                     className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C] focus:bg-white"

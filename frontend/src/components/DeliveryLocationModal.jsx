@@ -3,8 +3,8 @@ import { MapPin, X, Check, Navigation, Loader2, CheckCircle2 } from 'lucide-reac
 import toast from 'react-hot-toast';
 
 export default function DeliveryLocationModal({ isOpen, onClose, currentPincode, onSelectLocation }) {
-  const [pincode, setPincode] = useState(() => currentPincode || localStorage.getItem('karviyam_user_pincode') || '600001');
-  const [city, setCity] = useState(() => localStorage.getItem('karviyam_user_city') || 'Chennai, Tamil Nadu');
+  const [pincode, setPincode] = useState(() => currentPincode || localStorage.getItem('karviyam_user_pincode') || '');
+  const [city, setCity] = useState(() => localStorage.getItem('karviyam_user_city') || '');
   const [detecting, setDetecting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -12,8 +12,8 @@ export default function DeliveryLocationModal({ isOpen, onClose, currentPincode,
 
   useEffect(() => {
     if (isOpen) {
-      const savedPin = currentPincode || localStorage.getItem('karviyam_user_pincode') || '600001';
-      const savedCity = localStorage.getItem('karviyam_user_city') || 'Chennai, Tamil Nadu';
+      const savedPin = currentPincode || localStorage.getItem('karviyam_user_pincode') || '';
+      const savedCity = localStorage.getItem('karviyam_user_city') || '';
       setPincode(savedPin);
       setCity(savedCity);
       setError('');

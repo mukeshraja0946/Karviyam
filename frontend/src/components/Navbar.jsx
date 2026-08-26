@@ -190,13 +190,13 @@ export default function Navbar() {
 
   // Delivery Location Modal State
   const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [locationPincode, setLocationPincode] = useState(() => localStorage.getItem('karviyam_user_pincode') || '600001');
-  const [locationCity, setLocationCity] = useState(() => localStorage.getItem('karviyam_user_city') || 'Chennai');
+  const [locationPincode, setLocationPincode] = useState(() => localStorage.getItem('karviyam_user_pincode') || '');
+  const [locationCity, setLocationCity] = useState(() => localStorage.getItem('karviyam_user_city') || '');
 
   useEffect(() => {
     const syncLocation = () => {
-      const savedPin = localStorage.getItem('karviyam_user_pincode') || '600001';
-      const savedCity = localStorage.getItem('karviyam_user_city') || 'Chennai';
+      const savedPin = localStorage.getItem('karviyam_user_pincode') || '';
+      const savedCity = localStorage.getItem('karviyam_user_city') || '';
       setLocationPincode(savedPin);
       setLocationCity(savedCity);
     };
@@ -259,7 +259,9 @@ export default function Navbar() {
           >
             <MapPin className="w-3.5 h-3.5 text-[#B71C1C] shrink-0" />
             <span className="text-slate-600 font-medium">Deliver to</span>
-            <span className="font-extrabold text-slate-900 truncate max-w-[140px]">{locationCity} {locationPincode}</span>
+            <span className="font-extrabold text-slate-900 truncate max-w-[140px]">
+              {locationPincode ? `${locationCity} ${locationPincode}` : 'Select Location'}
+            </span>
             <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
           </button>
 
@@ -485,7 +487,7 @@ export default function Navbar() {
                 <div className="text-xs">
                   <span className="text-[10px] text-slate-400 font-semibold block leading-none">Deliver to</span>
                   <div className="flex items-center gap-1 font-bold text-slate-800 text-xs">
-                    <span>{locationCity} {locationPincode}</span>
+                    <span>{locationPincode ? `${locationCity} ${locationPincode}` : 'Select Location'}</span>
                     <ChevronDown className="w-3 h-3 text-slate-500" />
                   </div>
                 </div>
