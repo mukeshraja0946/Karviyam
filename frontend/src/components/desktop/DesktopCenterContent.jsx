@@ -117,6 +117,8 @@ export default function DesktopCenterContent() {
 
   const [currentHero, setCurrentHero] = useState(0);
   const [heroSlides, setHeroSlides] = useState(HERO_SLIDES);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [speed, setSpeed] = useState(5000);
   const [products, setProducts] = useState(DEFAULT_RECOMMENDED);
   const [categories, setCategories] = useState(CATEGORIES_DATA);
 
@@ -137,6 +139,12 @@ export default function DesktopCenterContent() {
 
   const fetchBanners = async () => {
     try {
+      const savedAuto = localStorage.getItem('karviyam_banner_autoscroll');
+      let currentAuto = savedAuto !== null ? JSON.parse(savedAuto) : true;
+
+      const savedSpeed = localStorage.getItem('karviyam_banner_speed');
+      let currentSpeed = savedSpeed ? Number(savedSpeed) : 5000;
+
       const res = await api.get('/banners').catch(() => null);
       const apiData = res?.data ? res.data : res;
       const rawData = apiData?.data !== undefined ? apiData.data : apiData;
@@ -144,9 +152,14 @@ export default function DesktopCenterContent() {
       let list = [];
       if (Array.isArray(rawData)) {
         list = rawData;
-      } else if (rawData && typeof rawData === 'object' && Array.isArray(rawData.banners)) {
-        list = rawData.banners;
+      } else if (rawData && typeof rawData === 'object') {
+        if (Array.isArray(rawData.banners)) list = rawData.banners;
+        if (rawData.autoScroll !== undefined) currentAuto = Boolean(rawData.autoScroll);
+        if (rawData.speed !== undefined) currentSpeed = Number(rawData.speed);
       }
+
+      setAutoScroll(currentAuto);
+      setSpeed(currentSpeed);
 
       if (!list || list.length === 0) {
         const saved = localStorage.getItem('karviyam_admin_banners');
@@ -168,9 +181,10 @@ export default function DesktopCenterContent() {
               id: b.id,
               tag: 'OFFICIAL DROP',
               title: b.title || 'NEW STYLE NEW YOU',
-              subtitle: b.subtitle || 'Explore our latest collection',
+              subtitle: b.subtitle || '',
               image: resolvedImg || HERO_SLIDES[0].image,
-              link: b.buttonLink || b.link || '/shop'
+              link: b.buttonLink || b.link || '/shop',
+              buttonText: b.buttonText || b.button_text || 'SHOP NOW'
             };
           });
           setHeroSlides(formatted);
@@ -181,9 +195,16 @@ export default function DesktopCenterContent() {
     }
   };
 
+  useEffect(() => {
+    if (!autoScroll || heroSlides.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentHero((prev) => (prev + 1) % heroSlides.length);
+    }, speed);
+    return () => clearInterval(timer);
+  }, [heroSlides.length, autoScroll, speed]);
+
   const fetchProductsAndCategories = async () => {
     try {
-      // Fetch Products
       const featRes = await api.get('/products/featured').catch(() => null);
       const featData = featRes?.data?.data || featRes?.data || featRes;
       let list = Array.isArray(featData) ? featData : (Array.isArray(featData?.content) ? featData.content : []);
@@ -194,7 +215,6 @@ export default function DesktopCenterContent() {
         list = Array.isArray(fallData?.content) ? fallData.content : (Array.isArray(fallData) ? fallData : []);
       }
 
-      // Check Admin Saved Products for live updates
       try {
         const savedAdmin = localStorage.getItem('karviyam_admin_products');
         if (savedAdmin) {
@@ -226,7 +246,6 @@ export default function DesktopCenterContent() {
           };
         });
         
-        // Fill up to 6 items if fewer
         while (formatted.length < 6) {
           const fallback = DEFAULT_RECOMMENDED[formatted.length];
           formatted.push(fallback);
@@ -234,7 +253,6 @@ export default function DesktopCenterContent() {
         setProducts(formatted);
       }
 
-      // Fetch Categories
       const catRes = await api.get('/categories/tree').catch(() => null);
       const catData = catRes?.data?.data || catRes?.data;
       let catList = Array.isArray(catData) ? catData : [];
@@ -296,52 +314,62 @@ export default function DesktopCenterContent() {
         {/* Hero Content */}
         <div className="relative z-10 h-full p-6 xl:p-8 flex flex-col justify-center max-w-xl text-white">
           <span className="inline-block bg-white/10 backdrop-blur-md border border-white/20 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-widest w-max mb-2">
-            {slide.tag}
+            {slide.tag || 'OFFICIAL DROP'}
           </span>
 
           <h1 className="font-display font-black text-xl xl:text-3xl leading-tight text-white tracking-tight uppercase drop-shadow-md">
             {slide.title}
           </h1>
 
-          <p className="text-[11px] xl:text-xs text-slate-200 font-medium mt-1.5 mb-4">
-            {slide.subtitle}
-          </p>
+          {slide.subtitle ? (
+            <p className="text-[11px] xl:text-xs text-slate-200 font-medium mt-1.5 mb-4">
+              {slide.subtitle}
+            </p>
+          ) : (
+            <div className="mb-4" />
+          )}
 
           <button
             onClick={() => navigate(slide.link)}
             className="bg-white text-slate-950 font-extrabold text-[11px] uppercase tracking-wider px-6 py-2.5 rounded-full hover:bg-[#B71C1C] hover:text-white transition-all shadow-md w-max cursor-pointer"
           >
-            SHOP NOW
+            {slide.buttonText || 'SHOP NOW'}
           </button>
         </div>
 
         {/* Navigation Arrows */}
-        <button
-          onClick={() => setCurrentHero((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-[#B71C1C] hover:text-white transition-colors shadow-md cursor-pointer z-20"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
+        {heroSlides.length > 1 && (
+          <>
+            <button
+              onClick={() => setCurrentHero((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-[#B71C1C] hover:text-white transition-colors shadow-md cursor-pointer z-20"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
 
-        <button
-          onClick={() => setCurrentHero((prev) => (prev + 1) % HERO_SLIDES.length)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-[#B71C1C] hover:text-white transition-colors shadow-md cursor-pointer z-20"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
+            <button
+              onClick={() => setCurrentHero((prev) => (prev + 1) % heroSlides.length)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-[#B71C1C] hover:text-white transition-colors shadow-md cursor-pointer z-20"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
 
         {/* Pagination Dots */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
-          {HERO_SLIDES.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentHero(idx)}
-              className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                idx === currentHero ? 'w-6 bg-[#B71C1C]' : 'w-1.5 bg-white/60'
-              }`}
-            />
-          ))}
-        </div>
+        {heroSlides.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+            {heroSlides.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentHero(idx)}
+                className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                  idx === currentHero ? 'w-6 bg-[#B71C1C]' : 'w-1.5 bg-white/60'
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 2. Offer Strip */}
