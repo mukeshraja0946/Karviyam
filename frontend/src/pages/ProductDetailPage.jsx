@@ -255,30 +255,6 @@ export default function ProductDetailPage() {
                 >
                   <Heart className={`w-3.5 h-3.5 ${isWish ? 'fill-current' : ''}`} />
                 </button>
-              </div>
-
-              {/* Horizontal Thumbnail Strip (Sub Carousel Bar) */}
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                <button className="p-1 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-[#B71C1C]">
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-                  {galleryImages.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImage(img)}
-                      className={`w-11 h-11 rounded-lg overflow-hidden border transition-all shrink-0 bg-white ${
-                        selectedImage === img ? 'border-[#B71C1C]' : 'border-slate-200'
-                      }`}
-                    >
-                      <img src={img} alt="" className="w-full h-full object-cover rounded-md" />
-                    </button>
-                  ))}
-                </div>
-                <button className="p-1 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-[#B71C1C]">
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
             </div>
 
           </div>
