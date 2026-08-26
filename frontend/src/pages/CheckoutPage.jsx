@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
-import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, Lock, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, Lock, CreditCard, Smartphone, Banknote, Building, X, RefreshCw } from 'lucide-react';
 
 export default function CheckoutPage() {
   const { user } = useAuth();
@@ -18,6 +18,10 @@ export default function CheckoutPage() {
   const [couponApplied, setCouponApplied] = useState(true);
   const [couponDiscount, setCouponDiscount] = useState(85);
 
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('COD');
+  const [submitting, setSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
     fullName: user?.fullName || user?.name || 'Arun Kumar',
     email: user?.email || 'arunkumar@example.com',
@@ -26,10 +30,8 @@ export default function CheckoutPage() {
     city: user?.city || 'Coimbatore',
     state: 'Tamil Nadu',
     pincode: user?.pincode || '641015',
-    paymentMethod: 'COD'
   });
 
-  const [submitting, setSubmitting] = useState(false);
   const [selectedAddrId, setSelectedAddrId] = useState(1);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
 
@@ -48,7 +50,7 @@ export default function CheckoutPage() {
     }
   ];
 
-  // Guarantee effective items & total display matching Screenshot
+  // Guarantee effective items & total display matching reference screenshot
   const itemsList = Array.isArray(cart.items) && cart.items.length > 0
     ? cart.items
     : [
@@ -89,12 +91,18 @@ export default function CheckoutPage() {
   const activeDiscount = couponApplied ? couponDiscount : 0;
   const orderTotal = Math.max(0, rawItemTotal + shippingCharge - activeDiscount);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Trigger Payment Modal when user clicks "Proceed to Payment"
+  const handleProceedToPayment = () => {
+    setPaymentModalOpen(true);
+  };
+
+  // Execute Final Order Placement
+  const handleConfirmAndPlaceOrder = async () => {
     setSubmitting(true);
     try {
       const payload = {
         ...formData,
+        paymentMethod: selectedPaymentMethod,
         couponCode: couponApplied ? couponCode : '',
         items: itemsList,
         totalAmount: orderTotal
@@ -110,27 +118,38 @@ export default function CheckoutPage() {
       if (!createdOrder || !createdOrder.id) {
         const newId = Date.now();
         createdOrder = {
-          id: newId,
+          id: `KV-ORD-${String(newId).slice(-6)}`,
           orderCode: `KV-ORD-${String(newId).slice(-6)}`,
-          customer: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
+          customer: formData.fullName || 'Arun Kumar',
+          email: formData.email || 'arunkumar@example.com',
+          phone: formData.phone || '9876543210',
           shippingAddress: formData,
           status: 'PENDING',
-          paymentStatus: 'Pending',
-          paymentMethod: formData.paymentMethod,
+          paymentStatus: selectedPaymentMethod === 'COD' ? 'Pending' : 'Paid',
+          paymentMethod: selectedPaymentMethod,
           totalAmount: orderTotal,
           items: itemsList,
           createdAt: new Date().toISOString()
         };
+
+        try {
+          const savedOrders = JSON.parse(localStorage.getItem('karviyam_admin_orders') || '[]');
+          savedOrders.unshift(createdOrder);
+          localStorage.setItem('karviyam_admin_orders', JSON.stringify(savedOrders));
+        } catch (e) {}
       }
 
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      try {
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+      } catch (e) {}
+
       clearCart();
+      setPaymentModalOpen(false);
       toast.success('Order placed successfully! 🎉');
       navigate('/order-success', { state: { order: createdOrder } });
     } catch (err) {
-      toast.error('Failed to place order.');
+      console.error(err);
+      toast.error('Failed to place order. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -140,7 +159,7 @@ export default function CheckoutPage() {
     <div className="w-full bg-[#FAFAFA] min-h-screen text-slate-900 pb-12 font-sans">
       
       {/* ========================================================= */}
-      {/* 1. HORIZONTAL CHECKOUT STEPPER (DIRECTLY BELOW HEADER)    */}
+      {/* 1. HORIZONTAL CHECKOUT STEPPER                            */}
       {/* ========================================================= */}
       <div className="w-full bg-white border-b border-slate-200 py-3.5 shadow-2xs">
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between text-xs font-bold">
@@ -157,20 +176,20 @@ export default function CheckoutPage() {
 
           {/* Step 2: Address */}
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-[#B71C1C] text-white flex items-center justify-center font-black text-xs shadow-xs">
+            <div className={`w-7 h-7 rounded-full text-white flex items-center justify-center font-black text-xs shadow-xs ${paymentModalOpen ? 'bg-[#B71C1C]' : 'bg-[#B71C1C]'}`}>
               2
             </div>
             <span className="font-extrabold text-slate-900">Address</span>
           </div>
 
-          <div className="flex-1 h-0.5 bg-slate-200 mx-3 sm:mx-6" />
+          <div className={`flex-1 h-0.5 mx-3 sm:mx-6 ${paymentModalOpen ? 'bg-[#B71C1C]' : 'bg-slate-200'}`} />
 
           {/* Step 3: Payment */}
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 border border-slate-300 flex items-center justify-center font-bold text-xs">
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${paymentModalOpen ? 'bg-[#B71C1C] text-white shadow-xs' : 'bg-slate-100 text-slate-400 border border-slate-300'}`}>
               3
             </div>
-            <span className="text-slate-400 font-medium">Payment</span>
+            <span className={paymentModalOpen ? 'font-extrabold text-slate-900' : 'text-slate-400 font-medium'}>Payment</span>
           </div>
 
           <div className="flex-1 h-0.5 bg-slate-200 mx-3 sm:mx-6" />
@@ -187,15 +206,13 @@ export default function CheckoutPage() {
       </div>
 
       {/* ========================================================= */}
-      {/* 2. MAIN 2-COLUMN CHECKOUT LAYOUT (LEFT 70% | RIGHT 30%)    */}
+      {/* 2. MAIN 2-COLUMN CHECKOUT LAYOUT                          */}
       {/* ========================================================= */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
         
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left items-start">
           
-          {/* ======================================================= */}
-          {/* LEFT COLUMN: ~70% WIDTH (lg:col-span-8)                 */}
-          {/* ======================================================= */}
+          {/* LEFT COLUMN: ~70% WIDTH (lg:col-span-8) */}
           <div className="lg:col-span-8 space-y-6">
             
             {/* SECTION A: Delivery Address */}
@@ -374,9 +391,7 @@ export default function CheckoutPage() {
 
           </div>
 
-          {/* ======================================================= */}
           {/* RIGHT COLUMN: ~30% WIDTH (lg:col-span-4) - ORDER SUMMARY */}
-          {/* ======================================================= */}
           <div className="lg:col-span-4 space-y-4">
             
             <div className="sticky top-24 bg-white rounded-2xl border border-slate-200 shadow-2xs p-6 space-y-4">
@@ -475,11 +490,11 @@ export default function CheckoutPage() {
 
               {/* Proceed to Payment Button */}
               <button
-                type="submit"
-                disabled={submitting}
+                type="button"
+                onClick={handleProceedToPayment}
                 className="w-full bg-[#B71C1C] hover:bg-[#8E0000] active:bg-[#780E0E] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md hover:shadow-lg transition-colors cursor-pointer text-center"
               >
-                {submitting ? 'Processing...' : 'Proceed to Payment'}
+                Proceed to Payment
               </button>
 
               <p className="text-[9.5px] text-slate-500 text-center font-medium leading-relaxed">
@@ -510,11 +525,9 @@ export default function CheckoutPage() {
 
           </div>
 
-        </form>
+        </div>
 
-        {/* ======================================================= */}
-        {/* 3. BOTTOM FULL-WIDTH VALUE PROPOSITION TRUST STRIP       */}
-        {/* ======================================================= */}
+        {/* 3. BOTTOM FULL-WIDTH VALUE PROPOSITION TRUST STRIP */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 mt-8 shadow-2xs">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6 text-left">
             
@@ -572,6 +585,151 @@ export default function CheckoutPage() {
         </div>
 
       </div>
+
+      {/* ========================================================= */}
+      {/* 4. PAYMENT METHOD MODAL (STEP 3: PAYMENT)                */}
+      {/* ========================================================= */}
+      {paymentModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-6">
+            
+            {/* Modal Header */}
+            <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white">
+              <div>
+                <h3 className="font-display font-extrabold text-base flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-[#B71C1C]" />
+                  <span>Select Payment Method</span>
+                </h3>
+                <p className="text-[10.5px] text-slate-400">Step 3 of 4: Choose your preferred payment option</p>
+              </div>
+              <button
+                onClick={() => setPaymentModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Payment Options */}
+            <div className="p-6 space-y-3.5">
+              
+              <div className="bg-red-50 border border-red-200/80 p-3 rounded-2xl flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-800">Payable Total Amount:</span>
+                <span className="font-black text-[#B71C1C] text-base">₹{orderTotal.toFixed(2)}</span>
+              </div>
+
+              <div className="space-y-2.5 pt-1">
+                
+                {/* 1. Cash on Delivery */}
+                <label 
+                  onClick={() => setSelectedPaymentMethod('COD')}
+                  className={`flex items-center justify-between p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                    selectedPaymentMethod === 'COD' ? 'border-[#B71C1C] bg-red-50/40 shadow-xs' : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="pmethod"
+                      checked={selectedPaymentMethod === 'COD'}
+                      onChange={() => setSelectedPaymentMethod('COD')}
+                      className="accent-[#B71C1C] w-4 h-4"
+                    />
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                      <Banknote className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-xs text-slate-900 block leading-tight">Cash on Delivery (COD)</span>
+                      <span className="text-[10px] text-slate-500 font-medium block leading-tight">Pay cash upon doorstep delivery</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Popular</span>
+                </label>
+
+                {/* 2. UPI / GPay / PhonePe */}
+                <label 
+                  onClick={() => setSelectedPaymentMethod('UPI')}
+                  className={`flex items-center justify-between p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                    selectedPaymentMethod === 'UPI' ? 'border-[#B71C1C] bg-red-50/40 shadow-xs' : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="pmethod"
+                      checked={selectedPaymentMethod === 'UPI'}
+                      onChange={() => setSelectedPaymentMethod('UPI')}
+                      className="accent-[#B71C1C] w-4 h-4"
+                    />
+                    <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                      <Smartphone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-xs text-slate-900 block leading-tight">UPI / GPay / PhonePe</span>
+                      <span className="text-[10px] text-slate-500 font-medium block leading-tight">Instant QR & App payment</span>
+                    </div>
+                  </div>
+                </label>
+
+                {/* 3. Credit / Debit Card */}
+                <label 
+                  onClick={() => setSelectedPaymentMethod('CARD')}
+                  className={`flex items-center justify-between p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                    selectedPaymentMethod === 'CARD' ? 'border-[#B71C1C] bg-red-50/40 shadow-xs' : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="pmethod"
+                      checked={selectedPaymentMethod === 'CARD'}
+                      onChange={() => setSelectedPaymentMethod('CARD')}
+                      className="accent-[#B71C1C] w-4 h-4"
+                    />
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-xs text-slate-900 block leading-tight">Credit / Debit Card</span>
+                      <span className="text-[10px] text-slate-500 font-medium block leading-tight">Visa, Mastercard, RuPay</span>
+                    </div>
+                  </div>
+                </label>
+
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-3 space-y-2">
+                <button
+                  type="button"
+                  onClick={handleConfirmAndPlaceOrder}
+                  disabled={submitting}
+                  className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Placing Your Order...</span>
+                    </>
+                  ) : (
+                    <span>CONFIRM & PLACE ORDER (₹{orderTotal.toFixed(2)})</span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentModalOpen(false)}
+                  className="w-full text-xs font-bold text-slate-500 hover:text-slate-900 py-2 cursor-pointer text-center"
+                >
+                  Back to Order Details
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
