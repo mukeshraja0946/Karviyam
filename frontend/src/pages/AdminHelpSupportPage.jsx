@@ -75,11 +75,26 @@ export default function AdminHelpSupportPage() {
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/contact-messages')
-        .catch(() => api.get('/contact/messages'))
-        .catch(() => api.get('/contact'));
-      const apiData = res?.data ? res.data : res;
-      const list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      let list = [];
+      try {
+        const res = await api.get('/admin/contact-messages')
+          .catch(() => api.get('/contact/messages'))
+          .catch(() => api.get('/contact'));
+        const apiData = res?.data ? res.data : res;
+        list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      } catch (eApi) {}
+
+      // Merge local fallback messages if any
+      try {
+        const saved = localStorage.getItem('karviyam_admin_messages');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            list = [...parsed, ...list.filter(m => !parsed.some(p => String(p.id) === String(m.id)))];
+          }
+        }
+      } catch (eLocal) {}
+
       setMessages(list);
     } catch (e) {
       console.error('Failed to fetch contact messages:', e);

@@ -166,6 +166,12 @@ app.use('/api/banners', bannerRoutes);
 
 app.use('/api/contact', contactRoutes);
 
+// Fallback Contact Aliases
+app.post('/api/contact-us', contactController.submitContact);
+app.post('/api/submit-contact', contactController.submitContact);
+app.post('/api/messages/submit', contactController.submitContact);
+app.post('/api/customer/contact', contactController.submitContact);
+
 app.use('/api/coupons', couponRoutes);
 
 app.use('/api/notifications', notificationRoutes);
