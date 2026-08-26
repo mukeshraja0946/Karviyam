@@ -195,7 +195,7 @@ export default function ProductDetailPage() {
     <div className="w-full bg-[#FAFAFA] min-h-screen text-slate-900 pb-16 font-sans">
       
       {/* 1. BREADCRUMB ROW */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 text-xs font-semibold text-slate-500 text-left">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-1.5 text-xs font-semibold text-slate-500 text-left">
         <div className="flex items-center gap-2">
           <Link to="/" className="hover:text-[#B71C1C]">Home</Link>
           <span>/</span>
@@ -206,22 +206,22 @@ export default function ProductDetailPage() {
       </div>
 
       {/* 2. MAIN PRODUCT SECTION (TWO COLUMNS) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-2">
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left items-start">
           
           {/* ======================================================= */}
           {/* LEFT COLUMN: PRODUCT IMAGES & GALLERY (~50% / lg:col-span-6) */}
           {/* ======================================================= */}
-          <div className="lg:col-span-6 flex flex-col sm:flex-row gap-4">
+          <div className="lg:col-span-6 flex flex-col sm:flex-row gap-3">
             
             {/* Vertical Thumbnail Strip (Desktop) */}
-            <div className="hidden sm:flex flex-col gap-2.5 w-16 shrink-0">
+            <div className="hidden sm:flex flex-col gap-2 w-14 shrink-0">
               {galleryImages.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(img)}
-                  className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white p-0.5 ${
+                  className={`w-13 h-13 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white p-0.5 ${
                     selectedImage === img
                       ? 'border-[#B71C1C] scale-105 shadow-2xs'
                       : 'border-slate-200 opacity-70 hover:opacity-100'
@@ -233,12 +233,12 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Main Image Display Container */}
-            <div className="flex-1 space-y-3">
-              <div className="relative w-full h-[460px] sm:h-[480px] bg-white rounded-3xl border border-slate-200/90 p-4 shadow-2xs flex items-center justify-center overflow-hidden">
+            <div className="flex-1 space-y-2.5">
+              <div className="relative w-full h-[410px] sm:h-[430px] bg-slate-50/80 rounded-2xl border border-slate-200/90 p-2 shadow-2xs flex items-center justify-center overflow-hidden">
                 <img
                   src={selectedImage}
                   alt={product.name}
-                  className="max-h-full max-w-full object-contain rounded-2xl transition-transform duration-300 hover:scale-105"
+                  className="w-full h-full object-cover rounded-xl transition-transform duration-300 hover:scale-105"
                 />
 
                 {/* Share Button (Top-Right) */}
@@ -247,10 +247,10 @@ export default function ProductDetailPage() {
                     navigator.clipboard.writeText(window.location.href);
                     toast.success('Product link copied to clipboard!');
                   }}
-                  className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 hover:bg-red-50 text-slate-700 hover:text-[#B71C1C] flex items-center justify-center border border-slate-200 shadow-2xs cursor-pointer transition-colors"
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-red-50 text-slate-700 hover:text-[#B71C1C] flex items-center justify-center border border-slate-200 shadow-2xs cursor-pointer transition-colors"
                   title="Share product link"
                 >
-                  <Share2 className="w-4 h-4" />
+                  <Share2 className="w-3.5 h-3.5" />
                 </button>
               </div>
 
@@ -283,10 +283,10 @@ export default function ProductDetailPage() {
           {/* ======================================================= */}
           {/* RIGHT COLUMN: PRODUCT CONTROLS & PRICING (~50% / lg:col-span-6) */}
           {/* ======================================================= */}
-          <div className="lg:col-span-6 space-y-4">
+          <div className="lg:col-span-6 space-y-3">
             
             {/* Karviyam Premium Badge */}
-            <div className="inline-flex items-center gap-1.5 bg-rose-50 text-[#B71C1C] px-3 py-1 rounded-full border border-rose-200/80 font-black text-[10px] uppercase tracking-wider shadow-2xs">
+            <div className="inline-flex items-center gap-1.5 bg-rose-50 text-[#B71C1C] px-2.5 py-0.5 rounded-full border border-rose-200/80 font-black text-[10px] uppercase tracking-wider shadow-2xs">
               <span>🌸</span>
               <span>KARVIYAM PREMIUM</span>
             </div>
@@ -296,49 +296,49 @@ export default function ProductDetailPage() {
               <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 leading-tight tracking-tight">
                 {product.name}
               </h1>
-              <p className="text-xs text-slate-400 font-mono font-bold mt-1">
+              <p className="text-[11px] text-slate-400 font-mono font-bold mt-0.5">
                 SKU: {product.sku || 'KV-DEM-195'}
               </p>
             </div>
 
             {/* Rating & Reviews Line */}
             <div className="flex items-center gap-2.5 text-xs">
-              <span className="bg-emerald-700 text-white font-extrabold px-2.5 py-0.5 rounded-md flex items-center gap-1 shadow-2xs text-xs">
+              <span className="bg-emerald-700 text-white font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs text-[11px]">
                 <span>{product.rating || 4.5}</span>
                 <span>★</span>
               </span>
-              <span className="font-semibold text-slate-600">
+              <span className="font-semibold text-slate-600 text-[11.5px]">
                 {product.ratingsCount || 128} Verified Ratings & {product.reviewsCount || 45} Customer Reviews
               </span>
             </div>
 
             {/* Price Banner Box */}
-            <div className="bg-[#FAFAFA] border border-slate-200/90 rounded-2xl p-3.5 flex items-baseline gap-3">
-              <span className="font-display font-black text-3xl text-[#B71C1C]">
+            <div className="bg-[#FAFAFA] border border-slate-200/90 rounded-2xl py-2 px-3.5 flex items-baseline gap-3">
+              <span className="font-display font-black text-2xl sm:text-3xl text-[#B71C1C]">
                 ₹{price}
               </span>
-              <span className="text-slate-400 line-through font-bold text-base">
+              <span className="text-slate-400 line-through font-bold text-sm">
                 ₹{oldPrice}
               </span>
-              <span className="bg-emerald-100 text-emerald-800 font-black text-xs px-2.5 py-1 rounded-md uppercase tracking-wider">
+              <span className="bg-emerald-100 text-emerald-800 font-black text-[11px] px-2.5 py-0.5 rounded-md uppercase tracking-wider">
                 {discountPercent}% OFF
               </span>
             </div>
 
             {/* Select Size Selector */}
-            <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-900">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-900">
                 SELECT SIZE
               </label>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 {['S', 'M', 'L', 'XL', 'XXL'].map((sz) => (
                   <button
                     key={sz}
                     type="button"
                     onClick={() => setSelectedSize(sz)}
-                    className={`w-11 h-11 rounded-xl font-extrabold text-xs transition-all cursor-pointer border flex items-center justify-center ${
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl font-extrabold text-xs transition-all cursor-pointer border flex items-center justify-center ${
                       selectedSize === sz
-                        ? 'bg-[#B71C1C] text-white border-[#B71C1C] shadow-md scale-105'
+                        ? 'bg-[#B71C1C] text-white border-[#B71C1C] shadow-md'
                         : 'bg-white text-slate-800 border-slate-200 hover:border-slate-300'
                     }`}
                   >
@@ -349,11 +349,11 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Select Color Variant Selector */}
-            <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-900">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-900">
                 SELECT COLOR VARIANT
               </label>
-              <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 {[
                   { name: 'Karviyam Crimson', dot: '#B71C1C' },
                   { name: 'Obsidian Black', dot: '#0F172A' },
@@ -363,7 +363,7 @@ export default function ProductDetailPage() {
                     key={c.name}
                     type="button"
                     onClick={() => setSelectedColor(c.name)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
                       selectedColor === c.name
                         ? 'bg-rose-50/60 border-[#B71C1C] text-[#B71C1C] shadow-2xs'
                         : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
@@ -380,13 +380,13 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Mandatory Pincode Serviceability Box */}
-            <div className="bg-[#FFFBEB] border-2 border-amber-300 rounded-2xl p-4 space-y-2">
+            <div className="bg-[#FFFBEB] border-2 border-amber-300 rounded-2xl p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-1">
                   <span>CHECK SERVICEABLE PINCODE & DELIVERY AVAILABILITY</span>
                   <span className="text-[#B71C1C] font-black">*</span>
                 </span>
-                <span className="bg-red-100 text-[#B71C1C] text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+                <span className="bg-red-100 text-[#B71C1C] text-[8.5px] font-black px-2 py-0.5 rounded-full uppercase">
                   MANDATORY
                 </span>
               </div>
@@ -403,13 +403,13 @@ export default function ProductDetailPage() {
                     setPincodeError('');
                   }}
                   placeholder="Enter 6-digit Pincode"
-                  className="bg-white text-xs px-4 py-2.5 rounded-xl border border-slate-300 font-mono font-bold flex-1 outline-none focus:border-[#B71C1C]"
+                  className="bg-white text-xs px-3.5 py-2 rounded-xl border border-slate-300 font-mono font-bold flex-1 outline-none focus:border-[#B71C1C]"
                 />
                 <button
                   type="button"
                   onClick={handleCheckPincode}
                   disabled={pincodeChecking}
-                  className="bg-slate-900 hover:bg-[#B71C1C] text-white text-xs font-extrabold px-5 py-2.5 rounded-xl cursor-pointer transition-colors shadow-2xs"
+                  className="bg-slate-900 hover:bg-[#B71C1C] text-white text-xs font-extrabold px-4 py-2 rounded-xl cursor-pointer transition-colors shadow-2xs"
                 >
                   {pincodeChecking ? 'Checking...' : 'Check'}
                 </button>
