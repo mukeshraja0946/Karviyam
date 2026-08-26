@@ -32,39 +32,52 @@ export default function ContactPage() {
     };
   }, []);
 
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const errs = {};
+    if (!formData.name || !formData.name.trim()) {
+      errs.name = 'Full Name is required';
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email || !formData.email.trim()) {
+      errs.email = 'Email Address is required';
+    } else if (!emailRegex.test(formData.email.trim())) {
+      errs.email = 'Please enter a valid email address';
+    }
+    if (!formData.message || !formData.message.trim()) {
+      errs.message = 'Message is required';
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
 
-    if (!formData.name || !formData.name.trim()) {
-      toast.error('Please enter your full name');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email || !emailRegex.test(formData.email.trim())) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-
-    if (!formData.message || !formData.message.trim()) {
-      toast.error('Please enter your message');
+    if (!validate()) {
+      toast.error('Please fill in all required fields correctly');
       return;
     }
 
     try {
       setLoading(true);
-      toast.loading('Sending message to vanakkam@karviyam.com...', { id: 'contact-toast' });
+      toast.loading('Sending message...', { id: 'contact-toast' });
+      
       const res = await contactService.submitContact(formData);
       
-      const msg = res?.message || 'Thank you! Your message has been sent to vanakkam@karviyam.com.';
-      toast.success(msg, { id: 'contact-toast' });
-      setFormData({ name: '', email: '', subject: '', message: '' });
-      window.dispatchEvent(new Event('karviyam_contact_updated'));
+      if (res && res.success !== false) {
+        toast.success('Message sent successfully! Our customer support team will respond shortly.', { id: 'contact-toast' });
+        setFormData({ name: '', email: '', subject: '', message: '' });
+        setErrors({});
+        window.dispatchEvent(new Event('karviyam_contact_updated'));
+      } else {
+        throw new Error(res?.message || 'Unable to send message. Please try again.');
+      }
     } catch (err) {
-      console.error(err);
-      const errMsg = err.response?.data?.message || err.message || 'Failed to send message. Please try again later.';
-      toast.error(errMsg, { id: 'contact-toast' });
+      console.error('Contact submission error:', err);
+      toast.error('Unable to send message. Please try again.', { id: 'contact-toast' });
     } finally {
       setLoading(false);
     }
@@ -122,28 +135,34 @@ export default function ContactPage() {
           <MessageSquare className="w-5 h-5 text-[#B71C1C]" /> Send Us A Message
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
             <div>
               <label className="block font-bold text-slate-700 mb-2">Full Name *</label>
               <input
                 type="text"
-                required
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-medium transition-all"
+                className={`w-full px-4 py-3 rounded-xl border ${errors.name ? 'border-red-500 bg-red-50/40' : 'border-slate-200 bg-slate-50'} text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-medium transition-all`}
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (errors.name) setErrors({ ...errors, name: null });
+                }}
               />
+              {errors.name && <p className="text-red-600 text-[11px] mt-1 font-bold">{errors.name}</p>}
             </div>
 
             <div>
               <label className="block font-bold text-slate-700 mb-2">Email Address *</label>
               <input
                 type="email"
-                required
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-medium transition-all"
+                className={`w-full px-4 py-3 rounded-xl border ${errors.email ? 'border-red-500 bg-red-50/40' : 'border-slate-200 bg-slate-50'} text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-medium transition-all`}
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value });
+                  if (errors.email) setErrors({ ...errors, email: null });
+                }}
               />
+              {errors.email && <p className="text-red-600 text-[11px] mt-1 font-bold">{errors.email}</p>}
             </div>
           </div>
 
@@ -161,11 +180,14 @@ export default function ContactPage() {
             <label className="block font-bold text-slate-700 mb-2">Message *</label>
             <textarea
               rows="5"
-              required
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-medium transition-all"
+              className={`w-full px-4 py-3 rounded-xl border ${errors.message ? 'border-red-500 bg-red-50/40' : 'border-slate-200 bg-slate-50'} text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-medium transition-all`}
               value={formData.message}
-              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, message: e.target.value });
+                if (errors.message) setErrors({ ...errors, message: null });
+              }}
             ></textarea>
+            {errors.message && <p className="text-red-600 text-[11px] mt-1 font-bold">{errors.message}</p>}
           </div>
 
           <button
