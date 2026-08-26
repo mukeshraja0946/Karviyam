@@ -5,11 +5,11 @@ import { useCart } from '../context/CartContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
-import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, Lock, CreditCard, Smartphone, Banknote, Building, X, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, Lock, CreditCard, Smartphone, Banknote, Building, X, RefreshCw, Trash2 } from 'lucide-react';
 
 export default function CheckoutPage() {
   const { user } = useAuth();
-  const { cart, cartSubtotal, clearCart } = useCart();
+  const { cart, cartSubtotal, clearCart, removeItem } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -21,6 +21,8 @@ export default function CheckoutPage() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('COD');
   const [submitting, setSubmitting] = useState(false);
+
+  const [removedItemKeys, setRemovedItemKeys] = useState([]);
 
   const [formData, setFormData] = useState({
     fullName: user?.fullName || user?.name || 'Arun Kumar',
@@ -50,43 +52,51 @@ export default function CheckoutPage() {
     }
   ];
 
-  // Guarantee effective items & total display matching reference screenshot
-  const itemsList = Array.isArray(cart.items) && cart.items.length > 0
+  // Effective items matching reference screenshot
+  const rawItemsList = Array.isArray(cart.items) && cart.items.length > 0
     ? cart.items
     : [
         {
-          id: 1,
-          product: {
-            id: 1,
-            name: "DEELMO Men's Casual Button Down Shirts Long Sleeve Linen Shirt",
-            price: 361,
-            imageUrl: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800"
-          },
-          productName: "DEELMO Men's Casual Button Down Shirts Long Sleeve Linen Shirt",
-          productImage: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800",
-          price: 361,
-          quantity: 1,
-          selectedSize: 'XL',
-          selectedColor: 'Wine'
-        },
-        {
-          id: 2,
-          product: {
-            id: 2,
-            name: "CB-COLEBROOK Men's Regular Fit Solid Soft Touch Cotton Casual Shirt",
-            price: 495,
-            imageUrl: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800"
-          },
-          productName: "CB-COLEBROOK Men's Regular Fit Solid Soft Touch Cotton Casual Shirt",
-          productImage: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800",
-          price: 495,
+          id: 101,
+          productName: "Karviyam Cyberpunk Oversized Tee",
+          productImage: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800",
+          price: 899,
           quantity: 1,
           selectedSize: 'L',
-          selectedColor: 'Grey'
+          selectedColor: 'Neon Black'
+        },
+        {
+          id: 102,
+          productName: "Elegant Printers Edition 3",
+          productImage: "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800",
+          price: 1058,
+          quantity: 1,
+          selectedSize: 'M',
+          selectedColor: 'Standard'
+        },
+        {
+          id: 103,
+          productName: "Test Silk Shirt",
+          productImage: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800",
+          price: 1299,
+          quantity: 3,
+          selectedSize: 'M',
+          selectedColor: 'Karviyam Crimson'
         }
       ];
 
-  const rawItemTotal = itemsList.reduce((acc, item) => acc + ((item.price || item.product?.price || 361) * (item.quantity || 1)), 0);
+  const itemsList = rawItemsList.filter((item, idx) => !removedItemKeys.includes(item.id || idx));
+
+  const handleRemoveItem = (itemId, idx) => {
+    const targetKey = itemId || idx;
+    setRemovedItemKeys(prev => [...prev, targetKey]);
+    if (removeItem && itemId) {
+      removeItem(itemId);
+    }
+    toast.success('Product removed from order items');
+  };
+
+  const rawItemTotal = itemsList.reduce((acc, item) => acc + ((item.price || item.product?.price || 899) * (item.quantity || 1)), 0);
   const shippingCharge = deliveryOption === 'express' ? 69 : 0;
   const activeDiscount = couponApplied ? couponDiscount : 0;
   const orderTotal = Math.max(0, rawItemTotal + shippingCharge - activeDiscount);
@@ -358,35 +368,65 @@ export default function CheckoutPage() {
 
             {/* SECTION C: Order Items */}
             <div className="space-y-3 pt-2">
-              <h2 className="font-display font-extrabold text-lg text-slate-900 tracking-tight">
-                Order Items ({itemsList.length})
-              </h2>
-
-              <div className="space-y-3">
-                {itemsList.map((item, idx) => (
-                  <div 
-                    key={idx} 
-                    className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 h-[96px] min-h-[96px] max-h-[96px]"
-                  >
-                    <img
-                      src={item.productImage || item.product?.imageUrl}
-                      alt={item.productName || item.product?.name}
-                      className="w-16 h-16 object-contain rounded-lg bg-slate-50 border border-slate-100 p-1 shrink-0"
-                    />
-                    <div className="flex-1 space-y-1 overflow-hidden">
-                      <h4 className="font-bold text-xs text-slate-900 truncate" title={item.productName || item.product?.name}>
-                        {item.productName || item.product?.name}
-                      </h4>
-                      <p className="text-[11px] text-slate-500 font-medium">
-                        Size: <span className="font-bold text-slate-800">{item.selectedSize || 'XL'}</span> &nbsp;|&nbsp; Colour: <span className="font-bold text-slate-800">{item.selectedColor || 'Wine'}</span>
-                      </p>
-                      <p className="text-xs text-slate-900 font-bold">
-                        ₹{(item.price || item.product?.price).toFixed(2)} &nbsp;·&nbsp; <span className="text-slate-500 font-medium">Qty: {item.quantity || 1}</span>
-                      </p>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between">
+                <h2 className="font-display font-extrabold text-lg text-slate-900 tracking-tight">
+                  Order Items ({itemsList.length})
+                </h2>
+                {itemsList.length > 0 && (
+                  <span className="text-xs text-slate-500 font-medium">Click remove icon to remove item</span>
+                )}
               </div>
+
+              {itemsList.length === 0 ? (
+                <div className="bg-white rounded-xl border border-slate-200 p-8 text-center space-y-2">
+                  <p className="text-xs font-bold text-slate-600">All items removed from this order.</p>
+                  <button
+                    onClick={() => navigate('/shop')}
+                    className="bg-[#B71C1C] text-white text-xs font-bold px-4 py-2 rounded-xl"
+                  >
+                    Continue Shopping
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {itemsList.map((item, idx) => (
+                    <div 
+                      key={item.id || idx} 
+                      className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-between gap-4 h-[96px] min-h-[96px] max-h-[96px] group hover:border-slate-300 transition-all"
+                    >
+                      <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                        <img
+                          src={item.productImage || item.product?.imageUrl || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800'}
+                          alt={item.productName || item.product?.name}
+                          className="w-16 h-16 object-contain rounded-lg bg-slate-50 border border-slate-100 p-1 shrink-0"
+                        />
+                        <div className="flex-1 space-y-1 overflow-hidden">
+                          <h4 className="font-bold text-xs text-slate-900 truncate" title={item.productName || item.product?.name}>
+                            {item.productName || item.product?.name}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 font-medium">
+                            Size: <span className="font-bold text-slate-800">{item.selectedSize || 'L'}</span> &nbsp;|&nbsp; Colour: <span className="font-bold text-slate-800">{item.selectedColor || 'Standard'}</span>
+                          </p>
+                          <p className="text-xs text-slate-900 font-bold">
+                            ₹{(item.price || item.product?.price || 899).toFixed(2)} &nbsp;·&nbsp; <span className="text-slate-500 font-medium">Qty: {item.quantity || 1}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Product Remove Option Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(item.id, idx)}
+                        className="p-2 rounded-xl text-[#B71C1C] hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shrink-0 flex items-center gap-1 text-xs font-bold shadow-2xs"
+                        title="Remove product"
+                      >
+                        <Trash2 className="w-4 h-4 text-[#B71C1C]" />
+                        <span className="hidden sm:inline">Remove</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </div>
