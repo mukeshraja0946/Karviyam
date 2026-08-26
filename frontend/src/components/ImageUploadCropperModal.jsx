@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ZoomIn, ZoomOut, RotateCw, RefreshCw, Check, AlertTriangle, Image as ImageIcon, UploadCloud, Loader2 } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, RotateCw, RefreshCw, Check, AlertTriangle, Loader2 } from 'lucide-react';
 import { IMAGE_CONFIG } from '../utils/imageConfig';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
@@ -12,7 +12,7 @@ export default function ImageUploadCropperModal({
   onConfirmCrop
 }) {
   const config = IMAGE_CONFIG[configType] || IMAGE_CONFIG.productGallery;
-  
+
   const [imageObj, setImageObj] = useState(null);
   const [originalDimensions, setOriginalDimensions] = useState({ width: 0, height: 0 });
   const [zoom, setZoom] = useState(1);
@@ -24,6 +24,7 @@ export default function ImageUploadCropperModal({
 
   const containerRef = useRef(null);
 
+  // Load selected File into HTMLImageElement
   useEffect(() => {
     if (!imageFile) return;
 
@@ -44,8 +45,31 @@ export default function ImageUploadCropperModal({
 
   if (!isOpen || !imageFile) return null;
 
+  // Determine effective dimensions based on rotation
+  const isRotated90 = rotation === 90 || rotation === 270;
+  const effectiveWidth = isRotated90 ? originalDimensions.height : originalDimensions.width;
+  const effectiveHeight = isRotated90 ? originalDimensions.width : originalDimensions.height;
+
+  // Check if resolution is low compared to target
   const isLowResolution = originalDimensions.width > 0 &&
-    (originalDimensions.width < config.width * 0.7 || originalDimensions.height < config.height * 0.7);
+    (effectiveWidth < config.width * 0.7 || effectiveHeight < config.height * 0.7);
+
+  // DOM Preview Box Dimensions
+  const cropBoxWidth = 300;
+  const cropBoxHeight = Math.round(cropBoxWidth / config.aspectRatio);
+
+  // Base Cover Scale in DOM Box
+  const baseScale = Math.max(cropBoxWidth / effectiveWidth, cropBoxHeight / effectiveHeight);
+  const domZoomWidth = effectiveWidth * baseScale * zoom;
+  const domZoomHeight = effectiveHeight * baseScale * zoom;
+
+  // Max Pan Limits in DOM space
+  const maxPanX = Math.max(0, (domZoomWidth - cropBoxWidth) / 2);
+  const maxPanY = Math.max(0, (domZoomHeight - cropBoxHeight) / 2);
+
+  // Clamp current position within bounds
+  const clampedX = Math.min(maxPanX, Math.max(-maxPanX, position.x));
+  const clampedY = Math.min(maxPanY, Math.max(-maxPanY, position.y));
 
   const handleMouseDown = (e) => {
     e.preventDefault();
@@ -55,9 +79,11 @@ export default function ImageUploadCropperModal({
 
   const handleMouseMove = (e) => {
     if (!isDragging) return;
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
     setPosition({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y
+      x: Math.min(maxPanX, Math.max(-maxPanX, newX)),
+      y: Math.min(maxPanY, Math.max(-maxPanY, newY))
     });
   };
 
@@ -74,10 +100,21 @@ export default function ImageUploadCropperModal({
   const handleConfirmCrop = async () => {
     if (!imageObj) return;
     setUploading(true);
-    toast.loading('Processing & cropping image...', { id: 'cropper-toast' });
+    toast.loading('Cropping and saving image...', { id: 'cropper-toast' });
 
     try {
-      // 1. Create high-resolution Canvas with exact target dimensions
+      // 1. Calculate Source Rectangle in Original Image Coordinates
+      const cropLeftInDom = (domZoomWidth / 2) - (cropBoxWidth / 2) - clampedX;
+      const cropTopInDom = (domZoomHeight / 2) - (cropBoxHeight / 2) - clampedY;
+
+      const domToSourceFactor = effectiveWidth / domZoomWidth;
+
+      const sourceX = cropLeftInDom * domToSourceFactor;
+      const sourceY = cropTopInDom * domToSourceFactor;
+      const sourceWidth = cropBoxWidth * domToSourceFactor;
+      const sourceHeight = cropBoxHeight * domToSourceFactor;
+
+      // 2. Create Canvas with EXACT required output dimensions
       const canvas = document.createElement('canvas');
       canvas.width = config.width;
       canvas.height = config.height;
@@ -86,75 +123,87 @@ export default function ImageUploadCropperModal({
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      // 2. Clear canvas
+      // Clear Canvas
       ctx.clearRect(0, 0, config.width, config.height);
 
-      // 3. Draw cropped image with zoom, rotation and offset
-      ctx.save();
-      ctx.translate(config.width / 2, config.height / 2);
-      ctx.rotate((rotation * Math.PI) / 180);
+      // Handle Rotation during crop draw
+      if (rotation !== 0) {
+        ctx.save();
+        ctx.translate(config.width / 2, config.height / 2);
+        ctx.rotate((rotation * Math.PI) / 180);
 
-      // Scale calculations
-      const scaleX = config.width / originalDimensions.width;
-      const scaleY = config.height / originalDimensions.height;
-      const baseScale = Math.max(scaleX, scaleY);
-      const totalScale = baseScale * zoom;
+        // Draw rotated canvas intermediate
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = effectiveWidth;
+        tempCanvas.height = effectiveHeight;
+        const tempCtx = tempCanvas.getContext('2d');
 
-      const drawWidth = originalDimensions.width * totalScale;
-      const drawHeight = originalDimensions.height * totalScale;
+        tempCtx.translate(effectiveWidth / 2, effectiveHeight / 2);
+        tempCtx.rotate((rotation * Math.PI) / 180);
+        tempCtx.drawImage(imageObj, -originalDimensions.width / 2, -originalDimensions.height / 2);
 
-      const drawX = position.x * (config.width / 320) - drawWidth / 2;
-      const drawY = position.y * (config.height / 320) - drawHeight / 2;
+        ctx.drawImage(
+          tempCanvas,
+          sourceX, sourceY, sourceWidth, sourceHeight,
+          -config.width / 2, -config.height / 2, config.width, config.height
+        );
+        ctx.restore();
+      } else {
+        // Direct exact source crop draw
+        ctx.drawImage(
+          imageObj,
+          sourceX, sourceY, sourceWidth, sourceHeight,
+          0, 0, config.width, config.height
+        );
+      }
 
-      ctx.drawImage(imageObj, drawX, drawY, drawWidth, drawHeight);
-      ctx.restore();
+      // 3. Strict Verification of Output Dimensions
+      if (canvas.width !== config.width || canvas.height !== config.height) {
+        throw new Error(`Output dimensions (${canvas.width}x${canvas.height}) do not match required (${config.width}x${config.height})`);
+      }
 
-      // 4. Export canvas to Blob
+      // 4. Export Canvas to Blob File
       const blob = await new Promise((resolve) => {
         canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.92);
       });
 
-      if (blob) {
-        // 5. Upload cropped blob to server API endpoint
-        const formData = new FormData();
-        const fileName = `cropped-${configType}-${Date.now()}.jpg`;
-        formData.append('file', blob, fileName);
+      if (!blob) throw new Error('Failed to generate image blob');
 
-        const uploadRes = await api.post('/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        }).catch(() => null);
+      // 5. Upload Cropped File to Backend Server Disk
+      const formData = new FormData();
+      const fileName = `cropped-${configType}-${Date.now()}.jpg`;
+      formData.append('file', blob, fileName);
 
-        const apiData = uploadRes?.data ? uploadRes.data : uploadRes;
-        const uploadedUrl = apiData?.data?.url || apiData?.url;
+      const uploadRes = await api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      }).catch(() => null);
 
-        if (uploadedUrl) {
-          toast.success(`Cropped to ${config.width} × ${config.height} px!`, { id: 'cropper-toast' });
-          onConfirmCrop(uploadedUrl);
-          onClose();
-          return;
-        }
+      const apiData = uploadRes?.data ? uploadRes.data : uploadRes;
+      const uploadedUrl = apiData?.data?.url || apiData?.url;
+
+      if (uploadedUrl) {
+        toast.success(`Saved cropped image: ${config.width} × ${config.height} px!`, { id: 'cropper-toast' });
+        onConfirmCrop(uploadedUrl);
+        onClose();
+        return;
       }
 
-      // Base64 Fallback if API upload fails
+      // Base64 Fallback if API endpoint is unreachable
       const base64Data = canvas.toDataURL('image/jpeg', 0.90);
-      toast.success(`Cropped to ${config.width} × ${config.height} px!`, { id: 'cropper-toast' });
+      toast.success(`Saved cropped image: ${config.width} × ${config.height} px!`, { id: 'cropper-toast' });
       onConfirmCrop(base64Data);
       onClose();
 
     } catch (err) {
-      console.error('[Cropper Error]:', err);
-      toast.error('Failed to crop image. Please try again.', { id: 'cropper-toast' });
+      console.error('[Cropper Export Error]:', err);
+      toast.error('Unable to generate the required image size. Please try cropping again.', { id: 'cropper-toast' });
     } finally {
       setUploading(false);
     }
   };
 
-  // Preview Box dimensions (responsive container with exact aspect ratio)
-  const previewBoxWidth = 340;
-  const previewBoxHeight = Math.round(340 / config.aspectRatio);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         
         {/* Header */}
@@ -205,49 +254,57 @@ export default function ImageUploadCropperModal({
           <div className="bg-amber-50 border-b border-amber-200 p-3 px-5 flex items-start gap-2.5 text-xs text-amber-900">
             <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold">Image Resolution Warning</p>
+              <p className="font-bold">Low Resolution Warning</p>
               <p className="text-[11px] text-amber-700">
-                Image is {originalDimensions.width}×{originalDimensions.height} px. Required is {config.width}×{config.height} px. Upscaling low-res images may reduce sharpness.
+                Image resolution is low. The final image may lose sharpness when scaled to {config.width} × {config.height} px.
               </p>
             </div>
           </div>
         )}
 
         {/* Interactive Crop Preview Area */}
-        <div className="p-6 bg-slate-100 flex flex-col items-center justify-center overflow-auto flex-1 min-h-[300px]">
+        <div className="p-6 bg-slate-100 flex flex-col items-center justify-center overflow-auto flex-1 min-h-[340px]">
           
-          <p className="text-[11px] font-bold text-slate-500 mb-3 uppercase tracking-wider flex items-center gap-1.5">
-            <span>Drag image to position inside crop box</span>
+          <p className="text-[11px] font-bold text-slate-500 mb-3 uppercase tracking-wider">
+            Drag image to center desired area inside crop window
           </p>
 
+          {/* Fixed Aspect Ratio Crop Box Container */}
           <div
             ref={containerRef}
-            style={{ width: previewBoxWidth, height: Math.min(previewBoxHeight, 360) }}
-            className="relative border-4 border-[#B71C1C] rounded-2xl shadow-xl overflow-hidden bg-slate-900 cursor-move select-none"
+            style={{ width: cropBoxWidth, height: cropBoxHeight }}
+            className="relative border-4 border-[#B71C1C] rounded-2xl shadow-2xl overflow-hidden bg-slate-900 cursor-grab active:cursor-grabbing select-none flex items-center justify-center"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
           >
-            {/* Background Croppable Image */}
+            {/* Background Rendered Image with Exact Pan & Zoom Offset */}
             {imageObj && (
-              <img
-                src={imageObj.src}
-                alt="Crop preview"
-                draggable={false}
+              <div
                 style={{
-                  transform: `translate(${position.x}px, ${position.y}px) scale(${zoom}) rotate(${rotation}deg)`,
-                  transformOrigin: 'center center',
-                  maxHeight: '100%',
-                  maxWidth: '100%',
-                  objectFit: 'contain'
+                  width: domZoomWidth,
+                  height: domZoomHeight,
+                  transform: `translate(${clampedX}px, ${clampedY}px)`,
+                  transition: isDragging ? 'none' : 'transform 0.1s ease-out'
                 }}
-                className="w-full h-full pointer-events-none transition-transform duration-75"
-              />
+                className="relative flex items-center justify-center shrink-0"
+              >
+                <img
+                  src={imageObj.src}
+                  alt="Crop preview"
+                  draggable={false}
+                  style={{
+                    transform: `rotate(${rotation}deg)`,
+                    transformOrigin: 'center center'
+                  }}
+                  className="w-full h-full object-cover pointer-events-none"
+                />
+              </div>
             )}
 
-            {/* Grid Overlay Lines */}
-            <div className="absolute inset-0 border border-white/30 pointer-events-none grid grid-cols-3 grid-rows-3">
+            {/* Rule of Thirds Grid Lines */}
+            <div className="absolute inset-0 border border-white/40 pointer-events-none grid grid-cols-3 grid-rows-3">
               <div className="border-r border-b border-white/20"></div>
               <div className="border-r border-b border-white/20"></div>
               <div className="border-b border-white/20"></div>
@@ -259,7 +316,7 @@ export default function ImageUploadCropperModal({
               <div></div>
             </div>
 
-            {/* Crop Ratio Badge */}
+            {/* Fixed Ratio Badge */}
             <span className="absolute top-2 left-2 bg-[#B71C1C] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs pointer-events-none">
               FIXED {config.aspectRatioLabel}
             </span>
@@ -272,7 +329,10 @@ export default function ImageUploadCropperModal({
             <div className="flex items-center gap-2 flex-1 min-w-[180px]">
               <button
                 type="button"
-                onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
+                onClick={() => {
+                  const newZoom = Math.max(1, zoom - 0.1);
+                  setZoom(newZoom);
+                }}
                 className="p-1.5 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 cursor-pointer"
                 title="Zoom Out"
               >
@@ -281,24 +341,29 @@ export default function ImageUploadCropperModal({
               
               <input
                 type="range"
-                min="0.5"
+                min="1"
                 max="3"
                 step="0.05"
                 value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
+                onChange={(e) => {
+                  setZoom(Number(e.target.value));
+                }}
                 className="w-full accent-[#B71C1C] cursor-pointer"
               />
 
               <button
                 type="button"
-                onClick={() => setZoom(prev => Math.min(3, prev + 0.1))}
+                onClick={() => {
+                  const newZoom = Math.min(3, zoom + 0.1);
+                  setZoom(newZoom);
+                }}
                 className="p-1.5 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 cursor-pointer"
                 title="Zoom In"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
 
-              <span className="font-mono font-bold text-slate-700 text-[11px] min-w-[40px] text-right">
+              <span className="font-mono font-bold text-slate-700 text-[11px] min-w-[45px] text-right">
                 {Math.round(zoom * 100)}%
               </span>
             </div>
@@ -331,7 +396,7 @@ export default function ImageUploadCropperModal({
         {/* Footer Actions */}
         <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
           <div className="text-[11px] text-slate-500 font-medium">
-            Final Output: <strong className="text-slate-900">{config.width} × {config.height} px ({config.aspectRatioLabel})</strong>
+            Output: <strong className="text-slate-900">{config.width} × {config.height} px ({config.aspectRatioLabel})</strong>
           </div>
 
           <div className="flex items-center gap-3">
@@ -353,7 +418,7 @@ export default function ImageUploadCropperModal({
               {uploading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Uploading...</span>
+                  <span>Processing...</span>
                 </>
               ) : (
                 <>
