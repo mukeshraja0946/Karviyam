@@ -3,6 +3,7 @@ import { Layers, Plus, Trash2, Edit2, Save, X, Search, Image as ImageIcon, Uploa
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import BulkCategoryImportModal from '../components/BulkCategoryImportModal';
+import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 
 const CLASSIFICATION_OPTIONS = [
   'MEN',
@@ -254,45 +255,18 @@ export default function AdminCategoriesPage() {
     setModalOpen(true);
   };
 
-  const handleFileUpload = async (e, fieldKey) => {
+  const [cropperState, setCropperState] = useState(null); // { file, fieldKey, configType }
+
+  const handleFileUpload = (e, fieldKey) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select a valid image file');
-        return;
-      }
-      try {
-        const formDataUpload = new FormData();
-        formDataUpload.append('file', file);
-        toast.loading('Uploading image...', { id: 'img-upload' });
-
-        const uploadRes = await api.post('/upload', formDataUpload, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        }).catch(() => null);
-
-        toast.dismiss('img-upload');
-
-        const apiData = uploadRes?.data ? uploadRes.data : uploadRes;
-        const uploadedUrl = apiData?.data?.url || apiData?.url;
-
-        if (uploadedUrl) {
-          setFormData(prev => ({ ...prev, [fieldKey]: uploadedUrl }));
-          toast.success('Image uploaded successfully!');
-          return;
-        }
-
-        // Fallback to compressed base64
-        const compressedBase64 = await compressImage(file);
-        if (compressedBase64) {
-          setFormData(prev => ({ ...prev, [fieldKey]: compressedBase64 }));
-          toast.success('Image selected and optimized!');
-        }
-      } catch (err) {
-        console.error(err);
-        toast.dismiss('img-upload');
-        toast.error('Error processing image');
-      }
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
     }
+    const configType = fieldKey === 'iconUrl' ? 'categoryIcon' : (fieldKey === 'bannerUrl' ? 'categoryBanner' : 'category');
+    setCropperState({ file, fieldKey, configType });
+    e.target.value = '';
   };
 
   const [submitting, setSubmitting] = useState(false);
@@ -930,6 +904,20 @@ export default function AdminCategoriesPage() {
         isOpen={importModalOpen}
         onClose={() => setImportModalOpen(false)}
         onSuccess={fetchCategories}
+      />
+
+      {/* Standardized Category Image Cropper Modal */}
+      <ImageUploadCropperModal
+        isOpen={Boolean(cropperState)}
+        onClose={() => setCropperState(null)}
+        imageFile={cropperState?.file}
+        configType={cropperState?.configType || 'category'}
+        onConfirmCrop={(croppedUrl) => {
+          if (cropperState?.fieldKey) {
+            setFormData(prev => ({ ...prev, [cropperState.fieldKey]: croppedUrl }));
+          }
+          setCropperState(null);
+        }}
       />
 
     </div>

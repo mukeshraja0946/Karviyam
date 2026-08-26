@@ -3,6 +3,7 @@ import { Award, Plus, Trash2, CheckCircle2, Upload, Image as ImageIcon, X } from
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import ExportDropdown from '../components/ExportDropdown';
+import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 
 const BRAND_EXPORT_HEADERS = [
   { label: 'Brand Name', accessor: 'name' },
@@ -109,22 +110,17 @@ export default function AdminBrandsPage() {
     }
   };
 
-  const handleImageFileChange = async (e) => {
+  const [cropperFile, setCropperFile] = useState(null);
+
+  const handleImageFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
-    try {
-      const base64 = await compressImage(file);
-      if (base64) {
-        setNewBrandLogo(base64);
-        toast.success('Logo uploaded!');
-      }
-    } catch (err) {
-      console.error('File read error:', err);
-      toast.error('Failed to process image file');
-    } finally {
-      setUploading(false);
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
     }
+    setCropperFile(file);
+    e.target.value = '';
   };
 
   const handleAddBrand = async (e) => {
@@ -288,6 +284,19 @@ export default function AdminBrandsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Standardized Brand Logo Image Cropper Modal */}
+      <ImageUploadCropperModal
+        isOpen={Boolean(cropperFile)}
+        onClose={() => setCropperFile(null)}
+        imageFile={cropperFile}
+        configType="brandLogo"
+        onConfirmCrop={(croppedUrl) => {
+          setNewBrandLogo(croppedUrl);
+          setCropperFile(null);
+        }}
+      />
+
     </div>
   );
 }

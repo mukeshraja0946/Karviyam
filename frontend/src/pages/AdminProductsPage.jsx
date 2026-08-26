@@ -5,6 +5,7 @@ import { resolveImageUrl } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import BulkImportModal from '../components/BulkImportModal';
 import ExportDropdown from '../components/ExportDropdown';
+import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 
 const PRODUCT_EXPORT_HEADERS = [
   { label: 'Product Name', accessor: 'name' },
@@ -119,50 +120,15 @@ export default function AdminProductsPage() {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [selectedSkus, setSelectedSkus] = useState([]);
+  const [cropperState, setCropperState] = useState(null); // { file, vIdx, imgIdx }
 
-  const handleUploadVariantImage = async (file, vIdx, imgIdx) => {
+  const handleUploadVariantImage = (file, vIdx, imgIdx) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       toast.error('Please select a valid image file (PNG, JPG, WEBP)');
       return;
     }
-    toast.loading('Uploading image file...', { id: 'prod-upload' });
-    try {
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', file);
-      const res = await api.post('/upload', formDataUpload, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      const apiData = res?.data ? res.data : res;
-      const uploadedUrl = apiData?.data?.url || apiData?.url;
-      if (uploadedUrl) {
-        const updated = [...formData.colorVariants];
-        if (imgIdx >= updated[vIdx].imageUrls.length) {
-          updated[vIdx].imageUrls.push(uploadedUrl);
-        } else {
-          updated[vIdx].imageUrls[imgIdx] = uploadedUrl;
-        }
-        setFormData({ ...formData, colorVariants: updated });
-        toast.success('Image uploaded successfully!', { id: 'prod-upload' });
-        return;
-      }
-    } catch (err) {
-      console.warn('[Upload API error, using compressed base64 fallback]:', err);
-    }
-
-    try {
-      const compressed = await compressImage(file, 1000, 1000, 0.8);
-      const updated = [...formData.colorVariants];
-      if (imgIdx >= updated[vIdx].imageUrls.length) {
-        updated[vIdx].imageUrls.push(compressed || '');
-      } else {
-        updated[vIdx].imageUrls[imgIdx] = compressed || '';
-      }
-      setFormData({ ...formData, colorVariants: updated });
-      toast.success('Image file attached!', { id: 'prod-upload' });
-    } catch (eComp) {
-      toast.error('Failed to read image file');
-    }
+    setCropperState({ file, vIdx, imgIdx });
   };
 
   const handleBulkDeleteSelected = async () => {
@@ -1155,6 +1121,27 @@ export default function AdminProductsPage() {
         onClose={() => setImportModalOpen(false)}
         type="products"
         onImportSuccess={fetchData}
+      />
+
+      {/* Standardized Product Image Cropper Modal */}
+      <ImageUploadCropperModal
+        isOpen={Boolean(cropperState)}
+        onClose={() => setCropperState(null)}
+        imageFile={cropperState?.file}
+        configType="productGallery"
+        onConfirmCrop={(croppedUrl) => {
+          if (cropperState) {
+            const { vIdx, imgIdx } = cropperState;
+            const updated = [...formData.colorVariants];
+            if (imgIdx >= updated[vIdx].imageUrls.length) {
+              updated[vIdx].imageUrls.push(croppedUrl);
+            } else {
+              updated[vIdx].imageUrls[imgIdx] = croppedUrl;
+            }
+            setFormData({ ...formData, colorVariants: updated });
+          }
+          setCropperState(null);
+        }}
       />
 
     </div>

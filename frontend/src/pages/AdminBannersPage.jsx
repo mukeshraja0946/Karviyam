@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Plus, Trash2, Edit2, X, Eye, Upload, Link as LinkIcon, Power, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState([]);
@@ -9,6 +10,7 @@ export default function AdminBannersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [actionLoading, setActionLoading] = useState({});
+  const [cropperFile, setCropperFile] = useState(null);
 
   // Auto-scroll Admin Settings
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(() => {
@@ -143,7 +145,7 @@ export default function AdminBannersPage() {
     }
   };
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -152,41 +154,8 @@ export default function AdminBannersPage() {
       return;
     }
 
-    setUploadingImage(true);
-    toast.loading('Uploading banner image...', { id: 'banner-toast' });
-
-    try {
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', file);
-
-      const uploadRes = await api.post('/upload', formDataUpload, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-
-      const apiData = uploadRes?.data ? uploadRes.data : uploadRes;
-      const uploadedUrl = apiData?.data?.url || apiData?.url;
-
-      if (uploadedUrl) {
-        setFormData(prev => ({ ...prev, imagePath: uploadedUrl }));
-        toast.success('Banner image uploaded successfully!', { id: 'banner-toast' });
-      } else {
-        throw new Error('No URL returned from server');
-      }
-    } catch (err) {
-      console.error('[Banner Image Upload Error]:', err);
-      // Fallback: convert file to Base64 data URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, imagePath: reader.result }));
-        toast.success('Banner image optimized and ready!', { id: 'banner-toast' });
-      };
-      reader.onerror = () => {
-        handleApiError(err, 'Failed to upload image file');
-      };
-      reader.readAsDataURL(file);
-    } finally {
-      setUploadingImage(false);
-    }
+    setCropperFile(file);
+    e.target.value = '';
   };
 
   const handleApiError = (err, defaultMsg = 'An error occurred') => {
@@ -642,6 +611,18 @@ export default function AdminBannersPage() {
           </div>
         </div>
       )}
+
+      {/* Standardized Image Cropper Modal */}
+      <ImageUploadCropperModal
+        isOpen={Boolean(cropperFile)}
+        onClose={() => setCropperFile(null)}
+        imageFile={cropperFile}
+        configType="homepageBanner"
+        onConfirmCrop={(croppedUrl) => {
+          setFormData(prev => ({ ...prev, imagePath: croppedUrl }));
+          setCropperFile(null);
+        }}
+      />
 
     </div>
   );
