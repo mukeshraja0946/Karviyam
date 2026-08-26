@@ -237,16 +237,16 @@ export default function ShopPage() {
         </button>
       </div>
 
-      {/* Main 2-Column Desktop Layout */}
-      <div className="flex gap-8">
+      {/* Main 2-Column Desktop Layout (Independent Scroll Containers) */}
+      <div className="flex gap-8 items-start">
         
-        {/* Left Sidebar (Desktop Fixed Width 230px) */}
-        <div className="hidden lg:block w-[230px] shrink-0 border-r border-slate-200/90 pr-6 space-y-6">
+        {/* Left Sidebar (Desktop Sticky Independent Scroll Container) */}
+        <div className="hidden lg:block w-[230px] shrink-0 border-r border-slate-200/90 pr-4 space-y-6 sticky top-[90px] h-[calc(100vh-110px)] overflow-y-auto scrollbar-thin">
           <SidebarFilterContent />
         </div>
 
-        {/* Right Main Catalogue Product Grid */}
-        <div className="flex-1 space-y-4">
+        {/* Right Main Catalogue Product Grid (Independent Scroll Container) */}
+        <div className="flex-1 space-y-4 h-[calc(100vh-110px)] overflow-y-auto pr-2 scrollbar-thin">
           
           {/* Results Header Banner */}
           <div className="border-b border-slate-200 pb-3">
@@ -273,7 +273,7 @@ export default function ShopPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 w-full pb-6">
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
