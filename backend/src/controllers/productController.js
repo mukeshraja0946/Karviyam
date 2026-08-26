@@ -106,10 +106,12 @@ const mapProductRowToDTO = async (p) => {
 exports.getProducts = async (req, res, next) => {
   try {
     const {
-      keyword, categoryId, subcategoryId, brandId, gender, type,
+      keyword, categoryId, category, subcategoryId, brandId, gender, type,
       minPrice, maxPrice, rating, isFeatured, isTrending, isBestSeller, isNewArrival,
       sortBy = 'id', sortDir = 'desc', page = 0, size = 50
     } = req.query;
+
+    const targetCategory = categoryId || category;
 
     let conditions = ['1=1'];
     let params = [];
@@ -120,14 +122,21 @@ exports.getProducts = async (req, res, next) => {
       params.push(term, term, term, term);
     }
 
-    if (categoryId) {
-      if (!isNaN(categoryId)) {
+    if (targetCategory && targetCategory !== 'ALL' && targetCategory !== 'all') {
+      if (!isNaN(targetCategory)) {
         conditions.push('(p.category_id = ? OR p.subcategory_id = ?)');
-        params.push(categoryId, categoryId);
+        params.push(targetCategory, targetCategory);
       } else {
-        conditions.push('(c.name LIKE ? OR p.type LIKE ? OR p.brand LIKE ?)');
-        const catTerm = `%${categoryId}%`;
-        params.push(catTerm, catTerm, catTerm);
+        const catLower = targetCategory.toLowerCase();
+        if (catLower === 'men') {
+          conditions.push("(LOWER(p.gender) = 'men' OR LOWER(c.name) LIKE '%men%' OR LOWER(p.type) LIKE '%men%' OR LOWER(p.name) LIKE '%shirt%' OR LOWER(p.name) LIKE '%polo%' OR LOWER(p.name) LIKE '%kurta%') AND LOWER(p.name) NOT LIKE '%saree%' AND LOWER(p.name) NOT LIKE '%women%'");
+        } else if (catLower === 'women') {
+          conditions.push("(LOWER(p.gender) = 'women' OR LOWER(c.name) LIKE '%women%' OR LOWER(p.type) LIKE '%women%' OR LOWER(p.name) LIKE '%saree%' OR LOWER(p.name) LIKE '%lehenga%' OR LOWER(p.name) LIKE '%dress%')");
+        } else {
+          const catTerm = `%${targetCategory}%`;
+          conditions.push('(c.name LIKE ? OR p.type LIKE ? OR p.gender LIKE ? OR p.name LIKE ?)');
+          params.push(catTerm, catTerm, catTerm, catTerm);
+        }
       }
     }
 

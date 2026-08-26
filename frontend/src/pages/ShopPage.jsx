@@ -33,7 +33,13 @@ export default function ShopPage() {
   useEffect(() => {
     fetchMetadata();
     window.addEventListener('karviyam_categories_updated', fetchMetadata);
-    return () => window.removeEventListener('karviyam_categories_updated', fetchMetadata);
+    window.addEventListener('karviyam_products_updated', fetchProducts);
+    window.addEventListener('storage', fetchProducts);
+    return () => {
+      window.removeEventListener('karviyam_categories_updated', fetchMetadata);
+      window.removeEventListener('karviyam_products_updated', fetchProducts);
+      window.removeEventListener('storage', fetchProducts);
+    };
   }, []);
 
   useEffect(() => {
@@ -73,6 +79,7 @@ export default function ShopPage() {
     try {
       const params = {
         category: selectedCategory,
+        categoryId: selectedCategory,
         subcategory: selectedSubcategory,
         brand: selectedBrand,
         gender: selectedGender,
@@ -80,12 +87,68 @@ export default function ShopPage() {
         maxPrice: priceRange,
         sort: sortBy,
         dir: sortDir,
-        size: 20
+        size: 50
       };
 
-      const res = await api.get('/products', { params });
-      const apiData = res.data ? res.data : res;
-      let list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      const res = await api.get('/products', { params }).catch(() => null);
+      const apiData = res?.data ? res.data : res;
+      let list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+
+      // Merge Admin Saved Products for live Admin sync
+      try {
+        const savedAdmin = localStorage.getItem('karviyam_admin_products');
+        if (savedAdmin) {
+          const parsed = JSON.parse(savedAdmin);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const activeAdminProds = parsed.filter(p => p.isActive !== false);
+            if (activeAdminProds.length > 0) {
+              list = [...activeAdminProds, ...list.filter(p => !activeAdminProds.some(a => String(a.id) === String(p.id)))];
+            }
+          }
+        }
+      } catch (eSaved) {}
+
+      // Strict Active Status Filter
+      list = list.filter(p => p.isActive !== false);
+
+      // Strict Category Filtering
+      if (selectedCategory && selectedCategory.toUpperCase() !== 'ALL') {
+        const catLower = selectedCategory.toLowerCase();
+        list = list.filter(p => {
+          const pCat = (p.categoryName || p.category_name || p.type || '').toLowerCase();
+          const pSubcat = (p.subcategoryName || p.subcategory_id || '').toLowerCase();
+          const pGender = (p.gender || '').toLowerCase();
+          const pName = (p.name || '').toLowerCase();
+          const pDesc = (p.description || '').toLowerCase();
+          const pBrand = (p.brand || '').toLowerCase();
+
+          if (catLower === 'men') {
+            const isWomenExclusive = pGender === 'women' || pName.includes('saree') || pName.includes('lehenga') || pName.includes('women');
+            if (isWomenExclusive) return false;
+            return pGender === 'men' || pCat.includes('men') || pName.includes('shirt') || pName.includes('polo') || pName.includes('kurta') || pName.includes('t-shirt') || pName.includes('men') || pBrand.includes('deelmo') || pBrand.includes('noble monk');
+          }
+          if (catLower === 'women') {
+            return pGender === 'women' || pCat.includes('women') || pName.includes('saree') || pName.includes('lehenga') || pName.includes('dress') || pName.includes('women');
+          }
+          if (catLower === 'kids') {
+            return pGender === 'kids' || pCat.includes('kids') || pName.includes('kids') || pName.includes('baby');
+          }
+          if (catLower === 'unisex') {
+            return pGender === 'unisex' || pCat.includes('unisex') || pName.includes('sneakers') || pName.includes('t-shirt');
+          }
+          if (catLower === 'jewellery' || catLower === 'jewels') {
+            return pCat.includes('jewel') || pName.includes('jewel') || pName.includes('silver') || pName.includes('pendant') || pName.includes('ring');
+          }
+          if (catLower === 'kitchen') {
+            return pCat.includes('kitchen') || pName.includes('cookware') || pName.includes('decor') || pName.includes('home');
+          }
+          if (catLower === 'school') {
+            return pCat.includes('school') || pName.includes('stationery') || pName.includes('office');
+          }
+
+          return pCat.includes(catLower) || pSubcat.includes(catLower) || pGender.includes(catLower) || pName.includes(catLower) || pDesc.includes(catLower);
+        });
+      }
 
       if (freeShippingOnly) {
         list = list.filter(p => p.freeShipping || p.price > 499);
