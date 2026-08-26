@@ -475,135 +475,137 @@ export default function ProductDetailPage() {
           {/* COLUMN 3: RIGHT SPECIFICATIONS & DETAILS                */}
           {/* DESKTOP: FIXED SCROLLABLE PANEL | MOBILE: NATURAL CONTINUOUS DOCUMENT SCROLL */}
           {/* ======================================================= */}
-          <div className="lg:col-span-4 space-y-4 lg:h-[calc(100vh-160px)] lg:overflow-y-auto lg:overscroll-contain pr-0 lg:pr-2 scrollbar-thin text-xs overflow-visible h-auto">
+          <div className="lg:col-span-4 space-y-4 lg:h-[calc(100vh-160px)] lg:overflow-y-auto lg:overscroll-contain pr-0 lg:pr-2 scrollbar-thin text-xs overflow-visible h-auto px-3 sm:px-6 lg:px-0 max-w-3xl mx-auto lg:mx-0 w-full">
             
-            {/* 1. TOP HIGHLIGHTS */}
-            {(() => {
-              const items = [
-                { label: 'Material composition', val: product?.material || product?.fabric || 'Cotton Blend' },
-                { label: 'Fit type', val: product?.fitType || 'Regular Fit' },
-                { label: 'Sleeve type', val: product?.sleeveType || 'Long Sleeve' },
-                { label: 'Collar style', val: product?.collarStyle || 'Spread Collar' },
-                { label: 'Neck style', val: product?.neckStyle || 'Collared Neck' },
-                { label: 'Style', val: product?.style || 'Western' },
-                { label: 'Country of Origin', val: product?.countryOfOrigin || 'India' }
-              ].filter(i => i.val && String(i.val).trim() !== '');
+            <div className="bg-white lg:bg-transparent rounded-2xl lg:rounded-none p-4 sm:p-6 lg:p-0 border border-slate-200/80 lg:border-none shadow-xs lg:shadow-none space-y-4">
+              {/* 1. TOP HIGHLIGHTS */}
+              {(() => {
+                const items = [
+                  { label: 'Material composition', val: product?.material || product?.fabric || 'Cotton Blend' },
+                  { label: 'Fit type', val: product?.fitType || 'Regular Fit' },
+                  { label: 'Sleeve type', val: product?.sleeveType || 'Long Sleeve' },
+                  { label: 'Collar style', val: product?.collarStyle || 'Spread Collar' },
+                  { label: 'Neck style', val: product?.neckStyle || 'Collared Neck' },
+                  { label: 'Style', val: product?.style || 'Western' },
+                  { label: 'Country of Origin', val: product?.countryOfOrigin || 'India' }
+                ].filter(i => i.val && String(i.val).trim() !== '');
 
-              if (items.length === 0) return null;
+                if (items.length === 0) return null;
 
-              return (
-                <div className="space-y-1.5">
-                  <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
-                    Top highlights
-                  </h3>
-                  <div className="space-y-1 text-[11px]">
-                    {items.map((row, idx) => (
-                      <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
-                        <span className="font-bold text-slate-900 w-1/2">{row.label}</span>
-                        <span className="text-slate-700 font-medium w-1/2 text-right">{row.val}</span>
-                      </div>
-                    ))}
+                return (
+                  <div className="space-y-1.5">
+                    <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1 px-1">
+                      Top highlights
+                    </h3>
+                    <div className="space-y-0.5 text-[11px]">
+                      {items.map((row, idx) => (
+                        <div key={idx} className="flex justify-between items-center py-1.5 px-2.5 rounded-lg hover:bg-slate-50 transition-colors border-b border-slate-100/80">
+                          <span className="font-bold text-slate-900 shrink-0 pr-2">{row.label}</span>
+                          <span className="text-slate-700 font-medium text-right truncate pl-2" title={row.val}>{row.val}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
 
-            {/* 2. ABOUT THIS ITEM */}
-            {(() => {
-              let bullets = [];
-              if (Array.isArray(product?.aboutThisItem) && product.aboutThisItem.length > 0) {
-                bullets = product.aboutThisItem;
-              } else if (product?.description && typeof product.description === 'string') {
-                bullets = product.description.split('\n').map(l => l.trim()).filter(Boolean);
-              }
+              {/* 2. ABOUT THIS ITEM */}
+              {(() => {
+                let bullets = [];
+                if (Array.isArray(product?.aboutThisItem) && product.aboutThisItem.length > 0) {
+                  bullets = product.aboutThisItem;
+                } else if (product?.description && typeof product.description === 'string') {
+                  bullets = product.description.split('\n').map(l => l.trim()).filter(Boolean);
+                }
 
-              if (bullets.length === 0) {
-                bullets = [
-                  "【Premium Quality】 Handcrafted with premium fabric and precise stitching for maximum comfort.",
-                  "【Versatile Design】 Elegant and stylish design suitable for casual, festive, and formal occasions.",
-                  "【Easy Care】 Easy to care for with standard washing instructions."
-                ];
-              }
+                if (bullets.length === 0) {
+                  bullets = [
+                    "【Premium Quality】 Handcrafted with premium fabric and precise stitching for maximum comfort.",
+                    "【Versatile Design】 Elegant and stylish design suitable for casual, festive, and formal occasions.",
+                    "【Easy Care】 Easy to care for with standard washing instructions."
+                  ];
+                }
 
-              return (
-                <div className="space-y-1.5 pt-1">
-                  <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
-                    About this item
-                  </h3>
-                  <ul className="space-y-1.5 text-[10.5px] text-slate-700 font-medium leading-normal">
-                    {bullets.map((bullet, idx) => (
-                      <li key={idx} className="flex items-start gap-1">
-                        <span className="text-[#B71C1C] font-bold shrink-0">•</span>
-                        <span>{bullet}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })()}
-
-            {/* 3. ADDITIONAL INFORMATION */}
-            {(() => {
-              const info = [
-                { label: 'Manufacturer', val: product?.manufacturer || (product?.brand ? `${product.brand}, India` : 'Karviyam Couture, Surat, Gujarat') },
-                { label: 'Packer', val: product?.packer || 'Karviyam Fulfillment, India' },
-                { label: 'Importer', val: product?.importer || 'Karviyam Retail, India' },
-                { label: 'Item Weight', val: product?.weight ? `${product.weight} g` : '230 g' },
-                { label: 'Item Dimensions LxWxH', val: product?.dimensions || '23 x 22 x 1.8 Centimeters' },
-                { label: 'Net Quantity', val: '1.00 Count' },
-                { label: 'Generic Name', val: product?.categoryName || product?.type || 'Apparel' }
-              ].filter(i => i.val && String(i.val).trim() !== '');
-
-              if (info.length === 0) return null;
-
-              return (
-                <div className="space-y-1.5 pt-1">
-                  <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
-                    Additional Information
-                  </h3>
-                  <div className="space-y-1 text-[11px]">
-                    {info.map((row, idx) => (
-                      <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
-                        <span className="font-bold text-slate-900 w-2/5 shrink-0">{row.label}</span>
-                        <span className="text-slate-700 font-medium text-right truncate pl-2" title={row.val}>{row.val}</span>
-                      </div>
-                    ))}
+                return (
+                  <div className="space-y-1.5 pt-1">
+                    <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1 px-1">
+                      About this item
+                    </h3>
+                    <ul className="space-y-1.5 text-[10.5px] text-slate-700 font-medium leading-normal px-1">
+                      {bullets.map((bullet, idx) => (
+                        <li key={idx} className="flex items-start gap-1.5">
+                          <span className="text-[#B71C1C] font-bold shrink-0">•</span>
+                          <span>{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
 
-            {/* 4. STYLE SPECIFICATIONS */}
-            {(() => {
-              const styleList = [
-                { label: 'Brand Name', val: product?.brand || 'Karviyam' },
-                { label: 'Model Name', val: product?.modelName || product?.size || 'Standard' },
-                { label: 'Style Number', val: product?.sku || `KV-SKU-${product?.id || 195}` },
-                { label: 'Unit Count', val: '1.00 Count' },
-                { label: 'Country Of Origin', val: product?.countryOfOrigin || 'India' },
-                { label: 'Item Type Name', val: product?.type || product?.categoryName || 'Fashion' },
-                { label: 'Item Weight', val: product?.weight ? `${product.weight} Grams` : '230 Grams' },
-                { label: 'Manufacturer', val: product?.manufacturer || 'Karviyam' }
-              ].filter(i => i.val && String(i.val).trim() !== '');
+              {/* 3. ADDITIONAL INFORMATION */}
+              {(() => {
+                const info = [
+                  { label: 'Manufacturer', val: product?.manufacturer || (product?.brand ? `${product.brand}, India` : 'Karviyam Couture, Surat, Gujarat') },
+                  { label: 'Packer', val: product?.packer || 'Karviyam Fulfillment, India' },
+                  { label: 'Importer', val: product?.importer || 'Karviyam Retail, India' },
+                  { label: 'Item Weight', val: product?.weight ? `${product.weight} g` : '230 g' },
+                  { label: 'Item Dimensions LxWxH', val: product?.dimensions || '23 x 22 x 1.8 Centimeters' },
+                  { label: 'Net Quantity', val: '1.00 Count' },
+                  { label: 'Generic Name', val: product?.categoryName || product?.type || 'Apparel' }
+                ].filter(i => i.val && String(i.val).trim() !== '');
 
-              if (styleList.length === 0) return null;
+                if (info.length === 0) return null;
 
-              return (
-                <div className="space-y-1.5 pt-1">
-                  <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1">
-                    Style
-                  </h3>
-                  <div className="space-y-1 text-[11px]">
-                    {styleList.map((row, idx) => (
-                      <div key={idx} className="flex justify-between py-0.5 border-b border-slate-100">
-                        <span className="font-bold text-slate-900 w-1/2 shrink-0">{row.label}</span>
-                        <span className="text-slate-700 font-medium text-right truncate pl-1" title={row.val}>{row.val}</span>
-                      </div>
-                    ))}
+                return (
+                  <div className="space-y-1.5 pt-1">
+                    <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1 px-1">
+                      Additional Information
+                    </h3>
+                    <div className="space-y-0.5 text-[11px]">
+                      {info.map((row, idx) => (
+                        <div key={idx} className="flex justify-between items-center py-1.5 px-2.5 rounded-lg hover:bg-slate-50 transition-colors border-b border-slate-100/80">
+                          <span className="font-bold text-slate-900 shrink-0 pr-2">{row.label}</span>
+                          <span className="text-slate-700 font-medium text-right truncate pl-2" title={row.val}>{row.val}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
+
+              {/* 4. STYLE SPECIFICATIONS */}
+              {(() => {
+                const styleList = [
+                  { label: 'Brand Name', val: product?.brand || 'Karviyam' },
+                  { label: 'Model Name', val: product?.modelName || product?.size || 'Standard' },
+                  { label: 'Style Number', val: product?.sku || `KV-SKU-${product?.id || 195}` },
+                  { label: 'Unit Count', val: '1.00 Count' },
+                  { label: 'Country Of Origin', val: product?.countryOfOrigin || 'India' },
+                  { label: 'Item Type Name', val: product?.type || product?.categoryName || 'Fashion' },
+                  { label: 'Item Weight', val: product?.weight ? `${product.weight} Grams` : '230 Grams' },
+                  { label: 'Manufacturer', val: product?.manufacturer || 'Karviyam' }
+                ].filter(i => i.val && String(i.val).trim() !== '');
+
+                if (styleList.length === 0) return null;
+
+                return (
+                  <div className="space-y-1.5 pt-1">
+                    <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-200/80 pb-1 px-1">
+                      Style
+                    </h3>
+                    <div className="space-y-0.5 text-[11px]">
+                      {styleList.map((row, idx) => (
+                        <div key={idx} className="flex justify-between items-center py-1.5 px-2.5 rounded-lg hover:bg-slate-50 transition-colors border-b border-slate-100/80">
+                          <span className="font-bold text-slate-900 shrink-0 pr-2">{row.label}</span>
+                          <span className="text-slate-700 font-medium text-right truncate pl-2" title={row.val}>{row.val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
 
           </div>
 
