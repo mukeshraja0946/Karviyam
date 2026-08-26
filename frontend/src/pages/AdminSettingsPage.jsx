@@ -65,6 +65,12 @@ export default function AdminSettingsPage() {
     // Category Navigation Setting
     categoryNavigationEnabled: true,
 
+    // Product Section Scrolling & Layout Controls (Managed by Admin)
+    recommendedScrollMode: 'grid', // 'grid' (vertical) or 'carousel' (horizontal)
+    newArrivalsScrollMode: 'carousel',
+    featuredScrollMode: 'carousel',
+    removeImageGreyBox: true,
+
     // Maintenance Mode & System Controls
     maintenanceMode: false,
     maintenanceTitle: "We'll Be Right Back!",
@@ -77,6 +83,20 @@ export default function AdminSettingsPage() {
   });
 
   useEffect(() => {
+    // Load local section layouts configuration
+    try {
+      const localLayouts = localStorage.getItem('karviyam_section_layouts');
+      if (localLayouts) {
+        const parsed = JSON.parse(localLayouts);
+        setSettings(prev => ({
+          ...prev,
+          recommendedScrollMode: parsed.recommended || 'grid',
+          newArrivalsScrollMode: parsed.newArrivals || 'carousel',
+          featuredScrollMode: parsed.featured || 'carousel',
+          removeImageGreyBox: parsed.removeGreyBox !== false
+        }));
+      }
+    } catch (e) {}
     fetchSettings();
   }, []);
 
@@ -167,6 +187,7 @@ export default function AdminSettingsPage() {
     window.dispatchEvent(new Event('karviyam_footer_updated'));
     window.dispatchEvent(new Event('karviyam_settings_updated'));
     window.dispatchEvent(new Event('karviyam_category_nav_updated'));
+    window.dispatchEvent(new Event('karviyam_section_layouts_updated'));
   };
 
   const handleLogoUpload = (e) => {
@@ -354,6 +375,14 @@ export default function AdminSettingsPage() {
       localStorage.setItem('karviyam_maintenance_logo', settings.maintenanceLogoUrl || '');
       localStorage.setItem('karviyam_maintenance_message', settings.maintenanceMessage);
 
+      // Section Scrolling & Layout Configuration
+      localStorage.setItem('karviyam_section_layouts', JSON.stringify({
+        recommended: settings.recommendedScrollMode || 'grid',
+        newArrivals: settings.newArrivalsScrollMode || 'carousel',
+        featured: settings.featuredScrollMode || 'carousel',
+        removeGreyBox: settings.removeImageGreyBox !== false
+      }));
+
       window.dispatchEvent(new Event('karviyam_settings_updated'));
       notifyChanges();
       toast.success('Settings saved successfully.');
@@ -419,6 +448,18 @@ export default function AdminSettingsPage() {
         >
           <Globe className="w-4 h-4" />
           <span>Branding & General</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('layout')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
+            activeTab === 'layout'
+              ? 'bg-[#B71C1C] text-white shadow-md'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
+          <Sliders className="w-4 h-4" />
+          <span>Product Layout & Scroll Controls</span>
         </button>
 
         <button
@@ -905,6 +946,133 @@ export default function AdminSettingsPage() {
                     </p>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Product Layout & Scroll Controls */}
+        {activeTab === 'layout' && (
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-6 text-xs text-left">
+            <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-[#B71C1C]" />
+              <span>Product Section Scroll & Layout Controls (Managed by Admin)</span>
+            </h3>
+
+            <div className="space-y-4">
+              {/* Section 1: Recommended For You Scroll Mode */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-xs">"Recommended for You" Product Section</h4>
+                    <p className="text-[11px] text-slate-500">Choose how products in "Recommended for You" section scroll on customer storefront</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
+                    settings.recommendedScrollMode === 'grid' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="recommendedScroll"
+                      value="grid"
+                      checked={settings.recommendedScrollMode === 'grid'}
+                      onChange={() => setSettings({ ...settings, recommendedScrollMode: 'grid' })}
+                      className="text-[#B71C1C]"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-900 block text-xs">Vertical Scroll (2-Column Grid)</span>
+                      <span className="text-[10.5px] text-slate-500">Displays products in a 2-column vertical grid</span>
+                    </div>
+                  </label>
+
+                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
+                    settings.recommendedScrollMode === 'carousel' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="recommendedScroll"
+                      value="carousel"
+                      checked={settings.recommendedScrollMode === 'carousel'}
+                      onChange={() => setSettings({ ...settings, recommendedScrollMode: 'carousel' })}
+                      className="text-[#B71C1C]"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-900 block text-xs">Horizontal Scroll Carousel</span>
+                      <span className="text-[10.5px] text-slate-500">Displays products in a swipeable horizontal row</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Section 2: New Arrivals Scroll Mode */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-xs">"New Arrivals" Product Section</h4>
+                    <p className="text-[11px] text-slate-500">Choose scroll direction for New Arrivals product section</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
+                    settings.newArrivalsScrollMode === 'carousel' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="newArrivalsScroll"
+                      value="carousel"
+                      checked={settings.newArrivalsScrollMode === 'carousel'}
+                      onChange={() => setSettings({ ...settings, newArrivalsScrollMode: 'carousel' })}
+                      className="text-[#B71C1C]"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-900 block text-xs">Horizontal Scroll Carousel</span>
+                      <span className="text-[10.5px] text-slate-500">Horizontal swipeable product row</span>
+                    </div>
+                  </label>
+
+                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
+                    settings.newArrivalsScrollMode === 'grid' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="newArrivalsScroll"
+                      value="grid"
+                      checked={settings.newArrivalsScrollMode === 'grid'}
+                      onChange={() => setSettings({ ...settings, newArrivalsScrollMode: 'grid' })}
+                      className="text-[#B71C1C]"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-900 block text-xs">Vertical Scroll Grid</span>
+                      <span className="text-[10.5px] text-slate-500">Standard 2-column vertical grid</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Section 3: Product Card Image Box Settings */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-xs">Product Card Image Background</h4>
+                    <p className="text-[11px] text-slate-500">Control image background styling on product cards across the store</p>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.removeImageGreyBox}
+                      onChange={(e) => setSettings({ ...settings, removeImageGreyBox: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#B71C1C]" />
+                  </label>
+                </div>
+                <p className="text-[10.5px] text-slate-600 font-medium">
+                  {settings.removeImageGreyBox ? '✅ Pure White Background (Grey box removed)' : '⚪ Standard Tinted Grey Box'}
+                </p>
               </div>
             </div>
           </div>

@@ -52,10 +52,34 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [mobileViewMode, setMobileViewMode] = useState('grid');
+  
+  const getInitialViewMode = () => {
+    try {
+      const saved = localStorage.getItem('karviyam_section_layouts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.recommended) return parsed.recommended;
+      }
+    } catch (e) {}
+    return 'grid';
+  };
+
+  const [mobileViewMode, setMobileViewMode] = useState(getInitialViewMode);
   const [mobileBannerIndex, setMobileBannerIndex] = useState(0);
   const [mobileBanners, setMobileBanners] = useState(DEFAULT_MOBILE_BANNERS);
   const [homeCategories, setHomeCategories] = useState([]);
+
+  const syncLayoutSettings = () => {
+    try {
+      const saved = localStorage.getItem('karviyam_section_layouts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.recommended) {
+          setMobileViewMode(parsed.recommended);
+        }
+      }
+    } catch (e) {}
+  };
 
   const fetchBanners = async () => {
     try {
@@ -163,17 +187,21 @@ export default function HomePage() {
     fetchHomeProducts();
     fetchBanners();
     fetchHomeCategories();
+    syncLayoutSettings();
     window.addEventListener('karviyam_products_updated', fetchHomeProducts);
     window.addEventListener('karviyam_banners_updated', fetchBanners);
     window.addEventListener('karviyam_categories_updated', fetchHomeCategories);
+    window.addEventListener('karviyam_section_layouts_updated', syncLayoutSettings);
     window.addEventListener('storage', () => {
       fetchHomeProducts();
       fetchHomeCategories();
+      syncLayoutSettings();
     });
     return () => {
       window.removeEventListener('karviyam_products_updated', fetchHomeProducts);
       window.removeEventListener('karviyam_banners_updated', fetchBanners);
       window.removeEventListener('karviyam_categories_updated', fetchHomeCategories);
+      window.removeEventListener('karviyam_section_layouts_updated', syncLayoutSettings);
     };
   }, []);
 
@@ -458,8 +486,8 @@ export default function HomePage() {
                       : 'w-full h-[215px] min-h-[215px] max-h-[215px]'
                   }`}
                 >
-                  {/* Product Image Area - Compact 120px Height */}
-                  <div className="relative w-full h-[120px] bg-[#F8FAFC] rounded-lg overflow-hidden flex items-center justify-center p-1.5 shrink-0">
+                  {/* Product Image Area - Pure White (No Grey Box) */}
+                  <div className="relative w-full h-[120px] bg-white rounded-lg overflow-hidden flex items-center justify-center p-1.5 shrink-0">
                     <img
                       src={prod.imageUrl || prod.image}
                       alt={prod.name}
