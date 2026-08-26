@@ -318,16 +318,52 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
   };
 
   const transporters = getTransporters();
+  let lastErr = null;
+
   for (const transporter of transporters) {
     try {
       const info = await transporter.sendMail(mailOptions);
-      console.log(`✅ [SMTP Success] Admin reply email delivered to ${toEmail}! ID: ${info.messageId || 'OK'}`);
-      return true;
+      const hostInfo = transporter.options?.host || 'smtp.hostinger.com';
+      const portInfo = transporter.options?.port || 465;
+
+      console.log(`\n========================================`);
+      console.log(`[SUPPORT EMAIL]`);
+      console.log(`Ticket ID: #${orderId || 'N/A'}`);
+      console.log(`Customer: ${cleanCustomerName}`);
+      console.log(`Recipient: ${toEmail}`);
+      console.log(`Sender: Karviyam Support <${fromUser}>`);
+      console.log(`Subject: Re: ${subject || 'Karviyam Support Request'}`);
+      console.log(`SMTP provider: ${hostInfo}:${portInfo}`);
+      console.log(`Message ID: ${info.messageId || 'OK'}`);
+      console.log(`Provider response: ${info.response || '250 OK'}`);
+      console.log(`Status: SUCCESS`);
+      console.log(`========================================\n`);
+
+      return {
+        success: true,
+        messageId: info.messageId || 'OK',
+        providerResponse: info.response || '250 OK',
+        provider: `${hostInfo}:${portInfo}`
+      };
     } catch (err) {
+      lastErr = err;
       console.warn(`⚠️ [SMTP Transport Retry]: ${err.message}`);
     }
   }
 
-  console.error(`❌ [SMTP Final Failure]: Could not deliver reply email to ${toEmail}. Please configure SMTP_PASS in backend/.env`);
-  return false;
+  console.error(`\n========================================`);
+  console.error(`[SUPPORT EMAIL FAILURE]`);
+  console.error(`Ticket ID: #${orderId || 'N/A'}`);
+  console.error(`Customer: ${cleanCustomerName}`);
+  console.error(`Recipient: ${toEmail}`);
+  console.error(`Sender: Karviyam Support <${fromUser}>`);
+  console.error(`Subject: Re: ${subject || 'Karviyam Support Request'}`);
+  console.error(`Error: ${lastErr?.message || 'SMTP Authentication Failed'}`);
+  console.error(`Status: FAILURE`);
+  console.error(`========================================\n`);
+
+  return {
+    success: false,
+    error: lastErr?.message || 'SMTP Authentication failed. Please verify SMTP_PASS in backend/.env for vanakkam@karviyam.com'
+  };
 };

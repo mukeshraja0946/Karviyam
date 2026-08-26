@@ -194,12 +194,21 @@ export default function AdminHelpSupportPage() {
         prev.map(m => String(m.id) === String(msgId) ? { ...m, status: 'IN REVIEW', message: replyText.trim() } : m)
       );
 
-      toast.success(`Reply sent successfully to ${selectedMessage.email}!`, { id: 'reply-toast' });
+      const isEmailSent = resData.emailSent;
+      const emailErr = resData.emailError;
+
+      if (isEmailSent === true) {
+        toast.success(`Reply email sent successfully to ${selectedMessage.email}!`, { id: 'reply-toast', duration: 5000 });
+      } else if (isEmailSent === false) {
+        toast.error(`Reply saved, but email delivery failed: ${emailErr || 'SMTP Authentication Failed'}`, { id: 'reply-toast', duration: 7000 });
+      } else {
+        toast.success(`Reply recorded for ${selectedMessage.email}!`, { id: 'reply-toast' });
+      }
+
       setReplyText('');
     } catch (err) {
       console.error(err);
-      toast.success(`Reply recorded for ${selectedMessage.email}!`, { id: 'reply-toast' });
-      setReplyText('');
+      toast.error(`Failed to send reply: ${err.message || 'Network error'}`, { id: 'reply-toast' });
     } finally {
       setSendingReply(false);
     }

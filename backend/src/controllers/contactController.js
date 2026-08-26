@@ -498,30 +498,38 @@ exports.replyToConversation = async (req, res, next) => {
       createdAt: m.created_at
     }));
 
-    // Return instant HTTP 200 JSON response immediately (<10ms)
+    // Send support reply email to customer recipient
+    const emailResult = await sendAdminReplyEmail({
+      toEmail: customerEmail,
+      customerName,
+      subject,
+      replyMessage: cleanReplyMessage,
+      originalMessage,
+      orderId: conv.id
+    }).catch(err => ({ success: false, error: err.message }));
+
+    const isEmailSent = Boolean(emailResult && emailResult.success);
+    const emailErrorMsg = emailResult?.error || null;
+    const providerMessageId = emailResult?.messageId || null;
+
     res.status(200).json({
       success: true,
-      message: 'Reply stored in database thread!',
+      message: isEmailSent 
+        ? `Reply email successfully sent to ${customerEmail}`
+        : `Reply saved in thread, but email delivery failed: ${emailErrorMsg || 'SMTP Auth Failed'}`,
       data: {
         id: conv.id,
         customerName,
         customerEmail,
         subject,
         status: newStatus,
-        emailSent: true,
+        emailSent: isEmailSent,
+        emailError: emailErrorMsg,
+        messageId: providerMessageId,
         replyId,
         messages: formattedMessages
       }
     });
-
-    // Dispatch admin reply email asynchronously in background (non-blocking)
-    sendAdminReplyEmail({
-      toEmail: customerEmail,
-      customerName,
-      subject,
-      replyMessage: cleanReplyMessage,
-      originalMessage
-    }).catch(err => console.error('⚠️ [Background SMTP Reply Warning]:', err.message));
 
   } catch (err) {
     next(err);
