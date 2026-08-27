@@ -104,7 +104,13 @@ export default function ShopPage() {
     try {
       let list = [];
       try {
-        const res = await api.get('/products?size=200').catch(() => api.get('/products'));
+        const queryParams = new URLSearchParams();
+        queryParams.append('size', '200');
+        if (selectedCategory) queryParams.append('category', selectedCategory);
+        if (selectedBrand) queryParams.append('brandId', selectedBrand);
+        if (searchKeyword) queryParams.append('keyword', searchKeyword);
+
+        const res = await api.get(`/products?${queryParams.toString()}`).catch(() => api.get('/products?size=200'));
         const apiData = res?.data ? res.data : res;
         list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData?.content) ? apiData.content : (Array.isArray(apiData) ? apiData : []));
       } catch (eApi) {}
@@ -128,27 +134,121 @@ export default function ShopPage() {
         }
       } catch (eSave) {}
 
-      if (selectedCategory && selectedCategory.trim() !== '') {
-        const catClean = selectedCategory.trim().toLowerCase();
-        list = list.filter(p => {
-          const pCatId = String(p.categoryId || p.category_id || p.category?.id || '').toLowerCase();
-          const pCatName = String(p.categoryName || p.category || p.category?.name || '').toLowerCase();
-          const pGender = String(p.gender || p.genderCategory || '').toLowerCase();
-          const pSubcat = String(p.subcategory || p.subCategory || '').toLowerCase();
-          const pName = String(p.name || '').toLowerCase();
-          const pDesc = String(p.description || '').toLowerCase();
-          const pTags = String(p.tags || '').toLowerCase();
+      // Robust Category & Subcategory Filter Helper
+      const matchesCategory = (p, cat) => {
+        if (!cat || !cat.trim() || cat.toUpperCase() === 'ALL') return true;
+        const catClean = cat.trim();
+        const catLower = catClean.toLowerCase();
+        const catNorm = catLower.replace(/[-_]/g, ' ');
 
+        const pCatId = String(p.categoryId || p.category_id || p.category?.id || '').toLowerCase();
+        const pCatName = String(p.categoryName || p.category || p.category?.name || '').toLowerCase();
+        const pGender = String(p.gender || p.genderCategory || '').toLowerCase();
+        const pSubcat = String(p.subcategory || p.subCategory || '').toLowerCase();
+        const pType = String(p.type || '').toLowerCase();
+        const pName = String(p.name || '').toLowerCase();
+        const pDesc = String(p.description || '').toLowerCase();
+        const pTags = String(p.tags || '').toLowerCase();
+
+        // Exact Numeric ID
+        if (!isNaN(catClean) && (pCatId === catClean || pSubcat === catClean)) return true;
+
+        // Gender & Parent Category rules
+        if (catLower === 'men' || catLower === 'mens' || catLower === 'men\'s') {
+          if (pName.includes('saree') || pName.includes('women') || pCatName.includes('women')) return false;
           return (
-            pCatId === catClean ||
-            pCatName.includes(catClean) ||
-            pGender.includes(catClean) ||
-            pSubcat.includes(catClean) ||
-            pName.includes(catClean) ||
-            pDesc.includes(catClean) ||
-            pTags.includes(catClean)
+            pGender === 'men' ||
+            pGender === 'unisex' ||
+            pCatName.includes('men') ||
+            pSubcat.includes('men') ||
+            pType.includes('men') ||
+            pName.includes('shirt') ||
+            pName.includes('polo') ||
+            pName.includes('kurta') ||
+            pName.includes('tee') ||
+            pName.includes('sneaker') ||
+            pName.includes('hoodie') ||
+            pName.includes('men')
           );
-        });
+        }
+
+        if (catLower === 'women' || catLower === 'womens' || catLower === 'women\'s') {
+          return (
+            pGender === 'women' ||
+            pGender === 'unisex' ||
+            pCatName.includes('women') ||
+            pSubcat.includes('women') ||
+            pType.includes('women') ||
+            pName.includes('saree') ||
+            pName.includes('lehenga') ||
+            pName.includes('dress') ||
+            pName.includes('top') ||
+            pName.includes('kurta') ||
+            pName.includes('jewel') ||
+            pName.includes('pendant') ||
+            pName.includes('women')
+          );
+        }
+
+        if (catLower === 'kids' || catLower === 'kids & baby' || catLower === 'baby') {
+          return (
+            pGender === 'kids' ||
+            pGender === 'baby' ||
+            pCatName.includes('kid') ||
+            pCatName.includes('baby') ||
+            pName.includes('kid') ||
+            pName.includes('child') ||
+            pName.includes('boy') ||
+            pName.includes('girl') ||
+            pTags.includes('kid')
+          );
+        }
+
+        if (catLower === 'unisex') {
+          return pGender === 'unisex' || pGender === 'general' || !pGender;
+        }
+
+        if (catLower.includes('jewel') || catLower.includes('silver') || catLower.includes('pendant')) {
+          return (
+            pCatName.includes('jewel') ||
+            pCatName.includes('silver') ||
+            pCatName.includes('accessory') ||
+            pName.includes('pendant') ||
+            pName.includes('silver') ||
+            pName.includes('ring') ||
+            pName.includes('jewel') ||
+            pName.includes('emerald')
+          );
+        }
+
+        if (catNorm.includes('kurta') || catNorm.includes('ethnic')) {
+          return pName.includes('kurta') || pCatName.includes('kurta') || pSubcat.includes('kurta') || pTags.includes('ethnic');
+        }
+
+        if (catNorm.includes('t shirt') || catNorm.includes('tshirt') || catNorm.includes('tee')) {
+          return pName.includes('t-shirt') || pName.includes('tshirt') || pName.includes('tee') || pCatName.includes('t-shirt');
+        }
+
+        if (catNorm.includes('sneaker') || catNorm.includes('footwear')) {
+          return pName.includes('sneaker') || pName.includes('shoe') || pCatName.includes('footwear') || pSubcat.includes('sneakers');
+        }
+
+        return (
+          pCatName.includes(catLower) ||
+          pSubcat.includes(catLower) ||
+          pGender.includes(catLower) ||
+          pName.includes(catLower) ||
+          pType.includes(catLower) ||
+          pTags.includes(catLower)
+        );
+      };
+
+      if (selectedCategory && selectedCategory.trim() !== '') {
+        list = list.filter(p => matchesCategory(p, selectedCategory));
+      }
+
+      if (selectedSubcategory && selectedSubcategory.trim() !== '') {
+        list = list.filter(p => matchesCategory(p, selectedSubcategory));
       }
 
       if (searchKeyword && searchKeyword.trim() !== '') {
@@ -158,18 +258,24 @@ export default function ShopPage() {
           const pBrand = String(p.brand || '').toLowerCase();
           const pDesc = String(p.description || '').toLowerCase();
           const pSku = String(p.sku || '').toLowerCase();
-          return pName.includes(kw) || pBrand.includes(kw) || pDesc.includes(kw) || pSku.includes(kw);
+          const pCatName = String(p.categoryName || p.category || '').toLowerCase();
+          return pName.includes(kw) || pBrand.includes(kw) || pDesc.includes(kw) || pSku.includes(kw) || pCatName.includes(kw);
         });
       }
 
       if (selectedBrand && selectedBrand.trim() !== '') {
-        list = list.filter(p => String(p.brand || '').toLowerCase().includes(selectedBrand.toLowerCase()));
+        const bClean = selectedBrand.trim().toLowerCase().replace(/[-_\s]/g, '');
+        list = list.filter(p => {
+          const pBrand = String(p.brand || p.brandName || p.brand_name || 'karviyam').toLowerCase().replace(/[-_\s]/g, '');
+          return pBrand.includes(bClean) || bClean.includes(pBrand);
+        });
       }
+
       if (freeShippingOnly || expressOnly) {
         list = list.filter(p => p.freeShipping || p.price > 399);
       }
       if (selectedRating > 0) {
-        list = list.filter(p => (p.rating || 4.0) >= selectedRating);
+        list = list.filter(p => Number(p.rating || 0) >= selectedRating);
       }
       if (priceRange && priceRange > 0) {
         list = list.filter(p => (p.price || 0) <= priceRange);
@@ -196,6 +302,7 @@ export default function ShopPage() {
     setFitsYou(false);
     setSelectedRating(0);
     setSearchParams({});
+    navigate('/shop');
   };
 
   const SidebarFilterContent = () => (
@@ -203,10 +310,24 @@ export default function ShopPage() {
       <div className="border-b border-slate-200 pb-4 space-y-2">
         <h4 className="font-bold text-slate-900 text-xs tracking-tight">Popular Shopping Ideas</h4>
         <ul className="space-y-1.5 text-slate-700 font-medium text-[11.5px]">
-          <li onClick={() => setSearchKeyword('Shirts')} className="hover:text-[#B71C1C] cursor-pointer">Shirts</li>
-          <li onClick={() => setSearchKeyword('T-Shirts')} className="hover:text-[#B71C1C] cursor-pointer">T-Shirts</li>
-          <li onClick={() => setSearchKeyword('Kurtas')} className="hover:text-[#B71C1C] cursor-pointer">Kurtas</li>
-          <li onClick={() => setSearchKeyword('Ethnic Wear')} className="hover:text-[#B71C1C] cursor-pointer">Ethnic Wear</li>
+          {['Shirts', 'T-Shirts', 'Kurtas', 'Ethnic Wear'].map((idea) => {
+            const isSelected = selectedCategory?.toLowerCase() === idea.toLowerCase() || searchKeyword?.toLowerCase() === idea.toLowerCase();
+            return (
+              <li
+                key={idea}
+                onClick={() => {
+                  setSelectedCategory(idea);
+                  setSearchKeyword('');
+                  setSearchParams({ category: idea });
+                }}
+                className={`cursor-pointer transition-colors ${
+                  isSelected ? 'text-[#B71C1C] font-extrabold underline' : 'hover:text-[#B71C1C]'
+                }`}
+              >
+                {idea}
+              </li>
+            );
+          })}
         </ul>
       </div>
 
@@ -218,7 +339,17 @@ export default function ShopPage() {
               <input
                 type="checkbox"
                 checked={selectedBrand === b}
-                onChange={() => setSelectedBrand(selectedBrand === b ? '' : b)}
+                onChange={() => {
+                  const nextBrand = selectedBrand === b ? '' : b;
+                  setSelectedBrand(nextBrand);
+                  if (nextBrand) {
+                    setSearchParams(prev => ({ ...Object.fromEntries(prev), brand: nextBrand }));
+                  } else {
+                    const newParams = Object.fromEntries(searchParams);
+                    delete newParams.brand;
+                    setSearchParams(newParams);
+                  }
+                }}
                 className="accent-[#B71C1C] w-3.5 h-3.5 rounded"
               />
               <span className="uppercase text-[11px]">{b}</span>
