@@ -47,6 +47,9 @@ export default function ProductDetailPage() {
   const [pincodeChecking, setPincodeChecking] = useState(false);
   const [pincodeError, setPincodeError] = useState('');
 
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
   useEffect(() => {
     const syncLocationPincode = () => {
       const savedPin = localStorage.getItem('karviyam_user_pincode') || '600001';
@@ -63,7 +66,13 @@ export default function ProductDetailPage() {
   }, []);
 
   useEffect(() => {
+    // Reset state before fetching new product ID to prevent stale cross-product image leaks
+    setProduct(null);
+    setSelectedImage('');
+    setPincodeResult(null);
+    setPincodeError('');
     fetchProduct();
+
     window.addEventListener('karviyam_products_updated', fetchProduct);
     window.addEventListener('storage', fetchProduct);
     return () => {
@@ -80,7 +89,9 @@ export default function ProductDetailPage() {
         const res = await api.get(`/products/${id}`);
         const apiData = res.data ? res.data : res;
         item = apiData.data || apiData;
-      } catch (e1) {}
+      } catch (e1) {
+        console.error('[Fetch Product Error]:', e1);
+      }
 
       // Always check Admin saved products for real-time Admin edits!
       try {
@@ -96,51 +107,112 @@ export default function ProductDetailPage() {
         }
       } catch (eSaved) {}
 
-      // Default fallback item if no item exists in database or admin cache
-      if (!item || !item.id) {
-        item = {
-          id: id || 195,
-          sku: 'KV-DEM-195',
-          name: 'Handcrafted demo Edition 4',
-          price: 1212,
-          oldPrice: 1564,
-          discountPercent: 23,
-          rating: 4.5,
-          ratingsCount: 128,
-          reviewsCount: 45,
-          brand: 'KARVIYAM',
-          imageUrl: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800',
-          images: [
-            'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800',
-            'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800',
-            'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800',
-            'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'
-          ],
-          description: 'Premium handcrafted apparel designed with fine attention to detail and traditional couture.'
-        };
-      }
+      if (item && (item.id || item.name)) {
+        setProduct(item);
 
-      setProduct(item);
-      setSelectedImage(item.imageUrl || (Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800'));
-      if (item.color) setSelectedColor(item.color);
+        // Derive valid initial images array
+        const rawImgs = Array.isArray(item.images) && item.images.length > 0
+          ? item.images
+          : (item.imageUrl ? [item.imageUrl] : []);
+        const validImgs = Array.from(new Set(rawImgs.filter(Boolean)));
+
+        if (validImgs.length > 0) {
+          setSelectedImage(validImgs[0]);
+        } else {
+          setSelectedImage(item.imageUrl || '');
+        }
+
+        // Derive initial color variant
+        if (Array.isArray(item.colors) && item.colors.length > 0) {
+          setSelectedColor(item.colors[0].colorName || item.colors[0].name || 'Karviyam Crimson');
+        } else if (item.color) {
+          setSelectedColor(item.color);
+        } else {
+          setSelectedColor('Karviyam Crimson');
+        }
+      } else {
+        setProduct(null);
+      }
     } catch (e) {
       console.error(e);
+      setProduct(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const isWish = isInWishlist(product?.id);
+  // Color Variants List derived from DB backend
+  const colorOptions = Array.isArray(product?.colors) && product.colors.length > 0
+    ? product.colors.map(c => ({
+        name: c.colorName || c.name || 'Standard',
+        dot: c.hexCode || c.colorCode || '#B71C1C',
+        images: Array.isArray(c.imageUrls) && c.imageUrls.length > 0 ? c.imageUrls : null
+      }))
+    : (product?.color ? [
+        { name: product.color, dot: '#B71C1C', images: null }
+      ] : [
+        { name: 'Karviyam Crimson', dot: '#B71C1C', images: null },
+        { name: 'Obsidian Black', dot: '#0F172A', images: null },
+        { name: 'Pure Linen White', dot: '#FFFFFF', images: null }
+      ]);
 
-  const galleryImages = product?.images && product.images.length > 0
-    ? product.images
-    : [
-        product?.imageUrl || 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800',
-        'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800',
-        'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800',
-        'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800',
-        'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800'
-      ];
+  // Gallery Images computed dynamically (Variant Specific Images OR Product Images)
+  const activeColorObj = colorOptions.find(c => c.name === selectedColor);
+  const colorSpecificImages = activeColorObj?.images;
+
+  const rawGallery = colorSpecificImages && colorSpecificImages.length > 0
+    ? colorSpecificImages
+    : (Array.isArray(product?.images) && product.images.length > 0
+      ? product.images
+      : (product?.imageUrl ? [product.imageUrl] : []));
+
+  const galleryImages = Array.from(new Set(rawGallery.filter(Boolean)));
+
+  // Auto-sync selectedImage when color or gallery changes
+  useEffect(() => {
+    if (galleryImages.length > 0) {
+      if (!selectedImage || !galleryImages.includes(selectedImage)) {
+        setSelectedImage(galleryImages[0]);
+      }
+    }
+  }, [selectedColor, product?.id, galleryImages.length]);
+
+  const activeImgIndex = Math.max(0, galleryImages.indexOf(selectedImage));
+
+  const handlePrevImage = () => {
+    if (galleryImages.length <= 1) return;
+    const prevIdx = (activeImgIndex - 1 + galleryImages.length) % galleryImages.length;
+    setSelectedImage(galleryImages[prevIdx]);
+  };
+
+  const handleNextImage = () => {
+    if (galleryImages.length <= 1) return;
+    const nextIdx = (activeImgIndex + 1) % galleryImages.length;
+    setSelectedImage(galleryImages[nextIdx]);
+  };
+
+  // Mobile Touch Swipe Handlers
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    if (distance > 50) {
+      handleNextImage();
+    } else if (distance < -50) {
+      handlePrevImage();
+    }
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
+  const isWish = isInWishlist(product?.id);
 
   const handleCheckPincode = async () => {
     const cleanPin = (pincode || '').trim();
@@ -237,36 +309,73 @@ export default function ProductDetailPage() {
           {/* ======================================================= */}
           <div className="lg:col-span-4 flex flex-col sm:flex-row gap-2 lg:sticky lg:top-[135px] self-start">
             
-            {/* Vertical Thumbnail Strip (Desktop) */}
-            <div className="hidden sm:flex flex-col gap-2 w-14 shrink-0">
-              {galleryImages.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImage(img)}
-                  className={`w-12 h-12 rounded-xl overflow-hidden border transition-all shrink-0 bg-white ${
-                    selectedImage === img
-                      ? 'border-[#B71C1C] ring-1 ring-[#B71C1C]'
-                      : 'border-slate-200 opacity-70 hover:opacity-100'
-                  }`}
-                >
-                  <img src={resolveImageUrl(img)} alt="" className="w-full h-full object-cover rounded-lg" />
-                </button>
-              ))}
-            </div>
+            {/* Vertical Thumbnail Strip (Desktop >= 640px) */}
+            {galleryImages.length > 1 && (
+              <div className="hidden sm:flex flex-col gap-2 w-14 shrink-0 max-h-[420px] overflow-y-auto no-scrollbar">
+                {galleryImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedImage(img)}
+                    className={`w-12 h-12 rounded-xl overflow-hidden border transition-all shrink-0 bg-white cursor-pointer ${
+                      selectedImage === img
+                        ? 'border-[#B71C1C] ring-2 ring-[#B71C1C]'
+                        : 'border-slate-200 opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={resolveImageUrl(img)} alt="" className="w-full h-full object-cover rounded-lg" />
+                  </button>
+                ))}
+              </div>
+            )}
 
-            {/* Main Image Display Container (Compact Mobile Height & Reduced Padding) */}
-            <div className="flex-1 space-y-1">
-              <div className="relative w-full h-[280px] sm:h-[400px] lg:h-[420px] bg-white rounded-2xl border border-slate-200/80 p-1 sm:p-2 shadow-2xs flex items-center justify-center overflow-hidden">
+            {/* Main Image Display Container (Touch Swipeable & Responsive) */}
+            <div className="flex-1 space-y-2 min-w-0">
+              <div
+                className="relative w-full h-[280px] sm:h-[400px] lg:h-[420px] bg-white rounded-2xl border border-slate-200/80 p-1 sm:p-2 shadow-2xs flex items-center justify-center overflow-hidden touch-pan-y"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
                 <img
-                  src={resolveImageUrl(selectedImage)}
+                  src={resolveImageUrl(selectedImage || galleryImages[0] || product.imageUrl)}
                   alt={product.name}
                   className="max-h-full max-w-full object-contain rounded-xl transition-transform duration-300 hover:scale-105"
                 />
 
+                {/* Left/Right Carousel Nav Arrows */}
+                {galleryImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handlePrevImage}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-800 flex items-center justify-center shadow-md hover:bg-[#B71C1C] hover:text-white transition-colors cursor-pointer z-10"
+                      title="Previous Image"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleNextImage}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-800 flex items-center justify-center shadow-md hover:bg-[#B71C1C] hover:text-white transition-colors cursor-pointer z-10"
+                      title="Next Image"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+
+                    {/* Pagination Count Overlay Badge */}
+                    <div className="absolute bottom-2.5 left-2.5 bg-slate-900/75 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs">
+                      {activeImgIndex + 1} / {galleryImages.length}
+                    </div>
+                  </>
+                )}
+
                 {/* Wishlist Button (Top-Right Circle) */}
                 <button
+                  type="button"
                   onClick={() => toggleWishlist(product.id)}
-                  className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center shadow-xs transition-colors cursor-pointer border ${
+                  className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center shadow-xs transition-colors cursor-pointer border z-10 ${
                     isWish
                       ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
                       : 'bg-white text-slate-700 hover:text-[#B71C1C] border-slate-200'
@@ -276,6 +385,26 @@ export default function ProductDetailPage() {
                   <Heart className={`w-3.5 h-3.5 ${isWish ? 'fill-current' : ''}`} />
                 </button>
               </div>
+
+              {/* Mobile Horizontal Thumbnail Strip (< 640px) */}
+              {galleryImages.length > 1 && (
+                <div className="flex sm:hidden items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                  {galleryImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedImage(img)}
+                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white p-0.5 cursor-pointer ${
+                        selectedImage === img
+                          ? 'border-[#B71C1C] ring-1 ring-[#B71C1C]'
+                          : 'border-slate-200 opacity-60'
+                      }`}
+                    >
+                      <img src={resolveImageUrl(img)} alt="" className="w-full h-full object-cover rounded-lg" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -296,7 +425,7 @@ export default function ProductDetailPage() {
                 {product.name}
               </h1>
               <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono font-bold mt-0.5">
-                SKU: {product.sku || 'KV-DEM-195'}
+                SKU: {product.sku || `KV-${product.id}`}
               </p>
             </div>
 
@@ -316,12 +445,16 @@ export default function ProductDetailPage() {
               <span className="font-display font-black text-xl sm:text-2xl text-[#B71C1C]">
                 ₹{price}
               </span>
-              <span className="text-slate-400 line-through font-bold text-xs sm:text-sm">
-                ₹{oldPrice}
-              </span>
-              <span className="bg-emerald-100 text-emerald-800 font-black text-[9.5px] sm:text-[10.5px] px-1.5 py-0.5 rounded-md uppercase tracking-wider">
-                {discountPercent}% OFF
-              </span>
+              {oldPrice && oldPrice > price && (
+                <span className="text-slate-400 line-through font-bold text-xs sm:text-sm">
+                  ₹{oldPrice}
+                </span>
+              )}
+              {discountPercent > 0 && (
+                <span className="bg-emerald-100 text-emerald-800 font-black text-[9.5px] sm:text-[10.5px] px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                  {discountPercent}% OFF
+                </span>
+              )}
             </div>
 
             {/* Select Size Selector */}
@@ -353,11 +486,7 @@ export default function ProductDetailPage() {
                 SELECT COLOR VARIANT
               </label>
               <div className="flex items-center gap-1.5 flex-wrap">
-                {[
-                  { name: 'Karviyam Crimson', dot: '#B71C1C' },
-                  { name: 'Obsidian Black', dot: '#0F172A' },
-                  { name: 'Pure Linen White', dot: '#FFFFFF' }
-                ].map((c) => (
+                {colorOptions.map((c) => (
                   <button
                     key={c.name}
                     type="button"
