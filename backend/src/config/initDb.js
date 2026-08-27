@@ -509,6 +509,9 @@ async function initDb() {
         }
         console.log('[initDb] Seeded default parent categories for Homepage Top Categories');
       }
+    } catch (errSeed) {
+      console.error('[initDb] Error seeding default parent categories:', errSeed);
+    }
     // 18e. Promotional Cards table (Sidebar Promotions)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS promo_cards (
