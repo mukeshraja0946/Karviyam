@@ -12,27 +12,6 @@ import api from '../utils/api';
 import { resolveImageUrl } from '../utils/imageUtils';
 import { Flame, Sparkles, Grid, SlidersHorizontal } from 'lucide-react';
 
-const DEFAULT_MOBILE_BANNERS = [
-  {
-    id: 1,
-    badge: 'NEW SEASON ARRIVAL',
-    title: 'NEW STYLE\nNEW YOU',
-    subtitle: 'Explore our latest collection',
-    image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800',
-    cta: 'SHOP NOW',
-    link: '/shop'
-  },
-  {
-    id: 2,
-    badge: 'FESTIVE SPECIAL',
-    title: 'UP TO 60% OFF\nBESTSELLERS',
-    subtitle: 'Exclusive discounts on ethnic & festive wear',
-    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800',
-    cta: 'EXPLORE SALE',
-    link: '/shop?category=Women'
-  }
-];
-
 const DEFAULT_CATEGORY_IMAGES = {
   'FASHION': 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300',
   'MEN': 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=300',
@@ -67,7 +46,7 @@ export default function HomePage() {
 
   const [mobileViewMode, setMobileViewMode] = useState(getInitialViewMode);
   const [mobileBannerIndex, setMobileBannerIndex] = useState(0);
-  const [mobileBanners, setMobileBanners] = useState(DEFAULT_MOBILE_BANNERS);
+  const [mobileBanners, setMobileBanners] = useState([]);
   const [homeCategories, setHomeCategories] = useState([]);
 
   const syncLayoutSettings = () => {
@@ -95,37 +74,28 @@ export default function HomePage() {
         list = rawData.banners;
       }
 
-      if (!list || list.length === 0) {
-        const saved = localStorage.getItem('karviyam_admin_banners');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
-          } catch (eP) {}
-        }
-      }
-
-      if (list && list.length > 0) {
-        const activeBanners = list.filter(b => b.isActive !== false && b.status !== 'inactive');
-        if (activeBanners.length > 0) {
-          const formatted = activeBanners.map(b => {
-            const rawImg = b.imageUrl || b.imagePath || b.image || '';
-            const resolvedImg = resolveImageUrl(rawImg);
-            return {
-              id: b.id,
-              badge: 'OFFICIAL DROP',
-              title: b.title || 'NEW STYLE NEW YOU',
-              subtitle: b.subtitle || 'Explore our latest collection',
-              image: resolvedImg || DEFAULT_MOBILE_BANNERS[0].image,
-              cta: b.buttonText || b.button_text || b.cta || 'SHOP NOW',
-              link: b.buttonLink || b.link || '/shop'
-            };
-          });
-          setMobileBanners(formatted);
-        }
+      if (Array.isArray(list)) {
+        const activeBanners = list.filter(b => b && b.isActive !== false && String(b.status).toLowerCase() === 'active');
+        const formatted = activeBanners.map(b => {
+          const rawImg = b.imageUrl || b.imagePath || b.image || '';
+          const resolvedImg = resolveImageUrl(rawImg);
+          return {
+            id: b.id,
+            badge: b.tag || 'OFFICIAL DROP',
+            title: b.title || '',
+            subtitle: b.subtitle || '',
+            image: resolvedImg,
+            cta: b.buttonText || b.button_text || b.cta || 'SHOP NOW',
+            link: b.buttonLink || b.link || '/shop'
+          };
+        });
+        setMobileBanners(formatted);
+      } else {
+        setMobileBanners([]);
       }
     } catch (e) {
       console.error('Error fetching mobile banners in HomePage:', e);
+      setMobileBanners([]);
     }
   };
 
@@ -331,54 +301,58 @@ export default function HomePage() {
         </div>
 
         {/* 3. HERO BANNER & CAROUSEL INDICATORS */}
-        <div className="mx-3.5 my-2.5">
-          <div className="w-full rounded-2xl overflow-hidden relative shadow-md bg-slate-950 h-[180px] sm:h-[220px] text-white p-5 flex flex-col justify-center transition-all duration-700">
-            {/* Model Image Overlay with smooth fade */}
-            <div
-              key={mobileBanners[mobileBannerIndex]?.id}
-              className="absolute inset-0 bg-cover bg-center opacity-60 transition-all duration-700"
-              style={{
-                backgroundImage: `url('${mobileBanners[mobileBannerIndex]?.image}')`
-              }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/40 to-transparent" />
-            </div>
-
-            <div className="relative z-10 max-w-[220px]">
-              <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-400/20 px-2 py-0.5 rounded border border-amber-400/30">
-                {mobileBanners[mobileBannerIndex]?.badge}
-              </span>
-              <h2 className="font-display font-black text-xl sm:text-2xl leading-tight text-white tracking-tight mt-1.5 drop-shadow-sm whitespace-pre-line">
-                {mobileBanners[mobileBannerIndex]?.title}
-              </h2>
-              <p className="text-[10px] text-slate-200 font-medium mt-1">
-                {mobileBanners[mobileBannerIndex]?.subtitle}
-              </p>
-              <button
-                onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
-                className="mt-2.5 bg-white text-slate-900 font-extrabold text-[10px] uppercase tracking-wider px-4 py-2 rounded-full hover:bg-amber-300 transition-colors shadow-md cursor-pointer"
+        {mobileBanners.length > 0 && (
+          <div className="mx-3.5 my-2.5">
+            <div className="w-full rounded-2xl overflow-hidden relative shadow-md bg-slate-950 h-[180px] sm:h-[220px] text-white p-5 flex flex-col justify-center transition-all duration-700">
+              {/* Model Image Overlay with smooth fade */}
+              <div
+                key={mobileBanners[mobileBannerIndex]?.id}
+                className="absolute inset-0 bg-cover bg-center opacity-60 transition-all duration-700"
+                style={{
+                  backgroundImage: `url('${mobileBanners[mobileBannerIndex]?.image}')`
+                }}
               >
-                {mobileBanners[mobileBannerIndex]?.cta || 'SHOP NOW'}
-              </button>
-            </div>
-          </div>
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/40 to-transparent" />
+              </div>
 
-          {/* Interactive Carousel Indicator Dots Directly Below */}
-          <div className="flex items-center justify-center gap-1.5 mt-2.5 mb-3">
-            {mobileBanners.map((banner, idx) => (
-              <button
-                key={banner.id}
-                onClick={() => setMobileBannerIndex(idx)}
-                className={`transition-all duration-300 rounded-full cursor-pointer ${
-                  idx === mobileBannerIndex
-                    ? 'w-6 h-1.5 bg-[#B71C1C]'
-                    : 'w-1.5 h-1.5 bg-slate-300 hover:bg-slate-400'
-                }`}
-                title={`Go to slide ${idx + 1}`}
-              />
-            ))}
+              <div className="relative z-10 max-w-[220px]">
+                <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-400/20 px-2 py-0.5 rounded border border-amber-400/30">
+                  {mobileBanners[mobileBannerIndex]?.badge || 'OFFICIAL DROP'}
+                </span>
+                <h2 className="font-display font-black text-xl sm:text-2xl leading-tight text-white tracking-tight mt-1.5 drop-shadow-sm whitespace-pre-line">
+                  {mobileBanners[mobileBannerIndex]?.title}
+                </h2>
+                <p className="text-[10px] text-slate-200 font-medium mt-1">
+                  {mobileBanners[mobileBannerIndex]?.subtitle}
+                </p>
+                <button
+                  onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
+                  className="mt-2.5 bg-white text-slate-900 font-extrabold text-[10px] uppercase tracking-wider px-4 py-2 rounded-full hover:bg-amber-300 transition-colors shadow-md cursor-pointer"
+                >
+                  {mobileBanners[mobileBannerIndex]?.cta || 'SHOP NOW'}
+                </button>
+              </div>
+            </div>
+
+            {/* Interactive Carousel Indicator Dots Directly Below */}
+            {mobileBanners.length > 1 && (
+              <div className="flex items-center justify-center gap-1.5 mt-2.5 mb-3">
+                {mobileBanners.map((banner, idx) => (
+                  <button
+                    key={banner.id || idx}
+                    onClick={() => setMobileBannerIndex(idx)}
+                    className={`transition-all duration-300 rounded-full cursor-pointer ${
+                      idx === mobileBannerIndex
+                        ? 'w-6 h-1.5 bg-[#B71C1C]'
+                        : 'w-1.5 h-1.5 bg-slate-300 hover:bg-slate-400'
+                    }`}
+                    title={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* 4. BEST DEALS FOR YOU */}
         <div className="w-full my-3">

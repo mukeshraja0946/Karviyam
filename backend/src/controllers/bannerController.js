@@ -86,7 +86,7 @@ exports.getActiveBanners = async (req, res, next) => {
       const [r] = await pool.query('SELECT * FROM home_banners WHERE status = "active" ORDER BY id DESC');
       rows = r;
     }
-    const banners = rows.map(mapBannerRow).filter(Boolean);
+    const banners = rows.map(mapBannerRow).filter(b => b && b.isActive && b.status === 'active');
 
     let autoScroll = true;
     let speed = 5000;

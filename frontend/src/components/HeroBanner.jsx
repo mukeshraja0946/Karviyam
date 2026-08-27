@@ -4,27 +4,8 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../utils/api';
 import { resolveImageUrl } from '../utils/imageUtils';
 
-const DEFAULT_BANNERS = [
-  {
-    id: 1,
-    title: "GALAXY OF ELEGANCE",
-    subtitle: "Discover the 2026 High-Fashion & Streetwear Collection",
-    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600",
-    cta: "SHOP COLLECTION",
-    link: "/shop"
-  },
-  {
-    id: 2,
-    title: "ROYAL EMERALD JEWELLERY",
-    subtitle: "925 Sterling Silver Handcrafted Couture",
-    image: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=1600",
-    cta: "EXPLORE JEWELLERY",
-    link: "/shop?category=Jewellery"
-  }
-];
-
 export default function HeroBanner() {
-  const [banners, setBanners] = useState(DEFAULT_BANNERS);
+  const [banners, setBanners] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [autoScroll, setAutoScroll] = useState(true);
   const [speed, setSpeed] = useState(5000);
@@ -39,11 +20,8 @@ export default function HeroBanner() {
 
   const loadBanners = async () => {
     try {
-      const savedAuto = localStorage.getItem('karviyam_banner_autoscroll');
-      let currentAuto = savedAuto !== null ? JSON.parse(savedAuto) : true;
-
-      const savedSpeed = localStorage.getItem('karviyam_banner_speed');
-      let currentSpeed = savedSpeed ? Number(savedSpeed) : 5000;
+      let currentAuto = true;
+      let currentSpeed = 5000;
 
       const res = await api.get('/banners').catch(() => null);
       const apiData = res?.data ? res.data : res;
@@ -61,43 +39,28 @@ export default function HeroBanner() {
       setAutoScroll(currentAuto);
       setSpeed(currentSpeed);
 
-      if (!list || list.length === 0) {
-        const saved = localStorage.getItem('karviyam_admin_banners');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              list = parsed;
-            }
-          } catch (eParsed) {}
-        }
+      if (Array.isArray(list)) {
+        const activeList = list.filter(b => b && b.isActive !== false && String(b.status).toLowerCase() === 'active');
+        const formatted = activeList.map(b => {
+          const rawImg = b.imageUrl || b.imagePath || b.image || '';
+          const resolvedImg = resolveImageUrl(rawImg);
+          return {
+            id: b.id,
+            title: b.title || '',
+            subtitle: b.subtitle || '',
+            image: resolvedImg,
+            cta: b.buttonText || b.button_text || b.cta || 'Shop Now',
+            link: b.buttonLink || b.link || '/shop'
+          };
+        });
+        setBanners(formatted);
+        setImageError(false);
+      } else {
+        setBanners([]);
       }
-
-      if (list && list.length > 0) {
-        const activeList = list.filter(b => b.isActive !== false && b.status !== 'inactive');
-        if (activeList.length > 0) {
-          const formatted = activeList.map(b => {
-            const rawImg = b.imageUrl || b.imagePath || b.image || '';
-            const resolvedImg = resolveImageUrl(rawImg);
-            return {
-              id: b.id,
-              title: b.title || 'GALAXY OF ELEGANCE',
-              subtitle: b.subtitle || 'Discover the 2026 Collection',
-              image: resolvedImg || DEFAULT_BANNERS[0].image,
-              cta: b.buttonText || b.button_text || b.cta || 'Shop Now',
-              link: b.buttonLink || b.link || '/shop'
-            };
-          });
-          setBanners(formatted);
-          setImageError(false);
-          return;
-        }
-      }
-
-      setBanners(DEFAULT_BANNERS);
     } catch (e) {
       console.error('[HeroBanner] Error loading banners:', e);
-      setBanners(DEFAULT_BANNERS);
+      setBanners([]);
     }
   };
 
@@ -109,7 +72,8 @@ export default function HeroBanner() {
     return () => clearInterval(timer);
   }, [banners.length, autoScroll, speed]);
 
-  const current = banners[currentIndex] || DEFAULT_BANNERS[0];
+  if (!banners || banners.length === 0) return null;
+  const current = banners[currentIndex] || banners[0];
 
   return (
     <div className="relative w-full h-[450px] sm:h-[550px] bg-slate-900 overflow-hidden">

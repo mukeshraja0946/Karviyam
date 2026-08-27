@@ -50,15 +50,8 @@ export default function AdminBannersPage() {
 
       if (Array.isArray(list)) {
         setBanners(list);
-        try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(list)); } catch (e) {}
       } else {
-        try {
-          const saved = localStorage.getItem('karviyam_admin_banners');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed)) setBanners(parsed);
-          }
-        } catch (eSaved) {}
+        setBanners([]);
       }
     } catch (e) {
       console.error('[Fetch Banners Error]:', e);
@@ -133,7 +126,9 @@ export default function AdminBannersPage() {
       const apiData = res.data ? res.data : res;
       if (apiData && apiData.success !== false) {
         toast.success(`Banner ${nextStatus === 'active' ? 'activated' : 'deactivated'} successfully!`, { id: 'banner-toast' });
+        try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
         await fetchBanners();
+        window.dispatchEvent(new Event('karviyam_banners_updated'));
       } else {
         throw new Error(apiData?.message || 'Failed to toggle banner status');
       }
@@ -224,28 +219,10 @@ export default function AdminBannersPage() {
         
         const savedItem = apiData.data || apiData;
 
-        // 1. Immediately update local state & backup storage
-        setBanners(prev => {
-          let updated = [...prev];
-          const itemToInsert = (savedItem && (savedItem.id || savedItem.title))
-            ? savedItem
-            : { id: Date.now(), title: payload.title, subtitle: payload.subtitle, imageUrl: payload.imageUrl, imagePath: payload.imagePath, link: payload.link, status: payload.status, isActive: payload.isActive };
-
-          const idx = updated.findIndex(b => String(b.id) === String(itemToInsert.id));
-          if (idx >= 0) {
-            updated[idx] = { ...updated[idx], ...itemToInsert };
-          } else {
-            updated.unshift(itemToInsert);
-          }
-
-          try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(updated)); } catch (e) {}
-          return updated;
-        });
-
-        // 2. Refetch in background from MySQL database
-        try {
-          await fetchBanners();
-        } catch (eFetch) {}
+        // 1. Refetch from MySQL database
+        await fetchBanners();
+        window.dispatchEvent(new Event('karviyam_banners_updated'));
+        try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
 
         setModalOpen(false);
         setEditingBanner(null);
@@ -267,14 +244,12 @@ export default function AdminBannersPage() {
     toast.loading('Deleting banner...', { id: 'banner-toast' });
     try {
       // 1. Send DELETE query to database API
-      await api.delete(`/banners/${id}`).catch(() => null);
+      await api.delete(`/banners/${id}`);
 
-      // 2. Instantly update React state & localStorage
-      setBanners(prev => {
-        const updated = prev.filter(b => String(b.id) !== String(id));
-        try { localStorage.setItem('karviyam_admin_banners', JSON.stringify(updated)); } catch (e) {}
-        return updated;
-      });
+      // 2. Clear local storage and refetch
+      try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
+      await fetchBanners();
+      window.dispatchEvent(new Event('karviyam_banners_updated'));
 
       toast.success('Banner deleted successfully!', { id: 'banner-toast' });
     } catch (e) {

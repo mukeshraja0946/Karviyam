@@ -13,25 +13,6 @@ import { useWishlist } from '../../context/WishlistContext';
 import api from '../../utils/api';
 import { resolveImageUrl } from '../../utils/imageUtils';
 
-const HERO_SLIDES = [
-  {
-    id: 1,
-    tag: 'NEW SEASON ARRIVAL',
-    title: 'NEW STYLE NEW YOU',
-    subtitle: 'Explore our latest collection',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600',
-    link: '/shop'
-  },
-  {
-    id: 2,
-    tag: 'FESTIVE COLLECTION 2026',
-    title: 'ROYAL EMERALD & COUTURE',
-    subtitle: 'Handcrafted 925 Silver Jewellery & Apparel',
-    image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=1600',
-    link: '/shop?category=Jewellery'
-  }
-];
-
 const CATEGORIES_DATA = [
   { id: 'men', name: 'MEN', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400', query: 'category=Men' },
   { id: 'women', name: 'WOMEN', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400', query: 'category=Women' },
@@ -116,7 +97,7 @@ export default function DesktopCenterContent() {
   const { isInWishlist, toggleWishlist } = useWishlist();
 
   const [currentHero, setCurrentHero] = useState(0);
-  const [heroSlides, setHeroSlides] = useState(HERO_SLIDES);
+  const [heroSlides, setHeroSlides] = useState([]);
   const [autoScroll, setAutoScroll] = useState(true);
   const [speed, setSpeed] = useState(5000);
   const [products, setProducts] = useState(DEFAULT_RECOMMENDED);
@@ -141,11 +122,8 @@ export default function DesktopCenterContent() {
 
   const fetchBanners = async () => {
     try {
-      const savedAuto = localStorage.getItem('karviyam_banner_autoscroll');
-      let currentAuto = savedAuto !== null ? JSON.parse(savedAuto) : true;
-
-      const savedSpeed = localStorage.getItem('karviyam_banner_speed');
-      let currentSpeed = savedSpeed ? Number(savedSpeed) : 5000;
+      let currentAuto = true;
+      let currentSpeed = 5000;
 
       const res = await api.get('/banners').catch(() => null);
       const apiData = res?.data ? res.data : res;
@@ -163,37 +141,28 @@ export default function DesktopCenterContent() {
       setAutoScroll(currentAuto);
       setSpeed(currentSpeed);
 
-      if (!list || list.length === 0) {
-        const saved = localStorage.getItem('karviyam_admin_banners');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
-          } catch (eP) {}
-        }
-      }
-
-      if (list && list.length > 0) {
-        const activeBanners = list.filter(b => b.isActive !== false && b.status !== 'inactive');
-        if (activeBanners.length > 0) {
-          const formatted = activeBanners.map(b => {
-            const rawImg = b.imageUrl || b.imagePath || b.image || '';
-            const resolvedImg = resolveImageUrl(rawImg);
-            return {
-              id: b.id,
-              tag: 'OFFICIAL DROP',
-              title: b.title || 'NEW STYLE NEW YOU',
-              subtitle: b.subtitle || '',
-              image: resolvedImg || HERO_SLIDES[0].image,
-              link: b.buttonLink || b.link || '/shop',
-              buttonText: b.buttonText || b.button_text || 'SHOP NOW'
-            };
-          });
-          setHeroSlides(formatted);
-        }
+      if (Array.isArray(list)) {
+        const activeBanners = list.filter(b => b && b.isActive !== false && String(b.status).toLowerCase() === 'active');
+        const formatted = activeBanners.map(b => {
+          const rawImg = b.imageUrl || b.imagePath || b.image || '';
+          const resolvedImg = resolveImageUrl(rawImg);
+          return {
+            id: b.id,
+            tag: b.tag || 'OFFICIAL DROP',
+            title: b.title || '',
+            subtitle: b.subtitle || '',
+            image: resolvedImg,
+            link: b.buttonLink || b.link || '/shop',
+            buttonText: b.buttonText || b.button_text || 'SHOP NOW'
+          };
+        });
+        setHeroSlides(formatted);
+      } else {
+        setHeroSlides([]);
       }
     } catch (e) {
       console.error('Error fetching hero banners in DesktopCenterContent:', e);
+      setHeroSlides([]);
     }
   };
 
@@ -290,13 +259,14 @@ export default function DesktopCenterContent() {
     }
   };
 
-  const slide = heroSlides[currentHero] || heroSlides[0] || HERO_SLIDES[0];
+  const slide = heroSlides[currentHero] || heroSlides[0];
 
   return (
     <main className="flex-1 min-w-0 flex flex-col gap-3">
       
       {/* 1. Hero Carousel */}
-      <div className="w-full h-[270px] xl:h-[290px] rounded-xl overflow-hidden relative shadow-sm bg-slate-950 group">
+      {heroSlides.length > 0 && slide && (
+        <div className="w-full h-[270px] xl:h-[290px] rounded-xl overflow-hidden relative shadow-sm bg-slate-950 group">
         
         {/* Slide Background Image */}
         <div
@@ -366,6 +336,7 @@ export default function DesktopCenterContent() {
           </div>
         )}
       </div>
+      )}
 
       {/* 2. Offer Strip */}
       <div className="w-full min-h-[64px] bg-white rounded-xl border border-slate-200/90 shadow-xs px-3 xl:px-5 py-2 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2">
