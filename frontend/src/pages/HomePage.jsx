@@ -136,8 +136,15 @@ export default function HomePage() {
   };
 
   useEffect(() => {
+    if (mobileBanners.length === 0) {
+      setMobileBannerIndex(0);
+      return;
+    }
+    setMobileBannerIndex(0);
+    if (mobileBanners.length <= 1) return;
+
     const timer = setInterval(() => {
-      setMobileBannerIndex((prev) => (prev + 1) % Math.max(mobileBanners.length, 1));
+      setMobileBannerIndex((prev) => (prev + 1) % mobileBanners.length);
     }, 4000);
     return () => clearInterval(timer);
   }, [mobileBanners.length]);
@@ -306,13 +313,13 @@ export default function HomePage() {
             <div className="w-full rounded-2xl overflow-hidden relative shadow-md bg-slate-950 h-[180px] sm:h-[220px] text-white p-5 flex flex-col justify-center transition-all duration-700">
               {/* Model Image Overlay with smooth fade */}
               <div
-                key={mobileBanners[mobileBannerIndex]?.id}
-                className="absolute inset-0 bg-cover bg-center opacity-60 transition-all duration-700"
+                key={mobileBanners[mobileBannerIndex]?.id || mobileBannerIndex}
+                className="absolute inset-0 bg-cover bg-center opacity-65 transition-all duration-700"
                 style={{
-                  backgroundImage: `url('${mobileBanners[mobileBannerIndex]?.image}')`
+                  backgroundImage: `url("${resolveImageUrl(mobileBanners[mobileBannerIndex]?.image, mobileBanners[mobileBannerIndex]?.id)}")`
                 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent" />
               </div>
 
               <div className="relative z-10 max-w-[220px]">
