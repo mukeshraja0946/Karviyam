@@ -33,6 +33,7 @@ import AdminOffersPage from './pages/AdminOffersPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminReviewsPage from './pages/AdminReviewsPage';
 import AdminCategoriesPage from './pages/AdminCategoriesPage';
+import AdminParentCategoriesPage from './pages/AdminParentCategoriesPage';
 import AdminBrandsPage from './pages/AdminBrandsPage';
 import AdminSettingsPage from './pages/AdminSettingsPage';
 import AdminCustomersPage from './pages/AdminCustomersPage';
@@ -82,6 +83,7 @@ export default function App() {
                     <Route path="/admin/products" element={<AdminProductsPage />} />
                     <Route path="/admin/orders" element={<AdminOrdersPage />} />
                     <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+                    <Route path="/admin/parent-categories" element={<AdminParentCategoriesPage />} />
                     <Route path="/admin/brands" element={<AdminBrandsPage />} />
                     <Route path="/admin/inventory" element={<AdminInventoryPage />} />
                     <Route path="/admin/customers" element={<AdminCustomersPage />} />

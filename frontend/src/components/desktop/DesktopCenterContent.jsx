@@ -127,11 +127,13 @@ export default function DesktopCenterContent() {
     fetchBanners();
     window.addEventListener('karviyam_products_updated', fetchProductsAndCategories);
     window.addEventListener('karviyam_categories_updated', fetchProductsAndCategories);
+    window.addEventListener('karviyam_parent_categories_updated', fetchProductsAndCategories);
     window.addEventListener('karviyam_banners_updated', fetchBanners);
     window.addEventListener('storage', fetchProductsAndCategories);
     return () => {
       window.removeEventListener('karviyam_products_updated', fetchProductsAndCategories);
       window.removeEventListener('karviyam_categories_updated', fetchProductsAndCategories);
+      window.removeEventListener('karviyam_parent_categories_updated', fetchProductsAndCategories);
       window.removeEventListener('karviyam_banners_updated', fetchBanners);
       window.removeEventListener('storage', fetchProductsAndCategories);
     };
@@ -253,39 +255,32 @@ export default function DesktopCenterContent() {
         setProducts(formatted);
       }
 
-      const catRes = await api.get('/categories/tree').catch(() => null);
-      const catData = catRes?.data?.data || catRes?.data;
-      let catList = Array.isArray(catData) ? catData : [];
+      // Fetch Parent / Main Categories from backend API
+      const parentRes = await api.get('/parent-categories').catch(() => null);
+      const parentData = parentRes?.data?.data || parentRes?.data;
+      let parentList = Array.isArray(parentData) ? parentData : [];
 
-      try {
-        const savedCats = localStorage.getItem('karviyam_admin_categories');
-        if (savedCats) {
-          const parsedCats = JSON.parse(savedCats);
-          if (Array.isArray(parsedCats) && parsedCats.length > 0) {
-            const adminRoots = parsedCats.filter(c => !c.parentId && (c.isActive === undefined || c.isActive === true || c.is_active === 1));
-            if (adminRoots.length > 0) {
-              catList = [...adminRoots, ...catList.filter(c => !adminRoots.some(s => String(s.id) === String(c.id)))];
-            }
+      if (!parentList || parentList.length === 0) {
+        try {
+          const saved = localStorage.getItem('karviyam_admin_parent_categories');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) parentList = parsed.filter(c => c.isActive !== false);
           }
-        }
-      } catch (eCats) {}
+        } catch (eP) {}
+      }
 
-      if (catList.length > 0) {
-        const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
-        const activeRoots = catList
-          .filter(c => !c.parentId && c.isActive !== false && c.is_active !== 0 && c.enabled !== false)
-          .sort((a, b) => (a.orderIndex || a.order_index || 0) - (b.orderIndex || b.order_index || 0));
-
-        const formattedCats = activeRoots.slice(0, 7).map((c, i) => {
-          let img = c.imageUrl || c.iconUrl || CATEGORIES_DATA[i % CATEGORIES_DATA.length].image;
-          if (img.startsWith('/')) {
-            img = `${apiOrigin}${img}`;
-          }
+      if (parentList && parentList.length > 0) {
+        const formattedCats = parentList.map(c => {
+          const resolvedImg = resolveImageUrl(c.imageUrl || c.imagePath);
+          const linkStr = c.link || `/shop?category=${encodeURIComponent(c.name)}`;
+          const queryStr = linkStr.includes('?') ? linkStr.split('?')[1] : `category=${encodeURIComponent(c.name)}`;
           return {
             id: c.id,
-            name: (c.name || CATEGORIES_DATA[i % CATEGORIES_DATA.length].name).toUpperCase(),
-            image: img,
-            query: `category=${encodeURIComponent(c.name)}`
+            name: String(c.name || '').toUpperCase(),
+            image: resolvedImg,
+            query: queryStr,
+            link: linkStr
           };
         });
         setCategories(formattedCats);

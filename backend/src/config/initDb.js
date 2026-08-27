@@ -446,6 +446,46 @@ async function initDb() {
       );
     `);
 
+    // 18d. Parent / Main Categories table (Homepage Top Categories)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS parent_categories (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        category_id BIGINT DEFAULT NULL,
+        name VARCHAR(100) NOT NULL,
+        image_url LONGTEXT NOT NULL,
+        display_order INT DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        link VARCHAR(255) DEFAULT '/shop',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    try {
+      const [existing] = await pool.query('SELECT COUNT(*) as count FROM parent_categories');
+      if (!existing || existing[0].count === 0) {
+        const defaultParentCats = [
+          { name: 'T-SHIRTS', image_url: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400', display_order: 1, link: '/shop?category=T-Shirts' },
+          { name: 'SNEAKERS', image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400', display_order: 2, link: '/shop?category=Sneakers' },
+          { name: 'KURTA SETS', image_url: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400', display_order: 3, link: '/shop?category=Kurta-Sets' },
+          { name: 'WOMEN', image_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400', display_order: 4, link: '/shop?category=Women' },
+          { name: 'MEN', image_url: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400', display_order: 5, link: '/shop?category=Men' },
+          { name: 'KIDS & BABY', image_url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400', display_order: 6, link: '/shop?category=Kids' },
+          { name: 'UNISEX', image_url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400', display_order: 7, link: '/shop?category=Unisex' }
+        ];
+
+        for (const cat of defaultParentCats) {
+          await pool.query(
+            `INSERT INTO parent_categories (name, image_url, display_order, is_active, link) VALUES (?, ?, ?, 1, ?)`,
+            [cat.name, cat.image_url, cat.display_order, cat.link]
+          );
+        }
+        console.log('[initDb] Seeded default parent categories for Homepage Top Categories');
+      }
+    } catch (errSeed) {
+      console.error('[initDb] Error seeding default parent categories:', errSeed);
+    }
+
 
     // 19. General Settings table
     await pool.query(`

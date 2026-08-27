@@ -131,47 +131,31 @@ export default function HomePage() {
 
   const fetchHomeCategories = async () => {
     try {
-      const res = await api.get('/categories/tree').catch(() => null);
-      const apiData = res?.data?.data || res?.data || res;
+      const res = await api.get('/parent-categories').catch(() => null);
+      const apiData = res?.data?.data || res?.data;
       let list = Array.isArray(apiData) ? apiData : [];
 
       if (!list || list.length === 0) {
-        const altRes = await api.get('/categories?activeOnly=true').catch(() => null);
-        const altData = altRes?.data?.data || altRes?.data || altRes;
-        const allCats = Array.isArray(altData) ? altData : [];
-        list = allCats.filter(c => !c.parentId && (c.isActive === undefined || c.isActive === true));
+        try {
+          const saved = localStorage.getItem('karviyam_admin_parent_categories');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) list = parsed.filter(c => c.isActive !== false);
+          }
+        } catch (eSaved) {}
       }
 
-      try {
-        const savedCats = localStorage.getItem('karviyam_admin_categories');
-        if (savedCats) {
-          const parsed = JSON.parse(savedCats);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const adminRoots = parsed.filter(c => !c.parentId && (c.isActive === undefined || c.isActive === true || c.is_active === 1));
-            if (adminRoots.length > 0) {
-              list = [...adminRoots, ...list.filter(c => !adminRoots.some(a => String(a.id) === String(c.id)))];
-            }
-          }
-        }
-      } catch (eSaved) {}
-
       if (list && list.length > 0) {
-        const apiOrigin = process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:8080';
-        const activeRoots = list
-          .filter(c => c.isActive !== false && c.is_active !== 0 && c.enabled !== false)
-          .sort((a, b) => (a.orderIndex || a.order_index || 0) - (b.orderIndex || b.order_index || 0));
-
-        const formatted = activeRoots.map(c => {
-          let img = c.imageUrl || c.iconUrl || c.bannerUrl || DEFAULT_CATEGORY_IMAGES[c.name.toUpperCase()] || DEFAULT_CATEGORY_PLACEHOLDER;
-          if (img.startsWith('/')) {
-            img = `${apiOrigin}${img}`;
-          }
+        const formatted = list.map(c => {
+          const resolvedImg = resolveImageUrl(c.imageUrl || c.imagePath);
+          const linkStr = c.link || `/shop?category=${encodeURIComponent(c.name)}`;
+          const queryStr = linkStr.includes('?') ? linkStr.split('?')[1] : `category=${encodeURIComponent(c.name)}`;
           return {
             id: c.id,
             name: c.name,
-            slug: c.slug || c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-            image: img,
-            query: `category=${encodeURIComponent(c.name)}`
+            image: resolvedImg,
+            query: queryStr,
+            link: linkStr
           };
         });
         setHomeCategories(formatted);
@@ -196,6 +180,7 @@ export default function HomePage() {
     window.addEventListener('karviyam_products_updated', fetchHomeProducts);
     window.addEventListener('karviyam_banners_updated', fetchBanners);
     window.addEventListener('karviyam_categories_updated', fetchHomeCategories);
+    window.addEventListener('karviyam_parent_categories_updated', fetchHomeCategories);
     window.addEventListener('karviyam_section_layouts_updated', syncLayoutSettings);
     window.addEventListener('storage', () => {
       fetchHomeProducts();
@@ -206,6 +191,7 @@ export default function HomePage() {
       window.removeEventListener('karviyam_products_updated', fetchHomeProducts);
       window.removeEventListener('karviyam_banners_updated', fetchBanners);
       window.removeEventListener('karviyam_categories_updated', fetchHomeCategories);
+      window.removeEventListener('karviyam_parent_categories_updated', fetchHomeCategories);
       window.removeEventListener('karviyam_section_layouts_updated', syncLayoutSettings);
     };
   }, []);

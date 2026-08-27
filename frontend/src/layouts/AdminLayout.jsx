@@ -154,7 +154,10 @@ export default function AdminLayout() {
       id: 'categories',
       title: 'Categories',
       icon: Layers,
-      path: '/admin/categories',
+      subItems: [
+        { name: 'Sub-Categories', path: '/admin/categories' },
+        { name: 'Parent / Main Categories', path: '/admin/parent-categories' }
+      ]
     },
     {
       id: 'orders',

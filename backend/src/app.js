@@ -14,6 +14,7 @@ const userRoutes = require('./routes/userRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const parentCategoryRoutes = require('./routes/parentCategoryRoutes');
 const brandRoutes = require('./routes/brandRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
@@ -164,6 +165,7 @@ app.use('/api/customer', customerRoutes);
 app.use('/api/products', productRoutes);
 
 app.use('/api/categories', categoryRoutes);
+app.use('/api/parent-categories', parentCategoryRoutes);
 
 app.use('/api/brands', brandRoutes);
 
