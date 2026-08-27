@@ -181,11 +181,12 @@ export default function AdminLayout() {
     },
     {
       id: 'marketing',
-      title: 'Marketing',
+      title: 'Marketing & Homepage',
       icon: Megaphone,
       subItems: [
+        { name: 'Hero Banners', path: '/admin/banners' },
+        { name: 'Promotional Cards', path: '/admin/promo-cards' },
         { name: 'Coupons', path: '/admin/coupons' },
-        { name: 'Banners', path: '/admin/banners' },
         { name: 'Offers & Discounts', path: '/admin/offers' },
       ],
     },

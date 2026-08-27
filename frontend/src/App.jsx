@@ -29,6 +29,7 @@ import AdminProductsPage from './pages/AdminProductsPage';
 import AdminOrdersPage from './pages/AdminOrdersPage';
 import AdminCouponsPage from './pages/AdminCouponsPage';
 import AdminBannersPage from './pages/AdminBannersPage';
+import AdminPromoCardsPage from './pages/AdminPromoCardsPage';
 import AdminOffersPage from './pages/AdminOffersPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminReviewsPage from './pages/AdminReviewsPage';
@@ -89,6 +90,7 @@ export default function App() {
                     <Route path="/admin/customers" element={<AdminCustomersPage />} />
                     <Route path="/admin/coupons" element={<AdminCouponsPage />} />
                     <Route path="/admin/banners" element={<AdminBannersPage />} />
+                    <Route path="/admin/promo-cards" element={<AdminPromoCardsPage />} />
                     <Route path="/admin/pincodes" element={<AdminPincodesPage />} />
                     <Route path="/admin/offers" element={<AdminOffersPage />} />
                     <Route path="/admin/users" element={<AdminUsersPage />} />

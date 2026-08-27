@@ -509,8 +509,43 @@ async function initDb() {
         }
         console.log('[initDb] Seeded default parent categories for Homepage Top Categories');
       }
-    } catch (errSeed) {
-      console.error('[initDb] Error seeding default parent categories:', errSeed);
+    // 18e. Promotional Cards table (Sidebar Promotions)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS promo_cards (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255),
+        subtitle VARCHAR(255),
+        image_url LONGTEXT NOT NULL,
+        display_order INT DEFAULT 1,
+        is_active BOOLEAN DEFAULT TRUE,
+        link VARCHAR(255) DEFAULT '/shop',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    try {
+      const [existingPromo] = await pool.query('SELECT COUNT(*) as count FROM promo_cards');
+      if (!existingPromo || existingPromo[0].count === 0) {
+        const defaultPromos = [
+          {
+            title: 'FESTIVE SPECIAL',
+            subtitle: 'UP TO 60% OFF On Bestsellers',
+            image_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600',
+            display_order: 1,
+            link: '/shop?filter=bestsellers'
+          }
+        ];
+        for (const p of defaultPromos) {
+          await pool.query(
+            `INSERT INTO promo_cards (title, subtitle, image_url, display_order, is_active, link) VALUES (?, ?, ?, ?, 1, ?)`,
+            [p.title, p.subtitle, p.image_url, p.display_order, p.link]
+          );
+        }
+        console.log('[initDb] Seeded default promotional card for Homepage Sidebar');
+      }
+    } catch (errPromo) {
+      console.error('[initDb] Error seeding default promo cards:', errPromo);
     }
 
 
