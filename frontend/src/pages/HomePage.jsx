@@ -9,7 +9,7 @@ import DesktopCenterContent from '../components/desktop/DesktopCenterContent';
 import DesktopSidebarRight from '../components/desktop/DesktopSidebarRight';
 import DesktopTrustBar from '../components/desktop/DesktopTrustBar';
 import api from '../utils/api';
-import { resolveImageUrl } from '../utils/imageUtils';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import { Flame, Sparkles, Grid, SlidersHorizontal } from 'lucide-react';
 
 const DEFAULT_CATEGORY_IMAGES = {
@@ -117,7 +117,8 @@ export default function HomePage() {
 
       if (list && list.length > 0) {
         const formatted = list.map(c => {
-          const resolvedImg = resolveImageUrl(c.imageUrl || c.imagePath);
+          const rawImg = c.imageUrl || c.image_url || c.imagePath || c.image || '';
+          const resolvedImg = resolveImageUrl(rawImg, c.id);
           const linkStr = c.link || `/shop?category=${encodeURIComponent(c.name)}`;
           const queryStr = linkStr.includes('?') ? linkStr.split('?')[1] : `category=${encodeURIComponent(c.name)}`;
           return {
@@ -265,8 +266,9 @@ export default function HomePage() {
               >
                 <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-slate-100 border border-slate-200/80 p-0.5 overflow-hidden flex items-center justify-center shadow-2xs group-active:scale-95 transition-transform">
                   <img
-                    src={cat.image}
+                    src={resolveImageUrl(cat.image, cat.id)}
                     alt={cat.name}
+                    onError={(e) => handleImageError(e, cat.id)}
                     className="w-full h-full object-cover rounded-xl"
                   />
                 </div>

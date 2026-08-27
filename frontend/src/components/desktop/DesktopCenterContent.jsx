@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useWishlist } from '../../context/WishlistContext';
 import api from '../../utils/api';
-import { resolveImageUrl } from '../../utils/imageUtils';
+import { resolveImageUrl, handleImageError } from '../../utils/imageUtils';
 
 const CATEGORIES_DATA = [
   { id: 'men', name: 'MEN', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400', query: 'category=Men' },
@@ -241,7 +241,8 @@ export default function DesktopCenterContent() {
 
       if (parentList && parentList.length > 0) {
         const formattedCats = parentList.map(c => {
-          const resolvedImg = resolveImageUrl(c.imageUrl || c.imagePath);
+          const rawImg = c.imageUrl || c.image_url || c.imagePath || c.image || '';
+          const resolvedImg = resolveImageUrl(rawImg, c.id);
           const linkStr = c.link || `/shop?category=${encodeURIComponent(c.name)}`;
           const queryStr = linkStr.includes('?') ? linkStr.split('?')[1] : `category=${encodeURIComponent(c.name)}`;
           return {
@@ -400,8 +401,9 @@ export default function DesktopCenterContent() {
             >
               <div className="w-full h-[78px] xl:h-[86px] bg-white rounded-lg overflow-hidden flex items-center justify-center">
                 <img
-                  src={cat.image}
+                  src={resolveImageUrl(cat.image, cat.id)}
                   alt={cat.name}
+                  onError={(e) => handleImageError(e, cat.id)}
                   className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
                 />
               </div>

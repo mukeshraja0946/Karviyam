@@ -52,20 +52,10 @@ export default function AdminParentCategoriesPage() {
       const apiData = res?.data ? res.data : res;
       list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
 
-      if (list && list.length > 0) {
+      if (Array.isArray(list)) {
         setCategories(list);
-        try {
-          localStorage.setItem('karviyam_admin_parent_categories', JSON.stringify(list));
-        } catch (e) {}
       } else {
-        // Fallback check
-        const saved = localStorage.getItem('karviyam_admin_parent_categories');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) setCategories(parsed);
-          } catch (eP) {}
-        }
+        setCategories([]);
       }
     } catch (err) {
       console.error('[Fetch Parent Categories Error]:', err);
@@ -76,6 +66,7 @@ export default function AdminParentCategoriesPage() {
   };
 
   const notifyUpdate = () => {
+    try { localStorage.removeItem('karviyam_admin_parent_categories'); } catch (e) {}
     window.dispatchEvent(new Event('karviyam_parent_categories_updated'));
     window.dispatchEvent(new Event('karviyam_categories_updated'));
   };

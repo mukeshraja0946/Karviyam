@@ -49,6 +49,25 @@ const ensureTableExists = async () => {
           [cat.name, cat.image_url, cat.display_order, cat.link]
         );
       }
+    } else {
+      // Heal broken/invalid text image URLs stored in MySQL database
+      await pool.query(`
+        UPDATE parent_categories 
+        SET image_url = 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400' 
+        WHERE UPPER(TRIM(name)) = 'MEN' AND (image_url = 'MEN' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
+      `).catch(() => null);
+
+      await pool.query(`
+        UPDATE parent_categories 
+        SET image_url = 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400' 
+        WHERE (UPPER(TRIM(name)) = 'KIDS & BABY' OR UPPER(TRIM(name)) = 'KIDS') AND (image_url LIKE '%KIDS%' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
+      `).catch(() => null);
+
+      await pool.query(`
+        UPDATE parent_categories 
+        SET image_url = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400' 
+        WHERE UPPER(TRIM(name)) = 'UNISEX' AND (image_url = 'UNISEX' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
+      `).catch(() => null);
     }
   } catch (err) {
     console.error('[parentCategoryController] Error ensuring table exists:', err.message);
