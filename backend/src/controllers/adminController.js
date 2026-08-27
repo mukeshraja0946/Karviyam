@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
+const { mapProductRowToDTO } = require('./productController');
 
 exports.getDashboardStats = async (req, res, next) => {
   try {

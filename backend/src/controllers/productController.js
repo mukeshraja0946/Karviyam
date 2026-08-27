@@ -440,3 +440,5 @@ exports.bulkImportProducts = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.mapProductRowToDTO = mapProductRowToDTO;
