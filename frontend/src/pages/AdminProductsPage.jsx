@@ -131,6 +131,33 @@ export default function AdminProductsPage() {
     setCropperState({ file, vIdx, imgIdx });
   };
 
+  const handleMultipleVariantFiles = (e, vIdx) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const validFiles = files.filter(f => f.type && f.type.startsWith('image/'));
+    if (!validFiles.length) {
+      toast.error('Please select valid image files (PNG, JPG, WEBP)');
+      return;
+    }
+
+    const processors = validFiles.map(file => compressImage(file));
+    Promise.all(processors).then(newUrls => {
+      const validUrls = newUrls.filter(Boolean);
+      if (!validUrls.length) return;
+
+      setFormData(prev => {
+        const updated = [...(prev.colorVariants || [])];
+        if (updated[vIdx]) {
+          const existingUrls = (updated[vIdx].imageUrls || []).filter(Boolean);
+          updated[vIdx].imageUrls = [...existingUrls, ...validUrls];
+        }
+        return { ...prev, colorVariants: updated };
+      });
+      toast.success(`${validUrls.length} image(s) added to color gallery!`);
+    });
+  };
+
   const handleBulkDeleteSelected = async () => {
     if (!selectedSkus.length) return;
     if (!window.confirm(`Are you sure you want to delete ${selectedSkus.length} selected product(s)?`)) return;
@@ -955,23 +982,21 @@ export default function AdminProductsPage() {
                       </div>
 
                       {/* Separate Image Gallery Box for this Color */}
-                      <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                      <div className="space-y-2 pt-1 border-t border-slate-100">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <label className="block font-bold text-slate-700 text-[10px]">
-                            {variant.colorName || 'Color'} Image Gallery ({variant.imageUrls.length})
+                          <label className="block font-bold text-slate-700 text-[11px]">
+                            {variant.colorName || 'Color'} Image Gallery ({variant.imageUrls.filter(Boolean).length})
                           </label>
                           <div className="flex items-center gap-2">
-                            <label className="text-[10px] font-extrabold text-[#B71C1C] hover:bg-red-50 px-2 py-0.5 rounded border border-red-200 cursor-pointer flex items-center gap-1 transition-all">
+                            <label className="text-[10px] font-extrabold text-[#B71C1C] hover:bg-red-50 px-2.5 py-1 rounded-lg border border-red-200 cursor-pointer flex items-center gap-1 transition-all shadow-2xs">
                               <Upload className="w-3 h-3" />
-                              <span>+ Upload Image File</span>
+                              <span>+ Upload Image File(s)</span>
                               <input
                                 type="file"
                                 accept="image/*"
+                                multiple
                                 className="hidden"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) handleUploadVariantImage(file, vIdx, variant.imageUrls.length);
-                                }}
+                                onChange={(e) => handleMultipleVariantFiles(e, vIdx)}
                               />
                             </label>
                             <button
@@ -981,12 +1006,71 @@ export default function AdminProductsPage() {
                                 updated[vIdx].imageUrls.push('');
                                 setFormData({ ...formData, colorVariants: updated });
                               }}
-                              className="text-[10px] font-bold text-slate-600 hover:text-[#B71C1C] cursor-pointer"
+                              className="text-[10px] font-bold text-slate-600 hover:text-[#B71C1C] px-2 py-1 rounded border border-slate-200 hover:border-red-200 cursor-pointer transition-all"
                             >
                               + Add Image URL
                             </button>
                           </div>
                         </div>
+
+                        {/* Gallery Thumbnails Grid Preview */}
+                        {variant.imageUrls.filter(Boolean).length > 0 && (
+                          <div className="flex flex-wrap items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200/80">
+                            {variant.imageUrls.map((imgUrl, imgIdx) => {
+                              if (!imgUrl) return null;
+                              return (
+                                <div key={imgIdx} className="relative group w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-white shrink-0 shadow-2xs">
+                                  <img
+                                    src={resolveImageUrl(imgUrl)}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.style.display = 'none';
+                                    }}
+                                  />
+                                  {imgIdx === 0 && (
+                                    <span className="absolute bottom-0 inset-x-0 bg-[#B71C1C] text-white text-[8px] font-black text-center py-0.5 uppercase tracking-tighter">
+                                      MAIN
+                                    </span>
+                                  )}
+                                  {/* Delete image button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = [...formData.colorVariants];
+                                      updated[vIdx].imageUrls = updated[vIdx].imageUrls.filter((_, i) => i !== imgIdx);
+                                      setFormData({ ...formData, colorVariants: updated });
+                                    }}
+                                    className="absolute top-1 right-1 w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold opacity-90 group-hover:opacity-100 cursor-pointer shadow-xs"
+                                    title="Remove this image"
+                                  >
+                                    ✕
+                                  </button>
+                                  {/* Reorder Left */}
+                                  {imgIdx > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = [...formData.colorVariants];
+                                        const arr = [...updated[vIdx].imageUrls];
+                                        const temp = arr[imgIdx - 1];
+                                        arr[imgIdx - 1] = arr[imgIdx];
+                                        arr[imgIdx] = temp;
+                                        updated[vIdx].imageUrls = arr;
+                                        setFormData({ ...formData, colorVariants: updated });
+                                      }}
+                                      className="absolute top-1 left-1 w-4 h-4 bg-slate-800 text-white rounded-full flex items-center justify-center text-[9px] font-bold opacity-0 group-hover:opacity-100 cursor-pointer"
+                                      title="Move Left (Set as earlier/main)"
+                                    >
+                                      ‹
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
 
                         <div className="space-y-1.5">
                           {variant.imageUrls.map((imgUrl, imgIdx) => (
@@ -1013,9 +1097,9 @@ export default function AdminProductsPage() {
                                 placeholder={`Image URL / path ${imgIdx + 1} for ${variant.colorName}`}
                                 className="flex-1 bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs"
                               />
-                              <label className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg cursor-pointer flex items-center gap-1 shrink-0 text-[11px]" title="Upload file from disk">
+                              <label className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg cursor-pointer flex items-center gap-1 shrink-0 text-[11px]" title="Crop/Replace single image">
                                 <Upload className="w-3.5 h-3.5 text-[#B71C1C]" />
-                                <span className="hidden sm:inline">Upload</span>
+                                <span className="hidden sm:inline">Crop</span>
                                 <input
                                   type="file"
                                   accept="image/*"

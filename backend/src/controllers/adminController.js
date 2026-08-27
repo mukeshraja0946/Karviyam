@@ -209,8 +209,10 @@ exports.createProduct = async (req, res, next) => {
 
     const productId = result.insertId;
 
-    // Save images if array provided
-    if (Array.isArray(dto.images) && dto.images.length > 0) {
+    // Save color variants & dedicated image galleries
+    if (Array.isArray(dto.colorVariants) && dto.colorVariants.length > 0) {
+      await saveColorVariantsForProduct(productId, dto.colorVariants);
+    } else if (Array.isArray(dto.images) && dto.images.length > 0) {
       for (let i = 0; i < dto.images.length; i++) {
         const imgUrl = dto.images[i];
         if (imgUrl) {
@@ -267,10 +269,96 @@ exports.updateProduct = async (req, res, next) => {
       await pool.query(`UPDATE products SET ${updates.join(', ')} WHERE id = ?`, params);
     }
 
+    // Update color variants & dedicated image galleries if provided
+    if (Array.isArray(dto.colorVariants)) {
+      await saveColorVariantsForProduct(id, dto.colorVariants);
+    }
+
     const [updated] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
     return res.status(200).json(ApiResponse.success(updated[0], 'Product updated successfully'));
   } catch (err) {
     next(err);
+  }
+};
+
+const saveColorVariantsForProduct = async (productId, colorVariants) => {
+  if (!productId || !Array.isArray(colorVariants)) return;
+
+  try {
+    try { await pool.query('ALTER TABLE products ADD COLUMN color_variant_images LONGTEXT'); } catch (e) {}
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS product_colors (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        product_id BIGINT NOT NULL,
+        color_name VARCHAR(100) NOT NULL,
+        hex_code VARCHAR(50),
+        color_code VARCHAR(50),
+        is_default BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => null);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS product_color_images (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        product_color_id BIGINT NOT NULL,
+        image_url LONGTEXT NOT NULL,
+        sort_order INT DEFAULT 0
+      )
+    `).catch(() => null);
+
+    // Delete existing colors for this product to replace cleanly
+    await pool.query('DELETE FROM product_colors WHERE product_id = ?', [productId]).catch(() => null);
+
+    const colorVariantMap = {};
+    const allImages = [];
+
+    for (let cIdx = 0; cIdx < colorVariants.length; cIdx++) {
+      const cv = colorVariants[cIdx];
+      const cName = (cv.colorName || cv.color || `Color ${cIdx + 1}`).trim();
+      const cCode = cv.colorCode || cv.hexCode || '#000000';
+      const isDef = Boolean(cv.isDefault);
+      const rawUrls = cv.imageUrls || cv.images || [];
+      const validUrls = Array.isArray(rawUrls)
+        ? rawUrls.map(u => typeof u === 'string' ? u.trim() : u?.imageUrl).filter(Boolean)
+        : [];
+
+      if (validUrls.length > 0) {
+        colorVariantMap[cName] = validUrls;
+        allImages.push(...validUrls);
+      }
+
+      const [resCol] = await pool.query(
+        'INSERT INTO product_colors (product_id, color_name, color_code, hex_code, is_default) VALUES (?, ?, ?, ?, ?)',
+        [productId, cName, cCode, cCode, isDef ? 1 : 0]
+      );
+      const colorId = resCol.insertId;
+
+      for (let imgIdx = 0; imgIdx < validUrls.length; imgIdx++) {
+        await pool.query(
+          'INSERT INTO product_color_images (product_color_id, image_url, sort_order) VALUES (?, ?, ?)',
+          [colorId, validUrls[imgIdx], imgIdx]
+        );
+      }
+    }
+
+    const jsonStr = JSON.stringify(colorVariantMap);
+    await pool.query('UPDATE products SET color_variant_images = ? WHERE id = ?', [jsonStr, productId]).catch(() => null);
+
+    if (allImages.length > 0) {
+      await pool.query('DELETE FROM product_images WHERE product_id = ?', [productId]).catch(() => null);
+      const uniqueImgs = Array.from(new Set(allImages));
+      for (let i = 0; i < uniqueImgs.length; i++) {
+        await pool.query(
+          'INSERT INTO product_images (product_id, image_url, is_main, sort_order) VALUES (?, ?, ?, ?)',
+          [productId, uniqueImgs[i], i === 0 ? 1 : 0, i]
+        ).catch(() => null);
+      }
+      await pool.query('UPDATE products SET image_url = ? WHERE id = ? AND (image_url IS NULL OR image_url = "")', [uniqueImgs[0], productId]).catch(() => null);
+    }
+  } catch (err) {
+    console.error('[saveColorVariantsForProduct Error]:', err.message);
   }
 };
 

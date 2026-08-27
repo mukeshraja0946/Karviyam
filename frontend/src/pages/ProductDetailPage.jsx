@@ -142,44 +142,69 @@ export default function ProductDetailPage() {
     }
   };
 
-  // Color Variants List derived from DB backend
-  const colorOptions = Array.isArray(product?.colors) && product.colors.length > 0
-    ? product.colors.map(c => ({
+  // Color Variants List derived strictly from DB backend
+  const colorOptions = React.useMemo(() => {
+    const backendColors = product?.colors || product?.colorVariants;
+    if (Array.isArray(backendColors) && backendColors.length > 0) {
+      return backendColors.map(c => ({
         name: c.colorName || c.name || 'Standard',
         dot: c.hexCode || c.colorCode || '#B71C1C',
-        images: Array.isArray(c.imageUrls) && c.imageUrls.length > 0 ? c.imageUrls : null
-      }))
-    : (product?.color ? [
-        { name: product.color, dot: '#B71C1C', images: null }
-      ] : [
-        { name: 'Karviyam Crimson', dot: '#B71C1C', images: null },
-        { name: 'Obsidian Black', dot: '#0F172A', images: null },
-        { name: 'Pure Linen White', dot: '#FFFFFF', images: null }
-      ]);
+        images: Array.isArray(c.imageUrls) && c.imageUrls.length > 0
+          ? c.imageUrls.filter(isValidImageUrl)
+          : (Array.isArray(c.images) && c.images.length > 0 ? c.images.filter(isValidImageUrl) : null)
+      }));
+    }
+    
+    if (product?.color_variant_images || product?.colorVariantImages) {
+      try {
+        const rawMap = product.color_variant_images || product.colorVariantImages;
+        const map = typeof rawMap === 'string' ? JSON.parse(rawMap) : rawMap;
+        if (map && typeof map === 'object') {
+          const keys = Object.keys(map);
+          if (keys.length > 0) {
+            return keys.map((cName) => ({
+              name: cName,
+              dot: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
+              images: Array.isArray(map[cName]) ? map[cName].filter(isValidImageUrl) : null
+            }));
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (product?.color) {
+      return [{ name: product.color, dot: '#B71C1C', images: null }];
+    }
+
+    return [];
+  }, [product]);
 
   // Gallery Images computed dynamically (Variant Specific Images OR Product Images)
-  const activeColorObj = colorOptions.find(c => c.name === selectedColor);
+  const activeColorObj = colorOptions.find(c => c.name === selectedColor) || colorOptions[0];
   const colorSpecificImages = activeColorObj?.images;
 
-  const rawGallery = colorSpecificImages && colorSpecificImages.length > 0
-    ? colorSpecificImages
-    : (Array.isArray(product?.images) && product.images.length > 0
-      ? product.images
-      : (product?.imageUrl ? [product.imageUrl] : []));
+  const galleryImages = React.useMemo(() => {
+    if (colorSpecificImages && colorSpecificImages.length > 0) {
+      return colorSpecificImages.map(img => resolveImageUrl(img, product?.id));
+    }
+    
+    const allProdImages = Array.isArray(product?.images) && product.images.length > 0
+      ? product.images.filter(isValidImageUrl)
+      : (product?.imageUrl && isValidImageUrl(product.imageUrl) ? [product.imageUrl] : []);
+    
+    if (allProdImages.length > 0) {
+      return Array.from(new Set(allProdImages.map(img => resolveImageUrl(img, product?.id))));
+    }
 
-  const validGallery = rawGallery.filter(isValidImageUrl);
-  const galleryImages = validGallery.length > 0
-    ? Array.from(new Set(validGallery))
-    : [resolveImageUrl(product?.imageUrl, product?.id)];
+    return [resolveImageUrl(product?.imageUrl, product?.id)];
+  }, [colorSpecificImages, product]);
 
   // Auto-sync selectedImage when color or gallery changes
   useEffect(() => {
     if (galleryImages.length > 0) {
-      if (!selectedImage || !galleryImages.includes(selectedImage)) {
-        setSelectedImage(galleryImages[0]);
-      }
+      setSelectedImage(galleryImages[0]);
     }
-  }, [selectedColor, product?.id, galleryImages.length]);
+  }, [selectedColor, galleryImages]);
 
   const activeImgIndex = Math.max(0, galleryImages.indexOf(selectedImage));
 

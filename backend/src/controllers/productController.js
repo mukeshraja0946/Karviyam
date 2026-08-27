@@ -14,18 +14,40 @@ const mapProductRowToDTO = async (p) => {
   // Fetch color variants if table exists
   let colors = [];
   try {
-    const [colorRows] = await pool.query('SELECT * FROM product_colors WHERE product_id = ?', [p.id]);
+    const [colorRows] = await pool.query('SELECT * FROM product_colors WHERE product_id = ? ORDER BY id ASC', [p.id]);
     for (const c of colorRows) {
-      const [cImages] = await pool.query('SELECT image_url FROM product_color_images WHERE product_color_id = ?', [c.id]);
+      const [cImages] = await pool.query('SELECT image_url FROM product_color_images WHERE product_color_id = ? ORDER BY sort_order ASC, id ASC', [c.id]);
       colors.push({
         id: c.id,
         colorName: c.color_name,
-        colorCode: c.color_code || c.hex_code,
-        hexCode: c.hex_code,
-        imageUrls: cImages.map(ci => ci.image_url)
+        colorCode: c.color_code || c.hex_code || '#000000',
+        hexCode: c.hex_code || c.color_code || '#000000',
+        isDefault: Boolean(c.is_default),
+        imageUrls: cImages.map(ci => ci.image_url).filter(Boolean),
+        images: cImages.map(ci => ci.image_url).filter(Boolean)
       });
     }
   } catch (e) {}
+
+  if (colors.length === 0 && p.color_variant_images) {
+    try {
+      const parsedMap = typeof p.color_variant_images === 'string' ? JSON.parse(p.color_variant_images) : p.color_variant_images;
+      if (parsedMap && typeof parsedMap === 'object') {
+        Object.keys(parsedMap).forEach((cName, idx) => {
+          const imgs = Array.isArray(parsedMap[cName]) ? parsedMap[cName].filter(Boolean) : [];
+          colors.push({
+            id: idx + 1,
+            colorName: cName,
+            colorCode: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
+            hexCode: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
+            isDefault: idx === 0,
+            imageUrls: imgs,
+            images: imgs
+          });
+        });
+      }
+    } catch (eJSON) {}
+  }
 
   // Fetch size/color product variants
   let variants = [];
@@ -133,6 +155,8 @@ const mapProductRowToDTO = async (p) => {
     subcategory_id: p.subcategory_id || p.subcategoryId || null,
     subcategoryName: p.subcategory_name || p.subcategoryName || null,
     colors,
+    colorVariants: colors,
+    colorVariantImages: p.color_variant_images || null,
     variants,
     extraDetails,
     createdAt: p.created_at
