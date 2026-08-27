@@ -227,6 +227,10 @@ exports.createProduct = async (req, res, next) => {
     }
 
     const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [productId]);
+    if (rows.length > 0) {
+      const fullDto = await mapProductRowToDTO(rows[0]);
+      return res.status(200).json(ApiResponse.success(fullDto, 'Product created successfully'));
+    }
     return res.status(200).json(ApiResponse.success(rows[0], 'Product created successfully'));
   } catch (err) {
     next(err);
@@ -275,6 +279,10 @@ exports.updateProduct = async (req, res, next) => {
     }
 
     const [updated] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
+    if (updated.length > 0) {
+      const fullDto = await mapProductRowToDTO(updated[0]);
+      return res.status(200).json(ApiResponse.success(fullDto, 'Product updated successfully'));
+    }
     return res.status(200).json(ApiResponse.success(updated[0], 'Product updated successfully'));
   } catch (err) {
     next(err);
@@ -316,8 +324,23 @@ const saveColorVariantsForProduct = async (productId, colorVariants) => {
 
     try { await pool.query('ALTER TABLE product_color_images ADD COLUMN is_main BOOLEAN DEFAULT FALSE'); } catch (e) {}
 
+    // First delete all existing product_color_images for this product's color IDs to prevent orphan rows
+    const [existingColors] = await pool.query('SELECT id FROM product_colors WHERE product_id = ?', [productId]).catch(() => [[]]);
+    if (Array.isArray(existingColors) && existingColors.length > 0) {
+      const colorIds = existingColors.map(c => c.id).filter(Boolean);
+      if (colorIds.length > 0) {
+        await pool.query('DELETE FROM product_color_images WHERE product_color_id IN (?)', [colorIds]).catch(() => null);
+      }
+    }
     // Delete existing colors for this product to replace cleanly
     await pool.query('DELETE FROM product_colors WHERE product_id = ?', [productId]).catch(() => null);
+
+    const cleanStr = (u) => {
+      if (!u) return '';
+      if (typeof u === 'string') return u.trim();
+      if (typeof u === 'object') return (u.url || u.imageUrl || u.imagePath || u.src || '').trim();
+      return String(u).trim();
+    };
 
     const colorVariantMap = {};
     const allImages = [];
@@ -329,12 +352,18 @@ const saveColorVariantsForProduct = async (productId, colorVariants) => {
       const cCode = cv.colorCode || cv.hexCode || '#000000';
       const isDef = Boolean(cv.isDefault);
       
-      const mainImg = cv.mainImage || (Array.isArray(cv.imageUrls) ? cv.imageUrls[0] : (Array.isArray(cv.images) ? cv.images[0] : null));
-      const subImgs = Array.isArray(cv.subImages)
-        ? cv.subImages.filter(Boolean)
-        : (Array.isArray(cv.imageUrls) ? cv.imageUrls.slice(1).filter(Boolean) : (Array.isArray(cv.images) ? cv.images.slice(1).filter(Boolean) : []));
+      const rawMain = cv.mainImage || (Array.isArray(cv.imageUrls) ? cv.imageUrls[0] : (Array.isArray(cv.images) ? cv.images[0] : null));
+      const mainImg = cleanStr(rawMain);
 
-      const vUrl = cv.videoUrl || cv.video || null;
+      const rawSubs = Array.isArray(cv.subImages)
+        ? cv.subImages
+        : (Array.isArray(cv.imageUrls) ? cv.imageUrls.filter(i => cleanStr(i) !== mainImg) : (Array.isArray(cv.images) ? cv.images.filter(i => cleanStr(i) !== mainImg) : []));
+
+      const subImgs = Array.isArray(rawSubs)
+        ? rawSubs.map(cleanStr).filter(s => s && s !== mainImg)
+        : [];
+
+      const vUrl = cleanStr(cv.videoUrl || cv.video);
       if (vUrl && !firstProductVideo) firstProductVideo = vUrl;
 
       // Construct unified imageUrls array: [mainImg, ...subImgs]
@@ -368,7 +397,7 @@ const saveColorVariantsForProduct = async (productId, colorVariants) => {
       for (let imgIdx = 0; imgIdx < unifiedUrls.length; imgIdx++) {
         await pool.query(
           'INSERT INTO product_color_images (product_color_id, image_url, is_main, sort_order) VALUES (?, ?, ?, ?)',
-          [colorId, unifiedUrls[imgIdx], imgIdx === 0 ? 1 : 0, imgIdx]
+          [colorId, unifiedUrls[imgIdx], unifiedUrls[imgIdx] === mainImg ? 1 : 0, imgIdx]
         );
       }
     }
