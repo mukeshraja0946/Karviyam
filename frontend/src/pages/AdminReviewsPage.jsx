@@ -82,24 +82,16 @@ export default function AdminReviewsPage() {
   const fetchReviews = async () => {
     setLoading(true);
     try {
-      const saved = localStorage.getItem('karviyam_admin_reviews');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setReviews(parsed);
-          setLoading(false);
-          return;
-        }
-      }
-      const res = await api.get('/admin/reviews');
-      const data = res?.data || res || [];
-      if (Array.isArray(data) && data.length > 0) {
-        setReviews(data);
-        localStorage.setItem('karviyam_admin_reviews', JSON.stringify(data));
+      const res = await api.get('/reviews/admin');
+      const apiData = res.data?.data || res.data;
+      if (Array.isArray(apiData)) {
+        setReviews(apiData);
+        try { localStorage.setItem('karviyam_admin_reviews', JSON.stringify(apiData)); } catch (e) {}
       } else {
         loadStoredOrMock();
       }
     } catch (err) {
+      console.error('[Admin Reviews Fetch Error]:', err);
       loadStoredOrMock();
     } finally {
       setLoading(false);
@@ -109,27 +101,32 @@ export default function AdminReviewsPage() {
   const loadStoredOrMock = () => {
     const saved = localStorage.getItem('karviyam_admin_reviews');
     if (saved) {
-      setReviews(JSON.parse(saved));
+      try {
+        setReviews(JSON.parse(saved));
+      } catch (e) {
+        setReviews([]);
+      }
     } else {
-      setReviews(INITIAL_MOCK_REVIEWS);
-      localStorage.setItem('karviyam_admin_reviews', JSON.stringify(INITIAL_MOCK_REVIEWS));
+      setReviews([]);
     }
   };
 
   const handleModerate = async (id, newStatus) => {
     try {
-      await api.put(`/admin/reviews/${id}/status?status=${newStatus}`);
+      await api.put(`/reviews/admin/${id}/status`, { status: newStatus });
+      toast.success(`Review #${id} set to ${newStatus}!`);
+
+      setReviews((prev) => {
+        const updated = prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r));
+        try { localStorage.setItem('karviyam_admin_reviews', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
+
+      window.dispatchEvent(new Event('karviyam_products_updated'));
     } catch (err) {
-      // API call logged
+      console.error(err);
+      toast.error('Failed to update review status');
     }
-
-    toast.success(`Review #${id} set to ${newStatus}!`);
-
-    setReviews((prev) => {
-      const updated = prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r));
-      localStorage.setItem('karviyam_admin_reviews', JSON.stringify(updated));
-      return updated;
-    });
   };
 
   const filteredReviews = reviews.filter((r) => {

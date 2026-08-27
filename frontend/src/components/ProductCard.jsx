@@ -19,8 +19,8 @@ export default function ProductCard({ product }) {
     ? Math.round(((oldPrice - price) / oldPrice) * 100)
     : 82;
 
-  const rating = product.rating || 4.0;
-  const reviewsCount = product.reviewsCount || (product.id ? (product.id * 137) % 900 + 320 : 1200);
+  const rating = Number(product.rating || 0);
+  const reviewsCount = Number(product.reviewsCount || product.ratingsCount || 0);
   const boughtCount = (product.id ? (product.id * 230) % 800 + 100 : 700);
 
   const brandName = product.brand || (
@@ -117,17 +117,26 @@ export default function ProductCard({ product }) {
 
             {/* Rating Score & Social Proof */}
             <div className="space-y-0.5">
-              <div className="flex items-center gap-1 text-xs">
-                <span className="font-extrabold text-slate-900 text-[11px]">{rating}</span>
-                <div className="flex text-amber-400 text-xs">
-                  {'★'.repeat(Math.floor(rating))}
-                  {'☆'.repeat(5 - Math.floor(rating))}
+              {reviewsCount > 0 ? (
+                <div 
+                  onClick={() => navigate(`/product/${product.id}#reviews-section`)}
+                  className="flex items-center gap-1 text-xs cursor-pointer group"
+                >
+                  <span className="font-extrabold text-slate-900 text-[11px] group-hover:text-[#B71C1C] transition-colors">{rating.toFixed(1)}</span>
+                  <div className="flex text-amber-400 text-xs">
+                    {'★'.repeat(Math.min(5, Math.floor(rating)))}
+                    {'☆'.repeat(Math.max(0, 5 - Math.floor(rating)))}
+                  </div>
+                  <span className="text-[10px] text-sky-600 font-semibold group-hover:underline">({reviewsCount > 999 ? `${(reviewsCount/1000).toFixed(1)}K` : reviewsCount})</span>
                 </div>
-                <span className="text-[10px] text-sky-600 font-semibold cursor-pointer">({reviewsCount > 999 ? `${(reviewsCount/1000).toFixed(1)}K` : reviewsCount})</span>
-              </div>
-              <p className="text-[10px] text-slate-500 font-medium truncate">
-                {boughtCount}+ bought in past month
-              </p>
+              ) : (
+                <div 
+                  onClick={() => navigate(`/product/${product.id}#reviews-section`)}
+                  className="text-[10px] font-semibold text-slate-400 italic cursor-pointer hover:text-[#B71C1C] transition-colors"
+                >
+                  No ratings yet
+                </div>
+              )}
             </div>
 
             {/* Price & Offer Row */}
@@ -209,10 +218,18 @@ export default function ProductCard({ product }) {
           <div>
             <div className="flex items-center justify-between text-[9px] text-slate-500 font-bold leading-none mb-0.5">
               <span className="uppercase text-[#B71C1C] tracking-tight truncate max-w-[60px]">{brandName}</span>
-              <div className="flex items-center gap-0.5 text-slate-700 font-extrabold shrink-0">
-                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                <span>{rating}</span>
-              </div>
+              {reviewsCount > 0 ? (
+                <div 
+                  onClick={() => navigate(`/product/${product.id}#reviews-section`)}
+                  className="flex items-center gap-0.5 text-slate-700 font-extrabold shrink-0 cursor-pointer"
+                >
+                  <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                  <span>{rating.toFixed(1)}</span>
+                  <span className="text-[8px] text-slate-400">({reviewsCount})</span>
+                </div>
+              ) : (
+                <span className="text-[8.5px] font-medium text-slate-400 italic">No ratings</span>
+              )}
             </div>
             <h3
               onClick={() => navigate(`/product/${product.id}`)}

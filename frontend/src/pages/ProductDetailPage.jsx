@@ -28,6 +28,7 @@ import { useWishlist } from '../context/WishlistContext';
 import api from '../utils/api';
 import { resolveImageUrl } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
+import ProductReviewsSection from '../components/ProductReviewsSection';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -429,16 +430,32 @@ export default function ProductDetailPage() {
               </p>
             </div>
 
-            {/* Rating & Reviews Line */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className="bg-emerald-700 text-white font-extrabold px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-2xs text-[10px] sm:text-[10.5px]">
-                <span>{product.rating || 4.5}</span>
-                <span>★</span>
-              </span>
-              <span className="font-semibold text-slate-600 text-[10px] sm:text-[11px]">
-                {product.ratingsCount || 128} Verified Ratings & {product.reviewsCount || 45} Customer Reviews
-              </span>
-            </div>
+            {/* Dynamic Rating & Reviews Clickable Line */}
+            <button
+              type="button"
+              onClick={() => {
+                const elem = document.getElementById('reviews-section');
+                if (elem) elem.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="flex items-center gap-2 text-xs text-left cursor-pointer group"
+            >
+              {Number(product.reviewsCount) > 0 ? (
+                <>
+                  <span className="bg-emerald-700 group-hover:bg-[#B71C1C] text-white font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs text-[10.5px] transition-colors">
+                    <span>{Number(product.rating || 0).toFixed(1)}</span>
+                    <span>★</span>
+                  </span>
+                  <span className="font-semibold text-slate-600 group-hover:text-[#B71C1C] group-hover:underline text-[11px] transition-colors">
+                    {product.reviewsCount} Verified {product.reviewsCount === 1 ? 'Rating & Review' : 'Ratings & Reviews'}
+                  </span>
+                </>
+              ) : (
+                <span className="text-[11px] font-bold text-slate-500 hover:text-[#B71C1C] transition-colors flex items-center gap-1">
+                  <span className="text-slate-400">★ ★ ★ ★ ★</span>
+                  <span>No ratings yet (Be the first to review)</span>
+                </span>
+              )}
+            </button>
 
             {/* Price Banner Box */}
             <div className="bg-[#FAFAFA] border border-slate-200/90 rounded-xl py-1.5 px-3 flex items-baseline gap-2.5">
@@ -741,9 +758,17 @@ export default function ProductDetailPage() {
 
         </div>
 
+        {/* AMAZON-STYLE CUSTOMER REVIEWS SECTION */}
+        <div className="pt-8 sm:pt-10">
+          <ProductReviewsSection
+            productId={product.id}
+            onRatingUpdated={({ rating, reviewsCount }) => {
+              setProduct(prev => prev ? { ...prev, rating, reviewsCount } : prev);
+            }}
+          />
+        </div>
+
       </div>
-
-
 
     </div>
   );

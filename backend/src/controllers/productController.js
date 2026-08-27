@@ -57,6 +57,39 @@ const mapProductRowToDTO = async (p) => {
     }
   } catch (e) {}
 
+  // Calculate genuine dynamic ratings & reviews from reviews table
+  let avgRating = 0;
+  let reviewsCount = 0;
+  let ratingDistribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+
+  try {
+    const [reviewStats] = await pool.query(
+      `SELECT 
+        COUNT(*) as total_reviews, 
+        AVG(rating) as avg_rating,
+        SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END) as count_5,
+        SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as count_4,
+        SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as count_3,
+        SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as count_2,
+        SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as count_1
+       FROM reviews 
+       WHERE product_id = ? AND (status = 'Approved' OR status IS NULL OR status = '')`,
+      [p.id]
+    );
+
+    if (reviewStats && reviewStats.length > 0 && reviewStats[0].total_reviews > 0) {
+      reviewsCount = parseInt(reviewStats[0].total_reviews, 10);
+      avgRating = Math.round(parseFloat(reviewStats[0].avg_rating) * 10) / 10;
+      ratingDistribution = {
+        5: parseInt(reviewStats[0].count_5 || 0, 10),
+        4: parseInt(reviewStats[0].count_4 || 0, 10),
+        3: parseInt(reviewStats[0].count_3 || 0, 10),
+        2: parseInt(reviewStats[0].count_2 || 0, 10),
+        1: parseInt(reviewStats[0].count_1 || 0, 10)
+      };
+    }
+  } catch (e) {}
+
   return {
     id: p.id,
     name: p.name,
@@ -76,7 +109,10 @@ const mapProductRowToDTO = async (p) => {
     brand: p.brand || p.brand_name || null,
     brandId: p.brand_id || p.brandId || null,
     brand_id: p.brand_id || p.brandId || null,
-    rating: parseFloat(p.rating || 4.5),
+    rating: avgRating,
+    reviewsCount: reviewsCount,
+    ratingsCount: reviewsCount,
+    ratingDistribution: ratingDistribution,
     isFeatured: Boolean(p.is_featured),
     isTrending: Boolean(p.is_trending),
     isBestSeller: Boolean(p.is_best_seller),

@@ -357,11 +357,38 @@ async function initDb() {
         product_id BIGINT NOT NULL,
         user_id BIGINT NOT NULL,
         user_name VARCHAR(100),
+        title VARCHAR(255),
         rating INT NOT NULL,
         comment TEXT,
-        status VARCHAR(50) DEFAULT 'Pending',
+        images LONGTEXT,
+        verified_purchase BOOLEAN DEFAULT FALSE,
+        helpful_count INT DEFAULT 0,
+        reported BOOLEAN DEFAULT FALSE,
+        order_id BIGINT DEFAULT NULL,
+        status VARCHAR(50) DEFAULT 'Approved',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+    `);
+
+    try { await pool.query(`ALTER TABLE reviews ADD COLUMN title VARCHAR(255)`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE reviews ADD COLUMN images LONGTEXT`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE reviews ADD COLUMN verified_purchase BOOLEAN DEFAULT FALSE`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE reviews ADD COLUMN helpful_count INT DEFAULT 0`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE reviews ADD COLUMN reported BOOLEAN DEFAULT FALSE`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE reviews ADD COLUMN order_id BIGINT DEFAULT NULL`); } catch (e) {}
+
+    // 15b. Review Helpful Votes table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS review_helpful_votes (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        review_id BIGINT NOT NULL,
+        user_id BIGINT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_user_review_vote (review_id, user_id),
+        FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
     `);
