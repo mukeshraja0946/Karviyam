@@ -395,10 +395,10 @@ const saveColorVariantsForProduct = async (productId, colorVariants) => {
       );
       const colorId = resCol.insertId;
 
-      for (let imgIdx = 0; imgIdx < unifiedUrls.length; imgIdx++) {
+      for (let imgIdx = 0; imgIdx < subImgs.length; imgIdx++) {
         await pool.query(
           'INSERT INTO product_color_images (product_color_id, image_url, is_main, sort_order) VALUES (?, ?, ?, ?)',
-          [colorId, unifiedUrls[imgIdx], unifiedUrls[imgIdx] === mainImg ? 1 : 0, imgIdx]
+          [colorId, subImgs[imgIdx], 0, imgIdx]
         );
       }
     }

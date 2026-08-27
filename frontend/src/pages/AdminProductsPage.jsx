@@ -402,9 +402,9 @@ export default function AdminProductsPage() {
           ? cv.imageUrls
           : (Array.isArray(cv.images) ? cv.images.map(i => typeof i === 'string' ? i : i.imageUrl) : []);
         const mainImg = cv.mainImage || rawImgs[0] || (p.imageUrl || '');
-        const subImgs = Array.isArray(cv.subImages) && cv.subImages.length > 0
+        const subImgs = Array.isArray(cv.subImages)
           ? cv.subImages.filter(Boolean)
-          : rawImgs.filter(img => img && img !== mainImg);
+          : (rawImgs.length > 1 ? rawImgs.slice(1).filter(Boolean) : []);
         const unified = [];
         if (mainImg) unified.push(mainImg);
         subImgs.forEach(s => { if (s && !unified.includes(s)) unified.push(s); });
@@ -435,7 +435,7 @@ export default function AdminProductsPage() {
             mainImg = val.mainImage || raw[0] || '';
             subImgs = Array.isArray(val.subImages)
               ? val.subImages.filter(Boolean)
-              : raw.filter(i => i && i !== mainImg);
+              : (raw.length > 1 ? raw.slice(1).filter(Boolean) : []);
             vUrl = val.videoUrl || p.videoUrl || '';
           }
           const unified = [];
@@ -457,16 +457,15 @@ export default function AdminProductsPage() {
 
     if (parsedVariants.length === 0) {
       const mainImg = p.imageUrl || '';
-      const extraImgs = Array.isArray(p.images) ? p.images.filter(i => i !== mainImg) : [];
       parsedVariants = [
         {
           colorName: p.color || 'Standard',
           colorCode: '#B71C1C',
           isDefault: true,
           mainImage: mainImg,
-          subImages: extraImgs,
+          subImages: [],
           videoUrl: p.videoUrl || '',
-          imageUrls: [mainImg, ...extraImgs].filter(Boolean)
+          imageUrls: mainImg ? [mainImg] : []
         }
       ];
     }

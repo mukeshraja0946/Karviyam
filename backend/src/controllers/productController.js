@@ -17,11 +17,9 @@ const mapProductRowToDTO = async (p) => {
     const [colorRows] = await pool.query('SELECT * FROM product_colors WHERE product_id = ? ORDER BY id ASC', [p.id]);
     for (const c of colorRows) {
       const [cImages] = await pool.query('SELECT image_url, is_main FROM product_color_images WHERE product_color_id = ? ORDER BY sort_order ASC, id ASC', [c.id]);
-      const validImgs = cImages.map(ci => ci.image_url).filter(Boolean);
-      const mainImg = c.main_image || validImgs[0] || '';
-      const subImgs = mainImg
-        ? validImgs.filter(img => img && img !== mainImg)
-        : (validImgs.length > 1 ? validImgs.slice(1) : []);
+      const validSubImgs = cImages.map(ci => ci.image_url).filter(Boolean);
+      const mainImg = c.main_image || '';
+      const subImgs = validSubImgs.filter(img => img && img !== mainImg);
 
       const unifiedImgs = [];
       if (mainImg) unifiedImgs.push(mainImg);
