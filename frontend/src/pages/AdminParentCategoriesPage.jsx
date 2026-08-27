@@ -281,34 +281,34 @@ export default function AdminParentCategoriesPage() {
             </p>
           </div>
           <span className="bg-slate-100 text-slate-700 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
-            {categories.filter(c => c.isActive !== false).length} Active Cards
+            {(Array.isArray(categories) ? categories : []).filter(c => c && c.isActive !== false).length} Active Cards
           </span>
         </div>
 
         {/* Horizontal Preview Grid (Matching Reference Screenshot) */}
-        {categories.filter(c => c.isActive !== false).length === 0 ? (
+        {(Array.isArray(categories) ? categories : []).filter(c => c && c.isActive !== false).length === 0 ? (
           <div className="p-6 text-center text-slate-400 text-xs font-semibold bg-slate-50 rounded-xl border border-dashed border-slate-200">
             No active categories. Click "Add Parent Category" or enable existing categories below.
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-            {categories
-              .filter(c => c.isActive !== false)
-              .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+            {Array.from(Array.isArray(categories) ? categories : [])
+              .filter(c => c && c.isActive !== false)
+              .sort((a, b) => (Number(a?.displayOrder) || 0) - (Number(b?.displayOrder) || 0))
               .map(cat => (
                 <div
-                  key={cat.id}
+                  key={cat?.id || cat?.name}
                   className="bg-white border border-slate-200/90 rounded-xl p-2 flex flex-col items-center justify-between text-center space-y-1.5 shadow-2xs group hover:border-[#B71C1C] transition-colors"
                 >
                   <div className="w-full h-20 bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-slate-100">
                     <img
-                      src={resolveImageUrl(cat.imageUrl)}
-                      alt={cat.name}
+                      src={resolveImageUrl(cat?.imageUrl || cat?.imagePath)}
+                      alt={cat?.name || 'Category'}
                       className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
                     />
                   </div>
                   <span className="font-extrabold text-[10px] uppercase text-slate-900 truncate w-full">
-                    {cat.name}
+                    {cat?.name || ''}
                   </span>
                 </div>
               ))}
@@ -320,7 +320,7 @@ export default function AdminParentCategoriesPage() {
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-display font-extrabold text-base text-slate-900">
-            Parent Category Cards Management ({categories.length})
+            Parent Category Cards Management ({(Array.isArray(categories) ? categories : []).length})
           </h2>
           <span className="text-xs text-slate-500 font-medium">Use Up/Down arrows to reorder homepage display</span>
         </div>
@@ -330,7 +330,7 @@ export default function AdminParentCategoriesPage() {
             <Loader2 className="w-8 h-8 text-[#B71C1C] animate-spin" />
             <p className="text-xs font-bold text-slate-500">Loading Parent Categories...</p>
           </div>
-        ) : categories.length === 0 ? (
+        ) : (Array.isArray(categories) ? categories : []).length === 0 ? (
           <div className="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-3">
             <Layers className="w-10 h-10 text-slate-300 mx-auto" />
             <p className="text-sm font-bold text-slate-700">No Parent Categories Configured</p>
@@ -343,13 +343,15 @@ export default function AdminParentCategoriesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {categories.map((cat, idx) => (
-              <div
-                key={cat.id}
-                className={`bg-white rounded-2xl border-2 p-4 space-y-3 shadow-2xs relative flex flex-col justify-between transition-all ${
-                  cat.isActive !== false ? 'border-slate-200 hover:border-slate-300' : 'border-slate-200 bg-slate-50/70 opacity-75'
-                }`}
-              >
+            {(Array.isArray(categories) ? categories : []).map((cat, idx) => {
+              if (!cat) return null;
+              return (
+                <div
+                  key={cat.id || idx}
+                  className={`bg-white rounded-2xl border-2 p-4 space-y-3 shadow-2xs relative flex flex-col justify-between transition-all ${
+                    cat.isActive !== false ? 'border-slate-200 hover:border-slate-300' : 'border-slate-200 bg-slate-50/70 opacity-75'
+                  }`}
+                >
                 {/* Card Top Header */}
                 <div className="flex items-center justify-between">
                   <span className="bg-slate-900 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
@@ -445,8 +447,9 @@ export default function AdminParentCategoriesPage() {
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
+        </div>
         )}
       </div>
 
