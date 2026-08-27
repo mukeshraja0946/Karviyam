@@ -1,13 +1,12 @@
 const { pool } = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
-const { resolveImageUrl } = require('../utils/imageUtils');
 
 // Helper to format DTO
 const mapParentCategory = (row) => ({
   id: row.id,
   categoryId: row.category_id,
   name: row.name,
-  imageUrl: resolveImageUrl(row.image_url),
+  imageUrl: row.image_url,
   imagePath: row.image_url,
   displayOrder: row.display_order,
   isActive: Boolean(row.is_active),
