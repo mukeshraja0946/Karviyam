@@ -16,15 +16,22 @@ const mapProductRowToDTO = async (p) => {
   try {
     const [colorRows] = await pool.query('SELECT * FROM product_colors WHERE product_id = ? ORDER BY id ASC', [p.id]);
     for (const c of colorRows) {
-      const [cImages] = await pool.query('SELECT image_url FROM product_color_images WHERE product_color_id = ? ORDER BY sort_order ASC, id ASC', [c.id]);
+      const [cImages] = await pool.query('SELECT image_url, is_main FROM product_color_images WHERE product_color_id = ? ORDER BY sort_order ASC, id ASC', [c.id]);
+      const validImgs = cImages.map(ci => ci.image_url).filter(Boolean);
+      const mainImg = c.main_image || validImgs[0] || '';
+      const subImgs = validImgs.length > 1 ? validImgs.slice(1) : [];
+
       colors.push({
         id: c.id,
         colorName: c.color_name,
         colorCode: c.color_code || c.hex_code || '#000000',
         hexCode: c.hex_code || c.color_code || '#000000',
         isDefault: Boolean(c.is_default),
-        imageUrls: cImages.map(ci => ci.image_url).filter(Boolean),
-        images: cImages.map(ci => ci.image_url).filter(Boolean)
+        mainImage: mainImg,
+        subImages: subImgs,
+        videoUrl: c.video_url || p.video_url || '',
+        imageUrls: validImgs.length > 0 ? validImgs : (mainImg ? [mainImg, ...subImgs] : []),
+        images: validImgs.length > 0 ? validImgs : (mainImg ? [mainImg, ...subImgs] : [])
       });
     }
   } catch (e) {}
@@ -34,16 +41,38 @@ const mapProductRowToDTO = async (p) => {
       const parsedMap = typeof p.color_variant_images === 'string' ? JSON.parse(p.color_variant_images) : p.color_variant_images;
       if (parsedMap && typeof parsedMap === 'object') {
         Object.keys(parsedMap).forEach((cName, idx) => {
-          const imgs = Array.isArray(parsedMap[cName]) ? parsedMap[cName].filter(Boolean) : [];
-          colors.push({
-            id: idx + 1,
-            colorName: cName,
-            colorCode: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
-            hexCode: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
-            isDefault: idx === 0,
-            imageUrls: imgs,
-            images: imgs
-          });
+          const val = parsedMap[cName];
+          if (Array.isArray(val)) {
+            const imgs = val.filter(Boolean);
+            colors.push({
+              id: idx + 1,
+              colorName: cName,
+              colorCode: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
+              hexCode: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
+              isDefault: idx === 0,
+              mainImage: imgs[0] || '',
+              subImages: imgs.slice(1),
+              videoUrl: p.video_url || '',
+              imageUrls: imgs,
+              images: imgs
+            });
+          } else if (val && typeof val === 'object') {
+            const imgs = Array.isArray(val.imageUrls) ? val.imageUrls.filter(Boolean) : [];
+            const mainImg = val.mainImage || imgs[0] || '';
+            const subImgs = Array.isArray(val.subImages) ? val.subImages.filter(Boolean) : (imgs.slice(1));
+            colors.push({
+              id: idx + 1,
+              colorName: val.colorName || cName,
+              colorCode: val.colorCode || val.hexCode || '#000000',
+              hexCode: val.hexCode || val.colorCode || '#000000',
+              isDefault: Boolean(val.isDefault),
+              mainImage: mainImg,
+              subImages: subImgs,
+              videoUrl: val.videoUrl || p.video_url || '',
+              imageUrls: imgs.length > 0 ? imgs : (mainImg ? [mainImg, ...subImgs] : []),
+              images: imgs.length > 0 ? imgs : (mainImg ? [mainImg, ...subImgs] : [])
+            });
+          }
         });
       }
     } catch (eJSON) {}

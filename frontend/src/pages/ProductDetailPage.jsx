@@ -149,6 +149,9 @@ export default function ProductDetailPage() {
       return backendColors.map(c => ({
         name: c.colorName || c.name || 'Standard',
         dot: c.hexCode || c.colorCode || '#B71C1C',
+        mainImage: c.mainImage || (Array.isArray(c.imageUrls) ? c.imageUrls[0] : null),
+        subImages: Array.isArray(c.subImages) ? c.subImages.filter(isValidImageUrl) : (Array.isArray(c.imageUrls) ? c.imageUrls.slice(1).filter(isValidImageUrl) : []),
+        videoUrl: c.videoUrl || null,
         images: Array.isArray(c.imageUrls) && c.imageUrls.length > 0
           ? c.imageUrls.filter(isValidImageUrl)
           : (Array.isArray(c.images) && c.images.length > 0 ? c.images.filter(isValidImageUrl) : null)
@@ -162,62 +165,105 @@ export default function ProductDetailPage() {
         if (map && typeof map === 'object') {
           const keys = Object.keys(map);
           if (keys.length > 0) {
-            return keys.map((cName) => ({
-              name: cName,
-              dot: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
-              images: Array.isArray(map[cName]) ? map[cName].filter(isValidImageUrl) : null
-            }));
+            return keys.map((cName) => {
+              const val = map[cName];
+              let mImg = null;
+              let sImgs = [];
+              let vUrl = null;
+              let allImgs = [];
+              if (Array.isArray(val)) {
+                allImgs = val.filter(isValidImageUrl);
+                mImg = allImgs[0] || null;
+                sImgs = allImgs.slice(1);
+              } else if (val && typeof val === 'object') {
+                allImgs = Array.isArray(val.imageUrls) ? val.imageUrls.filter(isValidImageUrl) : [];
+                mImg = val.mainImage || allImgs[0] || null;
+                sImgs = Array.isArray(val.subImages) ? val.subImages.filter(isValidImageUrl) : allImgs.slice(1);
+                vUrl = val.videoUrl || null;
+              }
+              return {
+                name: cName,
+                dot: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
+                mainImage: mImg,
+                subImages: sImgs,
+                videoUrl: vUrl,
+                images: allImgs
+              };
+            });
           }
         }
       } catch (e) {}
     }
 
     if (product?.color) {
-      return [{ name: product.color, dot: '#B71C1C', images: null }];
+      return [{ name: product.color, dot: '#B71C1C', mainImage: product?.imageUrl, subImages: product?.images?.slice(1) || [], videoUrl: product?.videoUrl || null, images: null }];
     }
 
     return [];
   }, [product]);
 
-  // Gallery Images computed dynamically (Variant Specific Images OR Product Images)
+  // Gallery Items computed in exact order: 1 Main Image -> 6 Sub Images -> 1 Video File
   const activeColorObj = colorOptions.find(c => c.name === selectedColor) || colorOptions[0];
-  const colorSpecificImages = activeColorObj?.images;
 
-  const galleryImages = React.useMemo(() => {
-    if (colorSpecificImages && colorSpecificImages.length > 0) {
-      return colorSpecificImages.map(img => resolveImageUrl(img, product?.id));
-    }
+  const mediaGallery = React.useMemo(() => {
+    const list = [];
     
-    const allProdImages = Array.isArray(product?.images) && product.images.length > 0
-      ? product.images.filter(isValidImageUrl)
-      : (product?.imageUrl && isValidImageUrl(product.imageUrl) ? [product.imageUrl] : []);
-    
-    if (allProdImages.length > 0) {
-      return Array.from(new Set(allProdImages.map(img => resolveImageUrl(img, product?.id))));
+    // 1. Main Image
+    const mImg = activeColorObj?.mainImage || (Array.isArray(product?.images) ? product.images[0] : product?.imageUrl);
+    if (mImg && isValidImageUrl(mImg)) {
+      list.push({ type: 'image', url: resolveImageUrl(mImg, product?.id), label: 'Main Image' });
     }
 
-    return [resolveImageUrl(product?.imageUrl, product?.id)];
-  }, [colorSpecificImages, product]);
+    // 2. Sub Images (up to 6)
+    const sImgs = activeColorObj?.subImages || (Array.isArray(product?.images) && product.images.length > 1 ? product.images.slice(1) : []);
+    sImgs.forEach((s, idx) => {
+      if (s && isValidImageUrl(s)) {
+        const resolved = resolveImageUrl(s, product?.id);
+        if (!list.some(item => item.url === resolved)) {
+          list.push({ type: 'image', url: resolved, label: `Sub Image ${idx + 1}` });
+        }
+      }
+    });
 
-  // Auto-sync selectedImage when color or gallery changes
+    // Ensure at least 1 image
+    if (list.length === 0) {
+      list.push({ type: 'image', url: resolveImageUrl(product?.imageUrl, product?.id), label: 'Main Image' });
+    }
+
+    // 3. Video File (if available)
+    const vUrl = activeColorObj?.videoUrl || product?.videoUrl || product?.video_url;
+    if (vUrl && String(vUrl).trim()) {
+      list.push({
+        type: 'video',
+        url: resolveImageUrl(vUrl),
+        label: 'Product Video'
+      });
+    }
+
+    return list;
+  }, [activeColorObj, product]);
+
+  const [selectedMedia, setSelectedMedia] = useState(null);
+
+  // Auto-sync selectedMedia when color or mediaGallery changes
   useEffect(() => {
-    if (galleryImages.length > 0) {
-      setSelectedImage(galleryImages[0]);
+    if (mediaGallery.length > 0) {
+      setSelectedMedia(mediaGallery[0]);
     }
-  }, [selectedColor, galleryImages]);
+  }, [selectedColor, mediaGallery]);
 
-  const activeImgIndex = Math.max(0, galleryImages.indexOf(selectedImage));
+  const activeMediaIndex = Math.max(0, mediaGallery.findIndex(m => m.url === selectedMedia?.url));
 
-  const handlePrevImage = () => {
-    if (galleryImages.length <= 1) return;
-    const prevIdx = (activeImgIndex - 1 + galleryImages.length) % galleryImages.length;
-    setSelectedImage(galleryImages[prevIdx]);
+  const handlePrevMedia = () => {
+    if (mediaGallery.length <= 1) return;
+    const prevIdx = (activeMediaIndex - 1 + mediaGallery.length) % mediaGallery.length;
+    setSelectedMedia(mediaGallery[prevIdx]);
   };
 
-  const handleNextImage = () => {
-    if (galleryImages.length <= 1) return;
-    const nextIdx = (activeImgIndex + 1) % galleryImages.length;
-    setSelectedImage(galleryImages[nextIdx]);
+  const handleNextMedia = () => {
+    if (mediaGallery.length <= 1) return;
+    const nextIdx = (activeMediaIndex + 1) % mediaGallery.length;
+    setSelectedMedia(mediaGallery[nextIdx]);
   };
 
   // Mobile Touch Swipe Handlers
@@ -339,31 +385,39 @@ export default function ProductDetailPage() {
           <div className="lg:col-span-4 flex flex-col sm:flex-row gap-2 lg:sticky lg:top-[135px] self-start">
             
             {/* Vertical Thumbnail Strip (Desktop >= 640px) */}
-            {galleryImages.length > 1 && (
+            {mediaGallery.length > 1 && (
               <div className="hidden sm:flex flex-col gap-2 w-14 shrink-0 max-h-[420px] overflow-y-auto no-scrollbar">
-                {galleryImages.map((img, idx) => (
+                {mediaGallery.map((m, idx) => (
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => setSelectedImage(img)}
-                    className={`w-12 h-12 rounded-xl overflow-hidden border transition-all shrink-0 bg-white cursor-pointer ${
-                      selectedImage === img
+                    onClick={() => setSelectedMedia(m)}
+                    className={`w-12 h-12 rounded-xl overflow-hidden border transition-all shrink-0 bg-white cursor-pointer relative ${
+                      selectedMedia?.url === m.url
                         ? 'border-[#B71C1C] ring-2 ring-[#B71C1C]'
                         : 'border-slate-200 opacity-70 hover:opacity-100'
                     }`}
+                    title={m.label}
                   >
-                    <img
-                      src={resolveImageUrl(img, product?.id)}
-                      alt=""
-                      onError={(e) => handleImageError(e, product?.id)}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
+                    {m.type === 'video' ? (
+                      <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white relative">
+                        <Film className="w-4 h-4 text-purple-400" />
+                        <span className="text-[7px] font-bold uppercase tracking-tighter">VIDEO</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={resolveImageUrl(m.url, product?.id)}
+                        alt={m.label}
+                        onError={(e) => handleImageError(e, product?.id)}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    )}
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Main Image Display Container (Touch Swipeable & Responsive) */}
+            {/* Main Media Display Container (Touch Swipeable & Responsive) */}
             <div className="flex-1 space-y-2 min-w-0">
               <div
                 className="relative w-full h-[280px] sm:h-[400px] lg:h-[420px] bg-white rounded-2xl border border-slate-200/80 p-1 sm:p-2 shadow-2xs flex items-center justify-center overflow-hidden touch-pan-y"
@@ -371,37 +425,46 @@ export default function ProductDetailPage() {
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
-                <img
-                  src={resolveImageUrl(selectedImage || galleryImages[0] || product.imageUrl, product?.id)}
-                  alt={product.name}
-                  onError={(e) => handleImageError(e, product?.id)}
-                  className="max-h-full max-w-full object-contain rounded-xl transition-transform duration-300 hover:scale-105"
-                />
+                {selectedMedia?.type === 'video' ? (
+                  <video
+                    src={resolveImageUrl(selectedMedia.url)}
+                    controls
+                    autoPlay
+                    className="max-h-full max-w-full rounded-xl object-contain bg-black"
+                  />
+                ) : (
+                  <img
+                    src={resolveImageUrl(selectedMedia?.url || mediaGallery[0]?.url || product.imageUrl, product?.id)}
+                    alt={product.name}
+                    onError={(e) => handleImageError(e, product?.id)}
+                    className="max-h-full max-w-full object-contain rounded-xl transition-transform duration-300 hover:scale-105"
+                  />
+                )}
 
                 {/* Left/Right Carousel Nav Arrows */}
-                {galleryImages.length > 1 && (
+                {mediaGallery.length > 1 && (
                   <>
                     <button
                       type="button"
-                      onClick={handlePrevImage}
+                      onClick={handlePrevMedia}
                       className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-800 flex items-center justify-center shadow-md hover:bg-[#B71C1C] hover:text-white transition-colors cursor-pointer z-10"
-                      title="Previous Image"
+                      title="Previous Media"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
 
                     <button
                       type="button"
-                      onClick={handleNextImage}
+                      onClick={handleNextMedia}
                       className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-800 flex items-center justify-center shadow-md hover:bg-[#B71C1C] hover:text-white transition-colors cursor-pointer z-10"
-                      title="Next Image"
+                      title="Next Media"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
 
                     {/* Pagination Count Overlay Badge */}
                     <div className="absolute bottom-2.5 left-2.5 bg-slate-900/75 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs">
-                      {activeImgIndex + 1} / {galleryImages.length}
+                      {activeMediaIndex + 1} / {mediaGallery.length}
                     </div>
                   </>
                 )}
@@ -422,25 +485,32 @@ export default function ProductDetailPage() {
               </div>
 
               {/* Mobile Horizontal Thumbnail Strip (< 640px) */}
-              {galleryImages.length > 1 && (
+              {mediaGallery.length > 1 && (
                 <div className="flex sm:hidden items-center gap-2 overflow-x-auto no-scrollbar py-1">
-                  {galleryImages.map((img, idx) => (
+                  {mediaGallery.map((m, idx) => (
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => setSelectedImage(img)}
-                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white p-0.5 cursor-pointer ${
-                        selectedImage === img
+                      onClick={() => setSelectedMedia(m)}
+                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white p-0.5 cursor-pointer relative ${
+                        selectedMedia?.url === m.url
                           ? 'border-[#B71C1C] ring-1 ring-[#B71C1C]'
                           : 'border-slate-200 opacity-60'
                       }`}
                     >
-                      <img
-                        src={resolveImageUrl(img, product?.id)}
-                        alt=""
-                        onError={(e) => handleImageError(e, product?.id)}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
+                      {m.type === 'video' ? (
+                        <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white">
+                          <Film className="w-4 h-4 text-purple-400" />
+                          <span className="text-[7px] font-bold uppercase">VIDEO</span>
+                        </div>
+                      ) : (
+                        <img
+                          src={resolveImageUrl(m.url, product?.id)}
+                          alt=""
+                          onError={(e) => handleImageError(e, product?.id)}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      )}
                     </button>
                   ))}
                 </div>

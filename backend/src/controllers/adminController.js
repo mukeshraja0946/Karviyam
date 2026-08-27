@@ -295,56 +295,90 @@ const saveColorVariantsForProduct = async (productId, colorVariants) => {
         hex_code VARCHAR(50),
         color_code VARCHAR(50),
         is_default BOOLEAN DEFAULT FALSE,
+        main_image LONGTEXT,
+        video_url LONGTEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `).catch(() => null);
+
+    try { await pool.query('ALTER TABLE product_colors ADD COLUMN main_image LONGTEXT'); } catch (e) {}
+    try { await pool.query('ALTER TABLE product_colors ADD COLUMN video_url LONGTEXT'); } catch (e) {}
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS product_color_images (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
         product_color_id BIGINT NOT NULL,
         image_url LONGTEXT NOT NULL,
+        is_main BOOLEAN DEFAULT FALSE,
         sort_order INT DEFAULT 0
       )
     `).catch(() => null);
+
+    try { await pool.query('ALTER TABLE product_color_images ADD COLUMN is_main BOOLEAN DEFAULT FALSE'); } catch (e) {}
 
     // Delete existing colors for this product to replace cleanly
     await pool.query('DELETE FROM product_colors WHERE product_id = ?', [productId]).catch(() => null);
 
     const colorVariantMap = {};
     const allImages = [];
+    let firstProductVideo = null;
 
     for (let cIdx = 0; cIdx < colorVariants.length; cIdx++) {
       const cv = colorVariants[cIdx];
       const cName = (cv.colorName || cv.color || `Color ${cIdx + 1}`).trim();
       const cCode = cv.colorCode || cv.hexCode || '#000000';
       const isDef = Boolean(cv.isDefault);
-      const rawUrls = cv.imageUrls || cv.images || [];
-      const validUrls = Array.isArray(rawUrls)
-        ? rawUrls.map(u => typeof u === 'string' ? u.trim() : u?.imageUrl).filter(Boolean)
-        : [];
+      
+      const mainImg = cv.mainImage || (Array.isArray(cv.imageUrls) ? cv.imageUrls[0] : (Array.isArray(cv.images) ? cv.images[0] : null));
+      const subImgs = Array.isArray(cv.subImages)
+        ? cv.subImages.filter(Boolean)
+        : (Array.isArray(cv.imageUrls) ? cv.imageUrls.slice(1).filter(Boolean) : (Array.isArray(cv.images) ? cv.images.slice(1).filter(Boolean) : []));
 
-      if (validUrls.length > 0) {
-        colorVariantMap[cName] = validUrls;
-        allImages.push(...validUrls);
+      const vUrl = cv.videoUrl || cv.video || null;
+      if (vUrl && !firstProductVideo) firstProductVideo = vUrl;
+
+      // Construct unified imageUrls array: [mainImg, ...subImgs]
+      const unifiedUrls = [];
+      if (mainImg) unifiedUrls.push(mainImg);
+      subImgs.forEach(s => {
+        if (s && !unifiedUrls.includes(s)) unifiedUrls.push(s);
+      });
+
+      if (unifiedUrls.length > 0 || mainImg || vUrl) {
+        colorVariantMap[cName] = {
+          colorName: cName,
+          colorCode: cCode,
+          hexCode: cCode,
+          isDefault: isDef,
+          mainImage: mainImg || unifiedUrls[0] || '',
+          subImages: subImgs,
+          videoUrl: vUrl || '',
+          imageUrls: unifiedUrls,
+          images: unifiedUrls
+        };
+        allImages.push(...unifiedUrls);
       }
 
       const [resCol] = await pool.query(
-        'INSERT INTO product_colors (product_id, color_name, color_code, hex_code, is_default) VALUES (?, ?, ?, ?, ?)',
-        [productId, cName, cCode, cCode, isDef ? 1 : 0]
+        'INSERT INTO product_colors (product_id, color_name, color_code, hex_code, is_default, main_image, video_url) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [productId, cName, cCode, cCode, isDef ? 1 : 0, mainImg || null, vUrl || null]
       );
       const colorId = resCol.insertId;
 
-      for (let imgIdx = 0; imgIdx < validUrls.length; imgIdx++) {
+      for (let imgIdx = 0; imgIdx < unifiedUrls.length; imgIdx++) {
         await pool.query(
-          'INSERT INTO product_color_images (product_color_id, image_url, sort_order) VALUES (?, ?, ?)',
-          [colorId, validUrls[imgIdx], imgIdx]
+          'INSERT INTO product_color_images (product_color_id, image_url, is_main, sort_order) VALUES (?, ?, ?, ?)',
+          [colorId, unifiedUrls[imgIdx], imgIdx === 0 ? 1 : 0, imgIdx]
         );
       }
     }
 
     const jsonStr = JSON.stringify(colorVariantMap);
     await pool.query('UPDATE products SET color_variant_images = ? WHERE id = ?', [jsonStr, productId]).catch(() => null);
+
+    if (firstProductVideo) {
+      await pool.query('UPDATE products SET video_url = ? WHERE id = ?', [firstProductVideo, productId]).catch(() => null);
+    }
 
     if (allImages.length > 0) {
       await pool.query('DELETE FROM product_images WHERE product_id = ?', [productId]).catch(() => null);

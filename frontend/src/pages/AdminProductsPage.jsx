@@ -122,16 +122,20 @@ export default function AdminProductsPage() {
   const [selectedSkus, setSelectedSkus] = useState([]);
   const [cropperState, setCropperState] = useState(null); // { file, vIdx, imgIdx }
 
-  const handleUploadVariantImage = (file, vIdx, imgIdx) => {
+  const handleUploadVariantImage = (file, vIdx, imgType = 'main', subIdx = null) => {
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
+    if (typeof file === 'string') {
+      setCropperState({ file, vIdx, imgType, subIdx });
+      return;
+    }
+    if (!file.type || !file.type.startsWith('image/')) {
       toast.error('Please select a valid image file (PNG, JPG, WEBP)');
       return;
     }
-    setCropperState({ file, vIdx, imgIdx });
+    setCropperState({ file, vIdx, imgType, subIdx });
   };
 
-  const handleMultipleVariantFiles = (e, vIdx) => {
+  const handleMultipleVariantSubFiles = (e, vIdx) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
@@ -141,21 +145,76 @@ export default function AdminProductsPage() {
       return;
     }
 
-    const processors = validFiles.map(file => compressImage(file));
-    Promise.all(processors).then(newUrls => {
-      const validUrls = newUrls.filter(Boolean);
-      if (!validUrls.length) return;
+    setFormData(prev => {
+      const updated = [...(prev.colorVariants || [])];
+      const currentSubs = updated[vIdx]?.subImages || [];
+      const slotsLeft = 6 - currentSubs.length;
+      if (slotsLeft <= 0) {
+        toast.error('Maximum 6 sub images allowed.');
+        return prev;
+      }
+      const filesToProcess = validFiles.slice(0, slotsLeft);
+      const processors = filesToProcess.map(file => compressImage(file));
 
-      setFormData(prev => {
-        const updated = [...(prev.colorVariants || [])];
-        if (updated[vIdx]) {
-          const existingUrls = (updated[vIdx].imageUrls || []).filter(Boolean);
-          updated[vIdx].imageUrls = [...existingUrls, ...validUrls];
-        }
-        return { ...prev, colorVariants: updated };
+      Promise.all(processors).then(newUrls => {
+        const validUrls = newUrls.filter(Boolean);
+        if (!validUrls.length) return;
+
+        setFormData(innerPrev => {
+          const innerUpdated = [...(innerPrev.colorVariants || [])];
+          if (innerUpdated[vIdx]) {
+            const existingSubs = (innerUpdated[vIdx].subImages || []).filter(Boolean);
+            const combinedSubs = [...existingSubs, ...validUrls].slice(0, 6);
+            innerUpdated[vIdx].subImages = combinedSubs;
+            const mImg = innerUpdated[vIdx].mainImage || '';
+            innerUpdated[vIdx].imageUrls = [mImg, ...combinedSubs].filter(Boolean);
+          }
+          return { ...innerPrev, colorVariants: innerUpdated };
+        });
+        toast.success(`${validUrls.length} sub image(s) added!`);
       });
-      toast.success(`${validUrls.length} image(s) added to color gallery!`);
+      return prev;
     });
+  };
+
+  const handleUploadVariantVideo = async (file, vIdx) => {
+    if (!file) return;
+    if (!file.type || (!file.type.startsWith('video/') && !file.name.match(/\.(mp4|webm|mov|ogg|m4v|avi)$/i))) {
+      toast.error('Please select a valid video file (MP4, WEBM, MOV)');
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('Video file size exceeds 100MB limit');
+      return;
+    }
+
+    const toastId = toast.loading('Uploading video file...');
+    try {
+      const uploadData = new FormData();
+      uploadData.append('file', file);
+
+      const res = await api.post('/upload', uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const apiData = res.data?.data || res.data || res;
+      const vUrl = apiData.url || apiData.fileUrl || (apiData.filename ? `/uploads/${apiData.filename}` : '');
+
+      if (vUrl) {
+        setFormData(prev => {
+          const updated = [...(prev.colorVariants || [])];
+          if (updated[vIdx]) {
+            updated[vIdx].videoUrl = vUrl;
+          }
+          return { ...prev, colorVariants: updated, videoUrl: vUrl };
+        });
+        toast.success('Product video uploaded successfully!', { id: toastId });
+      } else {
+        throw new Error('Upload response did not return a valid video URL');
+      }
+    } catch (err) {
+      console.error('Video Upload Error:', err);
+      toast.error(err.response?.data?.message || 'Video upload failed', { id: toastId });
+    }
   };
 
   const handleBulkDeleteSelected = async () => {
@@ -335,8 +394,15 @@ export default function AdminProductsPage() {
       isActive: true,
       images: [],
       colorVariants: [
-        { colorName: 'Crimson Red', colorCode: '#B71C1C', isDefault: true, imageUrls: ['https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800'] },
-        { colorName: 'Obsidian Black', colorCode: '#000000', isDefault: false, imageUrls: ['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'] }
+        {
+          colorName: 'Emerald Green',
+          colorCode: '#B71C1C',
+          isDefault: true,
+          mainImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
+          subImages: [],
+          videoUrl: '',
+          imageUrls: ['https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800']
+        }
       ]
     });
     setModalOpen(true);
@@ -347,29 +413,74 @@ export default function AdminProductsPage() {
 
     let parsedVariants = [];
     if (Array.isArray(p.colorVariants) && p.colorVariants.length > 0) {
-      parsedVariants = p.colorVariants.map(cv => ({
-        colorName: cv.colorName,
-        colorCode: cv.colorCode || '#000000',
-        isDefault: !!cv.isDefault,
-        imageUrls: Array.isArray(cv.images) ? cv.images.map(i => typeof i === 'string' ? i : i.imageUrl) : [p.imageUrl || '']
-      }));
+      parsedVariants = p.colorVariants.map(cv => {
+        const rawImgs = Array.isArray(cv.imageUrls)
+          ? cv.imageUrls
+          : (Array.isArray(cv.images) ? cv.images.map(i => typeof i === 'string' ? i : i.imageUrl) : []);
+        const mainImg = cv.mainImage || rawImgs[0] || (p.imageUrl || '');
+        const subImgs = Array.isArray(cv.subImages) && cv.subImages.length > 0
+          ? cv.subImages.filter(Boolean)
+          : (rawImgs.length > 1 ? rawImgs.slice(1).filter(Boolean) : []);
+        const unified = [];
+        if (mainImg) unified.push(mainImg);
+        subImgs.forEach(s => { if (s && !unified.includes(s)) unified.push(s); });
+
+        return {
+          colorName: cv.colorName || cv.name || 'Standard',
+          colorCode: cv.colorCode || cv.hexCode || '#B71C1C',
+          isDefault: !!cv.isDefault,
+          mainImage: mainImg,
+          subImages: subImgs,
+          videoUrl: cv.videoUrl || p.videoUrl || '',
+          imageUrls: unified
+        };
+      });
     } else if (p.colorVariantImages) {
       try {
         const map = typeof p.colorVariantImages === 'string' ? JSON.parse(p.colorVariantImages) : p.colorVariantImages;
         Object.keys(map).forEach((cName, idx) => {
+          const val = map[cName];
+          let mainImg = '';
+          let subImgs = [];
+          let vUrl = p.videoUrl || '';
+          if (Array.isArray(val)) {
+            mainImg = val[0] || '';
+            subImgs = val.slice(1);
+          } else if (val && typeof val === 'object') {
+            mainImg = val.mainImage || (Array.isArray(val.imageUrls) ? val.imageUrls[0] : '');
+            subImgs = Array.isArray(val.subImages) ? val.subImages : (Array.isArray(val.imageUrls) ? val.imageUrls.slice(1) : []);
+            vUrl = val.videoUrl || p.videoUrl || '';
+          }
+          const unified = [];
+          if (mainImg) unified.push(mainImg);
+          subImgs.forEach(s => { if (s && !unified.includes(s)) unified.push(s); });
+
           parsedVariants.push({
             colorName: cName,
             colorCode: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
             isDefault: idx === 0,
-            imageUrls: map[cName] || [p.imageUrl || '']
+            mainImage: mainImg,
+            subImages: subImgs,
+            videoUrl: vUrl,
+            imageUrls: unified
           });
         });
       } catch (e) {}
     }
 
     if (parsedVariants.length === 0) {
+      const mainImg = p.imageUrl || '';
+      const extraImgs = Array.isArray(p.images) ? p.images.filter(i => i !== mainImg) : [];
       parsedVariants = [
-        { colorName: p.color || 'Standard', colorCode: '#B71C1C', isDefault: true, imageUrls: [p.imageUrl || ''] }
+        {
+          colorName: p.color || 'Standard',
+          colorCode: '#B71C1C',
+          isDefault: true,
+          mainImage: mainImg,
+          subImages: extraImgs,
+          videoUrl: p.videoUrl || '',
+          imageUrls: [mainImg, ...extraImgs].filter(Boolean)
+        }
       ];
     }
 
@@ -981,150 +1092,210 @@ export default function AdminProductsPage() {
                         )}
                       </div>
 
-                      {/* Separate Image Gallery Box for this Color */}
-                      <div className="space-y-2 pt-1 border-t border-slate-100">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <label className="block font-bold text-slate-700 text-[11px]">
-                            {variant.colorName || 'Color'} Image Gallery ({variant.imageUrls.filter(Boolean).length})
+                      {/* Structured Product Media Section (1 Main Image + Up to 6 Sub Images + 1 Video File Upload) */}
+                      <div className="pt-2 border-t border-slate-100 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="block font-extrabold text-slate-800 text-[11px] uppercase tracking-wider">
+                            {variant.colorName || 'Color'} Product Media
                           </label>
-                          <div className="flex items-center gap-2">
-                            <label className="text-[10px] font-extrabold text-[#B71C1C] hover:bg-red-50 px-2.5 py-1 rounded-lg border border-red-200 cursor-pointer flex items-center gap-1 transition-all shadow-2xs">
-                              <Upload className="w-3 h-3" />
-                              <span>+ Upload Image File(s)</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => handleMultipleVariantFiles(e, vIdx)}
-                              />
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = [...formData.colorVariants];
-                                updated[vIdx].imageUrls.push('');
-                                setFormData({ ...formData, colorVariants: updated });
-                              }}
-                              className="text-[10px] font-bold text-slate-600 hover:text-[#B71C1C] px-2 py-1 rounded border border-slate-200 hover:border-red-200 cursor-pointer transition-all"
-                            >
-                              + Add Image URL
-                            </button>
-                          </div>
+                          <span className="text-[10px] text-slate-500 font-bold">
+                            1 Main + Up to 6 Sub Images + 1 Video File
+                          </span>
                         </div>
 
-                        {/* Gallery Thumbnails Grid Preview */}
-                        {variant.imageUrls.filter(Boolean).length > 0 && (
-                          <div className="flex flex-wrap items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200/80">
-                            {variant.imageUrls.map((imgUrl, imgIdx) => {
-                              if (!imgUrl) return null;
-                              return (
-                                <div key={imgIdx} className="relative group w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-white shrink-0 shadow-2xs">
-                                  <img
-                                    src={resolveImageUrl(imgUrl)}
-                                    alt=""
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.target.onerror = null;
-                                      e.target.style.display = 'none';
-                                    }}
-                                  />
-                                  {imgIdx === 0 && (
-                                    <span className="absolute bottom-0 inset-x-0 bg-[#B71C1C] text-white text-[8px] font-black text-center py-0.5 uppercase tracking-tighter">
-                                      MAIN
-                                    </span>
-                                  )}
-                                  {/* Delete image button */}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const updated = [...formData.colorVariants];
-                                      updated[vIdx].imageUrls = updated[vIdx].imageUrls.filter((_, i) => i !== imgIdx);
-                                      setFormData({ ...formData, colorVariants: updated });
-                                    }}
-                                    className="absolute top-1 right-1 w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold opacity-90 group-hover:opacity-100 cursor-pointer shadow-xs"
-                                    title="Remove this image"
-                                  >
-                                    ✕
-                                  </button>
-                                  {/* Reorder Left */}
-                                  {imgIdx > 0 && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const updated = [...formData.colorVariants];
-                                        const arr = [...updated[vIdx].imageUrls];
-                                        const temp = arr[imgIdx - 1];
-                                        arr[imgIdx - 1] = arr[imgIdx];
-                                        arr[imgIdx] = temp;
-                                        updated[vIdx].imageUrls = arr;
-                                        setFormData({ ...formData, colorVariants: updated });
-                                      }}
-                                      className="absolute top-1 left-1 w-4 h-4 bg-slate-800 text-white rounded-full flex items-center justify-center text-[9px] font-bold opacity-0 group-hover:opacity-100 cursor-pointer"
-                                      title="Move Left (Set as earlier/main)"
-                                    >
-                                      ‹
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        <div className="space-y-1.5">
-                          {variant.imageUrls.map((imgUrl, imgIdx) => (
-                            <div key={imgIdx} className="flex items-center gap-2">
-                              {imgUrl ? (
-                                <img
-                                  src={resolveImageUrl(imgUrl)}
-                                  alt=""
-                                  className="w-8 h-8 rounded-md border border-slate-200 object-cover shrink-0 bg-slate-100"
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.style.display = 'none';
-                                  }}
-                                />
-                              ) : null}
-                              <input
-                                type="text"
-                                value={imgUrl}
-                                onChange={(e) => {
-                                  const updated = [...formData.colorVariants];
-                                  updated[vIdx].imageUrls[imgIdx] = e.target.value;
-                                  setFormData({ ...formData, colorVariants: updated });
-                                }}
-                                placeholder={`Image URL / path ${imgIdx + 1} for ${variant.colorName}`}
-                                className="flex-1 bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs"
-                              />
-                              <label className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg cursor-pointer flex items-center gap-1 shrink-0 text-[11px]" title="Crop/Replace single image">
-                                <Upload className="w-3.5 h-3.5 text-[#B71C1C]" />
-                                <span className="hidden sm:inline">Crop</span>
+                        {/* SECTION 1: MAIN IMAGE (1 MAX) */}
+                        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-[#B71C1C] flex items-center gap-1">
+                              ★ Main Product Image (Primary)
+                            </span>
+                            {!variant.mainImage && (
+                              <label className="text-[10px] font-extrabold text-[#B71C1C] hover:bg-red-50 px-2.5 py-1 rounded-lg border border-red-200 cursor-pointer flex items-center gap-1 transition-all shadow-2xs">
+                                <Upload className="w-3 h-3" />
+                                <span>Upload Main Image</span>
                                 <input
                                   type="file"
                                   accept="image/*"
                                   className="hidden"
                                   onChange={(e) => {
                                     const file = e.target.files?.[0];
-                                    if (file) handleUploadVariantImage(file, vIdx, imgIdx);
+                                    if (file) handleUploadVariantImage(file, vIdx, 'main');
                                   }}
                                 />
                               </label>
-                              {variant.imageUrls.length > 1 && (
+                            )}
+                          </div>
+
+                          {variant.mainImage ? (
+                            <div className="flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-200 shadow-2xs">
+                              <img
+                                src={resolveImageUrl(variant.mainImage)}
+                                alt="Main"
+                                className="w-14 h-14 object-cover rounded-lg border border-slate-200 shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <span className="text-[10px] font-bold text-slate-800 block truncate">{variant.mainImage}</span>
+                                <span className="text-[9px] font-extrabold text-[#B71C1C] uppercase tracking-wider">MAIN IMAGE</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setCropperState({ file: variant.mainImage, vIdx, imgType: 'main' })}
+                                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] rounded-md border border-slate-300 cursor-pointer flex items-center gap-1"
+                                >
+                                  <span>Crop</span>
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => {
                                     const updated = [...formData.colorVariants];
-                                    updated[vIdx].imageUrls = updated[vIdx].imageUrls.filter((_, i) => i !== imgIdx);
+                                    updated[vIdx].mainImage = '';
+                                    updated[vIdx].imageUrls = [updated[vIdx].mainImage, ...(updated[vIdx].subImages || [])].filter(Boolean);
                                     setFormData({ ...formData, colorVariants: updated });
                                   }}
-                                  className="text-red-500 p-1 hover:bg-red-50 rounded cursor-pointer shrink-0"
+                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-md cursor-pointer"
+                                  title="Delete Main Image"
                                 >
-                                  ✕
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
-                              )}
+                              </div>
                             </div>
-                          ))}
+                          ) : (
+                            <p className="text-[10px] text-slate-400 font-bold italic py-1">No Main Image uploaded yet.</p>
+                          )}
+                        </div>
+
+                        {/* SECTION 2: SUB IMAGES (MAX 6) */}
+                        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">
+                              Sub Images ({(variant.subImages || []).length}/6)
+                            </span>
+                            {(variant.subImages || []).length < 6 ? (
+                              <label className="text-[10px] font-extrabold text-slate-700 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-300 cursor-pointer flex items-center gap-1 transition-all">
+                                <Upload className="w-3 h-3 text-[#B71C1C]" />
+                                <span>+ Add Sub Image(s)</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  className="hidden"
+                                  onChange={(e) => handleMultipleVariantSubFiles(e, vIdx)}
+                                />
+                              </label>
+                            ) : (
+                              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                Maximum 6 sub images allowed.
+                              </span>
+                            )}
+                          </div>
+
+                          {(variant.subImages || []).length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                              {variant.subImages.map((sImg, sIdx) => (
+                                <div key={sIdx} className="bg-white p-2 rounded-lg border border-slate-200 flex items-center gap-2 justify-between shadow-2xs">
+                                  <img
+                                    src={resolveImageUrl(sImg)}
+                                    alt={`Sub ${sIdx + 1}`}
+                                    className="w-10 h-10 object-cover rounded-md border border-slate-200 shrink-0"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <span className="text-[9px] font-extrabold text-slate-700 block truncate">Sub Image {sIdx + 1}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => setCropperState({ file: sImg, vIdx, imgType: 'sub', subIdx: sIdx })}
+                                      className="text-[9px] font-bold text-slate-700 hover:text-[#B71C1C] px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 cursor-pointer"
+                                    >
+                                      Crop
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = [...formData.colorVariants];
+                                        updated[vIdx].subImages = updated[vIdx].subImages.filter((_, i) => i !== sIdx);
+                                        updated[vIdx].imageUrls = [updated[vIdx].mainImage, ...updated[vIdx].subImages].filter(Boolean);
+                                        setFormData({ ...formData, colorVariants: updated });
+                                      }}
+                                      className="text-[9px] font-bold text-red-600 hover:bg-red-50 px-1 py-0.5 rounded cursor-pointer"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-slate-400 font-bold italic py-1">No Sub Images uploaded yet (Up to 6 allowed).</p>
+                          )}
+                        </div>
+
+                        {/* SECTION 3: PRODUCT VIDEO FILE UPLOAD (0/1) */}
+                        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-800 flex items-center gap-1">
+                              <Film className="w-3.5 h-3.5 text-purple-600" />
+                              Product Video File ({variant.videoUrl ? '1/1' : '0/1'})
+                            </span>
+                            {!variant.videoUrl ? (
+                              <label className="text-[10px] font-extrabold text-purple-700 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-lg border border-purple-200 cursor-pointer flex items-center gap-1 transition-all shadow-2xs">
+                                <Upload className="w-3 h-3 text-purple-600" />
+                                <span>Upload Video File (MP4, WEBM)</span>
+                                <input
+                                  type="file"
+                                  accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleUploadVariantVideo(file, vIdx);
+                                  }}
+                                />
+                              </label>
+                            ) : null}
+                          </div>
+
+                          {variant.videoUrl ? (
+                            <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-lg border border-slate-200 shadow-2xs">
+                              <video
+                                src={resolveImageUrl(variant.videoUrl)}
+                                controls
+                                className="w-32 h-18 rounded-md object-cover bg-black shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <span className="text-[10px] font-bold text-slate-800 block truncate">{variant.videoUrl}</span>
+                                <span className="text-[9px] font-extrabold text-purple-600 uppercase tracking-wider">PRODUCT VIDEO FILE</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <label className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] rounded-md border border-slate-300 cursor-pointer flex items-center gap-1">
+                                  <span>Replace</span>
+                                  <input
+                                    type="file"
+                                    accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleUploadVariantVideo(file, vIdx);
+                                    }}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = [...formData.colorVariants];
+                                    updated[vIdx].videoUrl = '';
+                                    setFormData({ ...formData, colorVariants: updated, videoUrl: '' });
+                                  }}
+                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-md cursor-pointer"
+                                  title="Delete Video"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-slate-400 font-bold italic py-1">No video uploaded yet. Upload MP4, WEBM or MOV video file from your device.</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1141,11 +1312,6 @@ export default function AdminProductsPage() {
                   <label className="block font-bold text-slate-700 mb-1">Material / Fabric</label>
                   <input type="text" value={formData.material} onChange={(e) => setFormData({ ...formData, material: e.target.value })} className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none" placeholder="Silk, Cotton, Brass..." />
                 </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Video URL (Optional)</label>
-                <input type="text" value={formData.videoUrl} onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })} className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none" placeholder="https://..." />
               </div>
 
               <div>
@@ -1215,14 +1381,28 @@ export default function AdminProductsPage() {
         configType="productGallery"
         onConfirmCrop={(croppedUrl) => {
           if (cropperState) {
-            const { vIdx, imgIdx } = cropperState;
-            const updated = [...formData.colorVariants];
-            if (imgIdx >= updated[vIdx].imageUrls.length) {
-              updated[vIdx].imageUrls.push(croppedUrl);
-            } else {
-              updated[vIdx].imageUrls[imgIdx] = croppedUrl;
-            }
-            setFormData({ ...formData, colorVariants: updated });
+            const { vIdx, imgType, subIdx } = cropperState;
+            setFormData(prev => {
+              const updated = [...(prev.colorVariants || [])];
+              if (updated[vIdx]) {
+                if (imgType === 'main') {
+                  updated[vIdx].mainImage = croppedUrl;
+                } else if (imgType === 'sub') {
+                  const subArr = [...(updated[vIdx].subImages || [])];
+                  if (subIdx !== null && subIdx !== undefined && subIdx < subArr.length) {
+                    subArr[subIdx] = croppedUrl;
+                  } else {
+                    subArr.push(croppedUrl);
+                  }
+                  updated[vIdx].subImages = subArr.slice(0, 6);
+                }
+                const mI = updated[vIdx].mainImage || '';
+                const sI = (updated[vIdx].subImages || []).filter(Boolean);
+                updated[vIdx].imageUrls = [mI, ...sI].filter(Boolean);
+              }
+              return { ...prev, colorVariants: updated };
+            });
+            toast.success('Cropped image saved!');
           }
           setCropperState(null);
         }}
