@@ -3,6 +3,7 @@ import { useSearchParams, useParams, useNavigate, useLocation } from 'react-rout
 import ProductCard from '../components/ProductCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 import api from '../utils/api';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import toast from 'react-hot-toast';
@@ -447,8 +448,9 @@ export default function ShopPage() {
                       onClick={() => navigate(`/product/${product.id}`)}
                     >
                       <img
-                        src={product.imageUrl || product.image || (Array.isArray(product.images) && product.images[0]) || 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600'}
+                        src={resolveImageUrl(product.imageUrl || product.image || (Array.isArray(product.images) && product.images[0]), product.id)}
                         alt={product.name}
+                        onError={(e) => handleImageError(e, product.id)}
                         className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
                       />
                       

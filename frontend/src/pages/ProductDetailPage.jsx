@@ -26,7 +26,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import api from '../utils/api';
-import { resolveImageUrl } from '../utils/imageUtils';
+import { resolveImageUrl, isValidImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import ProductReviewsSection from '../components/ProductReviewsSection';
 
@@ -115,12 +115,12 @@ export default function ProductDetailPage() {
         const rawImgs = Array.isArray(item.images) && item.images.length > 0
           ? item.images
           : (item.imageUrl ? [item.imageUrl] : []);
-        const validImgs = Array.from(new Set(rawImgs.filter(Boolean)));
+        const validImgs = Array.from(new Set(rawImgs.filter(isValidImageUrl)));
 
         if (validImgs.length > 0) {
           setSelectedImage(validImgs[0]);
         } else {
-          setSelectedImage(item.imageUrl || '');
+          setSelectedImage(resolveImageUrl(item.imageUrl, item.id));
         }
 
         // Derive initial color variant
@@ -167,7 +167,10 @@ export default function ProductDetailPage() {
       ? product.images
       : (product?.imageUrl ? [product.imageUrl] : []));
 
-  const galleryImages = Array.from(new Set(rawGallery.filter(Boolean)));
+  const validGallery = rawGallery.filter(isValidImageUrl);
+  const galleryImages = validGallery.length > 0
+    ? Array.from(new Set(validGallery))
+    : [resolveImageUrl(product?.imageUrl, product?.id)];
 
   // Auto-sync selectedImage when color or gallery changes
   useEffect(() => {
@@ -324,7 +327,12 @@ export default function ProductDetailPage() {
                         : 'border-slate-200 opacity-70 hover:opacity-100'
                     }`}
                   >
-                    <img src={resolveImageUrl(img)} alt="" className="w-full h-full object-cover rounded-lg" />
+                    <img
+                      src={resolveImageUrl(img, product?.id)}
+                      alt=""
+                      onError={(e) => handleImageError(e, product?.id)}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
                   </button>
                 ))}
               </div>
@@ -339,8 +347,9 @@ export default function ProductDetailPage() {
                 onTouchEnd={handleTouchEnd}
               >
                 <img
-                  src={resolveImageUrl(selectedImage || galleryImages[0] || product.imageUrl)}
+                  src={resolveImageUrl(selectedImage || galleryImages[0] || product.imageUrl, product?.id)}
                   alt={product.name}
+                  onError={(e) => handleImageError(e, product?.id)}
                   className="max-h-full max-w-full object-contain rounded-xl transition-transform duration-300 hover:scale-105"
                 />
 
@@ -401,7 +410,12 @@ export default function ProductDetailPage() {
                           : 'border-slate-200 opacity-60'
                       }`}
                     >
-                      <img src={resolveImageUrl(img)} alt="" className="w-full h-full object-cover rounded-lg" />
+                      <img
+                        src={resolveImageUrl(img, product?.id)}
+                        alt=""
+                        onError={(e) => handleImageError(e, product?.id)}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
                     </button>
                   ))}
                 </div>

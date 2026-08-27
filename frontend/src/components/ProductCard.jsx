@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Heart, Star, ShoppingBag, Truck } from 'lucide-react';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
@@ -50,8 +51,9 @@ export default function ProductCard({ product }) {
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
-            src={product.imageUrl || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800'}
+            src={resolveImageUrl(product.imageUrl || product.image, product.id)}
             alt={product.name}
+            onError={(e) => handleImageError(e, product.id)}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
@@ -195,8 +197,9 @@ export default function ProductCard({ product }) {
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
-            src={product.imageUrl || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400'}
+            src={resolveImageUrl(product.imageUrl || product.image, product.id)}
             alt={product.name}
+            onError={(e) => handleImageError(e, product.id)}
             className="w-full h-full object-contain"
             loading="lazy"
           />
