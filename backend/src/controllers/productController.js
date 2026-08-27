@@ -19,7 +19,15 @@ const mapProductRowToDTO = async (p) => {
       const [cImages] = await pool.query('SELECT image_url, is_main FROM product_color_images WHERE product_color_id = ? ORDER BY sort_order ASC, id ASC', [c.id]);
       const validImgs = cImages.map(ci => ci.image_url).filter(Boolean);
       const mainImg = c.main_image || validImgs[0] || '';
-      const subImgs = validImgs.length > 1 ? validImgs.slice(1) : [];
+      const subImgs = mainImg
+        ? validImgs.filter(img => img && img !== mainImg)
+        : (validImgs.length > 1 ? validImgs.slice(1) : []);
+
+      const unifiedImgs = [];
+      if (mainImg) unifiedImgs.push(mainImg);
+      subImgs.forEach(s => {
+        if (s && !unifiedImgs.includes(s)) unifiedImgs.push(s);
+      });
 
       colors.push({
         id: c.id,
@@ -30,8 +38,8 @@ const mapProductRowToDTO = async (p) => {
         mainImage: mainImg,
         subImages: subImgs,
         videoUrl: c.video_url || p.video_url || '',
-        imageUrls: validImgs.length > 0 ? validImgs : (mainImg ? [mainImg, ...subImgs] : []),
-        images: validImgs.length > 0 ? validImgs : (mainImg ? [mainImg, ...subImgs] : [])
+        imageUrls: unifiedImgs,
+        images: unifiedImgs
       });
     }
   } catch (e) {}
@@ -44,14 +52,16 @@ const mapProductRowToDTO = async (p) => {
           const val = parsedMap[cName];
           if (Array.isArray(val)) {
             const imgs = val.filter(Boolean);
+            const mainImg = imgs[0] || '';
+            const subImgs = imgs.slice(1);
             colors.push({
               id: idx + 1,
               colorName: cName,
               colorCode: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
               hexCode: cName.toLowerCase().includes('black') ? '#000000' : (cName.toLowerCase().includes('white') ? '#FFFFFF' : '#B71C1C'),
               isDefault: idx === 0,
-              mainImage: imgs[0] || '',
-              subImages: imgs.slice(1),
+              mainImage: mainImg,
+              subImages: subImgs,
               videoUrl: p.video_url || '',
               imageUrls: imgs,
               images: imgs
@@ -59,7 +69,13 @@ const mapProductRowToDTO = async (p) => {
           } else if (val && typeof val === 'object') {
             const imgs = Array.isArray(val.imageUrls) ? val.imageUrls.filter(Boolean) : [];
             const mainImg = val.mainImage || imgs[0] || '';
-            const subImgs = Array.isArray(val.subImages) ? val.subImages.filter(Boolean) : (imgs.slice(1));
+            const subImgs = Array.isArray(val.subImages)
+              ? val.subImages.filter(Boolean)
+              : imgs.filter(i => i && i !== mainImg);
+            const unifiedImgs = [];
+            if (mainImg) unifiedImgs.push(mainImg);
+            subImgs.forEach(s => { if (s && !unifiedImgs.includes(s)) unifiedImgs.push(s); });
+
             colors.push({
               id: idx + 1,
               colorName: val.colorName || cName,
@@ -69,8 +85,8 @@ const mapProductRowToDTO = async (p) => {
               mainImage: mainImg,
               subImages: subImgs,
               videoUrl: val.videoUrl || p.video_url || '',
-              imageUrls: imgs.length > 0 ? imgs : (mainImg ? [mainImg, ...subImgs] : []),
-              images: imgs.length > 0 ? imgs : (mainImg ? [mainImg, ...subImgs] : [])
+              imageUrls: unifiedImgs,
+              images: unifiedImgs
             });
           }
         });

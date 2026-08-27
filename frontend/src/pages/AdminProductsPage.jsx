@@ -145,36 +145,20 @@ export default function AdminProductsPage() {
       return;
     }
 
-    setFormData(prev => {
-      const updated = [...(prev.colorVariants || [])];
-      const currentSubs = updated[vIdx]?.subImages || [];
-      const slotsLeft = 6 - currentSubs.length;
-      if (slotsLeft <= 0) {
-        toast.error('Maximum 6 sub images allowed.');
-        return prev;
-      }
-      const filesToProcess = validFiles.slice(0, slotsLeft);
-      const processors = filesToProcess.map(file => compressImage(file));
+    const currentSubs = formData.colorVariants?.[vIdx]?.subImages || [];
+    if (currentSubs.length >= 6) {
+      toast.error('Maximum 6 sub images allowed.');
+      return;
+    }
 
-      Promise.all(processors).then(newUrls => {
-        const validUrls = newUrls.filter(Boolean);
-        if (!validUrls.length) return;
-
-        setFormData(innerPrev => {
-          const innerUpdated = [...(innerPrev.colorVariants || [])];
-          if (innerUpdated[vIdx]) {
-            const existingSubs = (innerUpdated[vIdx].subImages || []).filter(Boolean);
-            const combinedSubs = [...existingSubs, ...validUrls].slice(0, 6);
-            innerUpdated[vIdx].subImages = combinedSubs;
-            const mImg = innerUpdated[vIdx].mainImage || '';
-            innerUpdated[vIdx].imageUrls = [mImg, ...combinedSubs].filter(Boolean);
-          }
-          return { ...innerPrev, colorVariants: innerUpdated };
-        });
-        toast.success(`${validUrls.length} sub image(s) added!`);
-      });
-      return prev;
+    // Open cropper for sub image file upload
+    setCropperState({
+      file: validFiles[0],
+      vIdx,
+      imgType: 'sub',
+      subIdx: null
     });
+    e.target.value = '';
   };
 
   const handleUploadVariantVideo = async (file, vIdx) => {
@@ -420,7 +404,7 @@ export default function AdminProductsPage() {
         const mainImg = cv.mainImage || rawImgs[0] || (p.imageUrl || '');
         const subImgs = Array.isArray(cv.subImages) && cv.subImages.length > 0
           ? cv.subImages.filter(Boolean)
-          : (rawImgs.length > 1 ? rawImgs.slice(1).filter(Boolean) : []);
+          : rawImgs.filter(img => img && img !== mainImg);
         const unified = [];
         if (mainImg) unified.push(mainImg);
         subImgs.forEach(s => { if (s && !unified.includes(s)) unified.push(s); });
@@ -447,8 +431,11 @@ export default function AdminProductsPage() {
             mainImg = val[0] || '';
             subImgs = val.slice(1);
           } else if (val && typeof val === 'object') {
-            mainImg = val.mainImage || (Array.isArray(val.imageUrls) ? val.imageUrls[0] : '');
-            subImgs = Array.isArray(val.subImages) ? val.subImages : (Array.isArray(val.imageUrls) ? val.imageUrls.slice(1) : []);
+            const raw = Array.isArray(val.imageUrls) ? val.imageUrls.filter(Boolean) : [];
+            mainImg = val.mainImage || raw[0] || '';
+            subImgs = Array.isArray(val.subImages)
+              ? val.subImages.filter(Boolean)
+              : raw.filter(i => i && i !== mainImg);
             vUrl = val.videoUrl || p.videoUrl || '';
           }
           const unified = [];
@@ -606,7 +593,23 @@ export default function AdminProductsPage() {
       const colorVariantImagesMap = {};
       (formData.colorVariants || []).forEach(v => {
         if (v.colorName) {
-          colorVariantImagesMap[v.colorName] = (v.imageUrls || []).filter(Boolean);
+          const mainImg = v.mainImage || (v.imageUrls ? v.imageUrls[0] : '');
+          const subImgs = Array.isArray(v.subImages) && v.subImages.length > 0
+            ? v.subImages.filter(Boolean)
+            : (v.imageUrls ? v.imageUrls.filter(i => i && i !== mainImg) : []);
+          const unified = [];
+          if (mainImg) unified.push(mainImg);
+          subImgs.forEach(s => { if (s && !unified.includes(s)) unified.push(s); });
+
+          colorVariantImagesMap[v.colorName] = {
+            colorName: v.colorName,
+            colorCode: v.colorCode || '#000000',
+            isDefault: !!v.isDefault,
+            mainImage: mainImg,
+            subImages: subImgs,
+            videoUrl: v.videoUrl || '',
+            imageUrls: unified
+          };
         }
       });
 
