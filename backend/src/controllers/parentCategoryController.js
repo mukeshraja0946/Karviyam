@@ -1,4 +1,4 @@
-const { pool } = require('../config/db');
+const pool = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
 
 // Helper to format DTO
