@@ -21,7 +21,8 @@ import {
   Tag,
   Award,
   Box,
-  RefreshCw
+  RefreshCw,
+  Film
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
