@@ -279,9 +279,9 @@ export default function ProductDetailPage() {
     if (!touchStart || !touchEnd) return;
     const distance = touchStart - touchEnd;
     if (distance > 50) {
-      handleNextImage();
+      handleNextMedia();
     } else if (distance < -50) {
-      handlePrevImage();
+      handlePrevMedia();
     }
     setTouchStart(null);
     setTouchEnd(null);
