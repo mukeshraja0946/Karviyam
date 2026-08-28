@@ -31,7 +31,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import api from '../utils/api';
-import { resolveImageUrl, resolveVideoUrl, isValidImageUrl, handleImageError } from '../utils/imageUtils';
+import { resolveImageUrl, resolveVideoUrl, isValidVideoUrl, isValidImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import ProductReviewsSection from '../components/ProductReviewsSection';
 
@@ -258,7 +258,7 @@ export default function ProductDetailPage() {
 
     // 3. Video File (if available)
     const vUrl = activeColorObj?.videoUrl || product?.videoUrl || product?.video_url;
-    if (vUrl && String(vUrl).trim()) {
+    if (vUrl && String(vUrl).trim() && isValidVideoUrl(vUrl)) {
       list.push({
         type: 'video',
         url: resolveVideoUrl(vUrl),

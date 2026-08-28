@@ -57,6 +57,14 @@ export const resolveImageUrl = (path, fallbackSeed = 0) => {
   return relativePath;
 };
 
+export const isValidVideoUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith('data:video/') || trimmed.startsWith('blob:')) return true;
+  return /\.(mp4|webm|ogg|mov|m4v|avi)(\?.*)?$/i.test(trimmed) || trimmed.includes('/video/');
+};
+
 export const resolveVideoUrl = (path) => {
   if (!path || typeof path !== 'string') return '';
   const trimmed = path.trim();
