@@ -22,7 +22,11 @@ import {
   Award,
   Box,
   RefreshCw,
-  Film
+  Film,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -51,6 +55,28 @@ export default function ProductDetailPage() {
 
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
+
+  const videoRef = React.useRef(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(true);
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
+
+  const togglePlayPause = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(() => {});
+      setIsVideoPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsVideoPlaying(false);
+    }
+  };
+
+  const toggleMute = (e) => {
+    e.stopPropagation();
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsVideoMuted(videoRef.current.muted);
+  };
 
   useEffect(() => {
     const syncLocationPincode = () => {
@@ -427,12 +453,47 @@ export default function ProductDetailPage() {
                 onTouchEnd={handleTouchEnd}
               >
                 {selectedMedia?.type === 'video' ? (
-                  <video
-                    src={resolveImageUrl(selectedMedia.url)}
-                    controls
-                    autoPlay
-                    className="max-h-full max-w-full rounded-xl object-contain bg-black"
-                  />
+                  <div
+                    className="relative w-full h-full flex items-center justify-center bg-black rounded-xl overflow-hidden group cursor-pointer"
+                    onClick={togglePlayPause}
+                  >
+                    <video
+                      ref={videoRef}
+                      src={resolveImageUrl(selectedMedia.url)}
+                      autoPlay
+                      loop
+                      muted={isVideoMuted}
+                      playsInline
+                      onPlay={() => setIsVideoPlaying(true)}
+                      onPause={() => setIsVideoPlaying(false)}
+                      className="max-h-full max-w-full rounded-xl object-contain"
+                    />
+
+                    {/* Clean Central Play / Pause Toggle Button Overlay */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePlayPause();
+                      }}
+                      className={`absolute inset-0 m-auto w-14 h-14 rounded-full bg-slate-900/80 hover:bg-[#B71C1C] text-white flex items-center justify-center shadow-xl transition-all duration-300 transform backdrop-blur-xs z-20 ${
+                        isVideoPlaying ? 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100' : 'opacity-100 scale-100'
+                      }`}
+                      title={isVideoPlaying ? 'Pause Video' : 'Play Video'}
+                    >
+                      {isVideoPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-0.5" />}
+                    </button>
+
+                    {/* Mute / Unmute Corner Toggle */}
+                    <button
+                      type="button"
+                      onClick={toggleMute}
+                      className="absolute bottom-3 right-3 p-2 rounded-full bg-slate-900/80 text-white hover:bg-[#B71C1C] transition-all backdrop-blur-xs z-20 cursor-pointer"
+                      title={isVideoMuted ? 'Unmute Sound' : 'Mute Sound'}
+                    >
+                      {isVideoMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
+                  </div>
                 ) : (
                   <img
                     src={resolveImageUrl(selectedMedia?.url || mediaGallery[0]?.url || product.imageUrl, product?.id)}
