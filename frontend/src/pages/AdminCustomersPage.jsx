@@ -508,6 +508,29 @@ export default function AdminCustomersPage() {
           <p className="text-xs text-slate-500">View customer profiles, orders, wallet balances & access permissions</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const response = await api.get('/admin/excel/customers/export', { responseType: 'blob' });
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', 'karviyam_customers_export.xlsx');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                toast.success('Exported customer list!');
+              } catch (err) {
+                toast.error('Failed to export customers');
+              }
+            }}
+            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Users className="w-3.5 h-3.5 text-white" />
+            <span>Export Customers</span>
+          </button>
+
           <ExportDropdown
             filename="customers_report"
             title="Customer Profiles & Orders Report"

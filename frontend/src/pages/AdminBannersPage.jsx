@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Image as ImageIcon, Plus, Trash2, Edit2, X, Eye, Upload, Link as LinkIcon, Power, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Plus, Trash2, Edit2, X, Eye, Upload, Link as LinkIcon, Power, CheckCircle, AlertCircle, Loader2, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
+import BulkImportModal from '../components/BulkImportModal';
 
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState([]);
@@ -258,6 +258,8 @@ export default function AdminBannersPage() {
     }
   };
 
+  const [importModalOpen, setImportModalOpen] = useState(false);
+
   return (
     <div className="space-y-6">
       
@@ -267,13 +269,46 @@ export default function AdminBannersPage() {
           <p className="text-xs text-slate-500">Manage hero slider images, titles, promotional links & active status</p>
         </div>
 
-        <button
-          onClick={handleOpenAddModal}
-          className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Banner</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const response = await api.get('/admin/excel/banners/export', { responseType: 'blob' });
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', 'karviyam_banners_export.xlsx');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                toast.success('Exported homepage banners!');
+              } catch (err) {
+                toast.error('Failed to export banners');
+              }
+            }}
+            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-white" />
+            <span>Export Banners</span>
+          </button>
+
+          <button
+            onClick={() => setImportModalOpen(true)}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>Import Banners</span>
+          </button>
+
+          <button
+            onClick={handleOpenAddModal}
+            className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Banner</span>
+          </button>
+        </div>
       </div>
 
       {/* Auto-Scroll & Slider Timing Controls Bar */}
@@ -586,6 +621,14 @@ export default function AdminBannersPage() {
           </div>
         </div>
       )}
+
+      {/* Bulk Banner Import Modal */}
+      <BulkImportModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        type="banners"
+        onImportSuccess={fetchBanners}
+      />
 
       {/* Standardized Image Cropper Modal */}
       <ImageUploadCropperModal

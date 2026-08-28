@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Layers, Plus, Trash2, Edit2, Save, X, Search, Image as ImageIcon, Upload, Link as LinkIcon, Eye, EyeOff, Check, FileSpreadsheet } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
-import BulkCategoryImportModal from '../components/BulkCategoryImportModal';
+import BulkImportModal from '../components/BulkImportModal';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 
 const CLASSIFICATION_OPTIONS = [
@@ -446,6 +446,29 @@ export default function AdminCategoriesPage() {
           <p className="text-xs text-slate-500">Manage product categories, visibility, sorting and category details.</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const response = await api.get('/admin/excel/categories/export', { responseType: 'blob' });
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', 'karviyam_categories_export.xlsx');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                toast.success('Exported category catalog!');
+              } catch (err) {
+                toast.error('Failed to export categories');
+              }
+            }}
+            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-white" />
+            <span>Export Categories</span>
+          </button>
+
           <button
             onClick={() => setImportModalOpen(true)}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
@@ -900,10 +923,11 @@ export default function AdminCategoriesPage() {
       )}
 
       {/* Bulk Category Import Modal */}
-      <BulkCategoryImportModal
+      <BulkImportModal
         isOpen={importModalOpen}
         onClose={() => setImportModalOpen(false)}
-        onSuccess={fetchCategories}
+        type="categories"
+        onImportSuccess={fetchCategories}
       />
 
       {/* Standardized Category Image Cropper Modal */}

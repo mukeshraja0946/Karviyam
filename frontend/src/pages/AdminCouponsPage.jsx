@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { Ticket, Plus, Trash2, Edit2, X, CheckCircle } from 'lucide-react';
+import { Ticket, Plus, Trash2, Edit2, X, CheckCircle, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
-
 import api from '../utils/api';
+import BulkImportModal from '../components/BulkImportModal';
 
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState([]);
@@ -164,6 +163,8 @@ export default function AdminCouponsPage() {
     }
   };
 
+  const [importModalOpen, setImportModalOpen] = useState(false);
+
   return (
     <div className="space-y-6">
       
@@ -173,13 +174,46 @@ export default function AdminCouponsPage() {
           <p className="text-xs text-slate-500">Create, edit, and manage discount promo codes for checkout</p>
         </div>
 
-        <button
-          onClick={handleOpenAddModal}
-          className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create New Coupon</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const response = await api.get('/admin/excel/coupons/export', { responseType: 'blob' });
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', 'karviyam_coupons_export.xlsx');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                toast.success('Exported coupons list!');
+              } catch (err) {
+                toast.error('Failed to export coupons');
+              }
+            }}
+            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-white" />
+            <span>Export Coupons</span>
+          </button>
+
+          <button
+            onClick={() => setImportModalOpen(true)}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>Import Coupons</span>
+          </button>
+
+          <button
+            onClick={handleOpenAddModal}
+            className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create New Coupon</span>
+          </button>
+        </div>
       </div>
 
       {/* Coupons List Cards */}
@@ -282,6 +316,14 @@ export default function AdminCouponsPage() {
           </div>
         </div>
       )}
+
+      {/* Bulk Coupon Import Modal */}
+      <BulkImportModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        type="coupons"
+        onImportSuccess={fetchCoupons}
+      />
 
     </div>
   );

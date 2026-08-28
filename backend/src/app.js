@@ -30,6 +30,7 @@ const settingRoutes = require('./routes/settingRoutes');
 const pincodeRoutes = require('./routes/pincodeRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const auditLogRoutes = require('./routes/auditLogRoutes');
+const excelRoutes = require('./routes/excelRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const settingController = require('./controllers/settingController');
 const contactController = require('./controllers/contactController');
@@ -202,6 +203,8 @@ app.get('/api/footer-settings', settingController.getFooterSettings);
 app.use('/api/pincodes', pincodeRoutes);
 
 app.use('/api/admin/audit-logs', auditLogRoutes);
+
+app.use('/api/admin/excel', excelRoutes);
 
 app.use('/api/admin', adminRoutes);
 

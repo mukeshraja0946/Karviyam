@@ -779,18 +779,35 @@ export default function AdminProductsPage() {
             </button>
           )}
 
-          <ExportDropdown
-            filename="products_catalog"
-            title="Product Catalog Report"
-            headers={PRODUCT_EXPORT_HEADERS}
-            data={selectedSkus.length > 0 ? filtered.filter(p => selectedSkus.includes(p.sku || p.id)) : filtered}
-          />
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const response = await api.get('/admin/excel/products/export', { responseType: 'blob' });
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', 'karviyam_products_export.xlsx');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                toast.success('Exported complete multi-sheet product catalog!');
+              } catch (err) {
+                toast.error('Failed to export multi-sheet products');
+              }
+            }}
+            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-white" />
+            <span>Export Products (Excel)</span>
+          </button>
+
           <button
             onClick={() => setImportModalOpen(true)}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-            <span>Bulk Import / Export</span>
+            <span>Import / Restore Products</span>
           </button>
 
           <button
