@@ -396,8 +396,14 @@ export default function AdminProductsPage() {
     setEditingProduct(p);
 
     let parsedVariants = [];
-    if (Array.isArray(p.colorVariants) && p.colorVariants.length > 0) {
-      parsedVariants = p.colorVariants.map(cv => {
+    const variantsArray = (Array.isArray(p.colorVariants) && p.colorVariants.length > 0)
+      ? p.colorVariants
+      : ((Array.isArray(p.colors) && p.colors.length > 0)
+        ? p.colors
+        : ((Array.isArray(p.color_variants) && p.color_variants.length > 0) ? p.color_variants : []));
+
+    if (variantsArray.length > 0) {
+      parsedVariants = variantsArray.map(cv => {
         const rawImgs = Array.isArray(cv.imageUrls)
           ? cv.imageUrls
           : (Array.isArray(cv.images) ? cv.images.map(i => typeof i === 'string' ? i : i.imageUrl) : []);
@@ -419,9 +425,10 @@ export default function AdminProductsPage() {
           imageUrls: unified
         };
       });
-    } else if (p.colorVariantImages) {
+    } else if (p.colorVariantImages || p.color_variant_images) {
       try {
-        const map = typeof p.colorVariantImages === 'string' ? JSON.parse(p.colorVariantImages) : p.colorVariantImages;
+        const rawMap = p.colorVariantImages || p.color_variant_images;
+        const map = typeof rawMap === 'string' ? JSON.parse(rawMap) : rawMap;
         Object.keys(map).forEach((cName, idx) => {
           const val = map[cName];
           let mainImg = '';
