@@ -612,7 +612,7 @@ export default function AdminProductsPage() {
       (formData.colorVariants || []).forEach(v => {
         if (v.colorName) {
           const mainImg = v.mainImage || (v.imageUrls ? v.imageUrls[0] : '');
-          const subImgs = Array.isArray(v.subImages) && v.subImages.length > 0
+          const subImgs = Array.isArray(v.subImages)
             ? v.subImages.filter(Boolean)
             : (v.imageUrls ? v.imageUrls.filter(i => i && i !== mainImg) : []);
           const unified = [];

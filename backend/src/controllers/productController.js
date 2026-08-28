@@ -27,7 +27,20 @@ const mapProductRowToDTO = async (p) => {
       const [cImages] = await pool.query('SELECT image_url, is_main FROM product_color_images WHERE product_color_id = ? ORDER BY sort_order ASC, id ASC', [c.id]);
       const validSubImgs = cImages.map(ci => ci.image_url).filter(Boolean);
       const mainImg = c.main_image || '';
-      const subImgs = validSubImgs.filter(img => img && img !== mainImg);
+      let subImgs = validSubImgs.filter(img => img && img !== mainImg);
+
+      // Dual-storage check: If relational table had 0 sub images, check color_variant_images JSON column
+      if (subImgs.length === 0 && p.color_variant_images) {
+        try {
+          const rawMap = typeof p.color_variant_images === 'string' ? JSON.parse(p.color_variant_images) : p.color_variant_images;
+          if (rawMap && typeof rawMap === 'object') {
+            const val = rawMap[c.color_name] || rawMap[cName];
+            if (val && typeof val === 'object' && Array.isArray(val.subImages)) {
+              subImgs = val.subImages.filter(Boolean);
+            }
+          }
+        } catch (eJson) {}
+      }
 
       const unifiedImgs = [];
       if (mainImg) unifiedImgs.push(mainImg);
