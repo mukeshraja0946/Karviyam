@@ -47,6 +47,8 @@ export default function HomePage() {
   const [mobileViewMode, setMobileViewMode] = useState(getInitialViewMode);
   const [mobileBannerIndex, setMobileBannerIndex] = useState(0);
   const [mobileBanners, setMobileBanners] = useState([]);
+  const [mobileBannerSpeed, setMobileBannerSpeed] = useState(5000);
+  const [mobileAutoScroll, setMobileAutoScroll] = useState(true);
   const [homeCategories, setHomeCategories] = useState([]);
 
   const syncLayoutSettings = () => {
@@ -63,6 +65,9 @@ export default function HomePage() {
 
   const fetchBanners = async () => {
     try {
+      let currentAuto = true;
+      let currentSpeed = 5000;
+
       const res = await api.get('/banners').catch(() => null);
       const apiData = res?.data ? res.data : res;
       const rawData = apiData?.data !== undefined ? apiData.data : apiData;
@@ -70,14 +75,19 @@ export default function HomePage() {
       let list = [];
       if (Array.isArray(rawData)) {
         list = rawData;
-      } else if (rawData && typeof rawData === 'object' && Array.isArray(rawData.banners)) {
-        list = rawData.banners;
+      } else if (rawData && typeof rawData === 'object') {
+        if (Array.isArray(rawData.banners)) list = rawData.banners;
+        if (rawData.autoScroll !== undefined) currentAuto = Boolean(rawData.autoScroll);
+        if (rawData.speed !== undefined) currentSpeed = Number(rawData.speed);
       }
 
+      setMobileAutoScroll(currentAuto);
+      setMobileBannerSpeed(currentSpeed);
+
       if (Array.isArray(list)) {
-        const activeBanners = list.filter(b => b && b.isActive !== false && String(b.status).toLowerCase() === 'active');
+        const activeBanners = list.filter(b => b && b.isActive !== false && String(b.status || 'active').toLowerCase() === 'active');
         const formatted = activeBanners.map(b => {
-          const rawImg = b.imageUrl || b.imagePath || b.image || '';
+          const rawImg = b.mobileImageUrl || b.imageUrl || b.imagePath || b.image || '';
           const resolvedImg = resolveImageUrl(rawImg);
           return {
             id: b.id,
@@ -141,26 +151,39 @@ export default function HomePage() {
       setMobileBannerIndex(0);
       return;
     }
-    setMobileBannerIndex(0);
-    if (mobileBanners.length <= 1) return;
+    if (mobileBannerIndex >= mobileBanners.length) {
+      setMobileBannerIndex(0);
+    }
+    if (!mobileAutoScroll || mobileBanners.length <= 1) return;
 
     const timer = setInterval(() => {
       setMobileBannerIndex((prev) => (prev + 1) % mobileBanners.length);
-    }, 4000);
+    }, mobileBannerSpeed);
     return () => clearInterval(timer);
-  }, [mobileBanners.length]);
+  }, [mobileBanners.length, mobileAutoScroll, mobileBannerSpeed, mobileBannerIndex]);
 
   useEffect(() => {
     fetchHomeProducts();
     fetchBanners();
     fetchHomeCategories();
     syncLayoutSettings();
+
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchBanners();
+        fetchHomeProducts();
+      }
+    };
+
     window.addEventListener('karviyam_products_updated', fetchHomeProducts);
     window.addEventListener('karviyam_banners_updated', fetchBanners);
     window.addEventListener('karviyam_categories_updated', fetchHomeCategories);
     window.addEventListener('karviyam_parent_categories_updated', fetchHomeCategories);
     window.addEventListener('karviyam_section_layouts_updated', syncLayoutSettings);
+    window.addEventListener('focus', handleFocusOrVisible);
+    window.addEventListener('visibilitychange', handleFocusOrVisible);
     window.addEventListener('storage', () => {
+      fetchBanners();
       fetchHomeProducts();
       fetchHomeCategories();
       syncLayoutSettings();
@@ -171,6 +194,8 @@ export default function HomePage() {
       window.removeEventListener('karviyam_categories_updated', fetchHomeCategories);
       window.removeEventListener('karviyam_parent_categories_updated', fetchHomeCategories);
       window.removeEventListener('karviyam_section_layouts_updated', syncLayoutSettings);
+      window.removeEventListener('focus', handleFocusOrVisible);
+      window.removeEventListener('visibilitychange', handleFocusOrVisible);
     };
   }, []);
 

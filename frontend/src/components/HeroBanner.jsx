@@ -46,7 +46,7 @@ export default function HeroBanner() {
           return isAct;
         });
         const formatted = activeList.map(b => {
-          const rawImg = b.imageUrl || b.imagePath || b.image || '';
+          const rawImg = b.desktopImageUrl || b.imageUrl || b.imagePath || b.image || '';
           const resolvedImg = resolveImageUrl(rawImg);
           return {
             id: b.id,

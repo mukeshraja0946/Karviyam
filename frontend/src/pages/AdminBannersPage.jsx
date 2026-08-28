@@ -107,7 +107,7 @@ export default function AdminBannersPage() {
 
   const handleOpenAddModal = () => {
     setEditingBanner(null);
-    setFormData({ title: '', subtitle: '', imagePath: '', link: '/shop', status: 'active' });
+    setFormData({ title: '', subtitle: '', imagePath: '', desktopImageUrl: '', mobileImageUrl: '', link: '/shop', status: 'active' });
     setUseUrlMode(false);
     setSubmitting(false);
     setModalOpen(true);
@@ -115,10 +115,13 @@ export default function AdminBannersPage() {
 
   const handleOpenEditModal = (b) => {
     setEditingBanner(b);
+    const mainImg = b.imagePath || b.imageUrl || b.image || '';
     setFormData({
       title: b.title || '',
       subtitle: b.subtitle || '',
-      imagePath: b.imagePath || b.imageUrl || b.image || '',
+      imagePath: mainImg,
+      desktopImageUrl: b.desktopImageUrl || mainImg,
+      mobileImageUrl: b.mobileImageUrl || mainImg,
       link: b.link || b.buttonLink || '/shop',
       status: (b.status || (b.isActive !== false ? 'active' : 'inactive')).toLowerCase()
     });
@@ -137,12 +140,15 @@ export default function AdminBannersPage() {
 
     toast.loading(`Updating banner status...`, { id: 'banner-toast' });
 
+    const mainImg = b.imagePath || b.imageUrl || b.image;
     const updatedPayload = {
       id: b.id,
       title: b.title,
       subtitle: b.subtitle,
-      imagePath: b.imagePath || b.imageUrl || b.image,
-      imageUrl: b.imageUrl || b.imagePath || b.image,
+      imagePath: mainImg,
+      imageUrl: mainImg,
+      desktopImageUrl: b.desktopImageUrl || mainImg,
+      mobileImageUrl: b.mobileImageUrl || mainImg,
       link: b.link || b.buttonLink || '/shop',
       buttonLink: b.buttonLink || b.link || '/shop',
       status: nextStatus,
@@ -155,10 +161,10 @@ export default function AdminBannersPage() {
       const res = await api.post('/banners', updatedPayload);
       const apiData = res.data ? res.data : res;
       if (apiData && apiData.success !== false) {
-        toast.success(`Banner ${nextStatus === 'active' ? 'activated' : 'deactivated'} successfully!`, { id: 'banner-toast' });
         try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
         await fetchBanners();
         window.dispatchEvent(new Event('karviyam_banners_updated'));
+        toast.success(`Banner ${nextStatus === 'active' ? 'activated' : 'deactivated'} successfully!`, { id: 'banner-toast' });
       } else {
         throw new Error(apiData?.message || 'Failed to toggle banner status');
       }
@@ -193,20 +199,23 @@ export default function AdminBannersPage() {
       return;
     }
 
-    if (!formData.imagePath) {
+    if (!formData.imagePath && !formData.desktopImageUrl && !formData.mobileImageUrl) {
       toast.error('Banner Image is required. Please upload an image or provide a valid URL.', { id: 'banner-toast' });
       return;
     }
 
     setSubmitting(true);
-    toast.loading(editingBanner ? 'Updating banner...' : 'Saving new banner...', { id: 'banner-toast' });
+    toast.loading(editingBanner ? 'Updating banner in database...' : 'Saving new banner to database...', { id: 'banner-toast' });
 
+    const mainImg = formData.imagePath || formData.desktopImageUrl || formData.mobileImageUrl;
     const payload = {
       ...(editingBanner ? { id: editingBanner.id } : {}),
       title: formData.title.trim(),
       subtitle: formData.subtitle ? formData.subtitle.trim() : '',
-      imagePath: formData.imagePath,
-      imageUrl: formData.imagePath,
+      imagePath: mainImg,
+      imageUrl: mainImg,
+      desktopImageUrl: formData.desktopImageUrl || mainImg,
+      mobileImageUrl: formData.mobileImageUrl || mainImg,
       link: formData.link || '/shop',
       buttonLink: formData.link || '/shop',
       buttonText: 'Shop Now',
@@ -221,18 +230,15 @@ export default function AdminBannersPage() {
       const apiData = res.data ? res.data : res;
 
       if (apiData && apiData.success !== false) {
-        toast.success(editingBanner ? 'Banner updated successfully!' : 'Banner created successfully!', { id: 'banner-toast' });
-        
-        const savedItem = apiData.data || apiData;
-
-        // 1. Refetch from MySQL database
+        // 1. Refetch from MySQL database to confirm persistence
         await fetchBanners();
         window.dispatchEvent(new Event('karviyam_banners_updated'));
         try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
 
         setModalOpen(false);
         setEditingBanner(null);
-        setFormData({ title: '', subtitle: '', imagePath: '', link: '/shop', status: 'active' });
+        setFormData({ title: '', subtitle: '', imagePath: '', desktopImageUrl: '', mobileImageUrl: '', link: '/shop', status: 'active' });
+        toast.success(editingBanner ? 'Banner updated successfully in database!' : 'Banner created successfully in database!', { id: 'banner-toast' });
       } else {
         throw new Error(apiData?.message || 'Failed to save banner');
       }

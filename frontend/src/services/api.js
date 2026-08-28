@@ -2,6 +2,25 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api';
 
+const syncChannel = typeof window !== 'undefined' && 'BroadcastChannel' in window
+  ? new BroadcastChannel('karviyam_cross_tab_sync')
+  : null;
+
+if (syncChannel) {
+  syncChannel.onmessage = (event) => {
+    if (event && event.data && event.data.eventName) {
+      window.dispatchEvent(new Event(event.data.eventName));
+    }
+  };
+}
+
+const broadcastSyncEvent = (eventName) => {
+  window.dispatchEvent(new Event(eventName));
+  try {
+    syncChannel?.postMessage({ eventName });
+  } catch (e) {}
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
@@ -44,36 +63,36 @@ api.interceptors.response.use(
       window.dispatchEvent(new CustomEvent('karviyam_data_mutated', { detail: { url, method } }));
 
       if (url.includes('/settings')) {
-        window.dispatchEvent(new Event('karviyam_settings_updated'));
-        window.dispatchEvent(new Event('karviyam_logo_updated'));
-        window.dispatchEvent(new Event('karviyam_footer_updated'));
+        broadcastSyncEvent('karviyam_settings_updated');
+        broadcastSyncEvent('karviyam_logo_updated');
+        broadcastSyncEvent('karviyam_footer_updated');
       }
       if (url.includes('/categories')) {
-        window.dispatchEvent(new Event('karviyam_categories_updated'));
+        broadcastSyncEvent('karviyam_categories_updated');
       }
       if (url.includes('/products')) {
-        window.dispatchEvent(new Event('karviyam_products_updated'));
+        broadcastSyncEvent('karviyam_products_updated');
       }
       if (url.includes('/banners')) {
-        window.dispatchEvent(new Event('karviyam_banners_updated'));
+        broadcastSyncEvent('karviyam_banners_updated');
       }
       if (url.includes('/coupons')) {
-        window.dispatchEvent(new Event('karviyam_coupons_updated'));
+        broadcastSyncEvent('karviyam_coupons_updated');
       }
       if (url.includes('/pincodes')) {
-        window.dispatchEvent(new Event('karviyam_pincodes_updated'));
+        broadcastSyncEvent('karviyam_pincodes_updated');
       }
       if (url.includes('/reviews')) {
-        window.dispatchEvent(new Event('karviyam_reviews_updated'));
+        broadcastSyncEvent('karviyam_reviews_updated');
       }
       if (url.includes('/orders')) {
-        window.dispatchEvent(new Event('karviyam_orders_updated'));
+        broadcastSyncEvent('karviyam_orders_updated');
       }
       if (url.includes('/cart')) {
-        window.dispatchEvent(new Event('karviyam_cart_updated'));
+        broadcastSyncEvent('karviyam_cart_updated');
       }
       if (url.includes('/wishlist')) {
-        window.dispatchEvent(new Event('karviyam_wishlist_updated'));
+        broadcastSyncEvent('karviyam_wishlist_updated');
       }
     }
     return response;
@@ -87,3 +106,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+

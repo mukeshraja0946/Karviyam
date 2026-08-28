@@ -106,16 +106,31 @@ export default function DesktopCenterContent() {
   useEffect(() => {
     fetchProductsAndCategories();
     fetchBanners();
+
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchBanners();
+        fetchProductsAndCategories();
+      }
+    };
+
     window.addEventListener('karviyam_products_updated', fetchProductsAndCategories);
     window.addEventListener('karviyam_categories_updated', fetchProductsAndCategories);
     window.addEventListener('karviyam_parent_categories_updated', fetchProductsAndCategories);
     window.addEventListener('karviyam_banners_updated', fetchBanners);
-    window.addEventListener('storage', fetchProductsAndCategories);
+    window.addEventListener('focus', handleFocusOrVisible);
+    window.addEventListener('visibilitychange', handleFocusOrVisible);
+    window.addEventListener('storage', () => {
+      fetchBanners();
+      fetchProductsAndCategories();
+    });
     return () => {
       window.removeEventListener('karviyam_products_updated', fetchProductsAndCategories);
       window.removeEventListener('karviyam_categories_updated', fetchProductsAndCategories);
       window.removeEventListener('karviyam_parent_categories_updated', fetchProductsAndCategories);
       window.removeEventListener('karviyam_banners_updated', fetchBanners);
+      window.removeEventListener('focus', handleFocusOrVisible);
+      window.removeEventListener('visibilitychange', handleFocusOrVisible);
       window.removeEventListener('storage', fetchProductsAndCategories);
     };
   }, []);
@@ -142,9 +157,9 @@ export default function DesktopCenterContent() {
       setSpeed(currentSpeed);
 
       if (Array.isArray(list)) {
-        const activeBanners = list.filter(b => b && b.isActive !== false && String(b.status).toLowerCase() === 'active');
+        const activeBanners = list.filter(b => b && b.isActive !== false && String(b.status || 'active').toLowerCase() === 'active');
         const formatted = activeBanners.map(b => {
-          const rawImg = b.imageUrl || b.imagePath || b.image || '';
+          const rawImg = b.desktopImageUrl || b.imageUrl || b.imagePath || b.image || '';
           const resolvedImg = resolveImageUrl(rawImg);
           return {
             id: b.id,
@@ -167,12 +182,20 @@ export default function DesktopCenterContent() {
   };
 
   useEffect(() => {
+    if (heroSlides.length === 0) {
+      setCurrentHero(0);
+      return;
+    }
+    if (currentHero >= heroSlides.length) {
+      setCurrentHero(0);
+    }
     if (!autoScroll || heroSlides.length <= 1) return;
+
     const timer = setInterval(() => {
       setCurrentHero((prev) => (prev + 1) % heroSlides.length);
     }, speed);
     return () => clearInterval(timer);
-  }, [heroSlides.length, autoScroll, speed]);
+  }, [heroSlides.length, autoScroll, speed, currentHero]);
 
   const fetchProductsAndCategories = async () => {
     try {
