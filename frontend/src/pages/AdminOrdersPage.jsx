@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ShoppingBag, Search, Eye, FileText, CheckCircle, Clock, PackageCheck, Truck, CheckCheck, XCircle, RotateCcw, ChevronDown, Edit2, Trash2, X, Save, RefreshCw, Upload } from 'lucide-react';
+import { ShoppingBag, Search, Eye, FileText, CheckCircle, Clock, PackageCheck, Truck, CheckCheck, XCircle, RotateCcw, ChevronDown, Edit2, Trash2, X, Save, RefreshCw, Upload, AlertTriangle } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import InvoiceModal from '../components/InvoiceModal';
@@ -61,6 +61,8 @@ export default function AdminOrdersPage() {
     notes: ''
   });
 
+  const [fetchError, setFetchError] = useState(null);
+
   const urlStatus = (searchParams.get('status') || 'ALL').toUpperCase();
   const activeTab = STATUS_TABS.some(t => t.id === urlStatus) ? urlStatus : 'ALL';
 
@@ -70,6 +72,7 @@ export default function AdminOrdersPage() {
 
   const fetchOrders = async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const res = await api.get('/admin/orders').catch(() => api.get('/orders'));
       const apiData = res?.data ? res.data : res;
@@ -81,7 +84,8 @@ export default function AdminOrdersPage() {
         loadStoredOrMock();
       }
     } catch (e) {
-      console.error(e);
+      console.error('[AdminOrdersPage] Failed to fetch orders from API:', e);
+      setFetchError('Unable to load orders right now. Please check server connection.');
       loadStoredOrMock();
     } finally {
       setLoading(false);
@@ -272,7 +276,14 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const getStatusBadgeCount = (tabId) => {
+    if (!Array.isArray(orders)) return 0;
+    if (tabId === 'ALL') return orders.length;
+    return orders.filter(o => (o?.status || 'PENDING').toUpperCase() === tabId.toUpperCase()).length;
+  };
+
   const getOrderTimestamp = (order) => {
+    if (!order) return 0;
     if (order.createdAt) {
       const t = new Date(order.createdAt).getTime();
       if (!isNaN(t)) return t;
@@ -281,19 +292,20 @@ export default function AdminOrdersPage() {
       const t = new Date(order.date).getTime();
       if (!isNaN(t)) return t;
     }
-    return order.id || 0;
+    return Number(order.id) || 0;
   };
 
-  const sortedOrders = [...orders].sort((a, b) => getOrderTimestamp(b) - getOrderTimestamp(a));
+  const sortedOrders = (Array.isArray(orders) ? [...orders] : []).sort((a, b) => getOrderTimestamp(b) - getOrderTimestamp(a));
 
   const filtered = sortedOrders.filter((o) => {
-    const displayCode = (o.orderCode || o.trackingNumber || `#ORD${o.id}`).toLowerCase();
+    if (!o) return false;
+    const displayCode = (o.orderCode || o.trackingNumber || `#ORD${o.id || ''}`).toLowerCase();
     const customerName = (o.customer || o.fullName || o.shippingAddress?.fullName || '').toLowerCase();
     const emailStr = (o.email || '').toLowerCase();
     const phoneStr = (o.phone || '').toLowerCase();
-    const query = search.toLowerCase();
+    const query = (search || '').toLowerCase().trim();
 
-    const matchesSearch = displayCode.includes(query) || customerName.includes(query) || emailStr.includes(query) || phoneStr.includes(query);
+    const matchesSearch = !query || displayCode.includes(query) || customerName.includes(query) || emailStr.includes(query) || phoneStr.includes(query);
     const currentStatus = (o.status || 'PENDING').toUpperCase();
     const matchesTab = activeTab === 'ALL' || currentStatus === activeTab;
 
@@ -682,6 +694,19 @@ export default function AdminOrdersPage() {
             <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#B71C1C]" />
             Loading store orders from database...
           </div>
+        ) : fetchError && orders.length === 0 ? (
+          <div className="p-12 text-center bg-rose-50/70 text-rose-800 space-y-3">
+            <AlertTriangle className="w-8 h-8 mx-auto text-rose-600" />
+            <h3 className="font-bold text-base text-slate-900">Unable to load orders</h3>
+            <p className="text-xs text-rose-600 max-w-sm mx-auto">{fetchError}</p>
+            <button
+              onClick={fetchOrders}
+              className="px-4 py-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-md inline-flex items-center gap-1.5"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry</span>
+            </button>
+          </div>
         ) : (
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
@@ -705,16 +730,28 @@ export default function AdminOrdersPage() {
             <tbody className="divide-y divide-slate-100">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="p-8 text-center text-slate-500 font-medium">
-                    No orders found matching the selected criteria.
+                  <td colSpan="7" className="p-12 text-center text-slate-500 font-medium">
+                    <div className="space-y-2">
+                      <p className="font-bold text-slate-700 text-sm">
+                        {orders.length === 0
+                          ? 'No Orders Found'
+                          : `No ${activeTab === 'ALL' ? '' : `${activeTab.toLowerCase()} `}orders found.`}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {orders.length === 0
+                          ? 'There are no orders to display in the database.'
+                          : 'Try selecting a different status filter or clear your search query.'}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 filtered.map((o) => {
-                  const displayCode = o.orderCode || o.trackingNumber || `#ORD${o.id}`;
+                  if (!o) return null;
+                  const displayCode = o.orderCode || o.trackingNumber || (o.id ? `#ORD${o.id}` : '#ORD-UNKNOWN');
                   const customerName = o.customer || o.fullName || o.shippingAddress?.fullName || 'Guest Customer';
                   const dateDisplay = o.date || (o.createdAt ? new Date(o.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A');
-                  const amountDisplay = o.totalAmount != null ? o.totalAmount : o.amount || 0;
+                  const amountDisplay = o.totalAmount != null ? o.totalAmount : (o.amount != null ? o.amount : 0);
 
                   return (
                     <tr key={o.id} className={`hover:bg-slate-50/80 transition-colors ${selectedIds.includes(o.id) ? 'bg-rose-50/40' : ''}`}>

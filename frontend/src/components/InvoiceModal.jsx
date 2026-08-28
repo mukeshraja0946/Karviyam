@@ -120,19 +120,20 @@ export default function InvoiceModal({ isOpen, onClose, orderDetails, order }) {
     }
   };
 
-  const invoiceNo = activeOrder.invoiceNumber || activeOrder.invoiceNo || (activeOrder.id ? `KAR-${String(activeOrder.id).padStart(6, '0')}` : 'KAR-000001');
-  const orderNo = activeOrder.trackingNumber || activeOrder.orderCode || (activeOrder.id ? `KV-ORD-${String(activeOrder.id).padStart(6, '0')}` : 'KV-ORD-000001');
+  const activeObj = activeOrder || {};
+  const invoiceNo = activeObj.invoiceNumber || activeObj.invoiceNo || (activeObj.id ? `KAR-${String(activeObj.id).padStart(6, '0')}` : 'KAR-000001');
+  const orderNo = activeObj.trackingNumber || activeObj.orderCode || (activeObj.id ? `KV-ORD-${String(activeObj.id).padStart(6, '0')}` : 'KV-ORD-000001');
   
   const today = new Date();
-  const dateFormatted = activeOrder.date || activeOrder.createdAt
-    ? new Date(activeOrder.createdAt || today).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const dateFormatted = activeObj.date || activeObj.createdAt
+    ? new Date(activeObj.createdAt || today).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : today.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  const itemsList = activeOrder.items && activeOrder.items.length > 0
-    ? activeOrder.items
-    : [{ name: 'Karviyam Apparel Item', quantity: 1, price: activeOrder.totalAmount || 899 }];
+  const itemsList = Array.isArray(activeObj.items || activeObj.orderItems) && (activeObj.items || activeObj.orderItems).length > 0
+    ? (activeObj.items || activeObj.orderItems)
+    : [{ name: 'Karviyam Apparel Item', quantity: 1, price: activeObj.totalAmount || 899 }];
 
-  const totalAmount = Number(activeOrder.totalAmount || activeOrder.subtotal || 899);
+  const totalAmount = Number(activeObj.totalAmount || activeObj.subtotal || 899);
   const taxRate = 18; // 18% GST (9% CGST + 9% SGST)
   const netAmount = Math.round((totalAmount / 1.18) * 100) / 100;
   const taxAmount = Math.round((totalAmount - netAmount) * 100) / 100;
@@ -148,12 +149,12 @@ export default function InvoiceModal({ isOpen, onClose, orderDetails, order }) {
   const stateCode = localStorage.getItem('karviyam_state_code') || '33';
   const signatory = localStorage.getItem('karviyam_signatory_name') || 'Karviyam Operations';
 
-  const customerName = orderDetails.customer || orderDetails.fullName || orderDetails.shippingAddress?.fullName || 'Valued Customer';
-  const customerAddress = orderDetails.shippingAddress?.addressLine || orderDetails.address || sellerAddress;
-  const customerCity = orderDetails.shippingAddress?.city || orderDetails.city || 'Chennai';
-  const customerPincode = orderDetails.shippingAddress?.pincode || orderDetails.pincode || '600001';
-  const customerPhone = orderDetails.phone || orderDetails.shippingAddress?.phone || sellerPhone;
-  const customerEmail = orderDetails.email || 'customer@karviyam.com';
+  const customerName = activeObj.customer || activeObj.fullName || activeObj.shippingAddress?.fullName || 'Valued Customer';
+  const customerAddress = activeObj.shippingAddress?.addressLine || activeObj.address || sellerAddress;
+  const customerCity = activeObj.shippingAddress?.city || activeObj.city || 'Chennai';
+  const customerPincode = activeObj.shippingAddress?.pincode || activeObj.pincode || '600001';
+  const customerPhone = activeObj.phone || activeObj.shippingAddress?.phone || sellerPhone;
+  const customerEmail = activeObj.email || 'customer@karviyam.com';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-slate-900/70 backdrop-blur-xs overflow-hidden print:static print:p-0 print:bg-white print:overflow-visible">
