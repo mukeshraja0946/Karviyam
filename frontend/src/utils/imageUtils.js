@@ -16,7 +16,7 @@ export const isValidImageUrl = (url) => {
     return false;
   }
 
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/') || trimmed.startsWith('blob:')) {
     return true;
   }
 
@@ -24,7 +24,7 @@ export const isValidImageUrl = (url) => {
     return true;
   }
 
-  if (/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i.test(trimmed)) {
+  if (/\.(jpg|jpeg|png|webp|avif|gif|svg|mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(trimmed)) {
     return true;
   }
 
@@ -38,12 +38,34 @@ export const resolveImageUrl = (path, fallbackSeed = 0) => {
   }
 
   const trimmed = path.trim();
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/') || trimmed.startsWith('blob:')) {
     return trimmed;
   }
 
   const relativePath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
 
+  const viteApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
+  if (viteApiUrl && (viteApiUrl.startsWith('http://') || viteApiUrl.startsWith('https://'))) {
+    const origin = viteApiUrl.replace(/\/api\/?$/, '');
+    return `${origin}${relativePath}`;
+  }
+
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    return `${window.location.origin}${relativePath}`;
+  }
+
+  return relativePath;
+};
+
+export const resolveVideoUrl = (path) => {
+  if (!path || typeof path !== 'string') return '';
+  const trimmed = path.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:')) {
+    return trimmed;
+  }
+
+  const relativePath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   const viteApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
   if (viteApiUrl && (viteApiUrl.startsWith('http://') || viteApiUrl.startsWith('https://'))) {
     const origin = viteApiUrl.replace(/\/api\/?$/, '');

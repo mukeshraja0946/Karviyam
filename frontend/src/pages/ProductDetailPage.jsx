@@ -31,7 +31,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import api from '../utils/api';
-import { resolveImageUrl, isValidImageUrl, handleImageError } from '../utils/imageUtils';
+import { resolveImageUrl, resolveVideoUrl, isValidImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import ProductReviewsSection from '../components/ProductReviewsSection';
 
@@ -63,8 +63,7 @@ export default function ProductDetailPage() {
   const togglePlayPause = () => {
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
-      videoRef.current.play().catch(() => {});
-      setIsVideoPlaying(true);
+      videoRef.current.play().then(() => setIsVideoPlaying(true)).catch(() => setIsVideoPlaying(false));
     } else {
       videoRef.current.pause();
       setIsVideoPlaying(false);
@@ -262,7 +261,7 @@ export default function ProductDetailPage() {
     if (vUrl && String(vUrl).trim()) {
       list.push({
         type: 'video',
-        url: resolveImageUrl(vUrl),
+        url: resolveVideoUrl(vUrl),
         label: 'Product Video'
       });
     }
@@ -278,6 +277,18 @@ export default function ProductDetailPage() {
       setSelectedMedia(mediaGallery[0]);
     }
   }, [selectedColor, mediaGallery]);
+
+  // Programmatic playback handler when selectedMedia is a video
+  useEffect(() => {
+    if (selectedMedia?.type === 'video' && videoRef.current) {
+      videoRef.current.muted = isVideoMuted;
+      videoRef.current.play().then(() => {
+        setIsVideoPlaying(true);
+      }).catch((e) => {
+        setIsVideoPlaying(false);
+      });
+    }
+  }, [selectedMedia]);
 
   const activeMediaIndex = Math.max(0, mediaGallery.findIndex(m => m.url === selectedMedia?.url));
 
@@ -459,7 +470,7 @@ export default function ProductDetailPage() {
                   >
                     <video
                       ref={videoRef}
-                      src={resolveImageUrl(selectedMedia.url)}
+                      src={resolveVideoUrl(selectedMedia.url)}
                       autoPlay
                       loop
                       muted={isVideoMuted}
