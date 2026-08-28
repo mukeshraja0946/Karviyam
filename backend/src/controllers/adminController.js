@@ -325,16 +325,17 @@ const saveColorVariantsForProduct = async (productId, colorVariants) => {
 
     try { await pool.query('ALTER TABLE product_color_images ADD COLUMN is_main BOOLEAN DEFAULT FALSE'); } catch (e) {}
 
-    // First delete all existing product_color_images for this product's color IDs to prevent orphan rows
-    const [existingColors] = await pool.query('SELECT id FROM product_colors WHERE product_id = ?', [productId]).catch(() => [[]]);
-    if (Array.isArray(existingColors) && existingColors.length > 0) {
-      const colorIds = existingColors.map(c => c.id).filter(Boolean);
-      if (colorIds.length > 0) {
-        await pool.query('DELETE FROM product_color_images WHERE product_color_id IN (?)', [colorIds]).catch(() => null);
-      }
-    }
-    // Delete existing colors for this product to replace cleanly
-    await pool.query('DELETE FROM product_colors WHERE product_id = ?', [productId]).catch(() => null);
+    // 1. Delete all existing product_color_images for this product using atomic subquery
+    await pool.query(
+      'DELETE FROM product_color_images WHERE product_color_id IN (SELECT id FROM product_colors WHERE product_id = ?)',
+      [productId]
+    ).catch(err => console.error('[DELETE product_color_images Error]:', err.message));
+
+    // 2. Delete all existing product_colors for this product cleanly
+    await pool.query(
+      'DELETE FROM product_colors WHERE product_id = ?',
+      [productId]
+    ).catch(err => console.error('[DELETE product_colors Error]:', err.message));
 
     const cleanStr = (u) => {
       if (!u) return '';

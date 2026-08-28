@@ -14,8 +14,16 @@ const mapProductRowToDTO = async (p) => {
   // Fetch color variants if table exists
   let colors = [];
   try {
-    const [colorRows] = await pool.query('SELECT * FROM product_colors WHERE product_id = ? ORDER BY id ASC', [p.id]);
+    const [colorRows] = await pool.query('SELECT * FROM product_colors WHERE product_id = ? ORDER BY id DESC', [p.id]);
+    const seenColorNames = new Set();
+
     for (const c of colorRows) {
+      const cName = (c.color_name || 'Standard').trim();
+      if (seenColorNames.has(cName.toLowerCase())) {
+        continue; // Skip older duplicate rows if any existed
+      }
+      seenColorNames.add(cName.toLowerCase());
+
       const [cImages] = await pool.query('SELECT image_url, is_main FROM product_color_images WHERE product_color_id = ? ORDER BY sort_order ASC, id ASC', [c.id]);
       const validSubImgs = cImages.map(ci => ci.image_url).filter(Boolean);
       const mainImg = c.main_image || '';

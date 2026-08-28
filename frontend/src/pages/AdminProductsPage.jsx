@@ -392,7 +392,7 @@ export default function AdminProductsPage() {
     setModalOpen(true);
   };
 
-  const handleOpenEditModal = (p) => {
+  const populateFormWithProduct = (p) => {
     setEditingProduct(p);
 
     let parsedVariants = [];
@@ -539,7 +539,19 @@ export default function AdminProductsPage() {
       images: p.images || (p.imageUrl ? [p.imageUrl] : []),
       colorVariants: parsedVariants,
     });
+  };
+
+  const handleOpenEditModal = async (p) => {
+    populateFormWithProduct(p);
     setModalOpen(true);
+
+    try {
+      const res = await api.get(`/products/${p.id}`);
+      const freshProd = res.data?.data || res.data;
+      if (freshProd && (freshProd.id || freshProd.name)) {
+        populateFormWithProduct(freshProd);
+      }
+    } catch (eFresh) {}
   };
 
   const handleMultipleImageUpload = (e) => {
