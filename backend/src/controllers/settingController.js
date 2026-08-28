@@ -56,6 +56,19 @@ exports.getSettings = async (req, res, next) => {
     settingsObj.categoryNavigationEnabled = isCatNavEnabled;
     settingsObj.category_navigation_enabled = isCatNavEnabled;
 
+    const pAutoChangeVal = settingsObj.productImageAutoChange !== undefined
+      ? settingsObj.productImageAutoChange
+      : settingsObj.product_image_auto_change;
+    const isPAutoChange = pAutoChangeVal === true || pAutoChangeVal === 'true' || pAutoChangeVal === 1 || pAutoChangeVal === '1';
+    settingsObj.productImageAutoChange = isPAutoChange;
+    settingsObj.product_image_auto_change = isPAutoChange;
+
+    const rawPInterval = settingsObj.productImageChangeInterval || settingsObj.product_image_change_interval;
+    const parsedPInterval = rawPInterval ? parseInt(rawPInterval, 10) : 3;
+    const finalPInterval = isNaN(parsedPInterval) || parsedPInterval <= 0 ? 3 : parsedPInterval;
+    settingsObj.productImageChangeInterval = finalPInterval;
+    settingsObj.product_image_change_interval = finalPInterval;
+
     return res.status(200).json(ApiResponse.success(settingsObj, 'Settings retrieved successfully'));
   } catch (err) {
     next(err);

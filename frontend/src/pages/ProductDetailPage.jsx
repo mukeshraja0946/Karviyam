@@ -290,6 +290,70 @@ export default function ProductDetailPage() {
     }
   }, [selectedMedia]);
 
+  // Admin Auto-Change Settings
+  const [autoChangeEnabled, setAutoChangeEnabled] = useState(false);
+  const [autoChangeInterval, setAutoChangeInterval] = useState(3);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Fetch admin settings for Product Image Auto-Change
+  useEffect(() => {
+    const loadAutoChangeSettings = async () => {
+      try {
+        const res = await api.get('/settings').catch(() => null);
+        const dataMap = res?.data?.data || res?.data || {};
+
+        let enabled = false;
+        if (dataMap.productImageAutoChange !== undefined) {
+          enabled = dataMap.productImageAutoChange === true || dataMap.productImageAutoChange === 'true' || dataMap.productImageAutoChange === 1;
+        } else {
+          const localVal = localStorage.getItem('karviyam_product_image_auto_change');
+          if (localVal !== null) enabled = localVal === 'true';
+        }
+
+        let intervalSec = 3;
+        const rawInt = dataMap.productImageChangeInterval || localStorage.getItem('karviyam_product_image_change_interval');
+        if (rawInt) {
+          const parsedInt = parseInt(rawInt, 10);
+          if (!isNaN(parsedInt) && parsedInt > 0) intervalSec = parsedInt;
+        }
+
+        setAutoChangeEnabled(enabled);
+        setAutoChangeInterval(intervalSec);
+      } catch (e) {}
+    };
+
+    loadAutoChangeSettings();
+    window.addEventListener('karviyam_auto_change_updated', loadAutoChangeSettings);
+    window.addEventListener('karviyam_settings_updated', loadAutoChangeSettings);
+    return () => {
+      window.removeEventListener('karviyam_auto_change_updated', loadAutoChangeSettings);
+      window.removeEventListener('karviyam_settings_updated', loadAutoChangeSettings);
+    };
+  }, []);
+
+  // Auto-Change Timer Effect
+  useEffect(() => {
+    // Only auto-change if enabled AND gallery has more than 1 media item AND not mouse-hovered on desktop
+    if (!autoChangeEnabled || mediaGallery.length <= 1 || isHovered) {
+      return;
+    }
+
+    // If current media is a playing video, do not interrupt video playback!
+    if (selectedMedia?.type === 'video' && isVideoPlaying) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setSelectedMedia(prevMedia => {
+        const currentIdx = mediaGallery.findIndex(m => m.url === prevMedia?.url);
+        const nextIdx = (currentIdx + 1 + mediaGallery.length) % mediaGallery.length;
+        return mediaGallery[nextIdx];
+      });
+    }, autoChangeInterval * 1000);
+
+    return () => clearInterval(timer);
+  }, [autoChangeEnabled, autoChangeInterval, mediaGallery, selectedMedia, isHovered, isVideoPlaying]);
+
   const activeMediaIndex = Math.max(0, mediaGallery.findIndex(m => m.url === selectedMedia?.url));
 
   const handlePrevMedia = () => {
@@ -462,6 +526,8 @@ export default function ProductDetailPage() {
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
               >
                 {selectedMedia?.type === 'video' ? (
                   <div

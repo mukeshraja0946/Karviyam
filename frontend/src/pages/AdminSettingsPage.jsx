@@ -71,6 +71,10 @@ export default function AdminSettingsPage() {
     featuredScrollMode: 'carousel',
     removeImageGreyBox: true,
 
+    // Product Image Gallery Auto-Change Controls
+    productImageAutoChange: false,
+    productImageChangeInterval: 3,
+
     // Maintenance Mode & System Controls
     maintenanceMode: false,
     maintenanceTitle: "We'll Be Right Back!",
@@ -160,6 +164,9 @@ export default function AdminSettingsPage() {
           onlinePaymentEnabled: checkB(onlineVal, true),
           defaultPaymentMethod: defVal || prev.defaultPaymentMethod,
           categoryNavigationEnabled: checkB(catNavVal, true),
+
+          productImageAutoChange: checkB(dataMap.productImageAutoChange !== undefined ? dataMap.productImageAutoChange : dataMap.product_image_auto_change, false),
+          productImageChangeInterval: parseInt(dataMap.productImageChangeInterval || dataMap.product_image_change_interval || 3, 10) || 3,
 
           footerAbout: dataMap.footerAbout || prev.footerAbout,
           announcementText: dataMap.announcementText || prev.announcementText,
@@ -325,6 +332,11 @@ export default function AdminSettingsPage() {
         categoryNavigationEnabled: String(settings.categoryNavigationEnabled),
         category_navigation_enabled: String(settings.categoryNavigationEnabled),
 
+        productImageAutoChange: String(settings.productImageAutoChange),
+        product_image_auto_change: String(settings.productImageAutoChange),
+        productImageChangeInterval: String(settings.productImageChangeInterval),
+        product_image_change_interval: String(settings.productImageChangeInterval),
+
         footerAbout: settings.footerAbout,
         announcementText: settings.announcementText,
         logoUrl: settings.logoUrl || '',
@@ -374,6 +386,8 @@ export default function AdminSettingsPage() {
       localStorage.setItem('karviyam_maintenance_mode', String(settings.maintenanceMode));
       localStorage.setItem('karviyam_maintenance_logo', settings.maintenanceLogoUrl || '');
       localStorage.setItem('karviyam_maintenance_message', settings.maintenanceMessage);
+      localStorage.setItem('karviyam_product_image_auto_change', String(settings.productImageAutoChange));
+      localStorage.setItem('karviyam_product_image_change_interval', String(settings.productImageChangeInterval));
 
       // Section Scrolling & Layout Configuration
       localStorage.setItem('karviyam_section_layouts', JSON.stringify({
@@ -383,6 +397,7 @@ export default function AdminSettingsPage() {
         removeGreyBox: settings.removeImageGreyBox !== false
       }));
 
+      window.dispatchEvent(new Event('karviyam_auto_change_updated'));
       window.dispatchEvent(new Event('karviyam_settings_updated'));
       notifyChanges();
       toast.success('Settings saved successfully.');
@@ -1073,6 +1088,61 @@ export default function AdminSettingsPage() {
                 <p className="text-[10.5px] text-slate-600 font-medium">
                   {settings.removeImageGreyBox ? '✅ Pure White Background (Grey box removed)' : '⚪ Standard Tinted Grey Box'}
                 </p>
+              </div>
+
+              {/* Section 4: Product Image Gallery Auto-Change Controls */}
+              <div className="p-5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                      <span>PRODUCT IMAGE GALLERY AUTO-CHANGE</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500">Automatically cycle through main image, sub images, and video on product detail pages</p>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!settings.productImageAutoChange}
+                      onChange={(e) => setSettings({ ...settings, productImageAutoChange: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#B71C1C]" />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  <div>
+                    <label className="block font-bold text-slate-700 text-xs mb-1.5">Auto Image Change Status</label>
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-xs border ${
+                      settings.productImageAutoChange
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}>
+                      {settings.productImageAutoChange ? '🟢 AUTO CHANGE IS ON' : '🔴 AUTO CHANGE IS OFF'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 text-xs mb-1.5">Change Image Every</label>
+                    <select
+                      value={settings.productImageChangeInterval || 3}
+                      onChange={(e) => setSettings({ ...settings, productImageChangeInterval: parseInt(e.target.value, 10) || 3 })}
+                      disabled={!settings.productImageAutoChange}
+                      className="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs font-bold p-2.5 rounded-xl outline-none focus:border-[#B71C1C] disabled:opacity-50"
+                    >
+                      <option value={1}>1 Second</option>
+                      <option value={2}>2 Seconds</option>
+                      <option value={3}>3 Seconds (Default)</option>
+                      <option value={4}>4 Seconds</option>
+                      <option value={5}>5 Seconds</option>
+                      <option value={6}>6 Seconds</option>
+                      <option value={7}>7 Seconds</option>
+                      <option value={8}>8 Seconds</option>
+                      <option value={10}>10 Seconds</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
