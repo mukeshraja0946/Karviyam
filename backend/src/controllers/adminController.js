@@ -919,4 +919,7 @@ exports.deleteSelectedCustomers = async (req, res, next) => {
   }
 };
 
-exports.deleteProduct = productController.deleteProduct;
+exports.deleteProduct = (req, res, next) => {
+  const productController = require('./productController');
+  return productController.deleteProduct(req, res, next);
+};
