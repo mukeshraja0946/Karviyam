@@ -37,17 +37,17 @@ export default function ClearAllModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl overflow-hidden text-slate-900 my-8">
         
-        {/* Header Bar */}
-        <div className="bg-rose-950 px-6 py-4 flex items-center justify-between text-white border-b border-rose-900/50">
+        {/* Header Bar (Light Theme) */}
+        <div className="bg-rose-50 px-6 py-4 flex items-center justify-between text-rose-950 border-b border-rose-200">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-rose-600/30 border border-rose-500/40 flex items-center justify-center shrink-0">
-              <ShieldAlert className="w-5 h-5 text-rose-400" />
+            <div className="w-9 h-9 rounded-2xl bg-rose-100 border border-rose-300 flex items-center justify-center shrink-0">
+              <ShieldAlert className="w-5 h-5 text-rose-700" />
             </div>
             <div>
-              <h3 className="font-display font-extrabold text-base tracking-tight text-white">
+              <h3 className="font-display font-extrabold text-base tracking-tight text-rose-950">
                 {step === 1 ? `Clear All ${moduleName} Data` : 'FINAL CONFIRMATION'}
               </h3>
-              <p className="text-[11px] text-rose-200/80 font-medium">
+              <p className="text-[11px] text-rose-700 font-bold">
                 Step {step} of 2 • High Risk Action
               </p>
             </div>
@@ -55,7 +55,7 @@ export default function ClearAllModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer disabled:opacity-50"
+            className="w-8 h-8 rounded-full bg-rose-100 hover:bg-rose-200 flex items-center justify-center text-rose-800 transition-colors cursor-pointer disabled:opacity-50"
           >
             <X className="w-4 h-4" />
           </button>
@@ -64,10 +64,10 @@ export default function ClearAllModal({
         {step === 1 ? (
           /* STEP 1: Warning & Count Display */
           <div className="p-6 space-y-5">
-            <div className="bg-rose-50 border border-rose-200/80 rounded-2xl p-4 flex items-start gap-3">
+            <div className="bg-rose-50/80 border border-rose-200 rounded-2xl p-4 flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
               <div className="text-xs text-rose-900 space-y-1">
-                <p className="font-extrabold text-sm uppercase tracking-wide">
+                <p className="font-extrabold text-sm uppercase tracking-wide text-rose-950">
                   ⚠️ Clear All {moduleName} Data
                 </p>
                 <p className="leading-relaxed font-medium">
@@ -76,13 +76,13 @@ export default function ClearAllModal({
               </div>
             </div>
 
-            {/* Exact Count Highlight Box */}
-            <div className="bg-slate-900 text-white rounded-2xl p-4 text-center space-y-1 border border-slate-800 shadow-inner">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Dataset Records</span>
-              <div className="text-3xl font-black font-display text-rose-400 tracking-tight">
+            {/* Exact Count Highlight Box (Light Theme) */}
+            <div className="bg-slate-50 text-slate-900 rounded-2xl p-4 text-center space-y-1 border border-slate-200 shadow-2xs">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Total Dataset Records</span>
+              <div className="text-3xl font-black font-display text-rose-700 tracking-tight">
                 {itemCount} {moduleName}
               </div>
-              <p className="text-[11px] text-slate-300 font-medium">
+              <p className="text-[11px] text-slate-600 font-medium">
                 {itemCount === 0 ? 'No active records currently exist.' : 'This will purge all module records across the system.'}
               </p>
             </div>

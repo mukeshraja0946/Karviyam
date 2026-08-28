@@ -414,14 +414,14 @@ export default function AdminOrdersPage() {
       {editModalOpen && editingOrder && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white w-full max-w-xl rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-8">
-            <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white">
+            <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between text-slate-900">
               <div>
-                <h3 className="font-display font-bold text-lg">Edit Order details #{editingOrder.id}</h3>
-                <p className="text-[11px] text-slate-400">Update customer details, status, delivery address & tracking</p>
+                <h3 className="font-display font-bold text-lg text-slate-900">Edit Order details #{editingOrder.id}</h3>
+                <p className="text-[11px] text-slate-500 font-medium">Update customer details, status, delivery address & tracking</p>
               </div>
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-700 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

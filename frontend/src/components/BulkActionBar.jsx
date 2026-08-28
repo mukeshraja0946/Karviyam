@@ -22,17 +22,17 @@ export default function BulkActionBar({
 
   return (
     <>
-      {/* Floating Bulk Action Bar */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-2xl bg-slate-900 text-white p-3 sm:p-4 rounded-2xl border border-slate-800 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in slide-in-from-bottom-5 duration-200">
+      {/* Floating Bulk Action Bar (Light Theme) */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-2xl bg-white text-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in slide-in-from-bottom-5 duration-200">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-[#B71C1C] flex items-center justify-center font-black text-xs">
+          <div className="w-8 h-8 rounded-xl bg-rose-700 text-white flex items-center justify-center font-black text-xs shadow-xs">
             {selectedCount}
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-100 flex items-center gap-2">
+            <p className="text-xs font-bold text-slate-900 flex items-center gap-2">
               <span>{selectedCount} {moduleName} Selected</span>
               {isAllDatasetSelected && (
-                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-md font-extrabold uppercase">
+                <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-md font-extrabold uppercase">
                   Full Dataset ({totalCount})
                 </span>
               )}
@@ -41,7 +41,7 @@ export default function BulkActionBar({
               <button
                 type="button"
                 onClick={onSelectAllDataset}
-                className="text-[11px] text-amber-400 hover:text-amber-300 underline font-bold transition-colors cursor-pointer text-left"
+                className="text-[11px] text-rose-700 hover:text-rose-900 underline font-bold transition-colors cursor-pointer text-left"
               >
                 Select all {totalCount} {moduleName.toLowerCase()} across all pages
               </button>
@@ -64,7 +64,7 @@ export default function BulkActionBar({
             type="button"
             onClick={onClearSelection}
             disabled={loading}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
           >
             <X className="w-3.5 h-3.5" />
             <span>Clear Selection</span>
