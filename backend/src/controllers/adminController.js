@@ -268,6 +268,11 @@ exports.updateProduct = async (req, res, next) => {
     if (dto.isBestSeller !== undefined) { updates.push('is_best_seller = ?'); params.push(dto.isBestSeller ? 1 : 0); }
     if (dto.isNewArrival !== undefined) { updates.push('is_new_arrival = ?'); params.push(dto.isNewArrival ? 1 : 0); }
     if (dto.isActive !== undefined) { updates.push('is_active = ?'); params.push(dto.isActive ? 1 : 0); }
+    if (dto.colorVariantImages !== undefined || dto.color_variant_images !== undefined) {
+      const rawCvi = dto.colorVariantImages || dto.color_variant_images;
+      updates.push('color_variant_images = ?');
+      params.push(typeof rawCvi === 'string' ? rawCvi : JSON.stringify(rawCvi));
+    }
 
     if (updates.length > 0) {
       params.push(id);
@@ -275,8 +280,27 @@ exports.updateProduct = async (req, res, next) => {
     }
 
     // Update color variants & dedicated image galleries if provided
-    if (Array.isArray(dto.colorVariants)) {
-      await saveColorVariantsForProduct(id, dto.colorVariants);
+    let variantsToSave = dto.colorVariants || dto.color_variants || dto.colors;
+    if (typeof variantsToSave === 'string') {
+      try { variantsToSave = JSON.parse(variantsToSave); } catch (e) {}
+    }
+    if (variantsToSave && typeof variantsToSave === 'object' && !Array.isArray(variantsToSave)) {
+      variantsToSave = Object.values(variantsToSave);
+    }
+
+    if (Array.isArray(variantsToSave) && variantsToSave.length > 0) {
+      await saveColorVariantsForProduct(id, variantsToSave);
+    } else if (dto.colorVariantImages || dto.color_variant_images) {
+      try {
+        const rawMap = dto.colorVariantImages || dto.color_variant_images;
+        const parsedMap = typeof rawMap === 'string' ? JSON.parse(rawMap) : rawMap;
+        if (parsedMap && typeof parsedMap === 'object') {
+          const list = Object.values(parsedMap);
+          if (list.length > 0) {
+            await saveColorVariantsForProduct(id, list);
+          }
+        }
+      } catch (eMap) {}
     }
 
     const [updated] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
