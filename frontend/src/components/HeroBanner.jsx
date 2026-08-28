@@ -40,7 +40,11 @@ export default function HeroBanner() {
       setSpeed(currentSpeed);
 
       if (Array.isArray(list)) {
-        const activeList = list.filter(b => b && b.isActive !== false && String(b.status).toLowerCase() === 'active');
+        const activeList = list.filter(b => {
+          if (!b) return false;
+          const isAct = b.isActive !== false && String(b.status || 'active').toLowerCase() !== 'inactive';
+          return isAct;
+        });
         const formatted = activeList.map(b => {
           const rawImg = b.imageUrl || b.imagePath || b.image || '';
           const resolvedImg = resolveImageUrl(rawImg);

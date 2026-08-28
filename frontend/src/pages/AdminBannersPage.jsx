@@ -29,6 +29,29 @@ export default function AdminBannersPage() {
   const [formData, setFormData] = useState({ title: '', subtitle: '', imagePath: '', link: '/shop', status: 'active' });
   const [useUrlMode, setUseUrlMode] = useState(false);
 
+  const handleApiError = (err, defaultMsg = 'An error occurred') => {
+    if (!err || !err.response) {
+      toast.error(defaultMsg || 'Unable to connect to server. Please check network connection.', { id: 'banner-toast' });
+      return;
+    }
+    const status = err.response.status;
+    const backendMessage = err.response.data?.message;
+
+    if (status === 400) {
+      toast.error(backendMessage || 'Invalid request. Please check required fields.', { id: 'banner-toast' });
+    } else if (status === 401) {
+      toast.error('Session expired. Please log in again.', { id: 'banner-toast' });
+    } else if (status === 403) {
+      toast.error("You don't have permission to manage banners.", { id: 'banner-toast' });
+    } else if (status === 404) {
+      toast.error('Banner API endpoint not found.', { id: 'banner-toast' });
+    } else if (status === 500) {
+      toast.error(backendMessage || 'Server error while processing banner request.', { id: 'banner-toast' });
+    } else {
+      toast.error(backendMessage || defaultMsg, { id: 'banner-toast' });
+    }
+  };
+
   useEffect(() => {
     fetchBanners();
   }, []);
@@ -37,16 +60,20 @@ export default function AdminBannersPage() {
     setLoading(true);
     try {
       let list = null;
-      try {
-        const res = await api.get('/banners/all');
-        const apiData = res.data ? res.data : res;
-        list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : null);
-      } catch (e1) {
-        try {
-          const res = await api.get('/banners');
-          const apiData = res.data ? res.data : res;
-          list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : null);
-        } catch (e2) {}
+      let res = await api.get('/banners/all').catch(() => null);
+      if (!res) {
+        res = await api.get('/banners').catch(() => null);
+      }
+
+      const apiData = res?.data ? res.data : res;
+      const rawData = apiData?.data !== undefined ? apiData.data : apiData;
+
+      if (Array.isArray(rawData)) {
+        list = rawData;
+      } else if (rawData && typeof rawData === 'object') {
+        if (Array.isArray(rawData.banners)) list = rawData.banners;
+        if (rawData.autoScroll !== undefined) setAutoScrollEnabled(Boolean(rawData.autoScroll));
+        if (rawData.speed !== undefined) setScrollSpeed(Number(rawData.speed));
       }
 
       if (Array.isArray(list)) {
@@ -152,30 +179,6 @@ export default function AdminBannersPage() {
 
     setCropperFile(file);
     e.target.value = '';
-  };
-
-  const handleApiError = (err, defaultMsg = 'An error occurred') => {
-    if (!err.response) {
-      toast.error('Unable to connect to server. Please check network connection.', { id: 'banner-toast' });
-      return;
-    }
-
-    const status = err.response.status;
-    const backendMessage = err.response.data?.message;
-
-    if (status === 400) {
-      toast.error(backendMessage || 'Invalid request. Please check required fields.', { id: 'banner-toast' });
-    } else if (status === 401) {
-      toast.error('Session expired. Please log in again.', { id: 'banner-toast' });
-    } else if (status === 403) {
-      toast.error("You don't have permission to manage banners.", { id: 'banner-toast' });
-    } else if (status === 404) {
-      toast.error('Banner API endpoint not found.', { id: 'banner-toast' });
-    } else if (status === 500) {
-      toast.error(backendMessage || 'Server error while saving banner.', { id: 'banner-toast' });
-    } else {
-      toast.error(backendMessage || defaultMsg, { id: 'banner-toast' });
-    }
   };
 
   const handleSaveBanner = async (e) => {
