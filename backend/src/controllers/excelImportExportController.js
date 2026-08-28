@@ -14,6 +14,76 @@ const parseBool = (val, defaultVal = false) => {
   return defaultVal;
 };
 
+// Helper to format product export row with ALL Normal Fields FIRST and ALL Color 1..10 Fields LAST
+function formatProductExportRow(p, dto) {
+  const sku = p.sku || `KV-SKU-${p.id}`;
+
+  // 1. Normal Product Fields FIRST
+  const row = {
+    'Product ID': p.id || '',
+    'SKU Code': sku,
+    'Product Name': p.name || '',
+    'Main Category': p.category_name || p.categoryName || 'Apparel',
+    'Subcategory': p.subcategory || p.subCategory || '',
+    'Brand': p.brand || 'Karviyam',
+    'Selling Price': parseFloat(p.price || 0),
+    'MRP Price': parseFloat(p.old_price || p.oldPrice || p.price || 0),
+    'Stock Quantity': parseInt(p.stock_quantity || p.stockQuantity || 0, 10),
+    'Available Sizes': p.sizes || 'S, M, L, XL, XXL',
+    'Material / Fabric': p.material || p.fabric || 'Cotton Blend',
+    'Description': p.description || '',
+    'Tags': p.tags || '',
+    'Featured Product': parseBool(p.is_featured, false),
+    'Trending Product': parseBool(p.is_trending, false),
+    'Best Seller': parseBool(p.is_bestseller, false),
+    'New Arrival': parseBool(p.is_new_arrival, true),
+    'Active Catalog Status': parseBool(p.is_active, true),
+    'Barcode': p.barcode || '',
+    'Weight': p.weight || '',
+    'Dimensions': p.dimensions || '',
+    'Country Of Origin': p.country_of_origin || p.countryOfOrigin || 'India',
+    'Manufacturer': p.manufacturer || 'Karviyam',
+    'HSN Code': p.hsn_code || p.hsnCode || '',
+    'GST Percentage': p.gst_percentage || p.gstPercentage || 12,
+    'Minimum Order Quantity': p.min_order_qty || p.minOrderQty || 1,
+    'Maximum Order Quantity': p.max_order_qty || p.maxOrderQty || 10,
+    'Warranty': p.warranty || '',
+    'Return Days': p.return_days || p.returnDays || '7 Days',
+    'SEO Title': p.seo_title || p.name || '',
+    'Meta Keywords': p.meta_keywords || p.tags || '',
+    'Meta Description': p.meta_description || p.description || ''
+  };
+
+  // 2. Color 1 to Color 10 Fields AT THE VERY END
+  const colors = dto?.colors || [];
+  for (let c = 1; c <= 10; c++) {
+    const col = colors[c - 1];
+    if (col) {
+      row[`Color ${c} Name`] = col.colorName || '';
+      row[`Color ${c} Hex`] = col.colorCode || col.hexCode || '#000000';
+      row[`Color ${c} Default`] = Boolean(col.isDefault);
+      row[`Color ${c} Main Image`] = col.mainImage || '';
+      
+      const subImgs = Array.isArray(col.subImages) ? col.subImages : [];
+      for (let s = 1; s <= 6; s++) {
+        row[`Color ${c} Sub Image ${s}`] = subImgs[s - 1] || '';
+      }
+      row[`Color ${c} Video`] = col.videoUrl || '';
+    } else {
+      row[`Color ${c} Name`] = '';
+      row[`Color ${c} Hex`] = '';
+      row[`Color ${c} Default`] = false;
+      row[`Color ${c} Main Image`] = '';
+      for (let s = 1; s <= 6; s++) {
+        row[`Color ${c} Sub Image ${s}`] = '';
+      }
+      row[`Color ${c} Video`] = '';
+    }
+  }
+
+  return row;
+}
+
 // =========================================================================
 // 1. PRODUCT EXPORT (MULTI-SHEET WORKBOOK)
 // =========================================================================
@@ -34,37 +104,10 @@ exports.exportProducts = async (req, res, next) => {
       const dto = await mapProductRowToDTO(p);
       const sku = p.sku || `KV-SKU-${p.id}`;
 
-      // 1. Products Sheet Row
-      productsSheetRows.push({
-        'Product ID': p.id,
-        'SKU Code': sku,
-        'Product Name': p.name || '',
-        'Main Category': p.category_name || p.categoryName || 'Apparel',
-        'Subcategory': p.subcategory || p.subCategory || '',
-        'Brand': p.brand || 'Karviyam',
-        'Selling Price': parseFloat(p.price || 0),
-        'MRP Price': parseFloat(p.old_price || p.oldPrice || p.price || 0),
-        'Stock Quantity': parseInt(p.stock_quantity || p.stockQuantity || 0, 10),
-        'Available Sizes': p.sizes || 'S, M, L, XL, XXL',
-        'Material / Fabric': p.material || p.fabric || 'Cotton Blend',
-        'Tags': p.tags || '',
-        'Description': p.description || '',
-        'Featured Product': Boolean(p.is_featured),
-        'Trending Product': Boolean(p.is_trending),
-        'Best Seller': Boolean(p.is_bestseller),
-        'New Arrival': Boolean(p.is_new_arrival),
-        'Active Status': p.is_active !== 0,
-        'Created Date': p.created_at || '',
-        'Updated Date': p.updated_at || '',
-        'SEO Title': p.seo_title || p.name || '',
-        'Meta Keywords': p.meta_keywords || p.tags || '',
-        'Meta Description': p.meta_description || p.description || '',
-        'Average Rating': parseFloat(p.rating || 0),
-        'Total Rating Count': parseInt(p.ratings_count || 0, 10),
-        'Review Count': parseInt(p.reviews_count || 0, 10)
-      });
+      // 1. Products Sheet Row (Normal fields first, Colors last)
+      productsSheetRows.push(formatProductExportRow(p, dto));
 
-      // 2. Colors & Media Sheet Rows
+      // 2. Relational Colors & Media Sheet Rows (For Multi-Sheet Power Users)
       const colors = dto?.colors || [];
       colors.forEach((col, cIdx) => {
         const colorName = col.colorName || `Color ${cIdx + 1}`;
@@ -125,11 +168,11 @@ exports.exportProducts = async (req, res, next) => {
       { Column: 'MRP Price', Required: 'OPTIONAL', Type: 'Number', Example: '2499', Description: 'Original maximum retail price before discount.' },
       { Column: 'Stock Quantity', Required: 'REQUIRED', Type: 'Number', Example: '50', Description: 'Available inventory count.' },
       { Column: 'Main Category', Required: 'REQUIRED', Type: 'Text', Example: 'Streetwear', Description: 'Main product category name.' },
-      { Column: 'Color 1 Name', Required: 'OPTIONAL', Type: 'Text', Example: 'Crimson Red', Description: 'Name of the first color variant.' },
-      { Column: 'Color 1 Code', Required: 'OPTIONAL', Type: 'Hex Code', Example: '#B71C1C', Description: 'Hex color code for swatch dot.' },
-      { Column: 'Color 1 Main Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/file-1.jpg', Description: 'Main display image URL for Color 1.' },
-      { Column: 'Color 1 Sub Image 1..6', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/sub-1.jpg', Description: 'Sub images for Color 1 gallery.' },
-      { Column: 'Color 1 Video', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/video.mp4', Description: 'Product video URL for Color 1.' }
+      { Column: 'Color 1..10 Name', Required: 'OPTIONAL', Type: 'Text', Example: 'Crimson Red', Description: 'Color variant name (located in the last columns).' },
+      { Column: 'Color 1..10 Hex', Required: 'OPTIONAL', Type: 'Hex Code', Example: '#B71C1C', Description: 'Hex color code for swatch dot.' },
+      { Column: 'Color 1..10 Main Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/file-1.jpg', Description: 'Main display image URL for the color variant.' },
+      { Column: 'Color 1..10 Sub Image 1..6', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/sub-1.jpg', Description: 'Sub images 1 to 6 for the color variant gallery.' },
+      { Column: 'Color 1..10 Video', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/video.mp4', Description: 'Product video URL for the color variant.' }
     ];
 
     const wb = XLSX.utils.book_new();
@@ -157,31 +200,52 @@ exports.exportProducts = async (req, res, next) => {
 // =========================================================================
 exports.downloadProductTemplate = async (req, res, next) => {
   try {
-    const sampleProducts = [
-      {
-        'Product ID': '',
-        'SKU Code': 'KV-DEMO-001',
-        'Product Name': 'Sample Premium Cotton Shirt',
-        'Main Category': 'Men',
-        'Subcategory': 'Shirts',
-        'Brand': 'Karviyam',
-        'Selling Price': 1299,
-        'MRP Price': 1999,
-        'Stock Quantity': 50,
-        'Available Sizes': 'S, M, L, XL, XXL',
-        'Material / Fabric': '100% Organic Cotton',
-        'Tags': 'shirt, cotton, casual, summer',
-        'Description': 'Handcrafted premium cotton shirt designed for all-day comfort.',
-        'Featured Product': true,
-        'Trending Product': true,
-        'Best Seller': false,
-        'New Arrival': true,
-        'Active Status': true,
-        'SEO Title': 'Sample Premium Cotton Shirt | Karviyam',
-        'Meta Keywords': 'cotton shirt, men fashion, streetwear',
-        'Meta Description': 'Buy high quality handcrafted organic cotton shirts online.'
-      }
-    ];
+    const sampleProduct = {
+      id: 1,
+      sku: 'KV-DEMO-001',
+      name: 'Sample Premium Cotton Shirt',
+      category_name: 'Men',
+      subcategory: 'Shirts',
+      brand: 'Karviyam',
+      price: 1299,
+      old_price: 1999,
+      stock_quantity: 50,
+      sizes: 'S, M, L, XL, XXL',
+      material: '100% Organic Cotton',
+      tags: 'shirt, cotton, casual, summer',
+      description: 'Handcrafted premium cotton shirt designed for all-day comfort.',
+      is_featured: true,
+      is_trending: true,
+      is_bestseller: false,
+      is_new_arrival: true,
+      is_active: true,
+      seo_title: 'Sample Premium Cotton Shirt | Karviyam',
+      meta_keywords: 'cotton shirt, men fashion, streetwear',
+      meta_description: 'Buy high quality handcrafted organic cotton shirts online.'
+    };
+
+    const sampleDTO = {
+      colors: [
+        {
+          colorName: 'Crimson Red',
+          colorCode: '#B71C1C',
+          isDefault: true,
+          mainImage: '/uploads/red-main.jpg',
+          subImages: ['/uploads/red-sub1.jpg', '/uploads/red-sub2.jpg'],
+          videoUrl: '/uploads/red-video.mp4'
+        },
+        {
+          colorName: 'Obsidian Black',
+          colorCode: '#000000',
+          isDefault: false,
+          mainImage: '/uploads/black-main.jpg',
+          subImages: ['/uploads/black-sub1.jpg'],
+          videoUrl: ''
+        }
+      ]
+    };
+
+    const sampleProducts = [formatProductExportRow(sampleProduct, sampleDTO)];
 
     const sampleColors = [
       { 'SKU Code': 'KV-DEMO-001', 'Color Index': 1, 'Color Name': 'Crimson Red', 'Color Code': '#B71C1C', 'Is Default': true },
@@ -201,7 +265,7 @@ exports.downloadProductTemplate = async (req, res, next) => {
       { Column: 'Selling Price', Required: 'REQUIRED', Type: 'Number', Example: '1299', Description: 'Final retail price in INR.' },
       { Column: 'MRP Price', Required: 'OPTIONAL', Type: 'Number', Example: '1999', Description: 'Maximum retail price.' },
       { Column: 'Stock Quantity', Required: 'REQUIRED', Type: 'Number', Example: '50', Description: 'Available stock.' },
-      { Column: 'Color 1..10 Name', Required: 'OPTIONAL', Type: 'Text', Example: 'Emerald Green', Description: 'Color variant name.' },
+      { Column: 'Color 1..10 Name', Required: 'OPTIONAL', Type: 'Text', Example: 'Emerald Green', Description: 'Color variant name (located in the last columns).' },
       { Column: 'Color 1..10 Main Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/green-main.jpg', Description: 'Main image for the specified color.' },
       { Column: 'Color 1..10 Video', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/green-video.mp4', Description: 'Product video URL for the specified color.' }
     ];
@@ -241,16 +305,6 @@ exports.previewProductImport = async (req, res, next) => {
     const mainSheetName = hasProductsSheet ? 'PRODUCTS' : sheetNames[0];
     const rawProducts = XLSX.utils.sheet_to_json(workbook.Sheets[mainSheetName]);
 
-    let rawColors = [];
-    if (sheetNames.includes('PRODUCT COLORS')) {
-      rawColors = XLSX.utils.sheet_to_json(workbook.Sheets['PRODUCT COLORS']);
-    }
-
-    let rawMedia = [];
-    if (sheetNames.includes('PRODUCT MEDIA')) {
-      rawMedia = XLSX.utils.sheet_to_json(workbook.Sheets['PRODUCT MEDIA']);
-    }
-
     const [existingSkusRows] = await pool.query('SELECT sku FROM products WHERE sku IS NOT NULL AND sku != ""');
     const existingSkusSet = new Set(existingSkusRows.map(r => String(r.sku).trim().toLowerCase()));
 
@@ -282,7 +336,7 @@ exports.previewProductImport = async (req, res, next) => {
         rowErrors.push('Stock Quantity must be a non-negative integer.');
       }
 
-      // Check temporary blob / data URLs in flat columns if present
+      // Check temporary blob / data URLs in Color 1..10 columns at the end of row
       for (let c = 1; c <= 10; c++) {
         const mImg = row[`Color ${c} Main Image`];
         if (mImg && (String(mImg).startsWith('blob:') || String(mImg).startsWith('data:'))) {
@@ -359,7 +413,7 @@ exports.executeProductImport = async (req, res, next) => {
       rawMedia = XLSX.utils.sheet_to_json(workbook.Sheets['PRODUCT MEDIA']);
     }
 
-    // Group colors & media by SKU Code
+    // Group colors & media by SKU Code for multi-sheet imports
     const colorsBySku = {};
     rawColors.forEach(rc => {
       const sku = String(rc['SKU Code'] || rc['SKU'] || '').trim().toLowerCase();
@@ -389,7 +443,7 @@ exports.executeProductImport = async (req, res, next) => {
       const name = String(row['Product Name'] || row['Name'] || row['name'] || '').trim();
       const price = parseFloat(row['Selling Price'] || row['Price'] || row['price']);
       const oldPrice = parseFloat(row['MRP Price'] || row['MRP'] || row['oldPrice'] || price);
-      const stock = parseInt(row['Stock Quantity'] || row['Stock'] || row['stock'] || 10, 10);
+      const stock = parseInt(row['Stock Quantity'] || row['Stock'] || row['stock'] || 0, 10);
       const categoryName = String(row['Main Category'] || row['Category'] || 'Apparel').trim();
       const subcategory = String(row['Subcategory'] || '').trim();
       const brand = String(row['Brand'] || 'Karviyam').trim();
@@ -401,7 +455,7 @@ exports.executeProductImport = async (req, res, next) => {
       const isTrending = parseBool(row['Trending Product'] || row['isTrending'], false);
       const isBestseller = parseBool(row['Best Seller'] || row['isBestseller'], false);
       const isNewArrival = parseBool(row['New Arrival'] || row['isNewArrival'], true);
-      const isActive = parseBool(row['Active Status'] || row['isActive'], true);
+      const isActive = parseBool(row['Active Catalog Status'] || row['Active Status'] || row['isActive'], true);
       const seoTitle = String(row['SEO Title'] || name).trim();
       const metaKeywords = String(row['Meta Keywords'] || tags).trim();
       const metaDescription = String(row['Meta Description'] || description).trim();
@@ -431,7 +485,7 @@ exports.executeProductImport = async (req, res, next) => {
       let productId;
       if (existing.length > 0) {
         productId = existing[0].id;
-        // Non-destructive update: Update product fields
+        // Non-destructive update: Update product normal fields first
         await connection.query(
           `UPDATE products SET 
            category_id = ?, name = ?, description = ?, price = ?, old_price = ?, stock_quantity = ?,
@@ -463,7 +517,9 @@ exports.executeProductImport = async (req, res, next) => {
         createdCount++;
       }
 
-      // Process Color Variants (Multi-sheet OR Flat format)
+      // -----------------------------------------------------------------
+      // Process Color Data from the Last Columns (or Multi-sheet)
+      // -----------------------------------------------------------------
       let parsedColors = [];
 
       const skuKey = sku.toLowerCase();
@@ -471,8 +527,8 @@ exports.executeProductImport = async (req, res, next) => {
         // Multi-sheet format
         const relMedia = mediaBySku[skuKey] || [];
         colorsBySku[skuKey].forEach(cRow => {
-          const cName = String(cRow['Color Name'] || 'Standard').trim();
-          const cCode = String(cRow['Color Code'] || '#000000').trim();
+          const cName = String(cRow['Color Name'] || '').trim();
+          const cCode = String(cRow['Color Code'] || cRow['Color Hex'] || '#000000').trim();
           const isDefault = parseBool(cRow['Is Default'], false);
 
           const cMedia = relMedia.filter(m => String(m['Color Name']).trim().toLowerCase() === cName.toLowerCase());
@@ -480,35 +536,42 @@ exports.executeProductImport = async (req, res, next) => {
           const subMedia = cMedia.filter(m => m !== mainMedia && String(m['Media Type']).toLowerCase() !== 'video');
           const videoMedia = cMedia.find(m => String(m['Media Type']).toLowerCase() === 'video');
 
-          parsedColors.push({
-            colorName: cName,
-            colorCode: cCode,
-            isDefault,
-            mainImage: mainMedia ? mainMedia['Media URL'] : '',
-            subImages: subMedia.map(sm => sm['Media URL']).filter(Boolean),
-            videoUrl: videoMedia ? videoMedia['Media URL'] : ''
-          });
-        });
-      } else {
-        // Flat format columns (Color 1 Name, Color 1 Code, Color 1 Main Image, etc.)
-        for (let c = 1; c <= 10; c++) {
-          const cName = String(row[`Color ${c} Name`] || '').trim();
-          if (cName) {
-            const cCode = String(row[`Color ${c} Code`] || '#000000').trim();
-            const isDef = parseBool(row[`Color ${c} Is Default`], c === 1);
-            const mainImg = String(row[`Color ${c} Main Image`] || '').trim();
-            const subImgs = [];
-            for (let s = 1; s <= 6; s++) {
-              const subUrl = String(row[`Color ${c} Sub Image ${s}`] || '').trim();
-              if (subUrl && !subUrl.startsWith('blob:') && !subUrl.startsWith('data:')) {
-                subImgs.push(subUrl);
-              }
-            }
-            const videoUrl = String(row[`Color ${c} Video`] || '').trim();
-
+          if (cName || (mainMedia && mainMedia['Media URL'])) {
             parsedColors.push({
-              colorName: cName,
+              colorName: cName || 'Standard',
               colorCode: cCode,
+              isDefault,
+              mainImage: mainMedia ? mainMedia['Media URL'] : '',
+              subImages: subMedia.map(sm => sm['Media URL']).filter(Boolean),
+              videoUrl: videoMedia ? videoMedia['Media URL'] : ''
+            });
+          }
+        });
+      }
+
+      // Flat format columns at the end of row (Color 1 Name ... Color 10 Video)
+      if (parsedColors.length === 0) {
+        for (let c = 1; c <= 20; c++) {
+          const cName = String(row[`Color ${c} Name`] || '').trim();
+          const cCode = String(row[`Color ${c} Hex`] || row[`Color ${c} Code`] || '').trim();
+          const mainImg = String(row[`Color ${c} Main Image`] || '').trim();
+          const isDef = parseBool(row[`Color ${c} Default`] || row[`Color ${c} Is Default`], c === 1);
+
+          const subImgs = [];
+          for (let s = 1; s <= 6; s++) {
+            const subUrl = String(row[`Color ${c} Sub Image ${s}`] || row[`Color ${c} Image ${s}`] || '').trim();
+            if (subUrl && !subUrl.startsWith('blob:') && !subUrl.startsWith('data:')) {
+              subImgs.push(subUrl);
+            }
+          }
+          const videoUrl = String(row[`Color ${c} Video`] || '').trim();
+
+          // RULES 3 & 4: Create ONLY colors that actually contain data. Do not create empty colors.
+          const hasData = cName !== '' || (mainImg !== '' && !mainImg.startsWith('blob:') && !mainImg.startsWith('data:'));
+          if (hasData) {
+            parsedColors.push({
+              colorName: cName || `Color ${c}`,
+              colorCode: cCode || '#000000',
               isDefault: isDef,
               mainImage: mainImg && !mainImg.startsWith('blob:') && !mainImg.startsWith('data:') ? mainImg : '',
               subImages: subImgs,
@@ -518,21 +581,25 @@ exports.executeProductImport = async (req, res, next) => {
         }
       }
 
-      // If color variants were explicitly provided in Excel, insert into relational tables
+      // RULES 7 & 8: If existing SKU is imported and parsedColors contains new color data, update color variants.
+      // If parsedColors.length === 0, DO NOT RESET OR DELETE PREVIOUSLY SAVED COLORS!
       if (parsedColors.length > 0) {
-        // Delete existing color records for this product before updating
+        // Delete existing color records before re-inserting updated color variants
         const [oldColors] = await connection.query('SELECT id FROM product_colors WHERE product_id = ?', [productId]);
         for (const oc of oldColors) {
           await connection.query('DELETE FROM product_color_images WHERE product_color_id = ?', [oc.id]);
         }
         await connection.query('DELETE FROM product_colors WHERE product_id = ?', [productId]);
 
-        // Insert new color records
-        for (const c of parsedColors) {
+        // Insert colors maintaining exact order, main image, sub images & video
+        for (let cIdx = 0; cIdx < parsedColors.length; cIdx++) {
+          const c = parsedColors[cIdx];
+          const isDefaultVal = c.isDefault || (cIdx === 0 && !parsedColors.some(pc => pc.isDefault));
+
           const [cRes] = await connection.query(
             `INSERT INTO product_colors (product_id, color_name, color_code, hex_code, is_default, main_image, video_url)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [productId, c.colorName, c.colorCode, c.colorCode, c.isDefault ? 1 : 0, c.mainImage || null, c.videoUrl || null]
+            [productId, c.colorName, c.colorCode, c.colorCode, isDefaultVal ? 1 : 0, c.mainImage || null, c.videoUrl || null]
           );
           const colorId = cRes.insertId;
 
@@ -551,7 +618,7 @@ exports.executeProductImport = async (req, res, next) => {
           }
         }
 
-        // Set main product image URL from default color or first color
+        // Update main product image_url from default color
         const defaultColor = parsedColors.find(c => c.isDefault) || parsedColors[0];
         if (defaultColor && defaultColor.mainImage) {
           await connection.query('UPDATE products SET image_url = ? WHERE id = ?', [defaultColor.mainImage, productId]);
@@ -726,19 +793,18 @@ exports.importCategories = async (req, res, next) => {
 // =========================================================================
 exports.exportBanners = async (req, res, next) => {
   try {
-    const [banners] = await pool.query('SELECT * FROM banners ORDER BY id ASC');
+    const [banners] = await pool.query(`SELECT * FROM banners ORDER BY display_order ASC, id ASC`);
 
     const rows = banners.map(b => ({
       'Banner ID': b.id,
       'Title': b.title || '',
       'Subtitle': b.subtitle || '',
-      'Main Image': b.image_url || b.image || '',
-      'Mobile Image': b.mobile_image || b.mobileImage || b.image_url || '',
-      'Desktop Image': b.desktop_image || b.desktopImage || b.image_url || '',
-      'Promotional Link': b.link || b.url || '',
-      'Display Order': b.sort_order || b.display_order || 0,
-      'Active Status': b.is_active !== 0,
-      'Auto Scroll Status': b.auto_scroll !== 0
+      'Desktop Image URL': b.image_path || b.image_url || '',
+      'Mobile Image URL': b.mobile_image_url || b.image_path || '',
+      'Target Link': b.link || b.button_link || '/shop',
+      'Button Text': b.button_text || 'Shop Now',
+      'Display Order': b.display_order || b.sort_order || 1,
+      'Active Status': (b.status || (b.is_active !== 0 ? 'active' : 'inactive')).toLowerCase() === 'active'
     }));
 
     const wb = XLSX.utils.book_new();
@@ -773,36 +839,38 @@ exports.importBanners = async (req, res, next) => {
     let updatedCount = 0;
 
     for (const r of rawRows) {
-      const title = String(r['Title'] || '').trim();
+      const title = String(r['Title'] || r['title'] || '').trim();
+      const desktopImage = String(r['Desktop Image URL'] || r['image'] || '').trim();
+      if (!title && !desktopImage) continue;
+
       const subtitle = String(r['Subtitle'] || '').trim();
-      const mainImage = String(r['Main Image'] || r['Desktop Image'] || r['Mobile Image'] || '').trim();
-      const mobileImage = String(r['Mobile Image'] || mainImage).trim();
-      const desktopImage = String(r['Desktop Image'] || mainImage).trim();
-      const link = String(r['Promotional Link'] || '').trim();
-      const sortOrder = parseInt(r['Display Order'] || 0, 10);
+      const mobileImage = String(r['Mobile Image URL'] || desktopImage).trim();
+      const link = String(r['Target Link'] || '/shop').trim();
+      const buttonText = String(r['Button Text'] || 'Shop Now').trim();
+      const displayOrder = parseInt(r['Display Order'] || 1, 10);
       const isActive = parseBool(r['Active Status'], true);
-      const bannerId = r['Banner ID'];
+      const status = isActive ? 'active' : 'inactive';
 
-      if (!mainImage && !title) continue;
+      const [existing] = await pool.query('SELECT id FROM banners WHERE LOWER(title) = ? LIMIT 1', [title.toLowerCase()]);
 
-      if (bannerId) {
-        const [existing] = await pool.query('SELECT id FROM banners WHERE id = ?', [bannerId]);
-        if (existing.length > 0) {
-          await pool.query(
-            `UPDATE banners SET title = ?, subtitle = ?, image_url = ?, mobile_image = ?, desktop_image = ?, link = ?, sort_order = ?, is_active = ? WHERE id = ?`,
-            [title, subtitle, mainImage, mobileImage, desktopImage, link, sortOrder, isActive ? 1 : 0, bannerId]
-          );
-          updatedCount++;
-          continue;
-        }
+      if (existing.length > 0) {
+        await pool.query(
+          `UPDATE banners SET 
+           subtitle = ?, image_path = ?, image_url = ?, mobile_image_url = ?, link = ?, button_link = ?,
+           button_text = ?, display_order = ?, status = ?, is_active = ?
+           WHERE id = ?`,
+          [subtitle, desktopImage, desktopImage, mobileImage, link, link, buttonText, displayOrder, status, isActive ? 1 : 0, existing[0].id]
+        );
+        updatedCount++;
+      } else {
+        await pool.query(
+          `INSERT INTO banners 
+           (title, subtitle, image_path, image_url, mobile_image_url, link, button_link, button_text, display_order, status, is_active)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [title, subtitle, desktopImage, desktopImage, mobileImage, link, link, buttonText, displayOrder, status, isActive ? 1 : 0]
+        );
+        createdCount++;
       }
-
-      await pool.query(
-        `INSERT INTO banners (title, subtitle, image_url, mobile_image, desktop_image, link, sort_order, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [title, subtitle, mainImage, mobileImage, desktopImage, link, sortOrder, isActive ? 1 : 0]
-      );
-      createdCount++;
     }
 
     return res.status(200).json(ApiResponse.success({ createdCount, updatedCount }, 'Banner import completed successfully'));
@@ -816,19 +884,19 @@ exports.importBanners = async (req, res, next) => {
 // =========================================================================
 exports.exportCoupons = async (req, res, next) => {
   try {
-    const [coupons] = await pool.query('SELECT * FROM coupons ORDER BY id DESC');
+    const [coupons] = await pool.query(`SELECT * FROM coupons ORDER BY id DESC`);
 
     const rows = coupons.map(c => ({
+      'Coupon ID': c.id,
       'Coupon Code': c.code || '',
-      'Discount Type': c.discount_type || 'percentage',
-      'Discount Value': parseFloat(c.discount_value || 0),
-      'Maximum Discount': parseFloat(c.max_discount || 0),
-      'Minimum Order Amount': parseFloat(c.min_order_amount || 0),
+      'Discount Type': c.discount_type || c.type || 'PERCENTAGE',
+      'Discount Value': parseFloat(c.discount_value || c.value || 0),
+      'Minimum Order Amount': parseFloat(c.min_order_amount || c.minAmount || 0),
+      'Maximum Discount Amount': parseFloat(c.max_discount_amount || 0),
       'Usage Limit': parseInt(c.usage_limit || 0, 10),
-      'Per User Limit': parseInt(c.per_user_limit || 1, 10),
+      'Times Used': parseInt(c.used_count || 0, 10),
       'Start Date': c.start_date || '',
       'End Date': c.end_date || c.expires_at || '',
-      'Applicable Categories': c.applicable_categories || '',
       'Active Status': c.is_active !== 0
     }));
 
@@ -857,7 +925,9 @@ exports.importCoupons = async (req, res, next) => {
       return res.status(400).json(ApiResponse.error('No Excel file provided for coupon import'));
     }
 
-    const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+    const sheetName = workbook.SheetNames[0];
+    const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
     let createdCount = 0;
     let updatedCount = 0;
 
@@ -865,27 +935,32 @@ exports.importCoupons = async (req, res, next) => {
       const code = String(r['Coupon Code'] || r['code'] || '').trim().toUpperCase();
       if (!code) continue;
 
-      const discountType = String(r['Discount Type'] || 'percentage').trim().toLowerCase();
+      const discountType = String(r['Discount Type'] || 'PERCENTAGE').trim().toUpperCase();
       const discountValue = parseFloat(r['Discount Value'] || 0);
-      const maxDiscount = parseFloat(r['Maximum Discount'] || 0);
-      const minOrder = parseFloat(r['Minimum Order Amount'] || 0);
-      const usageLimit = parseInt(r['Usage Limit'] || 0, 10);
-      const perUserLimit = parseInt(r['Per User Limit'] || 1, 10);
+      const minOrderAmount = parseFloat(r['Minimum Order Amount'] || 0);
+      const maxDiscountAmount = parseFloat(r['Maximum Discount Amount'] || 0);
+      const usageLimit = parseInt(r['Usage Limit'] || 100, 10);
+      const startDate = r['Start Date'] || null;
+      const endDate = r['End Date'] || null;
       const isActive = parseBool(r['Active Status'], true);
 
-      const [existing] = await pool.query('SELECT id FROM coupons WHERE UPPER(code) = ?', [code]);
+      const [existing] = await pool.query('SELECT id FROM coupons WHERE UPPER(code) = ? LIMIT 1', [code]);
+
       if (existing.length > 0) {
         await pool.query(
-          `UPDATE coupons SET discount_type = ?, discount_value = ?, max_discount = ?, min_order_amount = ?,
-           usage_limit = ?, per_user_limit = ?, is_active = ? WHERE id = ?`,
-          [discountType, discountValue, maxDiscount, minOrder, usageLimit, perUserLimit, isActive ? 1 : 0, existing[0].id]
+          `UPDATE coupons SET 
+           discount_type = ?, discount_value = ?, min_order_amount = ?, max_discount_amount = ?,
+           usage_limit = ?, start_date = ?, end_date = ?, is_active = ?
+           WHERE id = ?`,
+          [discountType, discountValue, minOrderAmount, maxDiscountAmount, usageLimit, startDate, endDate, isActive ? 1 : 0, existing[0].id]
         );
         updatedCount++;
       } else {
         await pool.query(
-          `INSERT INTO coupons (code, discount_type, discount_value, max_discount, min_order_amount, usage_limit, per_user_limit, is_active)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [code, discountType, discountValue, maxDiscount, minOrder, usageLimit, perUserLimit, isActive ? 1 : 0]
+          `INSERT INTO coupons 
+           (code, discount_type, discount_value, min_order_amount, max_discount_amount, usage_limit, start_date, end_date, is_active)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [code, discountType, discountValue, minOrderAmount, maxDiscountAmount, usageLimit, startDate, endDate, isActive ? 1 : 0]
         );
         createdCount++;
       }
@@ -898,30 +973,33 @@ exports.importCoupons = async (req, res, next) => {
 };
 
 // =========================================================================
-// 9. CUSTOMER EXPORT (NO SENSITIVE CREDENTIALS)
+// 9. CUSTOMER EXPORT (READ-ONLY FOR SECURITY)
 // =========================================================================
 exports.exportCustomers = async (req, res, next) => {
   try {
     const [customers] = await pool.query(`
-      SELECT u.id, u.name, u.email, u.phone, u.role, u.is_active, u.created_at,
+      SELECT u.id, u.full_name, u.email, u.phone, u.city, u.state, u.pincode, u.wallet_balance, u.status, u.role, u.created_at,
              COUNT(o.id) as total_orders, COALESCE(SUM(o.total_amount), 0) as total_spent
       FROM users u
       LEFT JOIN orders o ON u.id = o.user_id
-      WHERE u.role = 'customer' OR u.role IS NULL
+      WHERE u.role = 'ROLE_CUSTOMER' OR u.role IS NULL
       GROUP BY u.id
       ORDER BY u.id DESC
     `);
 
     const rows = customers.map(c => ({
       'Customer ID': c.id,
-      'Full Name': c.name || '',
+      'Full Name': c.full_name || '',
       'Email Address': c.email || '',
       'Phone Number': c.phone || '',
-      'Account Role': c.role || 'customer',
-      'Active Status': c.is_active !== 0,
+      'City': c.city || '',
+      'State': c.state || '',
+      'Pincode': c.pincode || '',
       'Total Orders': parseInt(c.total_orders || 0, 10),
-      'Total Spent Amount (INR)': parseFloat(c.total_spent || 0),
-      'Joined Date': c.created_at || ''
+      'Total Spent Amount (₹)': parseFloat(c.total_spent || 0),
+      'Wallet Balance (₹)': parseFloat(c.wallet_balance || 0),
+      'Account Status': c.status || 'Active',
+      'Registered Date': c.created_at || ''
     }));
 
     const wb = XLSX.utils.book_new();
@@ -938,69 +1016,56 @@ exports.exportCustomers = async (req, res, next) => {
 };
 
 // =========================================================================
-// 10. ORDER EXPORT (MULTI-SHEET: ORDERS + ORDER ITEMS)
+// 10. ORDER EXPORT (MULTI-SHEET WORKBOOK)
 // =========================================================================
 exports.exportOrders = async (req, res, next) => {
   try {
     const [orders] = await pool.query(`
-      SELECT o.*, p.payment_method, p.payment_status, p.transaction_id
+      SELECT o.*, u.full_name as user_full_name, u.email as user_email, u.phone as user_phone
       FROM orders o
-      LEFT JOIN payments p ON o.id = p.order_id
+      LEFT JOIN users u ON o.user_id = u.id
       ORDER BY o.id DESC
     `);
 
-    const ordersSheetRows = [];
-    const itemsSheetRows = [];
+    const ordersRows = [];
+    const itemsRows = [];
 
     for (const o of orders) {
-      const orderNo = `KV-ORD-${o.id}`;
-
-      ordersSheetRows.push({
+      const orderCode = o.order_code || o.orderCode || `#ORD${o.id}`;
+      ordersRows.push({
         'Order ID': o.id,
-        'Order Number': orderNo,
-        'Customer Name': o.full_name || '',
-        'Customer Email': o.email || '',
-        'Customer Phone': o.phone || '',
-        'Shipping Address': o.address || '',
+        'Order Code': orderCode,
+        'Customer Name': o.user_full_name || o.customer_name || 'Guest Customer',
+        'Customer Email': o.user_email || o.email || '',
+        'Customer Phone': o.user_phone || o.phone || '',
+        'Shipping Address': o.shipping_address || o.address || '',
         'City': o.city || '',
         'Pincode': o.pincode || '',
-        'Total Amount (INR)': parseFloat(o.total_amount || 0),
-        'Discount Amount': parseFloat(o.discount_amount || 0),
-        'Shipping Cost': parseFloat(o.shipping_cost || 0),
-        'Order Status': o.status || 'Pending',
+        'Total Amount (₹)': parseFloat(o.total_amount || 0),
         'Payment Method': o.payment_method || 'COD',
         'Payment Status': o.payment_status || 'Pending',
-        'Transaction ID': o.transaction_id || '',
-        'Order Date': o.created_at || o.order_date || ''
+        'Order Status': o.status || 'PENDING',
+        'Courier Partner': o.courier_name || '',
+        'Tracking Number': o.tracking_number || '',
+        'Order Date': o.created_at || ''
       });
 
-      const [items] = await pool.query(`
-        SELECT oi.*, pr.name as product_name, pr.sku as product_sku
-        FROM order_items oi
-        LEFT JOIN products pr ON oi.product_id = pr.id
-        WHERE oi.order_id = ?
-      `, [o.id]);
-
-      items.forEach(item => {
-        itemsSheetRows.push({
-          'Order Number': orderNo,
-          'Product SKU': item.product_sku || `SKU-${item.product_id}`,
-          'Product Name': item.product_name || `Product #${item.product_id}`,
-          'Color Variant': item.selected_color || 'Standard',
-          'Size': item.selected_size || 'M',
-          'Quantity': parseInt(item.quantity || 1, 10),
-          'Unit Price': parseFloat(item.price_at_time || 0),
-          'Line Item Total': parseFloat((item.price_at_time || 0) * (item.quantity || 1))
+      const [items] = await pool.query('SELECT * FROM order_items WHERE order_id = ?', [o.id]);
+      items.forEach(it => {
+        itemsRows.push({
+          'Order Code': orderCode,
+          'Product SKU': it.product_sku || it.sku || '',
+          'Product Name': it.product_name || it.name || '',
+          'Quantity': parseInt(it.quantity || 1, 10),
+          'Unit Price (₹)': parseFloat(it.price || 0),
+          'Item Total (₹)': parseFloat((it.price || 0) * (it.quantity || 1))
         });
       });
     }
 
     const wb = XLSX.utils.book_new();
-    const wsOrders = XLSX.utils.json_to_sheet(ordersSheetRows);
-    const wsItems = XLSX.utils.json_to_sheet(itemsSheetRows);
-
-    XLSX.utils.book_append_sheet(wb, wsOrders, 'ORDERS');
-    XLSX.utils.book_append_sheet(wb, wsItems, 'ORDER ITEMS');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ordersRows), 'ORDERS');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(itemsRows), 'ORDER ITEMS');
 
     const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
