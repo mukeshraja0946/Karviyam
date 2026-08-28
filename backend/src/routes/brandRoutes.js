@@ -8,6 +8,8 @@ router.get('/', brandController.getAllBrands);
 router.get('/:id', brandController.getBrandById);
 router.post('/', optionalToken, requireAdmin, brandController.createBrand);
 router.put('/:id', optionalToken, requireAdmin, brandController.updateBrand);
+router.delete('/all', optionalToken, requireAdmin, brandController.deleteAllBrands);
+router.post('/delete-all', optionalToken, requireAdmin, brandController.deleteAllBrands);
 router.delete('/:id', optionalToken, requireAdmin, brandController.deleteBrand);
 
 module.exports = router;

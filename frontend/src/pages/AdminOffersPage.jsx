@@ -3,6 +3,8 @@ import { Tag, Plus, Trash2, Edit2, X, Percent, Gift, Zap, ShieldCheck, Calendar,
 import toast from 'react-hot-toast';
 
 import api from '../utils/api';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 export default function AdminOffersPage() {
   const [offers, setOffers] = useState([]);
@@ -235,6 +237,89 @@ export default function AdminOffersPage() {
     }
   };
 
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(o => o.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(offers.map(o => o.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${offers.length} offers in dataset!`);
+  };
+
+  const handleDeleteSelectedOffers = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected offer campaigns...`, { id: 'off-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= offers.length) {
+        let res = await api.delete('/admin/coupons/all').catch(() => null);
+        if (!res) await api.post('/admin/coupons/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/admin/coupons/${id}`).catch(() => null);
+        }
+      }
+
+      const updated = offers.filter(o => !selectedIds.includes(o.id));
+      setOffers(updated);
+      try { localStorage.setItem('karviyam_admin_offers', JSON.stringify(updated)); } catch (e) {}
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      toast.success(`Successfully deleted ${count} selected promotional offer campaigns.`, { id: 'off-batch-toast' });
+      await fetchOffers();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected offers', { id: 'off-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllOffers = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging all offer campaigns...', { id: 'off-toast' });
+    try {
+      let res = await api.delete('/admin/coupons/all').catch(() => null);
+      if (!res) res = await api.post('/admin/coupons/delete-all').catch(() => null);
+
+      const count = offers.length;
+      setOffers([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_offers'); } catch (e) {}
+      toast.success(`Successfully deleted ${count} promotional offer campaigns.`, { id: 'off-toast' });
+      setClearAllModalOpen(false);
+      await fetchOffers();
+    } catch (e) {
+      console.error(e);
+      toast.error('Clear All failed. No records were deleted.', { id: 'off-toast' });
+    } finally {
+      setClearAllLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -245,21 +330,63 @@ export default function AdminOffersPage() {
           <p className="text-xs text-slate-500">Configure sales campaigns, flash deals, BOGO offers & discount rules</p>
         </div>
 
-        <button
-          onClick={handleOpenAddModal}
-          className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create New Offer</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="flex items-center gap-2 bg-rose-700 hover:bg-rose-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4 text-white" />
+            <span>Clear All Data</span>
+          </button>
+
+          <button
+            onClick={handleOpenAddModal}
+            className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create New Offer</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Select All Bar */}
+      {selectedIds.length > 0 && selectedIds.length === offers.length && !isAllDatasetSelected && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs">
+          <span>All {offers.length} offer campaigns on this page are selected.</span>
+          <button
+            type="button"
+            onClick={selectFullDataset}
+            className="text-rose-700 hover:text-rose-900 font-extrabold underline cursor-pointer"
+          >
+            Select all {offers.length} offers in dataset
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <label className="flex items-center gap-2 font-bold text-xs text-slate-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={offers.length > 0 && selectedIds.length === offers.length}
+            onChange={() => toggleSelectAllPage(offers)}
+            className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+          />
+          <span>Select All Listed Offers ({offers.length})</span>
+        </label>
       </div>
 
       {/* Offers Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {offers.map((off) => (
-          <div key={off.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4 relative overflow-hidden">
+          <div key={off.id} className={`bg-white p-6 rounded-3xl border ${selectedIds.includes(off.id) ? 'border-rose-300 ring-2 ring-rose-200 bg-rose-50/20' : 'border-slate-200'} shadow-xs space-y-4 relative overflow-hidden`}>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(off.id)}
+                  onChange={() => toggleSelectRow(off.id)}
+                  className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer shrink-0"
+                />
                 <div className="w-12 h-12 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center font-black">
                   {off.type === 'PERCENTAGE' && <Percent className="w-6 h-6" />}
                   {off.type === 'FLAT' && <Tag className="w-6 h-6" />}
@@ -446,7 +573,27 @@ export default function AdminOffersPage() {
             </form>
           </div>
         </div>
-      )}
+      )}      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Offer Campaigns"
+        itemCount={offers.length}
+        onConfirm={handleConfirmClearAllOffers}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={offers.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedOffers}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Offer Campaigns"
+        loading={batchDeleting}
+      />
 
     </div>
   );

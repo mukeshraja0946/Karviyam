@@ -130,6 +130,36 @@ exports.deletePincode = async (req, res, next) => {
   }
 };
 
+exports.deleteAllPincodes = async (req, res, next) => {
+  try {
+    let totalCount = 0;
+    try {
+      const [cnt] = await pool.query('SELECT COUNT(*) as c FROM deliverable_locations');
+      totalCount = cnt[0]?.c || 0;
+    } catch (e) {}
+
+    await pool.query('DELETE FROM deliverable_locations');
+    try { await pool.query('DELETE FROM pincodes'); } catch (e) {}
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'CLEAR_ALL',
+        targetType: 'Deliverable Pincodes',
+        details: `Successfully cleared all ${totalCount} deliverable pincodes.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: totalCount },
+      `Successfully deleted ${totalCount} deliverable pincodes.`
+    ));
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.togglePincodeStatus = async (req, res, next) => {
   try {
     const { id } = req.params;

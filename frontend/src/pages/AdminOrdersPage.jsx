@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import InvoiceModal from '../components/InvoiceModal';
 import ExportDropdown from '../components/ExportDropdown';
 import BulkImportModal from '../components/BulkImportModal';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 const ORDER_EXPORT_HEADERS = [
   { label: 'Order ID', accessor: (o) => o.orderCode || o.trackingNumber || `#ORD${o.id}` },
@@ -298,9 +300,85 @@ export default function AdminOrdersPage() {
     return matchesSearch && matchesTab;
   });
 
-  const getStatusBadgeCount = (tabId) => {
-    if (tabId === 'ALL') return orders.length;
-    return orders.filter(o => (o.status || 'PENDING').toUpperCase() === tabId).length;
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(o => o.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(orders.map(o => o.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${orders.length} orders in dataset!`);
+  };
+
+  const handleDeleteSelectedOrders = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected orders...`, { id: 'ord-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= orders.length) {
+        let res = await api.delete('/admin/orders/all').catch(() => null);
+        if (!res) await api.post('/admin/orders/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/admin/orders/${id}`).catch(() => null);
+        }
+      }
+
+      setOrders(prev => prev.filter(o => !selectedIds.includes(o.id)));
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_orders'); } catch (e) {}
+      toast.success(`Successfully deleted ${count} selected orders.`, { id: 'ord-batch-toast' });
+      await fetchOrders();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected orders', { id: 'ord-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllOrders = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging all customer orders...', { id: 'ord-del-all-toast' });
+    try {
+      let res = await api.delete('/admin/orders/all').catch(() => null);
+      if (!res) res = await api.post('/admin/orders/delete-all').catch(() => null);
+
+      const count = orders.length;
+      setOrders([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_orders'); } catch (e) {}
+      toast.success(`Successfully deleted ${count} orders.`, { id: 'ord-del-all-toast' });
+      setClearAllModalOpen(false);
+      await fetchOrders();
+    } catch (e) {
+      toast.error('Clear All failed. No records were deleted.', { id: 'ord-del-all-toast' });
+    } finally {
+      setClearAllLoading(false);
+    }
   };
 
   return (
@@ -476,14 +554,23 @@ export default function AdminOrdersPage() {
         type="orders"
         onImportSuccess={() => fetchOrders()}
       />
-      
+
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display font-bold text-2xl text-slate-900">Order Management</h1>
           <p className="text-xs text-slate-500">Track customer orders, edit statuses & print invoices (Sorted by Newest First)</p>
         </div>
+
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="flex items-center gap-2 bg-rose-700 hover:bg-rose-800 text-white px-3 py-2 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-white" />
+            <span>Clear All Data</span>
+          </button>
+
           <button
             type="button"
             onClick={async () => {
@@ -575,9 +662,20 @@ export default function AdminOrdersPage() {
         <span className="text-xs font-bold text-slate-600">
           {filtered.length} {activeTab === 'ALL' ? 'Total' : activeTab} Orders Listed
         </span>
-      </div>
+      </div>      {/* Orders Table */}
+      {selectedIds.length > 0 && selectedIds.length === filtered.length && orders.length > filtered.length && !isAllDatasetSelected && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs">
+          <span>All {filtered.length} orders on this page are selected.</span>
+          <button
+            type="button"
+            onClick={selectFullDataset}
+            className="text-rose-700 hover:text-rose-900 font-extrabold underline cursor-pointer"
+          >
+            Select all {orders.length} orders in dataset
+          </button>
+        </div>
+      )}
 
-      {/* Orders Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
           <div className="p-12 text-center text-slate-500 font-medium">
@@ -588,6 +686,14 @@ export default function AdminOrdersPage() {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
               <tr>
+                <th className="p-4 w-12 text-center">
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && selectedIds.length === filtered.length}
+                    onChange={() => toggleSelectAllPage(filtered)}
+                    className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                  />
+                </th>
                 <th className="p-4 w-44 whitespace-nowrap">Order ID</th>
                 <th className="p-4">Customer Details</th>
                 <th className="p-4 w-44 whitespace-nowrap">Created Date</th>
@@ -599,7 +705,7 @@ export default function AdminOrdersPage() {
             <tbody className="divide-y divide-slate-100">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="p-8 text-center text-slate-500 font-medium">
+                  <td colSpan="7" className="p-8 text-center text-slate-500 font-medium">
                     No orders found matching the selected criteria.
                   </td>
                 </tr>
@@ -611,7 +717,15 @@ export default function AdminOrdersPage() {
                   const amountDisplay = o.totalAmount != null ? o.totalAmount : o.amount || 0;
 
                   return (
-                    <tr key={o.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={o.id} className={`hover:bg-slate-50/80 transition-colors ${selectedIds.includes(o.id) ? 'bg-rose-50/40' : ''}`}>
+                      <td className="p-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(o.id)}
+                          onChange={() => toggleSelectRow(o.id)}
+                          className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                        />
+                      </td>
                       <td className="p-4 align-middle font-bold text-slate-900 whitespace-nowrap">{displayCode}</td>
                       <td className="p-4 align-middle">
                         <div className="font-bold text-slate-800">{customerName}</div>
@@ -681,6 +795,28 @@ export default function AdminOrdersPage() {
           </table>
         )}
       </div>
+
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Orders"
+        itemCount={orders.length}
+        onConfirm={handleConfirmClearAllOrders}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={orders.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedOrders}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Orders"
+        loading={batchDeleting}
+      />
 
     </div>
   );

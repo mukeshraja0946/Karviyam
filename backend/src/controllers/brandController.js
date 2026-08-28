@@ -112,3 +112,30 @@ exports.deleteBrand = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.deleteAllBrands = async (req, res, next) => {
+  try {
+    const [cnt] = await pool.query('SELECT COUNT(*) as c FROM brands');
+    const totalCount = cnt[0]?.c || 0;
+
+    try { await pool.query('UPDATE products SET brand_id = NULL WHERE brand_id IS NOT NULL'); } catch (e) {}
+    await pool.query('DELETE FROM brands');
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'CLEAR_ALL',
+        targetType: 'Brands',
+        details: `Successfully cleared all ${totalCount} brands.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: totalCount },
+      `Successfully deleted ${totalCount} brands.`
+    ));
+  } catch (err) {
+    next(err);
+  }
+};

@@ -460,4 +460,78 @@ exports.bulkImportProducts = async (req, res, next) => {
   }
 };
 
+exports.deleteAllProducts = async (req, res, next) => {
+  try {
+    const [countRows] = await pool.query('SELECT COUNT(*) as cnt FROM products');
+    const totalCount = countRows[0]?.cnt || 0;
+
+    // Unlink product reference from order_items without deleting historical sales/invoice data
+    try { await pool.query('UPDATE order_items SET product_id = NULL WHERE product_id IS NOT NULL'); } catch (e) {}
+    try { await pool.query('DELETE FROM product_color_images'); } catch (e) {}
+    try { await pool.query('DELETE FROM product_colors'); } catch (e) {}
+    try { await pool.query('DELETE FROM product_images'); } catch (e) {}
+    try { await pool.query('DELETE FROM wishlist'); } catch (e) {}
+    try { await pool.query('DELETE FROM cart'); } catch (e) {}
+    await pool.query('DELETE FROM products');
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'CLEAR_ALL',
+        targetType: 'Products',
+        details: `Successfully cleared all ${totalCount} products.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: totalCount },
+      `Successfully deleted ${totalCount} products.`
+    ));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteSelectedProducts = async (req, res, next) => {
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json(ApiResponse.error('No product IDs provided for deletion'));
+    }
+
+    const cleanIds = ids.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+    if (cleanIds.length === 0) {
+      return res.status(400).json(ApiResponse.error('Invalid product IDs'));
+    }
+
+    const placeholders = cleanIds.map(() => '?').join(',');
+
+    try { await pool.query(`UPDATE order_items SET product_id = NULL WHERE product_id IN (${placeholders})`, cleanIds); } catch (e) {}
+    try { await pool.query(`DELETE FROM product_color_images WHERE color_id IN (SELECT id FROM product_colors WHERE product_id IN (${placeholders}))`, cleanIds); } catch (e) {}
+    try { await pool.query(`DELETE FROM product_colors WHERE product_id IN (${placeholders})`, cleanIds); } catch (e) {}
+    try { await pool.query(`DELETE FROM product_images WHERE product_id IN (${placeholders})`, cleanIds); } catch (e) {}
+    try { await pool.query(`DELETE FROM wishlist WHERE product_id IN (${placeholders})`, cleanIds); } catch (e) {}
+    try { await pool.query(`DELETE FROM cart WHERE product_id IN (${placeholders})`, cleanIds); } catch (e) {}
+    await pool.query(`DELETE FROM products WHERE id IN (${placeholders})`, cleanIds);
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'DELETE_BATCH',
+        targetType: 'Products',
+        details: `Deleted ${cleanIds.length} selected products (IDs: ${cleanIds.slice(0, 5).join(', ')}${cleanIds.length > 5 ? '...' : ''})`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: cleanIds.length },
+      `Successfully deleted ${cleanIds.length} selected products.`
+    ));
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.mapProductRowToDTO = mapProductRowToDTO;

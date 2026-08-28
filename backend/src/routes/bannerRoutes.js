@@ -9,6 +9,8 @@ router.get('/all', bannerController.getAllBanners);
 router.post('/settings', optionalToken, requireAdmin, bannerController.updateBannerSettings);
 router.post('/', optionalToken, requireAdmin, bannerController.saveBanner);
 router.put('/:id', optionalToken, requireAdmin, bannerController.saveBanner);
+router.delete('/all', optionalToken, requireAdmin, bannerController.deleteAllBanners);
+router.post('/delete-all', optionalToken, requireAdmin, bannerController.deleteAllBanners);
 router.delete('/:id', optionalToken, requireAdmin, bannerController.deleteBanner);
 
 module.exports = router;

@@ -402,15 +402,47 @@ exports.deleteCategory = async (req, res, next) => {
   try {
     await ensureCategoryTableExists();
     const { id } = req.params;
+
+    // 1. Unlink child subcategories
+    await pool.query('UPDATE categories SET parent_id = NULL WHERE parent_id = ?', [id]).catch(() => null);
+
+    // 2. Unlink products associated with this category
+    await pool.query('UPDATE products SET category_id = NULL WHERE category_id = ?', [id]).catch(() => null);
+    try { await pool.query('UPDATE products SET subcategory_id = NULL WHERE subcategory_id = ?', [id]); } catch (e) {}
+
+    // 3. Delete category record
+    await pool.query('DELETE FROM categories WHERE id = ?', [id]);
+    return res.status(200).json(ApiResponse.success(null, 'Category deleted successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteAllCategories = async (req, res, next) => {
+  try {
+    await ensureCategoryTableExists();
+    const [countRows] = await pool.query('SELECT COUNT(*) as cnt FROM categories');
+    const totalCount = countRows[0]?.cnt || 0;
+
+    await pool.query('UPDATE categories SET parent_id = NULL').catch(() => null);
+    await pool.query('UPDATE products SET category_id = NULL').catch(() => null);
+    try { await pool.query('UPDATE products SET subcategory_id = NULL'); } catch (e) {}
+    await pool.query('DELETE FROM categories');
+
     try {
-      await pool.query('DELETE FROM categories WHERE id = ?', [id]);
-      return res.status(200).json(ApiResponse.success(null, 'Category deleted successfully'));
-    } catch (dbErr) {
-      if (dbErr.code === 'ER_ROW_IS_REFERENCED_2' || dbErr.errno === 1451) {
-        return res.status(400).json(ApiResponse.error('Cannot delete category because existing products are assigned to it. Please reassign or delete those products first.'));
-      }
-      throw dbErr;
-    }
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'CLEAR_ALL',
+        targetType: 'Categories',
+        details: `Successfully cleared all ${totalCount} categories.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: totalCount },
+      `Successfully deleted ${totalCount} categories.`
+    ));
   } catch (err) {
     next(err);
   }

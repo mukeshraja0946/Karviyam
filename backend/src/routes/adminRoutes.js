@@ -23,6 +23,8 @@ router.post('/orders/:id/status', adminController.updateOrderStatus);
 router.put('/orders/:id', orderController.updateOrder);
 router.post('/orders/:id', orderController.updateOrder);
 router.post('/orders/:id/update', orderController.updateOrder);
+router.delete('/orders/all', adminController.deleteAllOrders);
+router.post('/orders/delete-all', adminController.deleteAllOrders);
 router.delete('/orders/:id', orderController.deleteOrder);
 router.post('/orders/:id/delete', orderController.deleteOrder);
 
@@ -32,7 +34,13 @@ router.post('/products', adminController.createProduct);
 router.post('/products/bulk-import', productController.bulkImportProducts);
 router.put('/products/:id', adminController.updateProduct);
 router.post('/products/:id', adminController.updateProduct);
+router.delete('/products/all', productController.deleteAllProducts);
+router.post('/products/delete-all', productController.deleteAllProducts);
+router.post('/products/delete-batch', productController.deleteSelectedProducts);
+router.delete('/products/delete-batch', productController.deleteSelectedProducts);
 router.delete('/products/:id', adminController.deleteProduct);
+router.delete('/inventory/all', adminController.deleteAllInventory);
+router.post('/inventory/delete-all', adminController.deleteAllInventory);
 
 // Coupons
 router.get('/coupons', adminController.getCoupons);
@@ -40,12 +48,16 @@ router.post('/coupons', adminController.createCoupon);
 router.put('/coupons/:id', adminController.updateCoupon);
 router.post('/coupons/:id', adminController.updateCoupon);
 router.post('/coupons/:id/update', adminController.updateCoupon);
+router.delete('/coupons/all', adminController.deleteAllCoupons);
+router.post('/coupons/delete-all', adminController.deleteAllCoupons);
 router.delete('/coupons/:id', adminController.deleteCoupon);
 router.post('/coupons/:id/delete', adminController.deleteCoupon);
 
 // Reviews
 router.get('/reviews', adminController.getReviews);
 router.put('/reviews/:id/status', adminController.updateReviewStatus);
+router.delete('/reviews/all', adminController.deleteAllReviews);
+router.post('/reviews/delete-all', adminController.deleteAllReviews);
 
 const userController = require('../controllers/userController');
 
@@ -55,6 +67,8 @@ router.get('/customers', adminController.getCustomers);
 router.put('/customers/:id', adminController.updateCustomer);
 router.post('/customers/:id', adminController.updateCustomer);
 router.post('/customers/:id/update', adminController.updateCustomer);
+router.delete('/customers/all', adminController.deleteAllCustomers);
+router.post('/customers/delete-all', adminController.deleteAllCustomers);
 router.delete('/customers/:id', adminController.deleteCustomer);
 router.post('/customers/:id/delete', adminController.deleteCustomer);
 router.put('/users/:id/role', userController.updateUserRole);
@@ -67,6 +81,8 @@ router.post('/users/:id', userController.deleteUser);
 router.get('/pincodes', pincodeController.getAllPincodes);
 router.post('/pincodes', pincodeController.createPincode);
 router.put('/pincodes/:id', pincodeController.updatePincode);
+router.delete('/pincodes/all', pincodeController.deleteAllPincodes);
+router.post('/pincodes/delete-all', pincodeController.deleteAllPincodes);
 router.delete('/pincodes/:id', pincodeController.deletePincode);
 router.put('/pincodes/:id/toggle-status', pincodeController.togglePincodeStatus);
 router.post('/pincodes/bulk-import', pincodeController.bulkImportPincodes);

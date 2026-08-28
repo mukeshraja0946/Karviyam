@@ -10,6 +10,8 @@ router.get('/admin', promoCardController.getAllPromoCardsAdmin);
 router.post('/', promoCardController.createPromoCard);
 router.put('/reorder', promoCardController.reorderPromoCards);
 router.put('/:id', promoCardController.updatePromoCard);
+router.delete('/all', promoCardController.deleteAllPromoCards);
+router.post('/delete-all', promoCardController.deleteAllPromoCards);
 router.delete('/:id', promoCardController.deletePromoCard);
 
 module.exports = router;

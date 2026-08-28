@@ -656,3 +656,142 @@ exports.deleteCustomer = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.deleteAllCoupons = async (req, res, next) => {
+  try {
+    const [cnt] = await pool.query('SELECT COUNT(*) as c FROM coupons');
+    const totalCount = cnt[0]?.c || 0;
+
+    await pool.query('DELETE FROM coupons');
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'CLEAR_ALL',
+        targetType: 'Coupons',
+        details: `Successfully cleared all ${totalCount} coupons.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: totalCount },
+      `Successfully deleted ${totalCount} coupons.`
+    ));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteAllReviews = async (req, res, next) => {
+  try {
+    let totalCount = 0;
+    try {
+      const [cnt] = await pool.query('SELECT COUNT(*) as c FROM reviews');
+      totalCount = cnt[0]?.c || 0;
+    } catch (e) {}
+
+    try { await pool.query('DELETE FROM reviews'); } catch (e) {}
+    try { await pool.query('DELETE FROM product_reviews'); } catch (e) {}
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'CLEAR_ALL',
+        targetType: 'Reviews',
+        details: `Successfully cleared all ${totalCount} reviews.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: totalCount },
+      `Successfully deleted ${totalCount} product reviews.`
+    ));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteAllCustomers = async (req, res, next) => {
+  try {
+    const [cnt] = await pool.query("SELECT COUNT(*) as c FROM users WHERE role = 'customer' OR role = 'ROLE_CUSTOMER' OR role IS NULL");
+    const totalCount = cnt[0]?.c || 0;
+
+    try { await pool.query("DELETE FROM user_addresses WHERE user_id IN (SELECT id FROM users WHERE role = 'customer' OR role = 'ROLE_CUSTOMER' OR role IS NULL)"); } catch (e) {}
+    try { await pool.query("DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE role = 'customer' OR role = 'ROLE_CUSTOMER' OR role IS NULL)"); } catch (e) {}
+    await pool.query("DELETE FROM users WHERE role = 'customer' OR role = 'ROLE_CUSTOMER' OR role IS NULL");
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'CLEAR_ALL',
+        targetType: 'Customers',
+        details: `Successfully cleared ${totalCount} customer accounts (Admin accounts protected).`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: totalCount },
+      `Successfully deleted ${totalCount} customer accounts. (Admin accounts protected)`
+    ));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteAllOrders = async (req, res, next) => {
+  try {
+    const [cnt] = await pool.query('SELECT COUNT(*) as c FROM orders');
+    const totalCount = cnt[0]?.c || 0;
+
+    try { await pool.query('DELETE FROM order_items'); } catch (e) {}
+    try { await pool.query('DELETE FROM payments'); } catch (e) {}
+    await pool.query('DELETE FROM orders');
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'CLEAR_ALL',
+        targetType: 'Orders',
+        details: `Successfully cleared all ${totalCount} customer orders.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: totalCount },
+      `Successfully deleted ${totalCount} orders.`
+    ));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteAllInventory = async (req, res, next) => {
+  try {
+    const [cnt] = await pool.query('SELECT COUNT(*) as c FROM products');
+    const totalCount = cnt[0]?.c || 0;
+
+    await pool.query('UPDATE products SET stock_quantity = 0');
+    try { await pool.query('UPDATE product_colors font SET stock_quantity = 0'); } catch (e) {}
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'CLEAR_ALL',
+        targetType: 'Inventory',
+        details: `Successfully reset stock levels to 0 across ${totalCount} products.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: totalCount },
+      `Successfully reset inventory stock levels to 0 across all ${totalCount} products.`
+    ));
+  } catch (err) {
+    next(err);
+  }
+};

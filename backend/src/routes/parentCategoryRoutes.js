@@ -10,6 +10,8 @@ router.get('/admin', parentCategoryController.getAllParentCategoriesAdmin);
 router.post('/', parentCategoryController.createParentCategory);
 router.put('/reorder', parentCategoryController.reorderParentCategories);
 router.put('/:id', parentCategoryController.updateParentCategory);
+router.delete('/all', parentCategoryController.deleteAllParentCategories);
+router.post('/delete-all', parentCategoryController.deleteAllParentCategories);
 router.delete('/:id', parentCategoryController.deleteParentCategory);
 
 module.exports = router;

@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import BulkImportModal from '../components/BulkImportModal';
 import ExportDropdown from '../components/ExportDropdown';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 const PRODUCT_EXPORT_HEADERS = [
   { label: 'Product Name', accessor: 'name' },
@@ -216,6 +218,90 @@ export default function AdminProductsPage() {
       setSelectedSkus([]);
     } catch (e) {
       toast.error('Bulk delete failed');
+    }
+  };
+
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(p => p.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(products.map(p => p.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${products.length} products in the dataset!`);
+  };
+
+  const handleDeleteSelectedProducts = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected products...`, { id: 'prd-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= products.length) {
+        let res = await api.delete('/products/all').catch(() => null);
+        if (!res) await api.post('/products/delete-all').catch(() => null);
+      } else {
+        let res = await api.post('/admin/products/delete-batch', { ids: selectedIds }).catch(() => null);
+        if (!res) await api.delete('/admin/products/delete-batch', { data: { ids: selectedIds } }).catch(() => null);
+      }
+
+      setProducts(prev => prev.filter(p => !selectedIds.includes(p.id)));
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      window.dispatchEvent(new Event('karviyam_products_updated'));
+      toast.success(`Successfully deleted ${count} selected products.`, { id: 'prd-batch-toast' });
+      await fetchProducts();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected products', { id: 'prd-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllProducts = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging all product catalog records...', { id: 'prd-del-all-toast' });
+    try {
+      let res = await api.delete('/products/all').catch(() => null);
+      if (!res) {
+        res = await api.post('/products/delete-all').catch(() => null);
+      }
+
+      const count = products.length;
+      setProducts([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_products'); } catch (e) {}
+      window.dispatchEvent(new Event('karviyam_products_updated'));
+      toast.success(`Successfully deleted ${count} products.`, { id: 'prd-del-all-toast' });
+      setClearAllModalOpen(false);
+      await fetchProducts();
+    } catch (e) {
+      console.error(e);
+      toast.error('Clear All failed. No records were deleted.', { id: 'prd-del-all-toast' });
+    } finally {
+      setClearAllLoading(false);
     }
   };
 
@@ -811,6 +897,14 @@ export default function AdminProductsPage() {
           </button>
 
           <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="flex items-center gap-2 bg-rose-700 hover:bg-rose-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4 text-white" />
+            <span>Clear All Data</span>
+          </button>
+
+          <button
             onClick={handleOpenAddModal}
             className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
           >
@@ -843,10 +937,31 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Products Table */}
+      {selectedIds.length > 0 && selectedIds.length === filtered.length && products.length > filtered.length && !isAllDatasetSelected && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs">
+          <span>All {filtered.length} products on this page are selected.</span>
+          <button
+            type="button"
+            onClick={selectFullDataset}
+            className="text-rose-700 hover:text-rose-900 font-extrabold underline cursor-pointer"
+          >
+            Select all {products.length} products in the dataset
+          </button>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
             <tr>
+              <th className="p-4 w-12 text-center">
+                <input
+                  type="checkbox"
+                  checked={filtered.length > 0 && selectedIds.length === filtered.length}
+                  onChange={() => toggleSelectAllPage(filtered)}
+                  className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                />
+              </th>
               <th className="p-4">Product</th>
               <th className="p-4">SKU / Barcode</th>
               <th className="p-4">Category</th>
@@ -858,7 +973,15 @@ export default function AdminProductsPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filtered.map((p) => (
-              <tr key={p.id} className="hover:bg-slate-50/80">
+              <tr key={p.id} className={`hover:bg-slate-50/80 transition-colors ${selectedIds.includes(p.id) ? 'bg-rose-50/40' : ''}`}>
+                <td className="p-4 text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(p.id)}
+                    onChange={() => toggleSelectRow(p.id)}
+                    className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                  />
+                </td>
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     <img src={p.images?.[0] || p.imageUrl} alt="" className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0" />
@@ -1447,6 +1570,27 @@ export default function AdminProductsPage() {
           }
           setCropperState(null);
         }}
+      />
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Products"
+        itemCount={products.length}
+        onConfirm={handleConfirmClearAllProducts}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={products.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedProducts}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Products"
+        loading={batchDeleting}
       />
 
     </div>

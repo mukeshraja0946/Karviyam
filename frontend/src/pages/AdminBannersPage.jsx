@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 import api from '../utils/api';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 import BulkImportModal from '../components/BulkImportModal';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState([]);
@@ -262,6 +264,91 @@ export default function AdminBannersPage() {
     }
   };
 
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(b => b.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(banners.map(b => b.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${banners.length} banners in dataset!`);
+  };
+
+  const handleDeleteSelectedBanners = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected banners...`, { id: 'banner-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= banners.length) {
+        let res = await api.delete('/banners/all').catch(() => null);
+        if (!res) await api.post('/banners/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/banners/${id}`).catch(() => null);
+        }
+      }
+
+      setBanners(prev => prev.filter(b => !selectedIds.includes(b.id)));
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
+      window.dispatchEvent(new Event('karviyam_banners_updated'));
+      toast.success(`Successfully deleted ${count} selected homepage banners.`, { id: 'banner-batch-toast' });
+      await fetchBanners();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected banners', { id: 'banner-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllBanners = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging all banner records...', { id: 'banner-toast' });
+    try {
+      let res = await api.delete('/banners/all').catch(() => null);
+      if (!res) {
+        res = await api.post('/banners/delete-all').catch(() => null);
+      }
+      const count = banners.length;
+      setBanners([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
+      window.dispatchEvent(new Event('karviyam_banners_updated'));
+      toast.success(`Successfully deleted ${count} banners.`, { id: 'banner-toast' });
+      setClearAllModalOpen(false);
+      await fetchBanners();
+    } catch (e) {
+      console.error('[Delete All Banners Error]:', e);
+      toast.error('Clear All failed. No records were deleted.', { id: 'banner-toast' });
+    } finally {
+      setClearAllLoading(false);
+    }
+  };
+
   const [importModalOpen, setImportModalOpen] = useState(false);
 
   return (
@@ -303,6 +390,14 @@ export default function AdminBannersPage() {
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
             <span>Import Banners</span>
+          </button>
+
+          <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="flex items-center gap-2 bg-rose-700 hover:bg-rose-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4 text-white" />
+            <span>Clear All Data</span>
           </button>
 
           <button
@@ -367,6 +462,31 @@ export default function AdminBannersPage() {
       </div>
 
       {/* Banners List Cards */}
+      {selectedIds.length > 0 && selectedIds.length === banners.length && !isAllDatasetSelected && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs">
+          <span>All {banners.length} homepage banners on this page are selected.</span>
+          <button
+            type="button"
+            onClick={selectFullDataset}
+            className="text-rose-700 hover:text-rose-900 font-extrabold underline cursor-pointer"
+          >
+            Select all {banners.length} banners in dataset
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <label className="flex items-center gap-2 font-bold text-xs text-slate-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={banners.length > 0 && selectedIds.length === banners.length}
+            onChange={() => toggleSelectAllPage(banners)}
+            className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+          />
+          <span>Select All Listed Banners ({banners.length})</span>
+        </label>
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center p-12 bg-white rounded-2xl border border-slate-200 text-slate-500 text-xs font-bold gap-2">
           <Loader2 className="w-5 h-5 animate-spin text-[#B71C1C]" />
@@ -386,7 +506,15 @@ export default function AdminBannersPage() {
             const isUpdatingThis = Boolean(actionLoading[b.id]);
 
             return (
-              <div key={b.id} className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+              <div key={b.id} className={`bg-white rounded-2xl border ${selectedIds.includes(b.id) ? 'border-rose-300 ring-2 ring-rose-200 bg-rose-50/20' : 'border-slate-200'} shadow-xs overflow-hidden relative`}>
+                <div className="absolute top-3 left-3 z-10 bg-slate-900/80 p-1.5 rounded-xl backdrop-blur-xs">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(b.id)}
+                    onChange={() => toggleSelectRow(b.id)}
+                    className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                  />
+                </div>
                 <div className="relative h-48 bg-slate-900">
                   <img
                     src={bannerImage}
@@ -644,6 +772,27 @@ export default function AdminBannersPage() {
           setFormData(prev => ({ ...prev, imagePath: croppedUrl }));
           setCropperFile(null);
         }}
+      />
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Homepage Banners"
+        itemCount={banners.length}
+        onConfirm={handleConfirmClearAllBanners}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={banners.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedBanners}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Homepage Banners"
+        loading={batchDeleting}
       />
 
     </div>

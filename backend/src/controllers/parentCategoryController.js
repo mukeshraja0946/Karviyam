@@ -203,3 +203,29 @@ exports.deleteParentCategory = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.deleteAllParentCategories = async (req, res, next) => {
+  try {
+    const [cnt] = await pool.query('SELECT COUNT(*) as c FROM parent_categories');
+    const totalCount = cnt[0]?.c || 0;
+
+    await pool.query('DELETE FROM parent_categories');
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'CLEAR_ALL',
+        targetType: 'Parent Categories',
+        details: `Successfully cleared all ${totalCount} parent categories.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: totalCount },
+      `Successfully deleted ${totalCount} parent categories.`
+    ));
+  } catch (err) {
+    next(err);
+  }
+};

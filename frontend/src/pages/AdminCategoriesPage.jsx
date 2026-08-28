@@ -4,6 +4,8 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import BulkImportModal from '../components/BulkImportModal';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 const CLASSIFICATION_OPTIONS = [
   'MEN',
@@ -362,7 +364,10 @@ export default function AdminCategoriesPage() {
     if (!window.confirm(`Are you sure you want to delete ${catName}?`)) return;
     toast.loading(`Deleting category ${catName}...`, { id: 'cat-del-toast' });
     try {
-      await api.delete(`/categories/${catId}`).catch(() => null);
+      let res = await api.delete(`/categories/${catId}`).catch(() => null);
+      if (!res) {
+        res = await api.post(`/categories/${catId}/delete`).catch(() => null);
+      }
 
       setCategories(prev => {
         const updated = prev.filter(c => String(c.id) !== String(catId));
@@ -372,10 +377,96 @@ export default function AdminCategoriesPage() {
 
       window.dispatchEvent(new Event('karviyam_categories_updated'));
       toast.success('Category deleted successfully!', { id: 'cat-del-toast' });
+      await fetchCategories();
     } catch (e) {
       console.error(e);
       const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to delete category';
       toast.error(msg, { id: 'cat-del-toast' });
+    }
+  };
+
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(c => c.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(categories.map(c => c.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${categories.length} categories in dataset!`);
+  };
+
+  const handleDeleteSelectedCategories = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected categories...`, { id: 'cat-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= categories.length) {
+        let res = await api.delete('/categories/all').catch(() => null);
+        if (!res) await api.post('/categories/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/admin/categories/${id}`).catch(() => api.delete(`/categories/${id}`)).catch(() => null);
+        }
+      }
+
+      setCategories(prev => prev.filter(c => !selectedIds.includes(c.id)));
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      window.dispatchEvent(new Event('karviyam_categories_updated'));
+      toast.success(`Successfully deleted ${count} selected categories.`, { id: 'cat-batch-toast' });
+      await fetchCategories();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected categories', { id: 'cat-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllCategories = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging all category records...', { id: 'cat-del-all-toast' });
+    try {
+      let res = await api.delete('/categories/all').catch(() => null);
+      if (!res) {
+        res = await api.post('/categories/delete-all').catch(() => null);
+      }
+
+      const count = categories.length;
+      setCategories([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_categories'); } catch (e) {}
+      window.dispatchEvent(new Event('karviyam_categories_updated'));
+      toast.success(`Successfully deleted ${count} categories.`, { id: 'cat-del-all-toast' });
+      setClearAllModalOpen(false);
+      await fetchCategories();
+    } catch (e) {
+      console.error(e);
+      toast.error('Clear All failed. No records were deleted.', { id: 'cat-del-all-toast' });
+    } finally {
+      setClearAllLoading(false);
     }
   };
 
@@ -478,6 +569,14 @@ export default function AdminCategoriesPage() {
           </button>
 
           <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="flex items-center gap-2 bg-rose-700 hover:bg-rose-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4 text-white" />
+            <span>Clear All Data</span>
+          </button>
+
+          <button
             onClick={handleOpenAdd}
             className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer uppercase tracking-wider"
           >
@@ -519,12 +618,33 @@ export default function AdminCategoriesPage() {
       </div>
 
       {/* Structured Category Table */}
+      {selectedIds.length > 0 && selectedIds.length === filtered.length && categories.length > filtered.length && !isAllDatasetSelected && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs">
+          <span>All {filtered.length} categories on this page are selected.</span>
+          <button
+            type="button"
+            onClick={selectFullDataset}
+            className="text-rose-700 hover:text-rose-900 font-extrabold underline cursor-pointer"
+          >
+            Select all {categories.length} categories in dataset
+          </button>
+        </div>
+      )}
+
       {viewMode === 'table' ? (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase text-slate-600 tracking-wider">
                 <tr>
+                  <th className="py-3.5 px-4 w-12 text-center">
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && selectedIds.length === filtered.length}
+                      onChange={() => toggleSelectAllPage(filtered)}
+                      className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                    />
+                  </th>
                   <th className="py-3.5 px-4">Category</th>
                   <th className="py-3.5 px-4">Parent Category</th>
                   <th className="py-3.5 px-4">Classification</th>
@@ -536,7 +656,7 @@ export default function AdminCategoriesPage() {
               <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-slate-400 font-bold">
+                    <td colSpan={7} className="py-8 text-center text-slate-400 font-bold">
                       No categories found matching filter criteria.
                     </td>
                   </tr>
@@ -545,7 +665,15 @@ export default function AdminCategoriesPage() {
                     const parentCat = categories.find(c => String(c.id) === String(cat.parentId));
                     const isActive = getCategoryActive(cat);
                     return (
-                      <tr key={cat.id} className={`hover:bg-slate-50/80 transition-colors ${!isActive ? 'bg-amber-50/20' : ''}`}>
+                      <tr key={cat.id} className={`hover:bg-slate-50/80 transition-colors ${selectedIds.includes(cat.id) ? 'bg-rose-50/40' : !isActive ? 'bg-amber-50/20' : ''}`}>
+                        <td className="py-3 px-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(cat.id)}
+                            onChange={() => toggleSelectRow(cat.id)}
+                            className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                          />
+                        </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             <img
@@ -615,8 +743,16 @@ export default function AdminCategoriesPage() {
           {filtered.map((cat) => {
             const isActive = getCategoryActive(cat);
             return (
-              <div key={cat.id} className={`bg-white p-5 rounded-2xl border ${isActive ? 'border-slate-200' : 'border-amber-200 bg-amber-50/20'} shadow-xs flex flex-col justify-between space-y-4`}>
-                <div className="flex items-start gap-4">
+              <div key={cat.id} className={`bg-white p-5 rounded-2xl border ${selectedIds.includes(cat.id) ? 'border-rose-300 ring-2 ring-rose-200 bg-rose-50/20' : isActive ? 'border-slate-200' : 'border-amber-200 bg-amber-50/20'} shadow-xs flex flex-col justify-between space-y-4 relative`}>
+                <div className="absolute top-4 right-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(cat.id)}
+                    onChange={() => toggleSelectRow(cat.id)}
+                    className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                  />
+                </div>
+                <div className="flex items-start gap-4 pr-6">
                   <img
                     src={cat.imageUrl || cat.iconUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'}
                     alt={cat.name}
@@ -942,6 +1078,27 @@ export default function AdminCategoriesPage() {
           }
           setCropperState(null);
         }}
+      />
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Categories"
+        itemCount={categories.length}
+        onConfirm={handleConfirmClearAllCategories}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={categories.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedCategories}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Categories"
+        loading={batchDeleting}
       />
 
     </div>

@@ -4,6 +4,8 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import ExportDropdown from '../components/ExportDropdown';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 const BRAND_EXPORT_HEADERS = [
   { label: 'Brand Name', accessor: 'name' },
@@ -179,19 +181,113 @@ export default function AdminBrandsPage() {
     }
   };
 
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(b => b.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(brands.map(b => b.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${brands.length} brands in dataset!`);
+  };
+
+  const handleDeleteSelectedBrands = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected brands...`, { id: 'brand-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= brands.length) {
+        let res = await api.delete('/brands/all').catch(() => null);
+        if (!res) await api.post('/brands/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/admin/brands/${id}`).catch(() => api.delete(`/brands/${id}`)).catch(() => null);
+        }
+      }
+
+      setBrands(prev => prev.filter(b => !selectedIds.includes(b.id)));
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.setItem('karviyam_admin_brands', JSON.stringify(brands.filter(b => !selectedIds.includes(b.id)))); } catch (e) {}
+      window.dispatchEvent(new Event('karviyam_categories_updated'));
+      toast.success(`Successfully deleted ${count} selected brands.`, { id: 'brand-batch-toast' });
+      await fetchBrands();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected brands', { id: 'brand-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllBrands = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging all brand records...', { id: 'brand-toast' });
+    try {
+      let res = await api.delete('/brands/all').catch(() => null);
+      if (!res) {
+        res = await api.post('/brands/delete-all').catch(() => null);
+      }
+      const count = brands.length;
+      setBrands([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_brands'); } catch (e) {}
+      window.dispatchEvent(new Event('karviyam_categories_updated'));
+      toast.success(`Successfully deleted ${count} brands.`, { id: 'brand-toast' });
+      setClearAllModalOpen(false);
+      await fetchBrands();
+    } catch (e) {
+      console.error(e);
+      toast.error('Clear All failed. No records were deleted.', { id: 'brand-toast' });
+    } finally {
+      setClearAllLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display font-bold text-2xl text-slate-900">Brand Management</h1>
           <p className="text-xs text-slate-500">Manage store brands & manufacturer labels</p>
         </div>
-        <ExportDropdown
-          filename="brands_report"
-          title="Brands Management Report"
-          headers={BRAND_EXPORT_HEADERS}
-          data={brands}
-        />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="flex items-center gap-2 bg-rose-700 hover:bg-rose-800 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4 text-white" />
+            <span>Clear All Data</span>
+          </button>
+          <ExportDropdown
+            filename="brands_report"
+            title="Brands Management Report"
+            headers={BRAND_EXPORT_HEADERS}
+            data={brands}
+          />
+        </div>
       </div>
 
       {/* Add Brand Form with Image Upload */}
@@ -222,11 +318,11 @@ export default function AdminBrandsPage() {
               </div>
             ) : (
               <label className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border border-slate-200">
-                <Upload className="w-3.5 h-3.5 text-[#B71C1C]" />
-                <span>{uploading ? 'Processing...' : 'Upload Logo'}</span>
+                <Upload className="w-3.5 h-3.5 text-slate-500" />
+                <span>Upload Logo</span>
                 <input
                   type="file"
-                  accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                  accept="image/*"
                   onChange={handleImageFileChange}
                   className="hidden"
                 />
@@ -235,10 +331,10 @@ export default function AdminBrandsPage() {
 
             <button
               type="submit"
-              disabled={uploading}
-              className="bg-[#B71C1C] hover:bg-[#900C0C] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              className="bg-[#B71C1C] hover:bg-[#900C0C] text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
             >
-              Add Brand
+              <Plus className="w-4 h-4" />
+              <span>Add Brand</span>
             </button>
           </div>
         </div>
@@ -249,6 +345,14 @@ export default function AdminBrandsPage() {
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
             <tr>
+              <th className="p-4 w-12 text-center">
+                <input
+                  type="checkbox"
+                  checked={brands.length > 0 && selectedIds.length === brands.length}
+                  onChange={() => toggleSelectAllPage(brands)}
+                  className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                />
+              </th>
               <th className="p-4">Brand Details</th>
               <th className="p-4">Status</th>
               <th className="p-4 text-right">Actions</th>
@@ -256,7 +360,15 @@ export default function AdminBrandsPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {brands.map((b) => (
-              <tr key={b.id} className="hover:bg-slate-50/80">
+              <tr key={b.id} className={`hover:bg-slate-50/80 transition-colors ${selectedIds.includes(b.id) ? 'bg-rose-50/40' : ''}`}>
+                <td className="p-4 text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(b.id)}
+                    onChange={() => toggleSelectRow(b.id)}
+                    className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                  />
+                </td>
                 <td className="p-4 font-bold text-slate-900 flex items-center gap-3">
                   <img
                     src={b.logoUrl || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=200'}
@@ -295,6 +407,27 @@ export default function AdminBrandsPage() {
           setNewBrandLogo(croppedUrl);
           setCropperFile(null);
         }}
+      />
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Brands"
+        itemCount={brands.length}
+        onConfirm={handleConfirmClearAllBrands}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={brands.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedBrands}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Brands"
+        loading={batchDeleting}
       />
 
     </div>

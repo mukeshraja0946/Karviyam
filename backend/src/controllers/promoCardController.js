@@ -181,3 +181,29 @@ exports.deletePromoCard = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.deleteAllPromoCards = async (req, res, next) => {
+  try {
+    const [cnt] = await pool.query('SELECT COUNT(*) as c FROM promo_cards');
+    const totalCount = cnt[0]?.c || 0;
+
+    await pool.query('DELETE FROM promo_cards');
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'CLEAR_ALL',
+        targetType: 'Promo Cards',
+        details: `Successfully cleared all ${totalCount} promotional cards.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount: totalCount },
+      `Successfully deleted ${totalCount} promotional cards.`
+    ));
+  } catch (err) {
+    next(err);
+  }
+};

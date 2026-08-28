@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, Search, RefreshCw, Clock, User, ShieldCheck } from 'lucide-react';
+import { ShieldAlert, Search, RefreshCw, Clock, User, ShieldCheck, Trash2 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import ExportDropdown from '../components/ExportDropdown';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 const AUDIT_EXPORT_HEADERS = [
   { label: 'Admin Name', accessor: (l) => l.adminName || 'System Admin' },
@@ -47,6 +49,85 @@ export default function AdminAuditLogsPage() {
     (l.entityName && l.entityName.toLowerCase().includes(search.toLowerCase()))
   );
 
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(l => l.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(logs.map(l => l.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${logs.length} audit logs in dataset!`);
+  };
+
+  const handleDeleteSelectedAuditLogs = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected audit logs...`, { id: 'audit-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= logs.length) {
+        let res = await api.delete('/admin/audit-logs/all').catch(() => null);
+        if (!res) await api.post('/admin/audit-logs/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/admin/audit-logs/${id}`).catch(() => null);
+        }
+      }
+
+      setLogs(prev => prev.filter(l => !selectedIds.includes(l.id)));
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      toast.success(`Successfully cleared ${count} selected audit log records.`, { id: 'audit-batch-toast' });
+      await fetchAuditLogs();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected audit logs', { id: 'audit-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllAuditLogs = async () => {
+    setClearAllLoading(true);
+    toast.loading('Clearing all system audit logs...', { id: 'audit-toast' });
+    try {
+      let res = await api.delete('/admin/audit-logs/all').catch(() => null);
+      if (!res) res = await api.post('/admin/audit-logs/delete-all').catch(() => null);
+
+      const count = logs.length;
+      setLogs([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      toast.success(`Successfully cleared ${count} audit log records.`, { id: 'audit-toast' });
+      setClearAllModalOpen(false);
+      await fetchAuditLogs();
+    } catch (e) {
+      toast.error('Clear All failed. No records were deleted.', { id: 'audit-toast' });
+    } finally {
+      setClearAllLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -61,6 +142,14 @@ export default function AdminAuditLogsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-white" />
+            <span>Clear All Data</span>
+          </button>
+
           <ExportDropdown
             filename="audit_logs_report"
             title="System Audit & Compliance Report"
@@ -96,6 +185,19 @@ export default function AdminAuditLogsPage() {
       </div>
 
       {/* Audit Logs Table */}
+      {selectedIds.length > 0 && selectedIds.length === filtered.length && logs.length > filtered.length && !isAllDatasetSelected && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs">
+          <span>All {filtered.length} audit logs on this page are selected.</span>
+          <button
+            type="button"
+            onClick={selectFullDataset}
+            className="text-rose-700 hover:text-rose-900 font-extrabold underline cursor-pointer"
+          >
+            Select all {logs.length} audit logs in dataset
+          </button>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
           <div className="p-12 text-center text-slate-500 font-medium">
@@ -108,6 +210,14 @@ export default function AdminAuditLogsPage() {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
               <tr>
+                <th className="p-4 w-12 text-center">
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && selectedIds.length === filtered.length}
+                    onChange={() => toggleSelectAllPage(filtered)}
+                    className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                  />
+                </th>
                 <th className="p-4">Admin Name</th>
                 <th className="p-4">Action</th>
                 <th className="p-4">Entity / Module</th>
@@ -118,7 +228,15 @@ export default function AdminAuditLogsPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                <tr key={log.id} className={`hover:bg-slate-50/80 transition-colors ${selectedIds.includes(log.id) ? 'bg-rose-50/40' : ''}`}>
+                  <td className="p-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(log.id)}
+                      onChange={() => toggleSelectRow(log.id)}
+                      className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                    />
+                  </td>
                   <td className="p-4 align-middle font-bold text-slate-900 flex items-center gap-2">
                     <User className="w-4 h-4 text-slate-400" />
                     <span>{log.adminName || 'System Admin'}</span>
@@ -145,7 +263,27 @@ export default function AdminAuditLogsPage() {
           </table>
         )}
       </div>
-
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Audit Logs"
+        itemCount={logs.length}
+        onConfirm={handleConfirmClearAllAuditLogs}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={logs.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedAuditLogs}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Audit Logs"
+        loading={batchDeleting}
+      />
     </div>
   );
 }

@@ -21,6 +21,8 @@ import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { resolveImageUrl } from '../utils/imageUtils';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 export default function AdminParentCategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -238,6 +240,89 @@ export default function AdminParentCategoriesPage() {
     }
   };
 
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(c => c.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(categories.map(c => c.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${categories.length} parent categories in dataset!`);
+  };
+
+  const handleDeleteSelectedParentCategories = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected parent categories...`, { id: 'pcat-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= categories.length) {
+        let res = await api.delete('/parent-categories/all').catch(() => null);
+        if (!res) await api.post('/parent-categories/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/parent-categories/${id}`).catch(() => null);
+        }
+      }
+
+      setCategories(prev => prev.filter(c => !selectedIds.includes(c.id)));
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      notifyUpdate();
+      toast.success(`Successfully deleted ${count} selected parent categories.`, { id: 'pcat-batch-toast' });
+      await fetchParentCategories();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected parent categories', { id: 'pcat-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllParentCategories = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging all parent categories...', { id: 'pcat-toast' });
+    try {
+      let res = await api.delete('/parent-categories/all').catch(() => null);
+      if (!res) {
+        res = await api.post('/parent-categories/delete-all').catch(() => null);
+      }
+      const count = categories.length;
+      setCategories([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      toast.success(`Successfully deleted ${count} parent categories.`, { id: 'pcat-toast' });
+      notifyUpdate();
+      setClearAllModalOpen(false);
+      await fetchParentCategories();
+    } catch (err) {
+      console.error(err);
+      toast.error('Clear All failed. No records were deleted.', { id: 'pcat-toast' });
+    } finally {
+      setClearAllLoading(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto">
       
@@ -259,13 +344,23 @@ export default function AdminParentCategoriesPage() {
           </div>
         </div>
 
-        <button
-          onClick={handleOpenAddModal}
-          className="bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Parent Category</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="bg-rose-700 hover:bg-rose-800 text-white font-extrabold text-xs uppercase tracking-wider px-4 py-3 rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Clear All Data</span>
+          </button>
+
+          <button
+            onClick={handleOpenAddModal}
+            className="bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Parent Category</span>
+          </button>
+        </div>
       </div>
 
       {/* Live Homepage Top Categories Preview Bar */}
@@ -318,10 +413,18 @@ export default function AdminParentCategoriesPage() {
 
       {/* Admin Management Grid / List */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display font-extrabold text-base text-slate-900">
-            Parent Category Cards Management ({(Array.isArray(categories) ? categories : []).length})
-          </h2>
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={categories.length > 0 && selectedIds.length === categories.length}
+              onChange={() => toggleSelectAllPage(categories)}
+              className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+            />
+            <h2 className="font-display font-extrabold text-base text-slate-900">
+              Parent Category Cards Management ({(Array.isArray(categories) ? categories : []).length})
+            </h2>
+          </div>
           <span className="text-xs text-slate-500 font-medium">Use Up/Down arrows to reorder homepage display</span>
         </div>
 
@@ -349,14 +452,22 @@ export default function AdminParentCategoriesPage() {
                 <div
                   key={cat.id || idx}
                   className={`bg-white rounded-2xl border-2 p-4 space-y-3 shadow-2xs relative flex flex-col justify-between transition-all ${
-                    cat.isActive !== false ? 'border-slate-200 hover:border-slate-300' : 'border-slate-200 bg-slate-50/70 opacity-75'
+                    selectedIds.includes(cat.id) ? 'border-rose-300 ring-2 ring-rose-200 bg-rose-50/20' : cat.isActive !== false ? 'border-slate-200 hover:border-slate-300' : 'border-slate-200 bg-slate-50/70 opacity-75'
                   }`}
                 >
                 {/* Card Top Header */}
                 <div className="flex items-center justify-between">
-                  <span className="bg-slate-900 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
-                    #{cat.displayOrder || idx + 1}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(cat.id)}
+                      onChange={() => toggleSelectRow(cat.id)}
+                      className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                    />
+                    <span className="bg-slate-900 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                      #{cat.displayOrder || idx + 1}
+                    </span>
+                  </div>
 
                   <div className="flex items-center gap-1">
                     <button
@@ -638,6 +749,27 @@ export default function AdminParentCategoriesPage() {
           onConfirmCrop={handleCropConfirm}
         />
       )}
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Parent Categories"
+        itemCount={categories.length}
+        onConfirm={handleConfirmClearAllParentCategories}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={categories.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedParentCategories}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Parent Categories"
+        loading={batchDeleting}
+      />
 
     </div>
   );

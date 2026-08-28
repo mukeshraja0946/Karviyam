@@ -14,6 +14,9 @@ router.post('/reorder', optionalToken, requireAdmin, categoryController.reorderC
 router.put('/:id/toggle-status', optionalToken, requireAdmin, categoryController.toggleStatus);
 router.post('/:id/toggle-status', optionalToken, requireAdmin, categoryController.toggleStatus);
 
+router.delete('/all', optionalToken, requireAdmin, categoryController.deleteAllCategories);
+router.post('/delete-all', optionalToken, requireAdmin, categoryController.deleteAllCategories);
+
 router.delete('/:id', optionalToken, requireAdmin, categoryController.deleteCategory);
 router.post('/:id/delete', optionalToken, requireAdmin, categoryController.deleteCategory);
 

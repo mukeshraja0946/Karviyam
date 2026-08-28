@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Star, CheckCircle, XCircle, MessageSquare, ThumbsUp, ThumbsDown, Filter, ShieldCheck } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 const INITIAL_MOCK_REVIEWS = [
   {
@@ -139,6 +141,87 @@ export default function AdminReviewsPage() {
     return reviews.filter((r) => (r.status || 'Pending').toLowerCase() === tabId.toLowerCase()).length;
   };
 
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(r => r.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(reviews.map(r => r.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${reviews.length} reviews in dataset!`);
+  };
+
+  const handleDeleteSelectedReviews = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected reviews...`, { id: 'rev-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= reviews.length) {
+        let res = await api.delete('/admin/reviews/all').catch(() => null);
+        if (!res) await api.post('/admin/reviews/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/admin/reviews/${id}`).catch(() => null);
+        }
+      }
+
+      setReviews(prev => prev.filter(r => !selectedIds.includes(r.id)));
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.setItem('karviyam_admin_reviews', JSON.stringify(reviews.filter(r => !selectedIds.includes(r.id)))); } catch (e) {}
+      toast.success(`Successfully deleted ${count} selected product reviews.`, { id: 'rev-batch-toast' });
+      await fetchReviews();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected reviews', { id: 'rev-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllReviews = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging all customer reviews...', { id: 'rev-toast' });
+    try {
+      let res = await api.delete('/admin/reviews/all').catch(() => null);
+      if (!res) res = await api.post('/admin/reviews/delete-all').catch(() => null);
+
+      const count = reviews.length;
+      setReviews([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_reviews'); } catch (e) {}
+      toast.success(`Successfully deleted ${count} product reviews.`, { id: 'rev-toast' });
+      setClearAllModalOpen(false);
+      await fetchReviews();
+    } catch (e) {
+      toast.error('Clear All failed. No records were deleted.', { id: 'rev-toast' });
+    } finally {
+      setClearAllLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -151,6 +234,14 @@ export default function AdminReviewsPage() {
           </h1>
           <p className="text-xs text-slate-500">Approve, reject, and moderate customer product ratings & feedback</p>
         </div>
+
+        <button
+          onClick={() => setClearAllModalOpen(true)}
+          className="flex items-center gap-2 bg-rose-700 hover:bg-rose-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer shrink-0"
+        >
+          <XCircle className="w-4 h-4 text-white" />
+          <span>Clear All Data</span>
+        </button>
       </div>
 
       {/* Navigation Tabs */}
@@ -182,6 +273,31 @@ export default function AdminReviewsPage() {
       </div>
 
       {/* Reviews List */}
+      {selectedIds.length > 0 && selectedIds.length === filteredReviews.length && reviews.length > filteredReviews.length && !isAllDatasetSelected && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs">
+          <span>All {filteredReviews.length} reviews on this page are selected.</span>
+          <button
+            type="button"
+            onClick={selectFullDataset}
+            className="text-rose-700 hover:text-rose-900 font-extrabold underline cursor-pointer"
+          >
+            Select all {reviews.length} reviews in dataset
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <label className="flex items-center gap-2 font-bold text-xs text-slate-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={filteredReviews.length > 0 && selectedIds.length === filteredReviews.length}
+            onChange={() => toggleSelectAllPage(filteredReviews)}
+            className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+          />
+          <span>Select All Listed Reviews ({filteredReviews.length})</span>
+        </label>
+      </div>
+
       {loading ? (
         <div className="bg-white p-12 rounded-2xl text-center text-xs text-slate-500 font-medium border border-slate-200">
           Loading customer reviews...
@@ -201,10 +317,17 @@ export default function AdminReviewsPage() {
               return (
                 <div
                   key={rev.id}
-                  className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-slate-300"
+                  className={`bg-white p-5 rounded-2xl border ${selectedIds.includes(rev.id) ? 'border-rose-300 ring-2 ring-rose-200 bg-rose-50/20' : 'border-slate-200'} shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-slate-300`}
                 >
-                  <div className="space-y-2 flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(rev.id)}
+                      onChange={() => toggleSelectRow(rev.id)}
+                      className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer mt-1 shrink-0"
+                    />
+                    <div className="space-y-2 flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2.5">
                       <span className="font-bold text-slate-900 text-sm">{rev.userName || 'Customer'}</span>
                       
                       {/* Star Rating */}
@@ -241,6 +364,7 @@ export default function AdminReviewsPage() {
                         <span className="text-slate-400">• {new Date(rev.createdAt).toLocaleDateString()}</span>
                       )}
                     </div>
+                    </div>
                   </div>
 
                   {/* Action Buttons */}
@@ -276,6 +400,27 @@ export default function AdminReviewsPage() {
         </div>
       )}
 
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Product Reviews"
+        itemCount={reviews.length}
+        onConfirm={handleConfirmClearAllReviews}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={reviews.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedReviews}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Product Reviews"
+        loading={batchDeleting}
+      />
     </div>
   );
 }

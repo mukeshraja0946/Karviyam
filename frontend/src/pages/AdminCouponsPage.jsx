@@ -3,6 +3,8 @@ import { Ticket, Plus, Trash2, Edit2, X, CheckCircle, FileSpreadsheet } from 'lu
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import BulkImportModal from '../components/BulkImportModal';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState([]);
@@ -166,13 +168,97 @@ export default function AdminCouponsPage() {
 
   const [importModalOpen, setImportModalOpen] = useState(false);
 
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(c => c.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(coupons.map(c => c.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${coupons.length} coupons in dataset!`);
+  };
+
+  const handleDeleteSelectedCoupons = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected coupons...`, { id: 'cpn-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= coupons.length) {
+        let res = await api.delete('/admin/coupons/all').catch(() => null);
+        if (!res) await api.post('/admin/coupons/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/admin/coupons/${id}`).catch(() => null);
+        }
+      }
+
+      const updated = coupons.filter(c => !selectedIds.includes(c.id));
+      setCoupons(updated);
+      try { localStorage.setItem('karviyam_admin_coupons', JSON.stringify(updated)); } catch (e) {}
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      toast.success(`Successfully deleted ${count} selected coupons.`, { id: 'cpn-batch-toast' });
+      await fetchCoupons();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected coupons', { id: 'cpn-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllCoupons = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging all coupon records...', { id: 'coupon-toast' });
+    try {
+      let res = await api.delete('/admin/coupons/all').catch(() => null);
+      if (!res) res = await api.post('/admin/coupons/delete-all').catch(() => null);
+
+      const count = coupons.length;
+      setCoupons([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_coupons'); } catch (e) {}
+      toast.success(`Successfully deleted ${count} coupons.`, { id: 'coupon-toast' });
+      setClearAllModalOpen(false);
+      await fetchCoupons();
+    } catch (e) {
+      console.error(e);
+      toast.error('Clear All failed. No records were deleted.', { id: 'coupon-toast' });
+    } finally {
+      setClearAllLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display font-bold text-2xl text-slate-900">Coupons & Promo Codes</h1>
-          <p className="text-xs text-slate-500">Create, edit, and manage discount promo codes for checkout</p>
+          <h1 className="font-display font-bold text-2xl text-slate-900">Coupons & Discount Codes</h1>
+          <p className="text-xs text-slate-500">Create promotional discount codes & configure checkout rules</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -208,6 +294,14 @@ export default function AdminCouponsPage() {
           </button>
 
           <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="flex items-center gap-2 bg-rose-700 hover:bg-rose-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4 text-white" />
+            <span>Clear All Data</span>
+          </button>
+
+          <button
             onClick={handleOpenAddModal}
             className="flex items-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all"
           >
@@ -217,14 +311,48 @@ export default function AdminCouponsPage() {
         </div>
       </div>
 
+      {/* Select All Bar */}
+      {selectedIds.length > 0 && selectedIds.length === coupons.length && !isAllDatasetSelected && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs">
+          <span>All {coupons.length} coupons on this page are selected.</span>
+          <button
+            type="button"
+            onClick={selectFullDataset}
+            className="text-rose-700 hover:text-rose-900 font-extrabold underline cursor-pointer"
+          >
+            Select all {coupons.length} coupons in dataset
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <label className="flex items-center gap-2 font-bold text-xs text-slate-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={coupons.length > 0 && selectedIds.length === coupons.length}
+            onChange={() => toggleSelectAllPage(coupons)}
+            className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+          />
+          <span>Select All Listed Coupons ({coupons.length})</span>
+        </label>
+      </div>
+
       {/* Coupons List Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {coupons.map((c) => (
-          <div key={c.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3 relative">
+          <div key={c.id} className={`bg-white p-5 rounded-2xl border ${selectedIds.includes(c.id) ? 'border-rose-300 ring-2 ring-rose-200 bg-rose-50/20' : 'border-slate-200'} shadow-xs space-y-3 relative`}>
             <div className="flex justify-between items-start">
-              <span className="font-mono font-black text-lg text-[#B71C1C] bg-red-50 px-3 py-1 rounded-xl border border-red-100">
-                {c.code}
-              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(c.id)}
+                  onChange={() => toggleSelectRow(c.id)}
+                  className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                />
+                <span className="font-mono font-black text-lg text-[#B71C1C] bg-red-50 px-3 py-1 rounded-xl border border-red-100">
+                  {c.code}
+                </span>
+              </div>
               <div className="flex gap-1">
                 <button onClick={() => handleOpenEditModal(c)} className="p-1.5 text-slate-400 hover:text-[#B71C1C] rounded-lg hover:bg-slate-100">
                   <Edit2 className="w-4 h-4" />
@@ -324,6 +452,27 @@ export default function AdminCouponsPage() {
         onClose={() => setImportModalOpen(false)}
         type="coupons"
         onImportSuccess={fetchCoupons}
+      />
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Coupons"
+        itemCount={coupons.length}
+        onConfirm={handleConfirmClearAllCoupons}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={coupons.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedCoupons}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Coupons"
+        loading={batchDeleting}
       />
 
     </div>

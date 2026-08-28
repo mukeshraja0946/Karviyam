@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Package, AlertTriangle, Search, Save, CheckCircle, RefreshCw } from 'lucide-react';
+import { Package, AlertTriangle, Search, Save, CheckCircle, RefreshCw, Trash2 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import ExportDropdown from '../components/ExportDropdown';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 const INVENTORY_EXPORT_HEADERS = [
   { label: 'Product Name', accessor: 'name' },
@@ -17,6 +19,8 @@ export default function AdminInventoryPage() {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
 
   useEffect(() => {
     fetchInventory();
@@ -48,12 +52,12 @@ export default function AdminInventoryPage() {
         const status = stock === 0 ? 'Out of Stock' : (stock < reorder ? 'Low Stock' : 'In Stock');
         return {
           id: p.id,
-          name: p.name,
-          sku: p.sku || `KV-SKU-${p.id}`,
+          name: p.name || 'Untitled Product',
+          sku: p.sku || `SKU-${p.id}`,
           stock: stock,
           reorder: reorder,
           status: status,
-          warehouse: p.warehouse || 'Main Hub Chennai',
+          warehouse: p.warehouse || 'Main Warehouse (Hub 1)',
           rawProduct: p
         };
       });
@@ -64,6 +68,79 @@ export default function AdminInventoryPage() {
       toast.error('Failed to load live inventory from database');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(i => i.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(inventory.map(i => i.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${inventory.length} inventory records!`);
+  };
+
+  const handleDeleteSelectedInventory = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Resetting stock to 0 for ${count} selected items...`, { id: 'inv-batch-toast' });
+    try {
+      for (const id of selectedIds) {
+        await api.put(`/admin/products/${id}`, { stockQuantity: 0 }).catch(() => null);
+      }
+      setInventory(prev => prev.map(item => selectedIds.includes(item.id) ? { ...item, stock: 0, status: 'Out of Stock' } : item));
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      window.dispatchEvent(new Event('karviyam_products_updated'));
+      toast.success(`Successfully reset stock to 0 for ${count} items.`, { id: 'inv-batch-toast' });
+      await fetchInventory();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to reset selected inventory', { id: 'inv-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllInventory = async () => {
+    setClearAllLoading(true);
+    toast.loading('Resetting all warehouse stock levels to 0...', { id: 'inv-del-toast' });
+    try {
+      let res = await api.delete('/admin/inventory/all').catch(() => null);
+      if (!res) res = await api.post('/admin/inventory/delete-all').catch(() => null);
+
+      const count = inventory.length;
+      setInventory(prev => prev.map(i => ({ ...i, stock: 0, status: 'Out of Stock' })));
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      window.dispatchEvent(new Event('karviyam_products_updated'));
+      toast.success(`Successfully reset stock to 0 across ${count} inventory items.`, { id: 'inv-del-toast' });
+      setClearAllModalOpen(false);
+      await fetchInventory();
+    } catch (e) {
+      console.error(e);
+      toast.error('Clear All failed. No records were deleted.', { id: 'inv-del-toast' });
+    } finally {
+      setClearAllLoading(false);
     }
   };
 
@@ -82,7 +159,6 @@ export default function AdminInventoryPage() {
       
       if (apiData.success || res.status === 200) {
         toast.success(`Updated stock for ${item.name} to ${nextStock} units! 📦`);
-        // Immediately trigger global data sync
         window.dispatchEvent(new Event('karviyam_products_updated'));
         fetchInventory();
       } else {
@@ -98,7 +174,15 @@ export default function AdminInventoryPage() {
 
   return (
     <div className="space-y-6">
-      
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Inventory Records"
+        itemCount={inventory.length}
+        onConfirm={handleConfirmClearAllInventory}
+        loading={clearAllLoading}
+      />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -112,6 +196,13 @@ export default function AdminInventoryPage() {
             headers={INVENTORY_EXPORT_HEADERS}
             data={inventory}
           />
+          <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-white" />
+            <span>Clear All Data</span>
+          </button>
           <button
             onClick={fetchInventory}
             disabled={loading}
@@ -136,6 +227,14 @@ export default function AdminInventoryPage() {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
               <tr>
+                <th className="p-4 w-12 text-center">
+                  <input
+                    type="checkbox"
+                    checked={inventory.length > 0 && selectedIds.length === inventory.length}
+                    onChange={() => toggleSelectAllPage(inventory)}
+                    className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                  />
+                </th>
                 <th className="p-4">Product & SKU</th>
                 <th className="p-4">Warehouse Location</th>
                 <th className="p-4 text-center">Current Stock</th>
@@ -146,7 +245,15 @@ export default function AdminInventoryPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {inventory.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/80">
+                <tr key={item.id} className={`hover:bg-slate-50/80 transition-colors ${selectedIds.includes(item.id) ? 'bg-rose-50/40' : ''}`}>
+                  <td className="p-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(item.id)}
+                      onChange={() => toggleSelectRow(item.id)}
+                      className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                    />
+                  </td>
                   <td className="p-4">
                     <p className="font-bold text-slate-900">{item.name}</p>
                     <p className="text-[10px] text-slate-400">SKU: {item.sku}</p>
@@ -191,6 +298,19 @@ export default function AdminInventoryPage() {
           </table>
         )}
       </div>
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={inventory.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedInventory}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Inventory Records"
+        loading={batchDeleting}
+      />
 
     </div>
   );

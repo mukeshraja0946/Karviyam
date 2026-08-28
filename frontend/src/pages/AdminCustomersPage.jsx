@@ -4,6 +4,8 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import ExportDropdown from '../components/ExportDropdown';
 import BulkImportModal from '../components/BulkImportModal';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 const CUSTOMER_EXPORT_HEADERS = [
   { label: 'Customer Name', accessor: (c) => c.name || c.fullName || 'Customer' },
@@ -239,6 +241,85 @@ export default function AdminCustomersPage() {
     (c.phone || '').toLowerCase().includes(search.toLowerCase()) ||
     (c.city || '').toLowerCase().includes(search.toLowerCase())
   );
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(c => c.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(customers.map(c => c.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${customers.length} customer accounts in dataset!`);
+  };
+
+  const handleDeleteSelectedCustomers = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected customers...`, { id: 'cust-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= customers.length) {
+        let res = await api.delete('/admin/customers/all').catch(() => null);
+        if (!res) await api.post('/admin/customers/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/admin/customers/${id}`).catch(() => null);
+        }
+      }
+
+      const updated = customers.filter(c => !selectedIds.includes(c.id));
+      saveCustomersToStorage(updated);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      toast.success(`Successfully deleted ${count} selected customer accounts.`, { id: 'cust-batch-toast' });
+      await fetchCustomers();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected customers', { id: 'cust-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllCustomers = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging customer accounts...', { id: 'cust-toast' });
+    try {
+      let res = await api.delete('/admin/customers/all').catch(() => null);
+      if (!res) res = await api.post('/admin/customers/delete-all').catch(() => null);
+
+      const count = customers.length;
+      saveCustomersToStorage([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      toast.success(`Successfully deleted ${count} customer accounts.`, { id: 'cust-toast' });
+      setClearAllModalOpen(false);
+      await fetchCustomers();
+    } catch (e) {
+      toast.error('Clear All failed. No records were deleted.', { id: 'cust-toast' });
+    } finally {
+      setClearAllLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -507,7 +588,16 @@ export default function AdminCustomersPage() {
           <h1 className="font-display font-bold text-2xl text-slate-900">Customer Management</h1>
           <p className="text-xs text-slate-500">View customer profiles, orders, wallet balances & access permissions</p>
         </div>
+
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="flex items-center gap-2 bg-rose-700 hover:bg-rose-800 text-white px-3 py-2 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-white" />
+            <span>Clear All Data</span>
+          </button>
+
           <button
             type="button"
             onClick={async () => {
@@ -571,6 +661,19 @@ export default function AdminCustomersPage() {
         <span className="text-xs text-slate-500 font-semibold">{filtered.length} Registered Customers</span>
       </div>
 
+      {selectedIds.length > 0 && selectedIds.length === filtered.length && customers.length > filtered.length && !isAllDatasetSelected && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs">
+          <span>All {filtered.length} customers on this page are selected.</span>
+          <button
+            type="button"
+            onClick={selectFullDataset}
+            className="text-rose-700 hover:text-rose-900 font-extrabold underline cursor-pointer"
+          >
+            Select all {customers.length} customers in dataset
+          </button>
+        </div>
+      )}
+
       {/* Customers Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
@@ -582,6 +685,14 @@ export default function AdminCustomersPage() {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
               <tr>
+                <th className="p-4 w-12 text-center">
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && selectedIds.length === filtered.length}
+                    onChange={() => toggleSelectAllPage(filtered)}
+                    className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                  />
+                </th>
                 <th className="p-4">Customer Details</th>
                 <th className="p-4 w-32 whitespace-nowrap">Total Orders</th>
                 <th className="p-4 w-32 whitespace-nowrap">Total Spent</th>
@@ -592,7 +703,15 @@ export default function AdminCustomersPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
+                <tr key={c.id} className={`hover:bg-slate-50/80 transition-colors ${selectedIds.includes(c.id) ? 'bg-rose-50/40' : ''}`}>
+                  <td className="p-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(c.id)}
+                      onChange={() => toggleSelectRow(c.id)}
+                      className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                    />
+                  </td>
                   <td className="p-4 align-middle">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-[#B71C1C] text-white font-bold flex items-center justify-center text-xs shadow-xs">
@@ -639,7 +758,27 @@ export default function AdminCustomersPage() {
           </table>
         )}
       </div>
-
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Customer Accounts"
+        itemCount={customers.length}
+        onConfirm={handleConfirmClearAllCustomers}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={customers.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedCustomers}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Customer Accounts"
+        loading={batchDeleting}
+      />
     </div>
   );
 }

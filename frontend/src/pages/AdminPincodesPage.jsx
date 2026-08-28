@@ -22,6 +22,9 @@ import {
 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
+import BulkImportModal from '../components/BulkImportModal';
+import ClearAllModal from '../components/ClearAllModal';
+import BulkActionBar from '../components/BulkActionBar';
 
 export default function AdminPincodesPage() {
   const [pincodes, setPincodes] = useState([]);
@@ -455,6 +458,88 @@ export default function AdminPincodesPage() {
     }
   };
 
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(p => p.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(pincodes.map(p => p.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${pincodes.length} deliverable pincodes in dataset!`);
+  };
+
+  const handleDeleteSelectedPincodes = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected pincodes...`, { id: 'pin-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= pincodes.length) {
+        let res = await api.delete('/admin/pincodes/all').catch(() => null);
+        if (!res) await api.post('/admin/pincodes/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/admin/pincodes/${id}`).catch(() => null);
+        }
+      }
+
+      const updated = pincodes.filter(p => !selectedIds.includes(p.id));
+      setPincodes(updated);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_pincodes'); } catch (e) {}
+      toast.success(`Successfully deleted ${count} selected deliverable pincodes.`, { id: 'pin-batch-toast' });
+      await fetchPincodes();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected pincodes', { id: 'pin-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAllPincodes = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging all deliverable pincodes...', { id: 'pin-toast' });
+    try {
+      let res = await api.delete('/admin/pincodes/all').catch(() => null);
+      if (!res) res = await api.post('/admin/pincodes/delete-all').catch(() => null);
+
+      const count = pincodes.length;
+      setPincodes([]);
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_pincodes'); } catch (e) {}
+      toast.success(`Successfully deleted ${count} deliverable pincodes.`, { id: 'pin-toast' });
+      setClearAllModalOpen(false);
+      await fetchPincodes();
+    } catch (e) {
+      toast.error('Clear All failed. No records were deleted.', { id: 'pin-toast' });
+    } finally {
+      setClearAllLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -469,6 +554,14 @@ export default function AdminPincodesPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setClearAllModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-rose-700 hover:bg-rose-800 text-white rounded-2xl text-xs font-bold transition-all shadow-md cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4 text-white" />
+            <span>Clear All Data</span>
+          </button>
+
           <button
             onClick={() => setImportModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl text-xs font-bold transition-all border border-slate-200"
@@ -549,6 +642,14 @@ export default function AdminPincodesPage() {
             <table className="w-full text-left text-xs text-slate-700">
               <thead className="bg-slate-50 border-b border-slate-200 font-bold uppercase text-[10px] tracking-wider text-slate-500">
                 <tr>
+                  <th className="px-5 py-3.5 w-12 text-center">
+                    <input
+                      type="checkbox"
+                      checked={pincodes.length > 0 && selectedIds.length === pincodes.length}
+                      onChange={() => toggleSelectAllPage(pincodes)}
+                      className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                    />
+                  </th>
                   <th className="px-5 py-3.5">Pincode</th>
                   <th className="px-5 py-3.5">Area / Location</th>
                   <th className="px-5 py-3.5">City & State</th>
@@ -560,7 +661,15 @@ export default function AdminPincodesPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
                 {(Array.isArray(pincodes) ? pincodes : []).map((pin) => (
-                  <tr key={pin.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={pin.id} className={`hover:bg-slate-50/80 transition-colors ${selectedIds.includes(pin.id) ? 'bg-rose-50/40' : ''}`}>
+                    <td className="px-5 py-3.5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(pin.id)}
+                        onChange={() => toggleSelectRow(pin.id)}
+                        className="w-4 h-4 rounded border-slate-300 text-rose-700 focus:ring-rose-500 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-5 py-3.5 font-extrabold text-slate-900 font-mono text-sm">
                       {pin.pincode}
                     </td>
@@ -966,7 +1075,27 @@ export default function AdminPincodesPage() {
           </div>
         </div>
       )}
-
+      <ClearAllModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        moduleName="Deliverable Pincodes"
+        itemCount={pincodes.length}
+        onConfirm={handleConfirmClearAllPincodes}
+        loading={clearAllLoading}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={pincodes.length}
+        isAllDatasetSelected={isAllDatasetSelected}
+        onSelectAllDataset={selectFullDataset}
+        onDeleteSelected={handleDeleteSelectedPincodes}
+        onClearSelection={() => {
+          setSelectedIds([]);
+          setIsAllDatasetSelected(false);
+        }}
+        moduleName="Deliverable Pincodes"
+        loading={batchDeleting}
+      />
     </div>
   );
 }
