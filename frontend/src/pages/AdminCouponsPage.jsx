@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Ticket, Plus, Trash2, Edit2, X, CheckCircle, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
