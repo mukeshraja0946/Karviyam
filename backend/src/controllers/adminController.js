@@ -742,21 +742,29 @@ exports.deleteAllCustomers = async (req, res, next) => {
 };
 
 exports.deleteAllOrders = async (req, res, next) => {
+  let conn;
   try {
-    const [cnt] = await pool.query('SELECT COUNT(*) as c FROM orders');
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [cnt] = await conn.query('SELECT COUNT(*) as c FROM orders');
     const totalCount = cnt[0]?.c || 0;
 
-    try { await pool.query('DELETE FROM order_items'); } catch (e) {}
-    try { await pool.query('DELETE FROM payments'); } catch (e) {}
-    await pool.query('DELETE FROM orders');
+    try { await conn.query('DELETE FROM order_items'); } catch (e) {}
+    try { await conn.query('DELETE FROM payments'); } catch (e) {}
+    await conn.query('DELETE FROM orders');
+
+    await conn.commit();
+    conn.release();
+    conn = null;
 
     try {
       const { logAudit } = require('../utils/auditLogger');
       await logAudit({
         adminId: req.user?.id || 1,
-        action: 'CLEAR_ALL',
+        action: 'CLEAR_ALL_ORDERS',
         targetType: 'Orders',
-        details: `Successfully cleared all ${totalCount} customer orders.`
+        details: `Successfully cleared all ${totalCount} customer orders in a single bulk operation.`
       });
     } catch (eAudit) {}
 
@@ -765,6 +773,10 @@ exports.deleteAllOrders = async (req, res, next) => {
       `Successfully deleted ${totalCount} orders.`
     ));
   } catch (err) {
+    if (conn) {
+      try { await conn.rollback(); } catch (eRb) {}
+      try { conn.release(); } catch (eRel) {}
+    }
     next(err);
   }
 };

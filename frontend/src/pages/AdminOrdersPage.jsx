@@ -78,11 +78,11 @@ export default function AdminOrdersPage() {
       const apiData = res?.data ? res.data : res;
       const list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
 
-      if (list.length > 0) {
+      if (res && (res.status === 200 || res.data)) {
         setOrders(list);
-      } else {
-        loadStoredOrMock();
+        return;
       }
+      loadStoredOrMock();
     } catch (e) {
       console.error('[AdminOrdersPage] Failed to fetch orders from API:', e);
       setFetchError('Unable to load orders right now. Please check server connection.');
@@ -378,16 +378,20 @@ export default function AdminOrdersPage() {
       let res = await api.delete('/admin/orders/all').catch(() => null);
       if (!res) res = await api.post('/admin/orders/delete-all').catch(() => null);
 
-      const count = orders.length;
-      setOrders([]);
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-      try { localStorage.removeItem('karviyam_admin_orders'); } catch (e) {}
-      toast.success(`Successfully deleted ${count} orders.`, { id: 'ord-del-all-toast' });
-      setClearAllModalOpen(false);
-      await fetchOrders();
+      if (res && res.data && res.data.success !== false) {
+        const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? orders.length;
+        setOrders([]);
+        setSelectedIds([]);
+        setIsAllDatasetSelected(false);
+        try { localStorage.removeItem('karviyam_admin_orders'); } catch (e) {}
+        toast.success(`Successfully deleted ${deletedCount} orders.`, { id: 'ord-del-all-toast' });
+        setClearAllModalOpen(false);
+      } else {
+        throw new Error('Bulk delete API failed');
+      }
     } catch (e) {
-      toast.error('Clear All failed. No records were deleted.', { id: 'ord-del-all-toast' });
+      console.error('[ClearAllOrders Failure]:', e);
+      toast.error('Unable to clear orders. No changes were made.', { id: 'ord-del-all-toast' });
     } finally {
       setClearAllLoading(false);
     }
