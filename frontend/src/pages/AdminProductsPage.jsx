@@ -830,21 +830,35 @@ export default function AdminProductsPage() {
   };
 
   const handleDeleteProduct = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
-    toast.loading('Deleting product...', { id: 'prod-del-toast' });
+    if (!window.confirm('Are you sure you want to delete this product permanently from database?')) return;
+    toast.loading('Deleting product from database...', { id: 'prod-del-toast' });
     try {
-      await api.delete(`/admin/products/${id}`).catch(() => api.delete(`/products/${id}`)).catch(() => null);
+      const res = await api.delete(`/admin/products/${id}`)
+        .catch(() => api.delete(`/products/${id}`));
 
-      setProducts(prev => {
-        const updated = prev.filter(p => String(p.id) !== String(id));
-        try { localStorage.setItem('karviyam_admin_products', JSON.stringify(updated)); } catch (e) {}
-        return updated;
-      });
-
-      toast.success('Product removed from catalog', { id: 'prod-del-toast' });
+      if (res && res.data && res.data.success !== false) {
+        const strId = String(id);
+        setProducts(prev => {
+          const updated = prev.filter(p => String(p.id) !== strId);
+          try {
+            if (updated.length > 0) {
+              localStorage.setItem('karviyam_admin_products', JSON.stringify(updated));
+            } else {
+              localStorage.removeItem('karviyam_admin_products');
+            }
+          } catch (e) {}
+          return updated;
+        });
+        setSelectedIds(prev => prev.filter(i => String(i) !== strId));
+        toast.success('Product deleted successfully from database.', { id: 'prod-del-toast' });
+        await fetchData();
+      } else {
+        throw new Error(res?.data?.message || 'Product deletion failed');
+      }
     } catch (e) {
-      console.error(e);
-      toast.error('Failed to delete product', { id: 'prod-del-toast' });
+      console.error('[DeleteProduct Failure]:', e);
+      const errorMsg = e.response?.data?.message || e.message || 'Unable to delete product. No changes were made.';
+      toast.error(errorMsg, { id: 'prod-del-toast' });
     }
   };
 

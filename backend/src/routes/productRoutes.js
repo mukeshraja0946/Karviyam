@@ -17,7 +17,10 @@ router.put('/:id', optionalToken, requireAdmin, adminController.updateProduct);
 router.post('/:id', optionalToken, requireAdmin, adminController.updateProduct);
 router.delete('/all', optionalToken, requireAdmin, productController.deleteAllProducts);
 router.post('/delete-all', optionalToken, requireAdmin, productController.deleteAllProducts);
+router.post('/delete-batch', optionalToken, requireAdmin, productController.deleteSelectedProducts);
+router.delete('/delete-batch', optionalToken, requireAdmin, productController.deleteSelectedProducts);
 
-router.delete('/:id', optionalToken, requireAdmin, adminController.deleteProduct);
+router.delete('/:id', optionalToken, requireAdmin, productController.deleteProduct);
+router.post('/:id/delete', optionalToken, requireAdmin, productController.deleteProduct);
 
 module.exports = router;

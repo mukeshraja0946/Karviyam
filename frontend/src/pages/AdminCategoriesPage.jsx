@@ -441,26 +441,36 @@ export default function AdminCategoriesPage() {
   const handleDelete = async (cat) => {
     const catId = typeof cat === 'object' ? cat.id : cat;
     const catName = typeof cat === 'object' ? cat.name : 'this category';
-    if (!window.confirm(`Are you sure you want to delete ${catName}?`)) return;
+    if (!window.confirm(`Are you sure you want to delete ${catName} permanently from database?`)) return;
     toast.loading(`Deleting category ${catName}...`, { id: 'cat-del-toast' });
     try {
-      let res = await api.delete(`/categories/${catId}`).catch(() => null);
-      if (!res) {
-        res = await api.post(`/categories/${catId}/delete`).catch(() => null);
+      const res = await api.delete(`/categories/${catId}`)
+        .catch(() => api.delete(`/admin/categories/${catId}`))
+        .catch(() => api.post(`/categories/${catId}/delete`));
+
+      if (res && res.data && res.data.success !== false) {
+        const strId = String(catId);
+        setCategories(prev => {
+          const updated = prev.filter(c => String(c.id) !== strId);
+          try {
+            if (updated.length > 0) {
+              localStorage.setItem('karviyam_admin_categories', JSON.stringify(updated));
+            } else {
+              localStorage.removeItem('karviyam_admin_categories');
+            }
+          } catch (e) {}
+          return updated;
+        });
+        setSelectedIds(prev => prev.filter(i => String(i) !== strId));
+        window.dispatchEvent(new Event('karviyam_categories_updated'));
+        toast.success('Category deleted successfully from database!', { id: 'cat-del-toast' });
+        await fetchCategories();
+      } else {
+        throw new Error(res?.data?.message || 'Category deletion failed');
       }
-
-      setCategories(prev => {
-        const updated = prev.filter(c => String(c.id) !== String(catId));
-        try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(updated)); } catch (e) {}
-        return updated;
-      });
-
-      window.dispatchEvent(new Event('karviyam_categories_updated'));
-      toast.success('Category deleted successfully!', { id: 'cat-del-toast' });
-      await fetchCategories();
     } catch (e) {
-      console.error(e);
-      const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to delete category';
+      console.error('[DeleteCategory Failure]:', e);
+      const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Unable to delete category. No changes were made.';
       toast.error(msg, { id: 'cat-del-toast' });
     }
   };

@@ -400,6 +400,62 @@ exports.getProductById = async (req, res, next) => {
   }
 };
 
+exports.deleteProduct = async (req, res, next) => {
+  let conn;
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json(ApiResponse.error('Product ID is required'));
+    }
+
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [rows] = await conn.query('SELECT * FROM products WHERE id = ? OR sku = ?', [id, id]);
+    if (!rows || rows.length === 0) {
+      conn.release();
+      return res.status(404).json(ApiResponse.error('Product not found in database'));
+    }
+
+    const realId = rows[0].id;
+
+    // Unlink/clean related tables cleanly
+    try { await conn.query('UPDATE order_items SET product_id = NULL WHERE product_id = ?', [realId]); } catch (e) {}
+    try { await conn.query('DELETE FROM product_color_images WHERE color_id IN (SELECT id FROM product_colors WHERE product_id = ?)', [realId]); } catch (e) {}
+    try { await conn.query('DELETE FROM product_colors WHERE product_id = ?', [realId]); } catch (e) {}
+    try { await conn.query('DELETE FROM product_images WHERE product_id = ?', [realId]); } catch (e) {}
+    try { await conn.query('DELETE FROM wishlist WHERE product_id = ?', [realId]); } catch (e) {}
+    try { await conn.query('DELETE FROM cart WHERE product_id = ?', [realId]); } catch (e) {}
+
+    const [delRes] = await conn.query('DELETE FROM products WHERE id = ?', [realId]);
+
+    await conn.commit();
+    conn.release();
+    conn = null;
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'DELETE_PRODUCT',
+        targetType: 'Products',
+        details: `Deleted product #${realId} (${rows[0].name || 'Product'})`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { id: realId, deletedCount: delRes.affectedRows || 1 },
+      'Product deleted successfully from database'
+    ));
+  } catch (err) {
+    if (conn) {
+      try { await conn.rollback(); } catch (eRb) {}
+      try { conn.release(); } catch (eRel) {}
+    }
+    next(err);
+  }
+};
+
 exports.bulkImportProducts = async (req, res, next) => {
   try {
     const productsData = Array.isArray(req.body) ? req.body : (req.body.products || []);

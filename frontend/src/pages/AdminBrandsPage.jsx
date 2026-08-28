@@ -165,19 +165,35 @@ export default function AdminBrandsPage() {
   };
 
   const handleDeleteBrand = async (id) => {
-    if (!window.confirm('Delete this brand?')) return;
+    if (!window.confirm('Delete this brand permanently from database?')) return;
+    toast.loading('Deleting brand...', { id: 'brand-del-toast' });
     try {
-      await api.delete(`/brands/${id}`).catch(() => null);
-      setBrands(prev => {
-        const updated = prev.filter(b => String(b.id) !== String(id));
-        try { localStorage.setItem('karviyam_admin_brands', JSON.stringify(updated)); } catch (e) {}
-        return updated;
-      });
-      toast.success('Brand deleted');
-      window.dispatchEvent(new Event('karviyam_categories_updated'));
+      const res = await api.delete(`/admin/brands/${id}`)
+        .catch(() => api.delete(`/brands/${id}`));
+
+      if (res && res.data && res.data.success !== false) {
+        const strId = String(id);
+        setBrands(prev => {
+          const updated = prev.filter(b => String(b.id) !== strId);
+          try {
+            if (updated.length > 0) {
+              localStorage.setItem('karviyam_admin_brands', JSON.stringify(updated));
+            } else {
+              localStorage.removeItem('karviyam_admin_brands');
+            }
+          } catch (e) {}
+          return updated;
+        });
+        setSelectedIds(prev => prev.filter(i => String(i) !== strId));
+        window.dispatchEvent(new Event('karviyam_categories_updated'));
+        toast.success('Brand deleted successfully!', { id: 'brand-del-toast' });
+        await fetchBrands();
+      } else {
+        throw new Error(res?.data?.message || 'Brand deletion failed');
+      }
     } catch (e) {
-      console.error(e);
-      toast.error('Failed to delete brand');
+      console.error('[DeleteBrand Error]:', e);
+      toast.error(e.response?.data?.message || e.message || 'Unable to delete brand. No changes were made.', { id: 'brand-del-toast' });
     }
   };
 
@@ -217,25 +233,32 @@ export default function AdminBrandsPage() {
     const count = selectedIds.length;
     toast.loading(`Deleting ${count} selected brands...`, { id: 'brand-batch-toast' });
     try {
+      let res;
       if (isAllDatasetSelected || selectedIds.length >= brands.length) {
-        let res = await api.delete('/brands/all').catch(() => null);
-        if (!res) await api.post('/brands/delete-all').catch(() => null);
+        res = await api.delete('/brands/all')
+          .catch(() => api.post('/brands/delete-all'));
       } else {
-        for (const id of selectedIds) {
-          await api.delete(`/admin/brands/${id}`).catch(() => api.delete(`/brands/${id}`)).catch(() => null);
-        }
+        res = await api.post('/brands/delete-batch', { ids: selectedIds })
+          .catch(() => api.delete('/brands/delete-batch', { data: { ids: selectedIds } }));
       }
 
-      setBrands(prev => prev.filter(b => !selectedIds.includes(b.id)));
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-      try { localStorage.setItem('karviyam_admin_brands', JSON.stringify(brands.filter(b => !selectedIds.includes(b.id)))); } catch (e) {}
-      window.dispatchEvent(new Event('karviyam_categories_updated'));
-      toast.success(`Successfully deleted ${count} selected brands.`, { id: 'brand-batch-toast' });
-      await fetchBrands();
+      if (res && res.data && res.data.success !== false) {
+        const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? count;
+        const strSelected = selectedIds.map(String);
+        setBrands(prev => prev.filter(b => !strSelected.includes(String(b.id))));
+        setSelectedIds([]);
+        setIsAllDatasetSelected(false);
+        try { localStorage.removeItem('karviyam_admin_brands'); } catch (e) {}
+        window.dispatchEvent(new Event('karviyam_categories_updated'));
+        toast.success(`Successfully deleted ${deletedCount} selected brands.`, { id: 'brand-batch-toast' });
+        await fetchBrands();
+      } else {
+        throw new Error(res?.data?.message || 'Failed to delete selected brands');
+      }
     } catch (e) {
-      console.error(e);
-      toast.error('Failed to delete selected brands', { id: 'brand-batch-toast' });
+      console.error('[BatchDeleteBrands Error]:', e);
+      const errorMsg = e.response?.data?.message || e.message || 'Unable to delete brands. No changes were made.';
+      toast.error(errorMsg, { id: 'brand-batch-toast' });
     } finally {
       setBatchDeleting(false);
     }
@@ -245,22 +268,26 @@ export default function AdminBrandsPage() {
     setClearAllLoading(true);
     toast.loading('Purging all brand records...', { id: 'brand-toast' });
     try {
-      let res = await api.delete('/brands/all').catch(() => null);
-      if (!res) {
-        res = await api.post('/brands/delete-all').catch(() => null);
+      const res = await api.delete('/brands/all')
+        .catch(() => api.post('/brands/delete-all'));
+
+      if (res && res.data && res.data.success !== false) {
+        const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? brands.length;
+        setBrands([]);
+        setSelectedIds([]);
+        setIsAllDatasetSelected(false);
+        try { localStorage.removeItem('karviyam_admin_brands'); } catch (e) {}
+        window.dispatchEvent(new Event('karviyam_categories_updated'));
+        toast.success(`Successfully deleted ${deletedCount} brands.`, { id: 'brand-toast' });
+        setClearAllModalOpen(false);
+        await fetchBrands();
+      } else {
+        throw new Error(res?.data?.message || 'Clear All brands failed');
       }
-      const count = brands.length;
-      setBrands([]);
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-      try { localStorage.removeItem('karviyam_admin_brands'); } catch (e) {}
-      window.dispatchEvent(new Event('karviyam_categories_updated'));
-      toast.success(`Successfully deleted ${count} brands.`, { id: 'brand-toast' });
-      setClearAllModalOpen(false);
-      await fetchBrands();
-    } catch (e) {
-      console.error(e);
-      toast.error('Clear All failed. No records were deleted.', { id: 'brand-toast' });
+    } catch (err) {
+      console.error('[ClearAllBrands Error]:', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Unable to clear brands. No changes were made.';
+      toast.error(errorMsg, { id: 'brand-toast' });
     } finally {
       setClearAllLoading(false);
     }

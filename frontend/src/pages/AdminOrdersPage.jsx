@@ -348,24 +348,31 @@ export default function AdminOrdersPage() {
     const count = selectedIds.length;
     toast.loading(`Deleting ${count} selected orders...`, { id: 'ord-batch-toast' });
     try {
+      let res;
       if (isAllDatasetSelected || selectedIds.length >= orders.length) {
-        let res = await api.delete('/admin/orders/all').catch(() => null);
-        if (!res) await api.post('/admin/orders/delete-all').catch(() => null);
+        res = await api.delete('/admin/orders/all')
+          .catch(() => api.post('/admin/orders/delete-all'));
       } else {
-        for (const id of selectedIds) {
-          await api.delete(`/admin/orders/${id}`).catch(() => null);
-        }
+        res = await api.post('/admin/orders/delete-batch', { ids: selectedIds })
+          .catch(() => api.delete('/admin/orders/delete-batch', { data: { ids: selectedIds } }));
       }
 
-      setOrders(prev => prev.filter(o => !selectedIds.includes(o.id)));
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-      try { localStorage.removeItem('karviyam_admin_orders'); } catch (e) {}
-      toast.success(`Successfully deleted ${count} selected orders.`, { id: 'ord-batch-toast' });
-      await fetchOrders();
+      if (res && res.data && res.data.success !== false) {
+        const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? count;
+        const strSelected = selectedIds.map(String);
+        setOrders(prev => prev.filter(o => !strSelected.includes(String(o.id))));
+        setSelectedIds([]);
+        setIsAllDatasetSelected(false);
+        try { localStorage.removeItem('karviyam_admin_orders'); } catch (e) {}
+        toast.success(`Successfully deleted ${deletedCount} selected orders.`, { id: 'ord-batch-toast' });
+        await fetchOrders();
+      } else {
+        throw new Error(res?.data?.message || 'Failed to delete selected orders');
+      }
     } catch (e) {
-      console.error(e);
-      toast.error('Failed to delete selected orders', { id: 'ord-batch-toast' });
+      console.error('[BatchDeleteOrders Error]:', e);
+      const errorMsg = e.response?.data?.message || e.message || 'Unable to delete orders. No changes were made.';
+      toast.error(errorMsg, { id: 'ord-batch-toast' });
     } finally {
       setBatchDeleting(false);
     }
@@ -375,8 +382,8 @@ export default function AdminOrdersPage() {
     setClearAllLoading(true);
     toast.loading('Purging all customer orders...', { id: 'ord-del-all-toast' });
     try {
-      let res = await api.delete('/admin/orders/all').catch(() => null);
-      if (!res) res = await api.post('/admin/orders/delete-all').catch(() => null);
+      const res = await api.delete('/admin/orders/all')
+        .catch(() => api.post('/admin/orders/delete-all'));
 
       if (res && res.data && res.data.success !== false) {
         const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? orders.length;
@@ -386,12 +393,14 @@ export default function AdminOrdersPage() {
         try { localStorage.removeItem('karviyam_admin_orders'); } catch (e) {}
         toast.success(`Successfully deleted ${deletedCount} orders.`, { id: 'ord-del-all-toast' });
         setClearAllModalOpen(false);
+        await fetchOrders();
       } else {
-        throw new Error('Bulk delete API failed');
+        throw new Error(res?.data?.message || 'Bulk delete API failed');
       }
     } catch (e) {
       console.error('[ClearAllOrders Failure]:', e);
-      toast.error('Unable to clear orders. No changes were made.', { id: 'ord-del-all-toast' });
+      const errorMsg = e.response?.data?.message || e.message || 'Unable to clear orders. No changes were made.';
+      toast.error(errorMsg, { id: 'ord-del-all-toast' });
     } finally {
       setClearAllLoading(false);
     }

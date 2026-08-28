@@ -918,3 +918,5 @@ exports.deleteSelectedCustomers = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.deleteProduct = productController.deleteProduct;

@@ -228,13 +228,20 @@ export default function AdminParentCategoriesPage() {
 
     setActionLoading(prev => ({ ...prev, [cat.id]: true }));
     try {
-      await api.delete(`/parent-categories/${cat.id}`);
-      setCategories(prev => prev.filter(c => c.id !== cat.id));
-      toast.success(`Category card "${cat.name}" deleted successfully!`);
-      notifyUpdate();
+      const res = await api.delete(`/parent-categories/${cat.id}`);
+      if (res && res.data && res.data.success !== false) {
+        const strId = String(cat.id);
+        setCategories(prev => prev.filter(c => String(c.id) !== strId));
+        setSelectedIds(prev => prev.filter(i => String(i) !== strId));
+        toast.success(`Category card "${cat.name}" deleted successfully!`);
+        notifyUpdate();
+        await fetchParentCategories();
+      } else {
+        throw new Error(res?.data?.message || 'Failed to delete category');
+      }
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to delete category');
+      console.error('[DeleteParentCategory Error]:', err);
+      toast.error(err.response?.data?.message || err.message || 'Unable to delete category. No changes were made.');
     } finally {
       setActionLoading(prev => ({ ...prev, [cat.id]: false }));
     }
@@ -276,24 +283,31 @@ export default function AdminParentCategoriesPage() {
     const count = selectedIds.length;
     toast.loading(`Deleting ${count} selected parent categories...`, { id: 'pcat-batch-toast' });
     try {
+      let res;
       if (isAllDatasetSelected || selectedIds.length >= categories.length) {
-        let res = await api.delete('/parent-categories/all').catch(() => null);
-        if (!res) await api.post('/parent-categories/delete-all').catch(() => null);
+        res = await api.delete('/parent-categories/all')
+          .catch(() => api.post('/parent-categories/delete-all'));
       } else {
-        for (const id of selectedIds) {
-          await api.delete(`/parent-categories/${id}`).catch(() => null);
-        }
+        res = await api.post('/parent-categories/delete-batch', { ids: selectedIds })
+          .catch(() => api.delete('/parent-categories/delete-batch', { data: { ids: selectedIds } }));
       }
 
-      setCategories(prev => prev.filter(c => !selectedIds.includes(c.id)));
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-      notifyUpdate();
-      toast.success(`Successfully deleted ${count} selected parent categories.`, { id: 'pcat-batch-toast' });
-      await fetchParentCategories();
+      if (res && res.data && res.data.success !== false) {
+        const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? count;
+        const strSelected = selectedIds.map(String);
+        setCategories(prev => prev.filter(c => !strSelected.includes(String(c.id))));
+        setSelectedIds([]);
+        setIsAllDatasetSelected(false);
+        notifyUpdate();
+        toast.success(`Successfully deleted ${deletedCount} selected parent categories.`, { id: 'pcat-batch-toast' });
+        await fetchParentCategories();
+      } else {
+        throw new Error(res?.data?.message || 'Failed to delete selected parent categories');
+      }
     } catch (e) {
-      console.error(e);
-      toast.error('Failed to delete selected parent categories', { id: 'pcat-batch-toast' });
+      console.error('[BatchDeleteParentCategories Error]:', e);
+      const errorMsg = e.response?.data?.message || e.message || 'Unable to delete parent categories. No changes were made.';
+      toast.error(errorMsg, { id: 'pcat-batch-toast' });
     } finally {
       setBatchDeleting(false);
     }
@@ -303,21 +317,25 @@ export default function AdminParentCategoriesPage() {
     setClearAllLoading(true);
     toast.loading('Purging all parent categories...', { id: 'pcat-toast' });
     try {
-      let res = await api.delete('/parent-categories/all').catch(() => null);
-      if (!res) {
-        res = await api.post('/parent-categories/delete-all').catch(() => null);
+      const res = await api.delete('/parent-categories/all')
+        .catch(() => api.post('/parent-categories/delete-all'));
+
+      if (res && res.data && res.data.success !== false) {
+        const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? categories.length;
+        setCategories([]);
+        setSelectedIds([]);
+        setIsAllDatasetSelected(false);
+        toast.success(`Successfully deleted ${deletedCount} parent categories.`, { id: 'pcat-toast' });
+        notifyUpdate();
+        setClearAllModalOpen(false);
+        await fetchParentCategories();
+      } else {
+        throw new Error(res?.data?.message || 'Bulk delete API failed');
       }
-      const count = categories.length;
-      setCategories([]);
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-      toast.success(`Successfully deleted ${count} parent categories.`, { id: 'pcat-toast' });
-      notifyUpdate();
-      setClearAllModalOpen(false);
-      await fetchParentCategories();
     } catch (err) {
-      console.error(err);
-      toast.error('Clear All failed. No records were deleted.', { id: 'pcat-toast' });
+      console.error('[ClearAllParentCategories Error]:', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Unable to clear parent categories. No changes were made.';
+      toast.error(errorMsg, { id: 'pcat-toast' });
     } finally {
       setClearAllLoading(false);
     }
