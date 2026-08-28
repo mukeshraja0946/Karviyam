@@ -382,10 +382,10 @@ export default function AdminProductsPage() {
           colorName: 'Emerald Green',
           colorCode: '#B71C1C',
           isDefault: true,
-          mainImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
+          mainImage: '',
           subImages: [],
           videoUrl: '',
-          imageUrls: ['https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800']
+          imageUrls: []
         }
       ]
     });
@@ -1018,7 +1018,10 @@ export default function AdminProductsPage() {
                         colorName: `Color ${(formData.colorVariants || []).length + 1}`,
                         colorCode: '#000000',
                         isDefault: (formData.colorVariants || []).length === 0,
-                        imageUrls: ['']
+                        mainImage: '',
+                        subImages: [],
+                        videoUrl: '',
+                        imageUrls: []
                       };
                       setFormData({ ...formData, colorVariants: [...(formData.colorVariants || []), newVar] });
                     }}
