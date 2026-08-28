@@ -28,6 +28,10 @@ router.post('/orders/delete-all', adminController.deleteAllOrders);
 router.delete('/orders/:id', orderController.deleteOrder);
 router.post('/orders/:id/delete', orderController.deleteOrder);
 
+// Categories
+router.delete('/categories/all', categoryController.deleteAllCategories);
+router.post('/categories/delete-all', categoryController.deleteAllCategories);
+
 // Products
 router.get('/products', adminController.getAdminProducts);
 router.post('/products', adminController.createProduct);

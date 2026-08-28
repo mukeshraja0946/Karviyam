@@ -176,6 +176,12 @@ export default function AdminCategoriesPage() {
     };
   }, []);
 
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
   const fetchCategories = async () => {
     setLoading(true);
     try {
@@ -187,33 +193,100 @@ export default function AdminCategoriesPage() {
           ? apiData
           : (Array.isArray(apiData?.categories) ? apiData.categories : []));
       
-      if (rawList.length > 0) {
-        const normalized = rawList.map(c => ({
-          ...c,
-          isActive: getCategoryActive(c)
-        }));
-        setCategories(normalized);
+      const normalized = rawList.map(c => ({
+        ...c,
+        isActive: getCategoryActive(c)
+      }));
+      setCategories(normalized);
+      if (normalized.length > 0) {
         try { localStorage.setItem('karviyam_admin_categories', JSON.stringify(normalized)); } catch (e) {}
       } else {
-        const saved = localStorage.getItem('karviyam_admin_categories');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) setCategories(parsed);
-          } catch (eSaved) {}
-        }
+        try { localStorage.removeItem('karviyam_admin_categories'); } catch (e) {}
       }
     } catch (e) {
       console.error('Error fetching categories:', e);
-      const saved = localStorage.getItem('karviyam_admin_categories');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) setCategories(parsed);
-        } catch (eSaved) {}
-      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmClearAllCategories = async () => {
+    setClearAllLoading(true);
+    toast.loading('Purging all product categories...', { id: 'cat-del-all-toast' });
+    try {
+      let res = await api.delete('/categories/all').catch(() => null);
+      if (!res) res = await api.delete('/admin/categories/all').catch(() => null);
+      if (!res) res = await api.post('/categories/delete-all').catch(() => null);
+
+      if (res && res.data && res.data.success !== false) {
+        const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? categories.length;
+        setCategories([]);
+        setSelectedIds([]);
+        setIsAllDatasetSelected(false);
+        try { localStorage.removeItem('karviyam_admin_categories'); } catch (e) {}
+        toast.success(`Successfully deleted ${deletedCount} categories.`, { id: 'cat-del-all-toast' });
+        setClearAllModalOpen(false);
+      } else {
+        throw new Error('Category bulk delete API failed');
+      }
+    } catch (e) {
+      console.error('[ClearAllCategories Failure]:', e);
+      toast.error('Unable to delete categories. No changes were made.', { id: 'cat-del-all-toast' });
+    } finally {
+      setClearAllLoading(false);
+    }
+  };
+
+  const toggleSelectRow = (id) => {
+    setIsAllDatasetSelected(false);
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPage = (currentFiltered) => {
+    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+    } else {
+      setSelectedIds(currentFiltered.map(c => c.id));
+      setIsAllDatasetSelected(false);
+    }
+  };
+
+  const selectFullDataset = () => {
+    setSelectedIds(categories.map(c => c.id));
+    setIsAllDatasetSelected(true);
+    toast.success(`Selected all ${categories.length} categories in dataset!`);
+  };
+
+  const handleDeleteSelectedCategories = async () => {
+    if (selectedIds.length === 0) return;
+    setBatchDeleting(true);
+    const count = selectedIds.length;
+    toast.loading(`Deleting ${count} selected categories...`, { id: 'cat-batch-toast' });
+    try {
+      if (isAllDatasetSelected || selectedIds.length >= categories.length) {
+        let res = await api.delete('/categories/all').catch(() => null);
+        if (!res) await api.delete('/admin/categories/all').catch(() => null);
+        if (!res) await api.post('/categories/delete-all').catch(() => null);
+      } else {
+        for (const id of selectedIds) {
+          await api.delete(`/categories/${id}`).catch(() => null);
+        }
+      }
+
+      setCategories(prev => prev.filter(c => !selectedIds.includes(c.id)));
+      setSelectedIds([]);
+      setIsAllDatasetSelected(false);
+      try { localStorage.removeItem('karviyam_admin_categories'); } catch (e) {}
+      toast.success(`Successfully deleted ${count} selected categories.`, { id: 'cat-batch-toast' });
+      await fetchCategories();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete selected categories', { id: 'cat-batch-toast' });
+    } finally {
+      setBatchDeleting(false);
     }
   };
 
@@ -384,92 +457,6 @@ export default function AdminCategoriesPage() {
       toast.error(msg, { id: 'cat-del-toast' });
     }
   };
-
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [isAllDatasetSelected, setIsAllDatasetSelected] = useState(false);
-  const [batchDeleting, setBatchDeleting] = useState(false);
-
-  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
-  const [clearAllLoading, setClearAllLoading] = useState(false);
-
-  const toggleSelectRow = (id) => {
-    setIsAllDatasetSelected(false);
-    setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
-
-  const toggleSelectAllPage = (currentFiltered) => {
-    if (selectedIds.length === currentFiltered.length && currentFiltered.length > 0) {
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-    } else {
-      setSelectedIds(currentFiltered.map(c => c.id));
-      setIsAllDatasetSelected(false);
-    }
-  };
-
-  const selectFullDataset = () => {
-    setSelectedIds(categories.map(c => c.id));
-    setIsAllDatasetSelected(true);
-    toast.success(`Selected all ${categories.length} categories in dataset!`);
-  };
-
-  const handleDeleteSelectedCategories = async () => {
-    if (selectedIds.length === 0) return;
-    setBatchDeleting(true);
-    const count = selectedIds.length;
-    toast.loading(`Deleting ${count} selected categories...`, { id: 'cat-batch-toast' });
-    try {
-      if (isAllDatasetSelected || selectedIds.length >= categories.length) {
-        let res = await api.delete('/categories/all').catch(() => null);
-        if (!res) await api.post('/categories/delete-all').catch(() => null);
-      } else {
-        for (const id of selectedIds) {
-          await api.delete(`/admin/categories/${id}`).catch(() => api.delete(`/categories/${id}`)).catch(() => null);
-        }
-      }
-
-      setCategories(prev => prev.filter(c => !selectedIds.includes(c.id)));
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-      window.dispatchEvent(new Event('karviyam_categories_updated'));
-      toast.success(`Successfully deleted ${count} selected categories.`, { id: 'cat-batch-toast' });
-      await fetchCategories();
-    } catch (e) {
-      console.error(e);
-      toast.error('Failed to delete selected categories', { id: 'cat-batch-toast' });
-    } finally {
-      setBatchDeleting(false);
-    }
-  };
-
-  const handleConfirmClearAllCategories = async () => {
-    setClearAllLoading(true);
-    toast.loading('Purging all category records...', { id: 'cat-del-all-toast' });
-    try {
-      let res = await api.delete('/categories/all').catch(() => null);
-      if (!res) {
-        res = await api.post('/categories/delete-all').catch(() => null);
-      }
-
-      const count = categories.length;
-      setCategories([]);
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-      try { localStorage.removeItem('karviyam_admin_categories'); } catch (e) {}
-      window.dispatchEvent(new Event('karviyam_categories_updated'));
-      toast.success(`Successfully deleted ${count} categories.`, { id: 'cat-del-all-toast' });
-      setClearAllModalOpen(false);
-      await fetchCategories();
-    } catch (e) {
-      console.error(e);
-      toast.error('Clear All failed. No records were deleted.', { id: 'cat-del-all-toast' });
-    } finally {
-      setClearAllLoading(false);
-    }
-  };
-
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
 
   const handleToggleStatus = async (cat, targetStatus = null) => {
@@ -656,8 +643,17 @@ export default function AdminCategoriesPage() {
               <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400 font-bold">
-                      No categories found matching filter criteria.
+                    <td colSpan={7} className="py-12 text-center text-slate-500 font-medium">
+                      <div className="space-y-1.5">
+                        <p className="font-bold text-slate-700 text-sm">
+                          {categories.length === 0 ? 'No Categories Found' : 'No categories found matching filter.'}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {categories.length === 0
+                            ? 'There are no product categories to display in the database.'
+                            : 'Try adjusting your search query.'}
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -740,7 +736,19 @@ export default function AdminCategoriesPage() {
       ) : (
         /* Categories Cards Grid */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((cat) => {
+          {filtered.length === 0 ? (
+            <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center text-slate-500 col-span-full">
+              <p className="font-bold text-slate-700 text-sm">
+                {categories.length === 0 ? 'No Categories Found' : 'No categories found matching filter.'}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                {categories.length === 0
+                  ? 'There are no product categories to display in the database.'
+                  : 'Try adjusting your search query.'}
+              </p>
+            </div>
+          ) : (
+            filtered.map((cat) => {
             const isActive = getCategoryActive(cat);
             return (
               <div key={cat.id} className={`bg-white p-5 rounded-2xl border ${selectedIds.includes(cat.id) ? 'border-rose-300 ring-2 ring-rose-200 bg-rose-50/20' : isActive ? 'border-slate-200' : 'border-amber-200 bg-amber-50/20'} shadow-xs flex flex-col justify-between space-y-4 relative`}>
@@ -803,7 +811,8 @@ export default function AdminCategoriesPage() {
                 </div>
               </div>
             );
-          })}
+          })
+        )}
         </div>
       )}
 

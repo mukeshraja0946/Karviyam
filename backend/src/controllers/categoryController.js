@@ -419,23 +419,34 @@ exports.deleteCategory = async (req, res, next) => {
 };
 
 exports.deleteAllCategories = async (req, res, next) => {
+  let conn;
   try {
     await ensureCategoryTableExists();
-    const [countRows] = await pool.query('SELECT COUNT(*) as cnt FROM categories');
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [countRows] = await conn.query('SELECT COUNT(*) as cnt FROM categories');
     const totalCount = countRows[0]?.cnt || 0;
 
-    await pool.query('UPDATE categories SET parent_id = NULL').catch(() => null);
-    await pool.query('UPDATE products SET category_id = NULL').catch(() => null);
-    try { await pool.query('UPDATE products SET subcategory_id = NULL'); } catch (e) {}
-    await pool.query('DELETE FROM categories');
+    await conn.query('UPDATE categories SET parent_id = NULL').catch(() => null);
+    await conn.query('UPDATE products SET category_id = NULL').catch(() => null);
+    try { await conn.query('UPDATE products SET subcategory_id = NULL'); } catch (e) {}
+    try { await conn.query('DELETE FROM category_cards'); } catch (e) {}
+    try { await conn.query('DELETE FROM product_categories'); } catch (e) {}
+
+    await conn.query('DELETE FROM categories');
+
+    await conn.commit();
+    conn.release();
+    conn = null;
 
     try {
       const { logAudit } = require('../utils/auditLogger');
       await logAudit({
         adminId: req.user?.id || 1,
-        action: 'CLEAR_ALL',
+        action: 'CLEAR_ALL_CATEGORIES',
         targetType: 'Categories',
-        details: `Successfully cleared all ${totalCount} categories.`
+        details: `Successfully cleared all ${totalCount} categories in a single bulk operation.`
       });
     } catch (eAudit) {}
 
@@ -444,6 +455,10 @@ exports.deleteAllCategories = async (req, res, next) => {
       `Successfully deleted ${totalCount} categories.`
     ));
   } catch (err) {
+    if (conn) {
+      try { await conn.rollback(); } catch (eRb) {}
+      try { conn.release(); } catch (eRel) {}
+    }
     next(err);
   }
 };
