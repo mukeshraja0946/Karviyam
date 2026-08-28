@@ -461,26 +461,35 @@ exports.bulkImportProducts = async (req, res, next) => {
 };
 
 exports.deleteAllProducts = async (req, res, next) => {
+  let conn;
   try {
-    const [countRows] = await pool.query('SELECT COUNT(*) as cnt FROM products');
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [countRows] = await conn.query('SELECT COUNT(*) as cnt FROM products');
     const totalCount = countRows[0]?.cnt || 0;
 
     // Unlink product reference from order_items without deleting historical sales/invoice data
-    try { await pool.query('UPDATE order_items SET product_id = NULL WHERE product_id IS NOT NULL'); } catch (e) {}
-    try { await pool.query('DELETE FROM product_color_images'); } catch (e) {}
-    try { await pool.query('DELETE FROM product_colors'); } catch (e) {}
-    try { await pool.query('DELETE FROM product_images'); } catch (e) {}
-    try { await pool.query('DELETE FROM wishlist'); } catch (e) {}
-    try { await pool.query('DELETE FROM cart'); } catch (e) {}
-    await pool.query('DELETE FROM products');
+    try { await conn.query('UPDATE order_items SET product_id = NULL WHERE product_id IS NOT NULL'); } catch (e) {}
+    try { await conn.query('DELETE FROM product_color_images'); } catch (e) {}
+    try { await conn.query('DELETE FROM product_colors'); } catch (e) {}
+    try { await conn.query('DELETE FROM product_images'); } catch (e) {}
+    try { await conn.query('DELETE FROM wishlist'); } catch (e) {}
+    try { await conn.query('DELETE FROM cart'); } catch (e) {}
+    try { await conn.query('DELETE FROM category_cards'); } catch (e) {}
+    await conn.query('DELETE FROM products');
+
+    await conn.commit();
+    conn.release();
+    conn = null;
 
     try {
       const { logAudit } = require('../utils/auditLogger');
       await logAudit({
         adminId: req.user?.id || 1,
-        action: 'CLEAR_ALL',
+        action: 'CLEAR_ALL_PRODUCTS',
         targetType: 'Products',
-        details: `Successfully cleared all ${totalCount} products.`
+        details: `Successfully cleared all ${totalCount} products in a single bulk operation.`
       });
     } catch (eAudit) {}
 
@@ -489,31 +498,43 @@ exports.deleteAllProducts = async (req, res, next) => {
       `Successfully deleted ${totalCount} products.`
     ));
   } catch (err) {
+    if (conn) {
+      try { await conn.rollback(); } catch (eRb) {}
+      try { conn.release(); } catch (eRel) {}
+    }
     next(err);
   }
 };
 
 exports.deleteSelectedProducts = async (req, res, next) => {
+  let conn;
   try {
     const { ids } = req.body || {};
     if (!Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json(ApiResponse.error('No product IDs provided for deletion'));
     }
 
-    const cleanIds = ids.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+    const cleanIds = ids.map(id => parseInt(id, 10)).filter(id => !isNaN(id) && id > 0);
     if (cleanIds.length === 0) {
       return res.status(400).json(ApiResponse.error('Invalid product IDs'));
     }
 
-    const placeholders = cleanIds.map(() => '?').join(',');
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
 
-    try { await pool.query(`UPDATE order_items SET product_id = NULL WHERE product_id IN (${placeholders})`, cleanIds); } catch (e) {}
-    try { await pool.query(`DELETE FROM product_color_images WHERE color_id IN (SELECT id FROM product_colors WHERE product_id IN (${placeholders}))`, cleanIds); } catch (e) {}
-    try { await pool.query(`DELETE FROM product_colors WHERE product_id IN (${placeholders})`, cleanIds); } catch (e) {}
-    try { await pool.query(`DELETE FROM product_images WHERE product_id IN (${placeholders})`, cleanIds); } catch (e) {}
-    try { await pool.query(`DELETE FROM wishlist WHERE product_id IN (${placeholders})`, cleanIds); } catch (e) {}
-    try { await pool.query(`DELETE FROM cart WHERE product_id IN (${placeholders})`, cleanIds); } catch (e) {}
-    await pool.query(`DELETE FROM products WHERE id IN (${placeholders})`, cleanIds);
+    try { await conn.query('UPDATE order_items SET product_id = NULL WHERE product_id IN (?)', [cleanIds]); } catch (e) {}
+    try { await conn.query('DELETE FROM product_color_images WHERE color_id IN (SELECT id FROM product_colors WHERE product_id IN (?))', [cleanIds]); } catch (e) {}
+    try { await conn.query('DELETE FROM product_colors WHERE product_id IN (?)', [cleanIds]); } catch (e) {}
+    try { await conn.query('DELETE FROM product_images WHERE product_id IN (?)', [cleanIds]); } catch (e) {}
+    try { await conn.query('DELETE FROM wishlist WHERE product_id IN (?)', [cleanIds]); } catch (e) {}
+    try { await conn.query('DELETE FROM cart WHERE product_id IN (?)', [cleanIds]); } catch (e) {}
+
+    const [delRes] = await conn.query('DELETE FROM products WHERE id IN (?)', [cleanIds]);
+    const deletedCount = delRes.affectedRows || cleanIds.length;
+
+    await conn.commit();
+    conn.release();
+    conn = null;
 
     try {
       const { logAudit } = require('../utils/auditLogger');
@@ -521,15 +542,19 @@ exports.deleteSelectedProducts = async (req, res, next) => {
         adminId: req.user?.id || 1,
         action: 'DELETE_BATCH',
         targetType: 'Products',
-        details: `Deleted ${cleanIds.length} selected products (IDs: ${cleanIds.slice(0, 5).join(', ')}${cleanIds.length > 5 ? '...' : ''})`
+        details: `Deleted ${deletedCount} selected products.`
       });
     } catch (eAudit) {}
 
     return res.status(200).json(ApiResponse.success(
-      { deletedCount: cleanIds.length },
-      `Successfully deleted ${cleanIds.length} selected products.`
+      { deletedCount },
+      `Successfully deleted ${deletedCount} selected products.`
     ));
   } catch (err) {
+    if (conn) {
+      try { await conn.rollback(); } catch (eRb) {}
+      try { conn.release(); } catch (eRel) {}
+    }
     next(err);
   }
 };

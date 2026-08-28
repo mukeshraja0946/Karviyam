@@ -16,6 +16,8 @@ router.post('/:id/toggle-status', optionalToken, requireAdmin, categoryControlle
 
 router.delete('/all', optionalToken, requireAdmin, categoryController.deleteAllCategories);
 router.post('/delete-all', optionalToken, requireAdmin, categoryController.deleteAllCategories);
+router.post('/delete-batch', optionalToken, requireAdmin, categoryController.deleteSelectedCategories);
+router.delete('/delete-batch', optionalToken, requireAdmin, categoryController.deleteSelectedCategories);
 
 router.delete('/:id', optionalToken, requireAdmin, categoryController.deleteCategory);
 router.post('/:id/delete', optionalToken, requireAdmin, categoryController.deleteCategory);

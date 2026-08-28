@@ -782,18 +782,26 @@ exports.deleteAllOrders = async (req, res, next) => {
 };
 
 exports.deleteAllInventory = async (req, res, next) => {
+  let conn;
   try {
-    const [cnt] = await pool.query('SELECT COUNT(*) as c FROM products');
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [cnt] = await conn.query('SELECT COUNT(*) as c FROM products');
     const totalCount = cnt[0]?.c || 0;
 
-    await pool.query('UPDATE products SET stock_quantity = 0');
-    try { await pool.query('UPDATE product_colors font SET stock_quantity = 0'); } catch (e) {}
+    await conn.query('UPDATE products SET stock_quantity = 0');
+    try { await conn.query('UPDATE product_colors SET stock_quantity = 0'); } catch (e) {}
+
+    await conn.commit();
+    conn.release();
+    conn = null;
 
     try {
       const { logAudit } = require('../utils/auditLogger');
       await logAudit({
         adminId: req.user?.id || 1,
-        action: 'CLEAR_ALL',
+        action: 'CLEAR_ALL_INVENTORY',
         targetType: 'Inventory',
         details: `Successfully reset stock levels to 0 across ${totalCount} products.`
       });
@@ -804,6 +812,109 @@ exports.deleteAllInventory = async (req, res, next) => {
       `Successfully reset inventory stock levels to 0 across all ${totalCount} products.`
     ));
   } catch (err) {
+    if (conn) {
+      try { await conn.rollback(); } catch (eRb) {}
+      try { conn.release(); } catch (eRel) {}
+    }
+    next(err);
+  }
+};
+
+exports.deleteSelectedOrders = async (req, res, next) => {
+  let conn;
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json(ApiResponse.error('No order IDs provided for batch deletion'));
+    }
+
+    const cleanIds = ids.map(id => String(id).trim()).filter(Boolean);
+    if (cleanIds.length === 0) {
+      return res.status(400).json(ApiResponse.error('Invalid order IDs'));
+    }
+
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    try { await conn.query('DELETE FROM order_items WHERE order_id IN (?)', [cleanIds]); } catch (e) {}
+    try { await conn.query('DELETE FROM payments WHERE order_id IN (?)', [cleanIds]); } catch (e) {}
+
+    const [delRes] = await conn.query('DELETE FROM orders WHERE id IN (?)', [cleanIds]);
+    const deletedCount = delRes.affectedRows || cleanIds.length;
+
+    await conn.commit();
+    conn.release();
+    conn = null;
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'DELETE_BATCH',
+        targetType: 'Orders',
+        details: `Deleted ${deletedCount} selected orders.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount },
+      `Successfully deleted ${deletedCount} selected orders.`
+    ));
+  } catch (err) {
+    if (conn) {
+      try { await conn.rollback(); } catch (eRb) {}
+      try { conn.release(); } catch (eRel) {}
+    }
+    next(err);
+  }
+};
+
+exports.deleteSelectedCustomers = async (req, res, next) => {
+  let conn;
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json(ApiResponse.error('No customer IDs provided for batch deletion'));
+    }
+
+    const cleanIds = ids.map(id => String(id).trim()).filter(Boolean);
+    if (cleanIds.length === 0) {
+      return res.status(400).json(ApiResponse.error('Invalid customer IDs'));
+    }
+
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    try { await conn.query('UPDATE orders SET user_id = NULL WHERE user_id IN (?)', [cleanIds]); } catch (e) {}
+    try { await conn.query('DELETE FROM cart WHERE user_id IN (?)', [cleanIds]); } catch (e) {}
+    try { await conn.query('DELETE FROM wishlist WHERE user_id IN (?)', [cleanIds]); } catch (e) {}
+
+    const [delRes] = await conn.query('DELETE FROM users WHERE id IN (?)', [cleanIds]);
+    const deletedCount = delRes.affectedRows || cleanIds.length;
+
+    await conn.commit();
+    conn.release();
+    conn = null;
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'DELETE_BATCH',
+        targetType: 'Customers',
+        details: `Deleted ${deletedCount} selected customers.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount },
+      `Successfully deleted ${deletedCount} selected customers.`
+    ));
+  } catch (err) {
+    if (conn) {
+      try { await conn.rollback(); } catch (eRb) {}
+      try { conn.release(); } catch (eRel) {}
+    }
     next(err);
   }
 };

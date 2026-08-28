@@ -12,6 +12,8 @@ router.put('/reorder', parentCategoryController.reorderParentCategories);
 router.put('/:id', parentCategoryController.updateParentCategory);
 router.delete('/all', parentCategoryController.deleteAllParentCategories);
 router.post('/delete-all', parentCategoryController.deleteAllParentCategories);
+router.post('/delete-batch', parentCategoryController.deleteSelectedParentCategories);
+router.delete('/delete-batch', parentCategoryController.deleteSelectedParentCategories);
 router.delete('/:id', parentCategoryController.deleteParentCategory);
 
 module.exports = router;

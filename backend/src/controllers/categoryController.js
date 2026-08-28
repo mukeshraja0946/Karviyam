@@ -463,6 +463,59 @@ exports.deleteAllCategories = async (req, res, next) => {
   }
 };
 
+exports.deleteSelectedCategories = async (req, res, next) => {
+  let conn;
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json(ApiResponse.error('No category IDs provided for batch deletion'));
+    }
+
+    await ensureCategoryTableExists();
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const cleanIds = ids.map(id => String(id).trim()).filter(Boolean);
+    if (cleanIds.length === 0) {
+      return res.status(400).json(ApiResponse.error('Invalid category IDs'));
+    }
+
+    await conn.query('UPDATE categories SET parent_id = NULL WHERE parent_id IN (?)', [cleanIds]).catch(() => null);
+    await conn.query('UPDATE products SET category_id = NULL WHERE category_id IN (?)', [cleanIds]).catch(() => null);
+    try { await conn.query('UPDATE products SET subcategory_id = NULL WHERE subcategory_id IN (?)', [cleanIds]); } catch (e) {}
+    try { await conn.query('DELETE FROM category_cards WHERE category_id IN (?)', [cleanIds]); } catch (e) {}
+    try { await conn.query('DELETE FROM product_categories WHERE category_id IN (?)', [cleanIds]); } catch (e) {}
+
+    const [delRes] = await conn.query('DELETE FROM categories WHERE id IN (?)', [cleanIds]);
+    const deletedCount = delRes.affectedRows || cleanIds.length;
+
+    await conn.commit();
+    conn.release();
+    conn = null;
+
+    try {
+      const { logAudit } = require('../utils/auditLogger');
+      await logAudit({
+        adminId: req.user?.id || 1,
+        action: 'DELETE_BATCH',
+        targetType: 'Categories',
+        details: `Deleted ${deletedCount} selected categories.`
+      });
+    } catch (eAudit) {}
+
+    return res.status(200).json(ApiResponse.success(
+      { deletedCount },
+      `Successfully deleted ${deletedCount} selected categories.`
+    ));
+  } catch (err) {
+    if (conn) {
+      try { await conn.rollback(); } catch (eRb) {}
+      try { conn.release(); } catch (eRel) {}
+    }
+    next(err);
+  }
+};
+
 exports.reorderCategories = async (req, res, next) => {
   try {
     const categoryIds = req.body;

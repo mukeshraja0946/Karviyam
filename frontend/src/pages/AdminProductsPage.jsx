@@ -257,23 +257,33 @@ export default function AdminProductsPage() {
     const count = selectedIds.length;
     toast.loading(`Deleting ${count} selected products...`, { id: 'prd-batch-toast' });
     try {
+      let res;
       if (isAllDatasetSelected || selectedIds.length >= products.length) {
-        let res = await api.delete('/products/all').catch(() => null);
-        if (!res) await api.post('/products/delete-all').catch(() => null);
+        res = await api.delete('/admin/products/all')
+          .catch(() => api.delete('/products/all'))
+          .catch(() => api.post('/admin/products/delete-all'));
       } else {
-        let res = await api.post('/admin/products/delete-batch', { ids: selectedIds }).catch(() => null);
-        if (!res) await api.delete('/admin/products/delete-batch', { data: { ids: selectedIds } }).catch(() => null);
+        res = await api.post('/admin/products/delete-batch', { ids: selectedIds })
+          .catch(() => api.post('/products/delete-batch', { ids: selectedIds }));
       }
 
-      setProducts(prev => prev.filter(p => !selectedIds.includes(p.id)));
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-      window.dispatchEvent(new Event('karviyam_products_updated'));
-      toast.success(`Successfully deleted ${count} selected products.`, { id: 'prd-batch-toast' });
-      await fetchProducts();
+      if (res && res.data && res.data.success !== false) {
+        const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? count;
+        const strSelected = selectedIds.map(String);
+        setProducts(prev => prev.filter(p => !strSelected.includes(String(p.id))));
+        setSelectedIds([]);
+        setIsAllDatasetSelected(false);
+        try { localStorage.removeItem('karviyam_admin_products'); } catch (e) {}
+        window.dispatchEvent(new Event('karviyam_products_updated'));
+        toast.success(`Successfully deleted ${deletedCount} selected products.`, { id: 'prd-batch-toast' });
+        await fetchProducts();
+      } else {
+        throw new Error(res?.data?.message || 'Failed to delete selected products');
+      }
     } catch (e) {
-      console.error(e);
-      toast.error('Failed to delete selected products', { id: 'prd-batch-toast' });
+      console.error('[BatchDeleteProducts Error]:', e);
+      const errorMsg = e.response?.data?.message || e.message || 'Unable to delete products. No changes were made.';
+      toast.error(errorMsg, { id: 'prd-batch-toast' });
     } finally {
       setBatchDeleting(false);
     }
@@ -283,23 +293,27 @@ export default function AdminProductsPage() {
     setClearAllLoading(true);
     toast.loading('Purging all product catalog records...', { id: 'prd-del-all-toast' });
     try {
-      let res = await api.delete('/products/all').catch(() => null);
-      if (!res) {
-        res = await api.post('/products/delete-all').catch(() => null);
-      }
+      const res = await api.delete('/admin/products/all')
+        .catch(() => api.delete('/products/all'))
+        .catch(() => api.post('/admin/products/delete-all'));
 
-      const count = products.length;
-      setProducts([]);
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-      try { localStorage.removeItem('karviyam_admin_products'); } catch (e) {}
-      window.dispatchEvent(new Event('karviyam_products_updated'));
-      toast.success(`Successfully deleted ${count} products.`, { id: 'prd-del-all-toast' });
-      setClearAllModalOpen(false);
-      await fetchProducts();
+      if (res && res.data && res.data.success !== false) {
+        const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? products.length;
+        setProducts([]);
+        setSelectedIds([]);
+        setIsAllDatasetSelected(false);
+        try { localStorage.removeItem('karviyam_admin_products'); } catch (e) {}
+        window.dispatchEvent(new Event('karviyam_products_updated'));
+        toast.success(`Successfully deleted ${deletedCount} products.`, { id: 'prd-del-all-toast' });
+        setClearAllModalOpen(false);
+        await fetchProducts();
+      } else {
+        throw new Error(res?.data?.message || 'Clear All products failed');
+      }
     } catch (e) {
-      console.error(e);
-      toast.error('Clear All failed. No records were deleted.', { id: 'prd-del-all-toast' });
+      console.error('[ClearAllProducts Error]:', e);
+      const errorMsg = e.response?.data?.message || e.message || 'Unable to clear products. No changes were made.';
+      toast.error(errorMsg, { id: 'prd-del-all-toast' });
     } finally {
       setClearAllLoading(false);
     }
@@ -401,17 +415,13 @@ export default function AdminProductsPage() {
       const prodData = prodRes.data?.data || prodRes.data || prodRes;
       const list = prodData.content || (Array.isArray(prodData) ? prodData : []);
 
-      if (Array.isArray(list) && list.length > 0) {
+      if (Array.isArray(list)) {
         setProducts(list);
-        try { localStorage.setItem('karviyam_admin_products', JSON.stringify(list)); } catch (e) {}
-      } else {
-        try {
-          const saved = localStorage.getItem('karviyam_admin_products');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
-          }
-        } catch (eSaved) {}
+        if (list.length > 0) {
+          try { localStorage.setItem('karviyam_admin_products', JSON.stringify(list)); } catch (e) {}
+        } else {
+          try { localStorage.removeItem('karviyam_admin_products'); } catch (e) {}
+        }
       }
 
       const catData = catRes.data?.data || catRes.data || catRes;

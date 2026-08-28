@@ -214,9 +214,9 @@ export default function AdminCategoriesPage() {
     setClearAllLoading(true);
     toast.loading('Purging all product categories...', { id: 'cat-del-all-toast' });
     try {
-      let res = await api.delete('/categories/all').catch(() => null);
-      if (!res) res = await api.delete('/admin/categories/all').catch(() => null);
-      if (!res) res = await api.post('/categories/delete-all').catch(() => null);
+      const res = await api.delete('/admin/categories/all')
+        .catch(() => api.delete('/categories/all'))
+        .catch(() => api.post('/admin/categories/delete-all'));
 
       if (res && res.data && res.data.success !== false) {
         const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? categories.length;
@@ -226,12 +226,14 @@ export default function AdminCategoriesPage() {
         try { localStorage.removeItem('karviyam_admin_categories'); } catch (e) {}
         toast.success(`Successfully deleted ${deletedCount} categories.`, { id: 'cat-del-all-toast' });
         setClearAllModalOpen(false);
+        await fetchCategories();
       } else {
-        throw new Error('Category bulk delete API failed');
+        throw new Error(res?.data?.message || 'Category bulk delete failed');
       }
     } catch (e) {
       console.error('[ClearAllCategories Failure]:', e);
-      toast.error('Unable to delete categories. No changes were made.', { id: 'cat-del-all-toast' });
+      const errorMsg = e.response?.data?.message || e.message || 'Unable to delete categories. No changes were made.';
+      toast.error(errorMsg, { id: 'cat-del-all-toast' });
     } finally {
       setClearAllLoading(false);
     }
@@ -266,25 +268,30 @@ export default function AdminCategoriesPage() {
     const count = selectedIds.length;
     toast.loading(`Deleting ${count} selected categories...`, { id: 'cat-batch-toast' });
     try {
+      let res;
       if (isAllDatasetSelected || selectedIds.length >= categories.length) {
-        let res = await api.delete('/categories/all').catch(() => null);
-        if (!res) await api.delete('/admin/categories/all').catch(() => null);
-        if (!res) await api.post('/categories/delete-all').catch(() => null);
+        res = await api.delete('/admin/categories/all').catch(() => api.delete('/categories/all'));
       } else {
-        for (const id of selectedIds) {
-          await api.delete(`/categories/${id}`).catch(() => null);
-        }
+        res = await api.post('/admin/categories/delete-batch', { ids: selectedIds })
+          .catch(() => api.post('/categories/delete-batch', { ids: selectedIds }));
       }
 
-      setCategories(prev => prev.filter(c => !selectedIds.includes(c.id)));
-      setSelectedIds([]);
-      setIsAllDatasetSelected(false);
-      try { localStorage.removeItem('karviyam_admin_categories'); } catch (e) {}
-      toast.success(`Successfully deleted ${count} selected categories.`, { id: 'cat-batch-toast' });
-      await fetchCategories();
+      if (res && res.data && res.data.success !== false) {
+        const deletedCount = res.data.data?.deletedCount ?? res.data.deletedCount ?? count;
+        const strSelected = selectedIds.map(String);
+        setCategories(prev => prev.filter(c => !strSelected.includes(String(c.id))));
+        setSelectedIds([]);
+        setIsAllDatasetSelected(false);
+        try { localStorage.removeItem('karviyam_admin_categories'); } catch (e) {}
+        toast.success(`Successfully deleted ${deletedCount} selected categories.`, { id: 'cat-batch-toast' });
+        await fetchCategories();
+      } else {
+        throw new Error(res?.data?.message || 'Failed to delete selected categories');
+      }
     } catch (e) {
-      console.error(e);
-      toast.error('Failed to delete selected categories', { id: 'cat-batch-toast' });
+      console.error('[BatchDeleteCategories Error]:', e);
+      const errorMsg = e.response?.data?.message || e.message || 'Unable to delete categories. No changes were made.';
+      toast.error(errorMsg, { id: 'cat-batch-toast' });
     } finally {
       setBatchDeleting(false);
     }

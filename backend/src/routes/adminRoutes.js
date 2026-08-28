@@ -25,12 +25,16 @@ router.post('/orders/:id', orderController.updateOrder);
 router.post('/orders/:id/update', orderController.updateOrder);
 router.delete('/orders/all', adminController.deleteAllOrders);
 router.post('/orders/delete-all', adminController.deleteAllOrders);
+router.post('/orders/delete-batch', adminController.deleteSelectedOrders);
+router.delete('/orders/delete-batch', adminController.deleteSelectedOrders);
 router.delete('/orders/:id', orderController.deleteOrder);
 router.post('/orders/:id/delete', orderController.deleteOrder);
 
 // Categories
 router.delete('/categories/all', categoryController.deleteAllCategories);
 router.post('/categories/delete-all', categoryController.deleteAllCategories);
+router.post('/categories/delete-batch', categoryController.deleteSelectedCategories);
+router.delete('/categories/delete-batch', categoryController.deleteSelectedCategories);
 
 // Products
 router.get('/products', adminController.getAdminProducts);
@@ -73,6 +77,8 @@ router.post('/customers/:id', adminController.updateCustomer);
 router.post('/customers/:id/update', adminController.updateCustomer);
 router.delete('/customers/all', adminController.deleteAllCustomers);
 router.post('/customers/delete-all', adminController.deleteAllCustomers);
+router.post('/customers/delete-batch', adminController.deleteSelectedCustomers);
+router.delete('/customers/delete-batch', adminController.deleteSelectedCustomers);
 router.delete('/customers/:id', adminController.deleteCustomer);
 router.post('/customers/:id/delete', adminController.deleteCustomer);
 router.put('/users/:id/role', userController.updateUserRole);
