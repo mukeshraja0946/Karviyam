@@ -3,6 +3,50 @@ const ApiResponse = require('../utils/apiResponse');
 const XLSX = require('xlsx');
 const { mapProductRowToDTO } = require('./productController');
 
+// Build domain base from environment variables or default to Karviyam domain
+const getAppBaseUrl = () => {
+  const envUrl = process.env.APP_URL || process.env.BACKEND_URL || process.env.FRONTEND_URL;
+  if (envUrl && envUrl.startsWith('http')) {
+    return envUrl.replace(/\/$/, '');
+  }
+  return 'https://karviyam.com';
+};
+
+// Converts relative database image paths into full, permanent public URLs
+const resolvePermanentImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  // Filter out temporary blob and data URLs
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) return '';
+
+  // If already an absolute HTTP or HTTPS URL, return as is
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  // Prepend base URL for relative paths (/uploads/... or uploads/...)
+  const baseUrl = getAppBaseUrl();
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${baseUrl}${cleanPath}`;
+};
+
+// Sanitizes imported Excel image URLs for safe database storage
+const sanitizeImportImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) return '';
+
+  // If domain URL contains /uploads/, extract relative path for clean DB storage
+  if (trimmed.includes('/uploads/')) {
+    const idx = trimmed.indexOf('/uploads/');
+    return trimmed.substring(idx);
+  }
+  return trimmed;
+};
+
 // Helper to sanitize boolean values from Excel strings/numbers
 const parseBool = (val, defaultVal = false) => {
   if (val === undefined || val === null || val === '') return defaultVal;
@@ -17,6 +61,9 @@ const parseBool = (val, defaultVal = false) => {
 // Helper to format product export row with ALL Normal Fields FIRST and ALL Color 1..10 Fields LAST
 function formatProductExportRow(p, dto) {
   const sku = p.sku || `KV-SKU-${p.id}`;
+
+  const productMainImg = resolvePermanentImageUrl(p.image_url || p.image || dto?.images?.[0]);
+  const productSubImgs = (dto?.images || []).filter(img => img && resolvePermanentImageUrl(img) !== productMainImg);
 
   // 1. Normal Product Fields FIRST
   const row = {
@@ -51,7 +98,17 @@ function formatProductExportRow(p, dto) {
     'Return Days': p.return_days || p.returnDays || '7 Days',
     'SEO Title': p.seo_title || p.name || '',
     'Meta Keywords': p.meta_keywords || p.tags || '',
-    'Meta Description': p.meta_description || p.description || ''
+    'Meta Description': p.meta_description || p.description || '',
+
+    // Product Base Media
+    'Main Product Image': productMainImg,
+    'Sub Image 1': resolvePermanentImageUrl(productSubImgs[0]),
+    'Sub Image 2': resolvePermanentImageUrl(productSubImgs[1]),
+    'Sub Image 3': resolvePermanentImageUrl(productSubImgs[2]),
+    'Sub Image 4': resolvePermanentImageUrl(productSubImgs[3]),
+    'Sub Image 5': resolvePermanentImageUrl(productSubImgs[4]),
+    'Sub Image 6': resolvePermanentImageUrl(productSubImgs[5]),
+    'Product Video': resolvePermanentImageUrl(p.video_url || dto?.videoUrl || '')
   };
 
   // 2. Color 1 to Color 10 Fields AT THE VERY END
@@ -62,13 +119,13 @@ function formatProductExportRow(p, dto) {
       row[`Color ${c} Name`] = col.colorName || '';
       row[`Color ${c} Hex`] = col.colorCode || col.hexCode || '#000000';
       row[`Color ${c} Default`] = Boolean(col.isDefault);
-      row[`Color ${c} Main Image`] = col.mainImage || '';
-      
+      row[`Color ${c} Main Image`] = resolvePermanentImageUrl(col.mainImage);
+
       const subImgs = Array.isArray(col.subImages) ? col.subImages : [];
       for (let s = 1; s <= 6; s++) {
-        row[`Color ${c} Sub Image ${s}`] = subImgs[s - 1] || '';
+        row[`Color ${c} Sub Image ${s}`] = resolvePermanentImageUrl(subImgs[s - 1]);
       }
-      row[`Color ${c} Video`] = col.videoUrl || '';
+      row[`Color ${c} Video`] = resolvePermanentImageUrl(col.videoUrl);
     } else {
       row[`Color ${c} Name`] = '';
       row[`Color ${c} Hex`] = '';
@@ -127,7 +184,7 @@ exports.exportProducts = async (req, res, next) => {
             'Media Type': 'image',
             'Sort Order': 1,
             'Is Main': true,
-            'Media URL': col.mainImage
+            'Media URL': resolvePermanentImageUrl(col.mainImage)
           });
         }
 
@@ -141,7 +198,7 @@ exports.exportProducts = async (req, res, next) => {
               'Media Type': 'image',
               'Sort Order': sIdx + 2,
               'Is Main': false,
-              'Media URL': subUrl
+              'Media URL': resolvePermanentImageUrl(subUrl)
             });
           }
         });
@@ -154,7 +211,7 @@ exports.exportProducts = async (req, res, next) => {
             'Media Type': 'video',
             'Sort Order': 99,
             'Is Main': false,
-            'Media URL': col.videoUrl
+            'Media URL': resolvePermanentImageUrl(col.videoUrl)
           });
         }
       });
@@ -167,12 +224,12 @@ exports.exportProducts = async (req, res, next) => {
       { Column: 'Selling Price', Required: 'REQUIRED', Type: 'Number', Example: '1499', Description: 'Actual selling price in INR.' },
       { Column: 'MRP Price', Required: 'OPTIONAL', Type: 'Number', Example: '2499', Description: 'Original maximum retail price before discount.' },
       { Column: 'Stock Quantity', Required: 'REQUIRED', Type: 'Number', Example: '50', Description: 'Available inventory count.' },
-      { Column: 'Main Category', Required: 'REQUIRED', Type: 'Text', Example: 'Streetwear', Description: 'Main product category name.' },
+      { Column: 'Main Product Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/main.jpg', Description: 'Permanent public URL of main image.' },
+      { Column: 'Sub Image 1..6', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/sub1.jpg', Description: 'Permanent public URLs for gallery sub images.' },
       { Column: 'Color 1..10 Name', Required: 'OPTIONAL', Type: 'Text', Example: 'Crimson Red', Description: 'Color variant name (located in the last columns).' },
-      { Column: 'Color 1..10 Hex', Required: 'OPTIONAL', Type: 'Hex Code', Example: '#B71C1C', Description: 'Hex color code for swatch dot.' },
-      { Column: 'Color 1..10 Main Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/file-1.jpg', Description: 'Main display image URL for the color variant.' },
-      { Column: 'Color 1..10 Sub Image 1..6', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/sub-1.jpg', Description: 'Sub images 1 to 6 for the color variant gallery.' },
-      { Column: 'Color 1..10 Video', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/video.mp4', Description: 'Product video URL for the color variant.' }
+      { Column: 'Color 1..10 Main Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/red-main.jpg', Description: 'Main image URL for color variant.' },
+      { Column: 'Color 1..10 Sub Image 1..6', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/red-sub1.jpg', Description: 'Sub images 1 to 6 for color variant.' },
+      { Column: 'Color 1..10 Video', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/video.mp4', Description: 'Product video URL for color variant.' }
     ];
 
     const wb = XLSX.utils.book_new();
@@ -210,6 +267,7 @@ exports.downloadProductTemplate = async (req, res, next) => {
       price: 1299,
       old_price: 1999,
       stock_quantity: 50,
+      image_url: '/uploads/demo-main.jpg',
       sizes: 'S, M, L, XL, XXL',
       material: '100% Organic Cotton',
       tags: 'shirt, cotton, casual, summer',
@@ -225,6 +283,7 @@ exports.downloadProductTemplate = async (req, res, next) => {
     };
 
     const sampleDTO = {
+      images: ['/uploads/demo-main.jpg', '/uploads/demo-sub1.jpg', '/uploads/demo-sub2.jpg'],
       colors: [
         {
           colorName: 'Crimson Red',
@@ -253,10 +312,10 @@ exports.downloadProductTemplate = async (req, res, next) => {
     ];
 
     const sampleMedia = [
-      { 'SKU Code': 'KV-DEMO-001', 'Color Name': 'Crimson Red', 'Media Type': 'image', 'Sort Order': 1, 'Is Main': true, 'Media URL': '/uploads/red-main.jpg' },
-      { 'SKU Code': 'KV-DEMO-001', 'Color Name': 'Crimson Red', 'Media Type': 'image', 'Sort Order': 2, 'Is Main': false, 'Media URL': '/uploads/red-sub1.jpg' },
-      { 'SKU Code': 'KV-DEMO-001', 'Color Name': 'Crimson Red', 'Media Type': 'video', 'Sort Order': 99, 'Is Main': false, 'Media URL': '/uploads/red-video.mp4' },
-      { 'SKU Code': 'KV-DEMO-001', 'Color Name': 'Obsidian Black', 'Media Type': 'image', 'Sort Order': 1, 'Is Main': true, 'Media URL': '/uploads/black-main.jpg' }
+      { 'SKU Code': 'KV-DEMO-001', 'Color Name': 'Crimson Red', 'Media Type': 'image', 'Sort Order': 1, 'Is Main': true, 'Media URL': resolvePermanentImageUrl('/uploads/red-main.jpg') },
+      { 'SKU Code': 'KV-DEMO-001', 'Color Name': 'Crimson Red', 'Media Type': 'image', 'Sort Order': 2, 'Is Main': false, 'Media URL': resolvePermanentImageUrl('/uploads/red-sub1.jpg') },
+      { 'SKU Code': 'KV-DEMO-001', 'Color Name': 'Crimson Red', 'Media Type': 'video', 'Sort Order': 99, 'Is Main': false, 'Media URL': resolvePermanentImageUrl('/uploads/red-video.mp4') },
+      { 'SKU Code': 'KV-DEMO-001', 'Color Name': 'Obsidian Black', 'Media Type': 'image', 'Sort Order': 1, 'Is Main': true, 'Media URL': resolvePermanentImageUrl('/uploads/black-main.jpg') }
     ];
 
     const fieldGuideRows = [
@@ -265,9 +324,10 @@ exports.downloadProductTemplate = async (req, res, next) => {
       { Column: 'Selling Price', Required: 'REQUIRED', Type: 'Number', Example: '1299', Description: 'Final retail price in INR.' },
       { Column: 'MRP Price', Required: 'OPTIONAL', Type: 'Number', Example: '1999', Description: 'Maximum retail price.' },
       { Column: 'Stock Quantity', Required: 'REQUIRED', Type: 'Number', Example: '50', Description: 'Available stock.' },
+      { Column: 'Main Product Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/main.jpg', Description: 'Main product display image.' },
       { Column: 'Color 1..10 Name', Required: 'OPTIONAL', Type: 'Text', Example: 'Emerald Green', Description: 'Color variant name (located in the last columns).' },
-      { Column: 'Color 1..10 Main Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/green-main.jpg', Description: 'Main image for the specified color.' },
-      { Column: 'Color 1..10 Video', Required: 'OPTIONAL', Type: 'URL/Path', Example: '/uploads/green-video.mp4', Description: 'Product video URL for the specified color.' }
+      { Column: 'Color 1..10 Main Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/green-main.jpg', Description: 'Main image for color variant.' },
+      { Column: 'Color 1..10 Video', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/green-video.mp4', Description: 'Product video URL for color variant.' }
     ];
 
     const wb = XLSX.utils.book_new();
@@ -336,11 +396,16 @@ exports.previewProductImport = async (req, res, next) => {
         rowErrors.push('Stock Quantity must be a non-negative integer.');
       }
 
-      // Check temporary blob / data URLs in Color 1..10 columns at the end of row
+      // Validate image URLs (must not be temporary browser blob/data URLs)
+      const mainImg = row['Main Product Image'] || row['Image URL'];
+      if (mainImg && (String(mainImg).startsWith('blob:') || String(mainImg).startsWith('data:'))) {
+        rowErrors.push(`Main Product Image contains invalid temporary browser URL (${mainImg.substring(0, 15)}...). Only permanent URLs are allowed.`);
+      }
+
       for (let c = 1; c <= 10; c++) {
-        const mImg = row[`Color ${c} Main Image`];
-        if (mImg && (String(mImg).startsWith('blob:') || String(mImg).startsWith('data:'))) {
-          rowErrors.push(`Color ${c} Main Image contains invalid temporary browser URL (${mImg.substring(0, 15)}...). Only server URLs are allowed.`);
+        const cImg = row[`Color ${c} Main Image`];
+        if (cImg && (String(cImg).startsWith('blob:') || String(cImg).startsWith('data:'))) {
+          rowErrors.push(`Color ${c} Main Image contains invalid temporary browser URL (${cImg.substring(0, 15)}...). Only permanent URLs are allowed.`);
         }
       }
 
@@ -460,6 +525,9 @@ exports.executeProductImport = async (req, res, next) => {
       const metaKeywords = String(row['Meta Keywords'] || tags).trim();
       const metaDescription = String(row['Meta Description'] || description).trim();
 
+      const mainProductImage = sanitizeImportImageUrl(row['Main Product Image'] || row['Image URL'] || row['main_image']);
+      const videoUrl = sanitizeImportImageUrl(row['Product Video'] || row['video_url']);
+
       if (!sku || !name || isNaN(price)) {
         failedCount++;
         failedRows.push({
@@ -480,21 +548,25 @@ exports.executeProductImport = async (req, res, next) => {
       }
 
       // Check if product exists by SKU
-      const [existing] = await connection.query('SELECT id FROM products WHERE LOWER(sku) = ? LIMIT 1', [sku.toLowerCase()]);
+      const [existing] = await connection.query('SELECT * FROM products WHERE LOWER(sku) = ? LIMIT 1', [sku.toLowerCase()]);
 
       let productId;
       if (existing.length > 0) {
         productId = existing[0].id;
+        const currentProd = existing[0];
+        const finalImage = mainProductImage !== '' ? mainProductImage : currentProd.image_url;
+        const finalVideo = videoUrl !== '' ? videoUrl : currentProd.video_url;
+
         // Non-destructive update: Update product normal fields first
         await connection.query(
           `UPDATE products SET 
            category_id = ?, name = ?, description = ?, price = ?, old_price = ?, stock_quantity = ?,
-           brand = ?, sizes = ?, material = ?, tags = ?, is_featured = ?, is_trending = ?,
+           image_url = ?, video_url = ?, brand = ?, sizes = ?, material = ?, tags = ?, is_featured = ?, is_trending = ?,
            is_bestseller = ?, is_new_arrival = ?, is_active = ?, seo_title = ?, meta_keywords = ?,
            meta_description = ?, updated_at = NOW()
            WHERE id = ?`,
           [
-            categoryId, name, description, price, oldPrice, stock, brand, sizes, material, tags,
+            categoryId, name, description, price, oldPrice, stock, finalImage, finalVideo, brand, sizes, material, tags,
             isFeatured ? 1 : 0, isTrending ? 1 : 0, isBestseller ? 1 : 0, isNewArrival ? 1 : 0,
             isActive ? 1 : 0, seoTitle, metaKeywords, metaDescription, productId
           ]
@@ -504,17 +576,33 @@ exports.executeProductImport = async (req, res, next) => {
         // Insert new product
         const [insertRes] = await connection.query(
           `INSERT INTO products 
-           (category_id, name, sku, description, price, old_price, stock_quantity, brand, sizes, material, tags,
+           (category_id, name, sku, description, price, old_price, stock_quantity, image_url, video_url, brand, sizes, material, tags,
             is_featured, is_trending, is_bestseller, is_new_arrival, is_active, seo_title, meta_keywords, meta_description, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
           [
-            categoryId, name, sku, description, price, oldPrice, stock, brand, sizes, material, tags,
+            categoryId, name, sku, description, price, oldPrice, stock, mainProductImage, videoUrl, brand, sizes, material, tags,
             isFeatured ? 1 : 0, isTrending ? 1 : 0, isBestseller ? 1 : 0, isNewArrival ? 1 : 0,
             isActive ? 1 : 0, seoTitle, metaKeywords, metaDescription
           ]
         );
         productId = insertRes.insertId;
         createdCount++;
+      }
+
+      // Base Sub Images processing (Sub Image 1..6)
+      const baseSubImages = [];
+      for (let s = 1; s <= 6; s++) {
+        const sUrl = sanitizeImportImageUrl(row[`Sub Image ${s}`]);
+        if (sUrl) baseSubImages.push(sUrl);
+      }
+      if (baseSubImages.length > 0) {
+        await connection.query('DELETE FROM product_images WHERE product_id = ? AND is_main = 0', [productId]);
+        for (let sIdx = 0; sIdx < baseSubImages.length; sIdx++) {
+          await connection.query(
+            'INSERT INTO product_images (product_id, image_url, is_main, sort_order) VALUES (?, ?, 0, ?)',
+            [productId, baseSubImages[sIdx], sIdx + 2]
+          );
+        }
       }
 
       // -----------------------------------------------------------------
@@ -541,9 +629,9 @@ exports.executeProductImport = async (req, res, next) => {
               colorName: cName || 'Standard',
               colorCode: cCode,
               isDefault,
-              mainImage: mainMedia ? mainMedia['Media URL'] : '',
-              subImages: subMedia.map(sm => sm['Media URL']).filter(Boolean),
-              videoUrl: videoMedia ? videoMedia['Media URL'] : ''
+              mainImage: mainMedia ? sanitizeImportImageUrl(mainMedia['Media URL']) : '',
+              subImages: subMedia.map(sm => sanitizeImportImageUrl(sm['Media URL'])).filter(Boolean),
+              videoUrl: videoMedia ? sanitizeImportImageUrl(videoMedia['Media URL']) : ''
             });
           }
         });
@@ -554,34 +642,32 @@ exports.executeProductImport = async (req, res, next) => {
         for (let c = 1; c <= 20; c++) {
           const cName = String(row[`Color ${c} Name`] || '').trim();
           const cCode = String(row[`Color ${c} Hex`] || row[`Color ${c} Code`] || '').trim();
-          const mainImg = String(row[`Color ${c} Main Image`] || '').trim();
+          const mainImg = sanitizeImportImageUrl(row[`Color ${c} Main Image`]);
           const isDef = parseBool(row[`Color ${c} Default`] || row[`Color ${c} Is Default`], c === 1);
 
           const subImgs = [];
           for (let s = 1; s <= 6; s++) {
-            const subUrl = String(row[`Color ${c} Sub Image ${s}`] || row[`Color ${c} Image ${s}`] || '').trim();
-            if (subUrl && !subUrl.startsWith('blob:') && !subUrl.startsWith('data:')) {
-              subImgs.push(subUrl);
-            }
+            const subUrl = sanitizeImportImageUrl(row[`Color ${c} Sub Image ${s}`] || row[`Color ${c} Image ${s}`]);
+            if (subUrl) subImgs.push(subUrl);
           }
-          const videoUrl = String(row[`Color ${c} Video`] || '').trim();
+          const cVideo = sanitizeImportImageUrl(row[`Color ${c} Video`]);
 
-          // RULES 3 & 4: Create ONLY colors that actually contain data. Do not create empty colors.
-          const hasData = cName !== '' || (mainImg !== '' && !mainImg.startsWith('blob:') && !mainImg.startsWith('data:'));
+          // RULES: Create ONLY colors that actually contain data.
+          const hasData = cName !== '' || mainImg !== '' || subImgs.length > 0;
           if (hasData) {
             parsedColors.push({
               colorName: cName || `Color ${c}`,
               colorCode: cCode || '#000000',
               isDefault: isDef,
-              mainImage: mainImg && !mainImg.startsWith('blob:') && !mainImg.startsWith('data:') ? mainImg : '',
+              mainImage: mainImg,
               subImages: subImgs,
-              videoUrl: videoUrl && !videoUrl.startsWith('blob:') && !videoUrl.startsWith('data:') ? videoUrl : ''
+              videoUrl: cVideo
             });
           }
         }
       }
 
-      // RULES 7 & 8: If existing SKU is imported and parsedColors contains new color data, update color variants.
+      // RULES: If parsedColors contains new color data, update color variants.
       // If parsedColors.length === 0, DO NOT RESET OR DELETE PREVIOUSLY SAVED COLORS!
       if (parsedColors.length > 0) {
         // Delete existing color records before re-inserting updated color variants
@@ -686,13 +772,13 @@ exports.exportCategories = async (req, res, next) => {
       'Category ID': c.id,
       'Category Name': c.name || '',
       'Parent Category Name': c.parent_category_name || '',
-      'Parent Category Image': c.parent_image_url || '',
+      'Parent Category Image': resolvePermanentImageUrl(c.parent_image_url),
       'Classification Type': c.type || c.classification || 'General',
-      'Display Order': c.sort_order || c.display_order || 0,
+      'Display Order': c.sort_order || c.order_index || c.display_order || 0,
       'Active Status': c.is_active !== 0,
-      'Main Image': c.image_url || '',
-      'Category Icon': c.icon_url || c.icon || '',
-      'Category Banner': c.banner_url || c.banner || '',
+      'Main Image': resolvePermanentImageUrl(c.image_url || c.image_path || c.image),
+      'Category Icon': resolvePermanentImageUrl(c.icon_url || c.icon_path || c.icon),
+      'Category Banner': resolvePermanentImageUrl(c.banner_url || c.banner_path || c.banner),
       'Description': c.description || '',
       'SEO Title': c.seo_title || c.name || '',
       'Meta Keywords': c.meta_keywords || '',
@@ -735,13 +821,13 @@ exports.importCategories = async (req, res, next) => {
       if (!name) continue;
 
       const parentName = String(r['Parent Category Name'] || '').trim();
-      const parentImage = String(r['Parent Category Image'] || '').trim();
+      const parentImage = sanitizeImportImageUrl(r['Parent Category Image']);
       const type = String(r['Classification Type'] || 'General').trim();
       const displayOrder = parseInt(r['Display Order'] || 0, 10);
       const isActive = parseBool(r['Active Status'], true);
-      const mainImage = String(r['Main Image'] || '').trim();
-      const iconUrl = String(r['Category Icon'] || '').trim();
-      const bannerUrl = String(r['Category Banner'] || '').trim();
+      const mainImage = sanitizeImportImageUrl(r['Main Image'] || r['image_url']);
+      const iconUrl = sanitizeImportImageUrl(r['Category Icon'] || r['icon_url']);
+      const bannerUrl = sanitizeImportImageUrl(r['Category Banner'] || r['banner_url']);
       const description = String(r['Description'] || '').trim();
       const seoTitle = String(r['SEO Title'] || name).trim();
       const metaKeywords = String(r['Meta Keywords'] || '').trim();
@@ -750,7 +836,7 @@ exports.importCategories = async (req, res, next) => {
       // Resolve Parent Category
       let parentId = null;
       if (parentName) {
-        const [parents] = await pool.query('SELECT id FROM categories WHERE LOWER(name) = ? LIMIT 1', [parentName.toLowerCase()]);
+        const [parents] = await pool.query('SELECT id, image_url FROM categories WHERE LOWER(name) = ? LIMIT 1', [parentName.toLowerCase()]);
         if (parents.length > 0) {
           parentId = parents[0].id;
           if (parentImage) {
@@ -760,23 +846,28 @@ exports.importCategories = async (req, res, next) => {
       }
 
       // Check if category exists
-      const [existing] = await pool.query('SELECT id FROM categories WHERE LOWER(name) = ? LIMIT 1', [name.toLowerCase()]);
+      const [existing] = await pool.query('SELECT * FROM categories WHERE LOWER(name) = ? LIMIT 1', [name.toLowerCase()]);
 
       if (existing.length > 0) {
+        const curCat = existing[0];
+        const finalMainImage = mainImage !== '' ? mainImage : curCat.image_url;
+        const finalIconUrl = iconUrl !== '' ? iconUrl : curCat.icon_url;
+        const finalBannerUrl = bannerUrl !== '' ? bannerUrl : curCat.banner_url;
+
         await pool.query(
           `UPDATE categories SET 
-           parent_id = ?, type = ?, sort_order = ?, is_active = ?, image_url = ?, icon_url = ?, banner_url = ?,
+           parent_id = ?, type = ?, sort_order = ?, order_index = ?, is_active = ?, image_url = ?, icon_url = ?, banner_url = ?,
            description = ?, seo_title = ?, meta_keywords = ?, meta_description = ?
            WHERE id = ?`,
-          [parentId, type, displayOrder, isActive ? 1 : 0, mainImage, iconUrl, bannerUrl, description, seoTitle, metaKeywords, metaDescription, existing[0].id]
+          [parentId, type, displayOrder, displayOrder, isActive ? 1 : 0, finalMainImage, finalIconUrl, finalBannerUrl, description, seoTitle, metaKeywords, metaDescription, curCat.id]
         );
         updatedCount++;
       } else {
         await pool.query(
           `INSERT INTO categories 
-           (name, parent_id, type, sort_order, is_active, image_url, icon_url, banner_url, description, seo_title, meta_keywords, meta_description)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [name, parentId, type, displayOrder, isActive ? 1 : 0, mainImage, iconUrl, bannerUrl, description, seoTitle, metaKeywords, metaDescription]
+           (name, parent_id, type, sort_order, order_index, is_active, image_url, icon_url, banner_url, description, seo_title, meta_keywords, meta_description)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [name, parentId, type, displayOrder, displayOrder, isActive ? 1 : 0, mainImage, iconUrl, bannerUrl, description, seoTitle, metaKeywords, metaDescription]
         );
         createdCount++;
       }
@@ -793,14 +884,23 @@ exports.importCategories = async (req, res, next) => {
 // =========================================================================
 exports.exportBanners = async (req, res, next) => {
   try {
-    const [banners] = await pool.query(`SELECT * FROM banners ORDER BY display_order ASC, id ASC`);
+    let banners = [];
+    try {
+      const [bRows] = await pool.query(`SELECT * FROM home_banners ORDER BY display_order ASC, sort_order ASC, id ASC`);
+      banners = bRows;
+    } catch (e) {
+      try {
+        const [bRows] = await pool.query(`SELECT * FROM banners ORDER BY id ASC`);
+        banners = bRows;
+      } catch (e2) {}
+    }
 
     const rows = banners.map(b => ({
       'Banner ID': b.id,
       'Title': b.title || '',
       'Subtitle': b.subtitle || '',
-      'Desktop Image URL': b.image_path || b.image_url || '',
-      'Mobile Image URL': b.mobile_image_url || b.image_path || '',
+      'Desktop Banner Image': resolvePermanentImageUrl(b.image_path || b.image_url),
+      'Mobile Banner Image': resolvePermanentImageUrl(b.mobile_image_url || b.image_path || b.image_url),
       'Target Link': b.link || b.button_link || '/shop',
       'Button Text': b.button_text || 'Shop Now',
       'Display Order': b.display_order || b.sort_order || 1,
@@ -840,35 +940,67 @@ exports.importBanners = async (req, res, next) => {
 
     for (const r of rawRows) {
       const title = String(r['Title'] || r['title'] || '').trim();
-      const desktopImage = String(r['Desktop Image URL'] || r['image'] || '').trim();
+      const desktopImage = sanitizeImportImageUrl(r['Desktop Banner Image'] || r['Desktop Image URL'] || r['image_path']);
       if (!title && !desktopImage) continue;
 
       const subtitle = String(r['Subtitle'] || '').trim();
-      const mobileImage = String(r['Mobile Image URL'] || desktopImage).trim();
+      const mobileImage = sanitizeImportImageUrl(r['Mobile Banner Image'] || r['Mobile Image URL'] || desktopImage);
       const link = String(r['Target Link'] || '/shop').trim();
       const buttonText = String(r['Button Text'] || 'Shop Now').trim();
       const displayOrder = parseInt(r['Display Order'] || 1, 10);
       const isActive = parseBool(r['Active Status'], true);
       const status = isActive ? 'active' : 'inactive';
 
-      const [existing] = await pool.query('SELECT id FROM banners WHERE LOWER(title) = ? LIMIT 1', [title.toLowerCase()]);
+      let existing = [];
+      try {
+        const [eRows] = await pool.query('SELECT * FROM home_banners WHERE LOWER(title) = ? LIMIT 1', [title.toLowerCase()]);
+        existing = eRows;
+      } catch (e) {
+        try {
+          const [eRows] = await pool.query('SELECT * FROM banners WHERE LOWER(title) = ? LIMIT 1', [title.toLowerCase()]);
+          existing = eRows;
+        } catch (e2) {}
+      }
 
       if (existing.length > 0) {
-        await pool.query(
-          `UPDATE banners SET 
-           subtitle = ?, image_path = ?, image_url = ?, mobile_image_url = ?, link = ?, button_link = ?,
-           button_text = ?, display_order = ?, status = ?, is_active = ?
-           WHERE id = ?`,
-          [subtitle, desktopImage, desktopImage, mobileImage, link, link, buttonText, displayOrder, status, isActive ? 1 : 0, existing[0].id]
-        );
+        const curB = existing[0];
+        const finalDesk = desktopImage !== '' ? desktopImage : (curB.image_path || curB.image_url);
+        const finalMob = mobileImage !== '' ? mobileImage : (curB.mobile_image_url || finalDesk);
+
+        try {
+          await pool.query(
+            `UPDATE home_banners SET 
+             subtitle = ?, image_path = ?, image_url = ?, mobile_image_url = ?, link = ?, button_link = ?,
+             button_text = ?, display_order = ?, sort_order = ?, status = ?, is_active = ?
+             WHERE id = ?`,
+            [subtitle, finalDesk, finalDesk, finalMob, link, link, buttonText, displayOrder, displayOrder, status, isActive ? 1 : 0, curB.id]
+          );
+        } catch (e) {
+          await pool.query(
+            `UPDATE banners SET 
+             subtitle = ?, image_path = ?, image_url = ?, mobile_image_url = ?, link = ?, button_link = ?,
+             button_text = ?, display_order = ?, status = ?, is_active = ?
+             WHERE id = ?`,
+            [subtitle, finalDesk, finalDesk, finalMob, link, link, buttonText, displayOrder, status, isActive ? 1 : 0, curB.id]
+          );
+        }
         updatedCount++;
       } else {
-        await pool.query(
-          `INSERT INTO banners 
-           (title, subtitle, image_path, image_url, mobile_image_url, link, button_link, button_text, display_order, status, is_active)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [title, subtitle, desktopImage, desktopImage, mobileImage, link, link, buttonText, displayOrder, status, isActive ? 1 : 0]
-        );
+        try {
+          await pool.query(
+            `INSERT INTO home_banners 
+             (title, subtitle, image_path, image_url, mobile_image_url, link, button_link, button_text, display_order, sort_order, status, is_active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [title, subtitle, desktopImage, desktopImage, mobileImage, link, link, buttonText, displayOrder, displayOrder, status, isActive ? 1 : 0]
+          );
+        } catch (e) {
+          await pool.query(
+            `INSERT INTO banners 
+             (title, subtitle, image_path, image_url, mobile_image_url, link, button_link, button_text, display_order, status, is_active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [title, subtitle, desktopImage, desktopImage, mobileImage, link, link, buttonText, displayOrder, status, isActive ? 1 : 0]
+          );
+        }
         createdCount++;
       }
     }
@@ -880,7 +1012,369 @@ exports.importBanners = async (req, res, next) => {
 };
 
 // =========================================================================
-// 8. COUPON EXPORT & IMPORT
+// 8. PARENT CATEGORY EXPORT & IMPORT
+// =========================================================================
+exports.exportParentCategories = async (req, res, next) => {
+  try {
+    let parents = [];
+    try {
+      const [pRows] = await pool.query(`SELECT * FROM parent_categories ORDER BY sort_order ASC, id ASC`);
+      parents = pRows;
+    } catch (e) {
+      const [pRows] = await pool.query(`SELECT * FROM categories WHERE parent_id IS NULL ORDER BY sort_order ASC, id ASC`);
+      parents = pRows;
+    }
+
+    const rows = parents.map(p => ({
+      'Parent Category ID': p.id,
+      'Parent Category Name': p.name || '',
+      'Slug': p.slug || '',
+      'Parent Category Image': resolvePermanentImageUrl(p.image_url || p.image_path || p.image),
+      'Parent Category Icon': resolvePermanentImageUrl(p.icon_url || p.icon_path || p.icon),
+      'Parent Category Banner': resolvePermanentImageUrl(p.banner_url || p.banner_path || p.banner),
+      'Display Order': p.sort_order || p.order_index || 0,
+      'Active Status': p.is_active !== 0
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'PARENT CATEGORIES');
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="karviyam_parent_categories_export.xlsx"');
+    return res.status(200).send(buf);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.importParentCategories = async (req, res, next) => {
+  try {
+    let workbook;
+    if (req.file) {
+      workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    } else if (req.body.fileBase64) {
+      const base64Data = req.body.fileBase64.replace(/^data:.+;base64,/, '');
+      workbook = XLSX.read(Buffer.from(base64Data, 'base64'), { type: 'buffer' });
+    } else {
+      return res.status(400).json(ApiResponse.error('No Excel file provided for parent category import'));
+    }
+
+    const sheetName = workbook.SheetNames[0];
+    const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    for (const r of rawRows) {
+      const name = String(r['Parent Category Name'] || r['name'] || '').trim();
+      if (!name) continue;
+
+      const mainImage = sanitizeImportImageUrl(r['Parent Category Image'] || r['image_url']);
+      const iconUrl = sanitizeImportImageUrl(r['Parent Category Icon'] || r['icon_url']);
+      const bannerUrl = sanitizeImportImageUrl(r['Parent Category Banner'] || r['banner_url']);
+      const displayOrder = parseInt(r['Display Order'] || 0, 10);
+      const isActive = parseBool(r['Active Status'], true);
+
+      let existing = [];
+      try {
+        const [eRows] = await pool.query('SELECT * FROM parent_categories WHERE LOWER(name) = ? LIMIT 1', [name.toLowerCase()]);
+        existing = eRows;
+      } catch (e) {
+        const [eRows] = await pool.query('SELECT * FROM categories WHERE parent_id IS NULL AND LOWER(name) = ? LIMIT 1', [name.toLowerCase()]);
+        existing = eRows;
+      }
+
+      if (existing.length > 0) {
+        const curP = existing[0];
+        const finalImg = mainImage !== '' ? mainImage : curP.image_url;
+        const finalIcon = iconUrl !== '' ? iconUrl : curP.icon_url;
+        const finalBanner = bannerUrl !== '' ? bannerUrl : curP.banner_url;
+
+        try {
+          await pool.query(
+            `UPDATE parent_categories SET image_url = ?, icon_url = ?, banner_url = ?, sort_order = ?, is_active = ? WHERE id = ?`,
+            [finalImg, finalIcon, finalBanner, displayOrder, isActive ? 1 : 0, curP.id]
+          );
+        } catch (e) {
+          await pool.query(
+            `UPDATE categories SET image_url = ?, icon_url = ?, banner_url = ?, sort_order = ?, order_index = ?, is_active = ? WHERE id = ?`,
+            [finalImg, finalIcon, finalBanner, displayOrder, displayOrder, isActive ? 1 : 0, curP.id]
+          );
+        }
+        updatedCount++;
+      } else {
+        try {
+          await pool.query(
+            `INSERT INTO parent_categories (name, image_url, icon_url, banner_url, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)`,
+            [name, mainImage, iconUrl, bannerUrl, displayOrder, isActive ? 1 : 0]
+          );
+        } catch (e) {
+          await pool.query(
+            `INSERT INTO categories (name, parent_id, image_url, icon_url, banner_url, sort_order, order_index, is_active) VALUES (?, NULL, ?, ?, ?, ?, ?, ?)`,
+            [name, mainImage, iconUrl, bannerUrl, displayOrder, displayOrder, isActive ? 1 : 0]
+          );
+        }
+        createdCount++;
+      }
+    }
+
+    return res.status(200).json(ApiResponse.success({ createdCount, updatedCount }, 'Parent categories import completed successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// =========================================================================
+// 9. BRANDS EXPORT & IMPORT
+// =========================================================================
+exports.exportBrands = async (req, res, next) => {
+  try {
+    const [brands] = await pool.query(`SELECT * FROM brands ORDER BY id ASC`);
+
+    const rows = brands.map(b => ({
+      'Brand ID': b.id,
+      'Brand Name': b.name || '',
+      'Slug': b.slug || '',
+      'Brand Logo URL': resolvePermanentImageUrl(b.logo_url || b.logo || b.image_url),
+      'Description': b.description || '',
+      'Active Status': b.is_active !== 0
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'BRANDS');
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="karviyam_brands_export.xlsx"');
+    return res.status(200).send(buf);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.importBrands = async (req, res, next) => {
+  try {
+    let workbook;
+    if (req.file) {
+      workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    } else if (req.body.fileBase64) {
+      const base64Data = req.body.fileBase64.replace(/^data:.+;base64,/, '');
+      workbook = XLSX.read(Buffer.from(base64Data, 'base64'), { type: 'buffer' });
+    } else {
+      return res.status(400).json(ApiResponse.error('No Excel file provided for brand import'));
+    }
+
+    const sheetName = workbook.SheetNames[0];
+    const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    for (const r of rawRows) {
+      const name = String(r['Brand Name'] || r['name'] || '').trim();
+      if (!name) continue;
+
+      const logoUrl = sanitizeImportImageUrl(r['Brand Logo URL'] || r['logo_url']);
+      const description = String(r['Description'] || '').trim();
+      const isActive = parseBool(r['Active Status'], true);
+
+      const [existing] = await pool.query('SELECT * FROM brands WHERE LOWER(name) = ? LIMIT 1', [name.toLowerCase()]);
+
+      if (existing.length > 0) {
+        const curB = existing[0];
+        const finalLogo = logoUrl !== '' ? logoUrl : curB.logo_url;
+        await pool.query(
+          `UPDATE brands SET logo_url = ?, description = ?, is_active = ? WHERE id = ?`,
+          [finalLogo, description, isActive ? 1 : 0, curB.id]
+        );
+        updatedCount++;
+      } else {
+        await pool.query(
+          `INSERT INTO brands (name, logo_url, description, is_active) VALUES (?, ?, ?, ?)`,
+          [name, logoUrl, description, isActive ? 1 : 0]
+        );
+        createdCount++;
+      }
+    }
+
+    return res.status(200).json(ApiResponse.success({ createdCount, updatedCount }, 'Brand import completed successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// =========================================================================
+// 10. PROMO CARDS EXPORT & IMPORT
+// =========================================================================
+exports.exportPromoCards = async (req, res, next) => {
+  try {
+    const [cards] = await pool.query(`SELECT * FROM promo_cards ORDER BY sort_order ASC, id ASC`);
+
+    const rows = cards.map(c => ({
+      'Promo Card ID': c.id,
+      'Title': c.title || '',
+      'Subtitle': c.subtitle || '',
+      'Promo Image URL': resolvePermanentImageUrl(c.image_url || c.image_path),
+      'Button Text': c.button_text || 'Explore',
+      'Button Link': c.button_link || c.link || '/shop',
+      'Display Order': c.sort_order || c.display_order || 0,
+      'Active Status': c.is_active !== 0
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'PROMO CARDS');
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="karviyam_promo_cards_export.xlsx"');
+    return res.status(200).send(buf);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.importPromoCards = async (req, res, next) => {
+  try {
+    let workbook;
+    if (req.file) {
+      workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    } else if (req.body.fileBase64) {
+      const base64Data = req.body.fileBase64.replace(/^data:.+;base64,/, '');
+      workbook = XLSX.read(Buffer.from(base64Data, 'base64'), { type: 'buffer' });
+    } else {
+      return res.status(400).json(ApiResponse.error('No Excel file provided for promo cards import'));
+    }
+
+    const sheetName = workbook.SheetNames[0];
+    const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    for (const r of rawRows) {
+      const title = String(r['Title'] || r['title'] || '').trim();
+      const imageUrl = sanitizeImportImageUrl(r['Promo Image URL'] || r['image_url']);
+      if (!title && !imageUrl) continue;
+
+      const subtitle = String(r['Subtitle'] || '').trim();
+      const buttonText = String(r['Button Text'] || 'Explore').trim();
+      const buttonLink = String(r['Button Link'] || '/shop').trim();
+      const displayOrder = parseInt(r['Display Order'] || 0, 10);
+      const isActive = parseBool(r['Active Status'], true);
+
+      const [existing] = await pool.query('SELECT * FROM promo_cards WHERE LOWER(title) = ? LIMIT 1', [title.toLowerCase()]);
+
+      if (existing.length > 0) {
+        const curC = existing[0];
+        const finalImg = imageUrl !== '' ? imageUrl : curC.image_url;
+        await pool.query(
+          `UPDATE promo_cards SET subtitle = ?, image_url = ?, button_text = ?, button_link = ?, sort_order = ?, is_active = ? WHERE id = ?`,
+          [subtitle, finalImg, buttonText, buttonLink, displayOrder, isActive ? 1 : 0, curC.id]
+        );
+        updatedCount++;
+      } else {
+        await pool.query(
+          `INSERT INTO promo_cards (title, subtitle, image_url, button_text, button_link, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [title, subtitle, imageUrl, buttonText, buttonLink, displayOrder, isActive ? 1 : 0]
+        );
+        createdCount++;
+      }
+    }
+
+    return res.status(200).json(ApiResponse.success({ createdCount, updatedCount }, 'Promo cards import completed successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// =========================================================================
+// 11. BRANDING & SETTINGS EXPORT & IMPORT
+// =========================================================================
+exports.exportSettings = async (req, res, next) => {
+  try {
+    let settings = {};
+    try {
+      const [sRows] = await pool.query(`SELECT setting_key, setting_value FROM settings`);
+      sRows.forEach(sr => { settings[sr.setting_key] = sr.setting_value; });
+    } catch (e) {}
+
+    const rows = [
+      {
+        'Setting Module': 'Branding & Asset URLs',
+        'Website Logo': resolvePermanentImageUrl(settings.logo_url || settings.logoUrl || settings.site_logo),
+        'Mobile Logo': resolvePermanentImageUrl(settings.mobile_logo_url || settings.mobileLogoUrl || settings.logo_url),
+        'Email Header Logo': resolvePermanentImageUrl(settings.email_logo_url || settings.emailLogoUrl || settings.logo_url),
+        'Favicon Icon': resolvePermanentImageUrl(settings.favicon_url || settings.faviconUrl),
+        'Footer Logo': resolvePermanentImageUrl(settings.footer_logo_url || settings.footerLogoUrl || settings.logo_url),
+        'Store Name': settings.store_name || 'Karviyam',
+        'Support Email': settings.support_email || 'support@karviyam.com',
+        'Support Phone': settings.support_phone || '+91 98765 43210'
+      }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'SETTINGS & BRANDING');
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="karviyam_settings_branding_export.xlsx"');
+    return res.status(200).send(buf);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.importSettings = async (req, res, next) => {
+  try {
+    let workbook;
+    if (req.file) {
+      workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    } else if (req.body.fileBase64) {
+      const base64Data = req.body.fileBase64.replace(/^data:.+;base64,/, '');
+      workbook = XLSX.read(Buffer.from(base64Data, 'base64'), { type: 'buffer' });
+    } else {
+      return res.status(400).json(ApiResponse.error('No Excel file provided for settings import'));
+    }
+
+    const sheetName = workbook.SheetNames[0];
+    const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    if (rawRows.length > 0) {
+      const r = rawRows[0];
+      const mappings = {
+        logo_url: sanitizeImportImageUrl(r['Website Logo']),
+        mobile_logo_url: sanitizeImportImageUrl(r['Mobile Logo']),
+        email_logo_url: sanitizeImportImageUrl(r['Email Header Logo']),
+        favicon_url: sanitizeImportImageUrl(r['Favicon Icon']),
+        footer_logo_url: sanitizeImportImageUrl(r['Footer Logo']),
+        store_name: r['Store Name'],
+        support_email: r['Support Email'],
+        support_phone: r['Support Phone']
+      };
+
+      for (const [key, val] of Object.entries(mappings)) {
+        if (val !== undefined && val !== null && val !== '') {
+          await pool.query(
+            `INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?`,
+            [key, String(val), String(val)]
+          );
+        }
+      }
+    }
+
+    return res.status(200).json(ApiResponse.success({}, 'Settings and branding imported successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// =========================================================================
+// 12. COUPON EXPORT & IMPORT
 // =========================================================================
 exports.exportCoupons = async (req, res, next) => {
   try {
@@ -973,7 +1467,7 @@ exports.importCoupons = async (req, res, next) => {
 };
 
 // =========================================================================
-// 9. CUSTOMER EXPORT (READ-ONLY FOR SECURITY)
+// 13. CUSTOMER EXPORT (READ-ONLY FOR SECURITY)
 // =========================================================================
 exports.exportCustomers = async (req, res, next) => {
   try {
@@ -1016,7 +1510,7 @@ exports.exportCustomers = async (req, res, next) => {
 };
 
 // =========================================================================
-// 10. ORDER EXPORT (MULTI-SHEET WORKBOOK)
+// 14. ORDER EXPORT (MULTI-SHEET WORKBOOK)
 // =========================================================================
 exports.exportOrders = async (req, res, next) => {
   try {
