@@ -59,10 +59,10 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
     setLoading(true);
 
     try {
-      // Official Google Identity Services OAuth 2.0 Account Picker with prompt: 'select_account'
+      // Official Google Identity Services OAuth 2.0 Account Picker with scope: 'openid email profile'
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: googleClientId,
-        scope: 'email profile',
+        scope: 'openid email profile',
         prompt: 'select_account',
         callback: async (tokenResponse) => {
           if (tokenResponse && tokenResponse.access_token) {

@@ -250,16 +250,31 @@ exports.googleAuth = async (req, res, next) => {
             } catch (eJwt) {}
           }
         } else {
-          // Layer 3: Access Token verification via Google UserInfo API
-          const gRes = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+          // Layer 3: Access Token verification via Google UserInfo API (Multi-endpoint fallback)
+          let gRes = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: { Authorization: `Bearer ${credential}` },
             timeout: 5000
           }).catch(() => null);
+
+          if (!gRes?.data) {
+            gRes = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+              headers: { Authorization: `Bearer ${credential}` },
+              timeout: 5000
+            }).catch(() => null);
+          }
+
+          if (!gRes?.data) {
+            gRes = await axios.get('https://openidconnect.googleapis.com/v1/userinfo', {
+              headers: { Authorization: `Bearer ${credential}` },
+              timeout: 5000
+            }).catch(() => null);
+          }
+
           if (gRes?.data) {
             const info = gRes.data;
             if (info.email) verifiedEmail = info.email.trim().toLowerCase();
             if (info.name) verifiedName = info.name.trim();
-            if (info.sub) verifiedGoogleId = info.sub;
+            if (info.sub || info.id) verifiedGoogleId = info.sub || info.id;
             if (info.picture) verifiedPicture = info.picture;
           }
         }
