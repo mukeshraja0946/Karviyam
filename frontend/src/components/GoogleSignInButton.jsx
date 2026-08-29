@@ -15,7 +15,34 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
 
   useEffect(() => {
     console.log("Google Client ID Active:", googleClientId);
-  }, [googleClientId]);
+
+    if (window.google?.accounts?.id && googleClientId) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response) => {
+            if (response && response.credential) {
+              setLoading(true);
+              try {
+                const res = await googleLogin({ credential: response.credential });
+                if (res && res.success) {
+                  const targetPath = res.isAdmin ? '/admin' : '/';
+                  window.location.href = targetPath;
+                }
+              } catch (err) {
+                console.error('Google One Tap / GIS ID Token Error:', err);
+                toast.error(err.response?.data?.message || err.message || 'Google authentication failed');
+              } finally {
+                setLoading(false);
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('GIS ID Initialization Warning:', e);
+      }
+    }
+  }, [googleClientId, googleLogin]);
 
   const handleGoogleSignIn = () => {
     if (!googleClientId || googleClientId.trim() === '') {
