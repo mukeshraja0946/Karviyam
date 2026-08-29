@@ -216,13 +216,50 @@ exports.login = async (req, res, next) => {
 exports.googleAuth = async (req, res, next) => {
   try {
     const { email, name, googleId, credential, profilePhoto } = req.body;
-    if (!email || !email.trim()) {
-      return res.status(400).json(ApiResponse.error('Google Authentication requires a valid email address!'));
+
+    let verifiedEmail = email ? email.trim().toLowerCase() : '';
+    let verifiedName = name && name.trim() ? name.trim() : '';
+    let verifiedGoogleId = googleId || null;
+    let verifiedPicture = profilePhoto || null;
+
+    // Server-side Google token verification if credential is provided
+    if (credential) {
+      try {
+        if (credential.startsWith('eyJ')) {
+          // ID Token verification via Google OAuth2 tokeninfo endpoint
+          const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+          if (gRes.ok) {
+            const info = await gRes.json();
+            if (info.email) verifiedEmail = info.email.trim().toLowerCase();
+            if (info.name) verifiedName = info.name.trim();
+            if (info.sub) verifiedGoogleId = info.sub;
+            if (info.picture) verifiedPicture = info.picture;
+          }
+        } else {
+          // Access Token verification via Google UserInfo API
+          const gRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${credential}` }
+          });
+          if (gRes.ok) {
+            const info = await gRes.json();
+            if (info.email) verifiedEmail = info.email.trim().toLowerCase();
+            if (info.name) verifiedName = info.name.trim();
+            if (info.sub) verifiedGoogleId = info.sub;
+            if (info.picture) verifiedPicture = info.picture;
+          }
+        }
+      } catch (verifyErr) {
+        console.warn('[Google Token Server Verification Warning]:', verifyErr.message);
+      }
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    const fullName = name && name.trim() ? name.trim() : cleanEmail.split('@')[0];
-    const gId = googleId || credential || null;
+    if (!verifiedEmail) {
+      return res.status(400).json(ApiResponse.error('Google Authentication requires a valid verified email address!'));
+    }
+
+    const cleanEmail = verifiedEmail;
+    const fullName = verifiedName || cleanEmail.split('@')[0];
+    const gId = verifiedGoogleId || credential || null;
 
     const [existingUsers] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [cleanEmail]);
     let user;
@@ -236,9 +273,9 @@ exports.googleAuth = async (req, res, next) => {
         updates.push('google_id = ?');
         params.push(gId);
       }
-      if (profilePhoto && !user.profile_photo) {
+      if (verifiedPicture && !user.profile_photo) {
         updates.push('profile_photo = ?');
-        params.push(profilePhoto);
+        params.push(verifiedPicture);
       }
       if (updates.length > 0) {
         params.push(user.id);

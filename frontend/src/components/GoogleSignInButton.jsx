@@ -74,23 +74,28 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
               setLoading(false);
             }
           } else if (tokenResponse.error) {
-            if (tokenResponse.error === 'popup_closed_by_user') {
-              toast.error('Google Sign-In popup was closed.');
+            if (tokenResponse.error === 'popup_closed_by_user' || tokenResponse.error === 'access_denied') {
+              console.log('User closed Google popup or cancelled sign-in.');
             } else {
-              toast.error(`Google Sign-In Error: ${tokenResponse.error}`);
+              toast.error(`Google Sign-In Error: ${tokenResponse.error}`, { id: 'g-oauth-err' });
             }
             setLoading(false);
           }
         },
         error_callback: (err) => {
           console.error('Google Token Client Error:', err);
-          const errStr = JSON.stringify(err || {});
-          if (errStr.includes('origin_mismatch') || err?.error === 'origin_mismatch') {
-            toast.error(`Google OAuth Origin Mismatch: Please add "${window.location.origin}" to Authorized JavaScript Origins in Google Cloud Console.`, { duration: 8000 });
-          } else {
-            toast.error(`Google Authentication popup error: Please register "${window.location.origin}" in Google Cloud Console.`);
-          }
           setLoading(false);
+          if (!err) return;
+          const errStr = typeof err === 'object' ? JSON.stringify(err) : String(err);
+          const errCode = err.error || err.type || '';
+
+          if (errStr.includes('origin_mismatch') || errCode === 'origin_mismatch') {
+            toast.error(`Google OAuth Origin Mismatch: Please ensure "${window.location.origin}" is authorized in Google Cloud Console.`, { id: 'g-oauth-err', duration: 8000 });
+          } else if (errCode === 'popup_closed_by_user' || errCode === 'popup_closed') {
+            // User closed popup - silent exit
+          } else if (errCode && errCode !== 'idpiframe_initialization_failed') {
+            toast.error(`Google Auth Error: ${errCode}`, { id: 'g-oauth-err' });
+          }
         }
       });
 
