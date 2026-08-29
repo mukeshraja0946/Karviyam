@@ -32,19 +32,60 @@ const resolvePermanentImageUrl = (url) => {
   return `${baseUrl}${cleanPath}`;
 };
 
-// Sanitizes imported Excel image URLs for safe database storage
-const sanitizeImportImageUrl = (url) => {
-  if (!url || typeof url !== 'string') return '';
-  const trimmed = url.trim();
-  if (!trimmed) return '';
-  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) return '';
+// Universal Image URL Validator and Extractor
+const validateAndExtractImageUrl = (val, fieldName = 'Image URL') => {
+  if (val === undefined || val === null) return { isValid: true, cleanUrl: '', error: null };
 
-  // If domain URL contains /uploads/, extract relative path for clean DB storage
+  let rawStr = '';
+  if (typeof val === 'object' && val !== null) {
+    rawStr = val.Target || val.l?.Target || val.v || val.w || String(val);
+  } else {
+    rawStr = String(val);
+  }
+
+  const trimmed = rawStr.trim();
+  if (!trimmed || trimmed === '[object Object]') return { isValid: true, cleanUrl: '', error: null };
+
+  // 1. Filter out browser blob URLs and temporary base64 data URIs
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
+    return {
+      isValid: false,
+      cleanUrl: '',
+      error: `${fieldName} contains a temporary browser URL. Please provide a direct public image URL.`
+    };
+  }
+
+  // 2. Handle Google Search / Google Images Result URLs
+  if (trimmed.includes('google.com/search') || trimmed.includes('google.co.in/search') || trimmed.includes('google.com/url?') || trimmed.includes('google.com/imgres')) {
+    try {
+      const urlObj = new URL(trimmed);
+      const directImg = urlObj.searchParams.get('imgurl') || urlObj.searchParams.get('url');
+      if (directImg && directImg.startsWith('http')) {
+        const decoded = decodeURIComponent(directImg);
+        return { isValid: true, cleanUrl: decoded, error: null };
+      }
+    } catch (e) {}
+
+    return {
+      isValid: false,
+      cleanUrl: '',
+      error: `${fieldName} must be a direct public image URL (e.g. https://domain.com/image.jpg), not a Google Search results page.`
+    };
+  }
+
+  // 3. Extract relative /uploads/ path for internal server images
   if (trimmed.includes('/uploads/')) {
     const idx = trimmed.indexOf('/uploads/');
-    return trimmed.substring(idx);
+    return { isValid: true, cleanUrl: trimmed.substring(idx), error: null };
   }
-  return trimmed;
+
+  return { isValid: true, cleanUrl: trimmed, error: null };
+};
+
+// Sanitizes imported Excel image URLs for safe database storage
+const sanitizeImportImageUrl = (url, fieldName = 'Image') => {
+  const result = validateAndExtractImageUrl(url, fieldName);
+  return result.isValid ? result.cleanUrl : '';
 };
 
 // Helper to look up an Excel row value matching any alias normalized by removing spaces, underscores, hyphens & casing
@@ -58,8 +99,13 @@ const getNormalizedRowValue = (row, keyAliases, defaultVal = '') => {
     const normKey = rawKey.toLowerCase().replace(/[^a-z0-9]/g, '');
     if (normalizedAliases.includes(normKey)) {
       const val = row[rawKey];
-      if (val !== undefined && val !== null && String(val).trim() !== '') {
-        return val;
+      if (val !== undefined && val !== null) {
+        if (typeof val === 'object') {
+          const targetUrl = val.Target || val.l?.Target || val.v || val.w;
+          if (targetUrl && String(targetUrl).trim() !== '') return targetUrl;
+        } else if (String(val).trim() !== '') {
+          return val;
+        }
       }
     }
   }
@@ -844,6 +890,130 @@ exports.exportCategories = async (req, res, next) => {
   }
 };
 
+exports.downloadCategoryTemplate = async (req, res, next) => {
+  try {
+    const sampleRows = [
+      {
+        'Category Name': 'Sneakers',
+        'Parent Category Name': 'Footwear',
+        'Classification Type': 'MEN',
+        'Display Order': 1,
+        'Active Status': 'Yes',
+        'Main Image': 'https://karviyam.com/uploads/categories/sneakers-main.jpg',
+        'Category Icon': 'https://karviyam.com/uploads/categories/sneakers-icon.png',
+        'Category Banner': 'https://karviyam.com/uploads/categories/sneakers-banner.jpg',
+        'Description': 'Premium streetwear sneakers',
+        'SEO Title': 'Streetwear Sneakers Collection | Karviyam',
+        'Meta Keywords': 'sneakers, streetwear, shoes',
+        'Meta Description': 'Shop exclusive premium sneakers on Karviyam.'
+      }
+    ];
+
+    const guideRows = [
+      { Column: 'Category Name', Required: 'REQUIRED', Type: 'Text', Example: 'Sneakers', Description: 'Unique category title.' },
+      { Column: 'Parent Category Name', Required: 'OPTIONAL', Type: 'Text', Example: 'Footwear', Description: 'Parent category name if sub-category.' },
+      { Column: 'Classification Type', Required: 'REQUIRED', Type: 'Text', Example: 'MEN / WOMEN / UNISEX / GENERAL', Description: 'Target collection classification.' },
+      { Column: 'Display Order', Required: 'OPTIONAL', Type: 'Number', Example: '1', Description: 'Sorting index on storefront.' },
+      { Column: 'Active Status', Required: 'OPTIONAL', Type: 'Boolean', Example: 'Yes / No', Description: 'Enable or disable category visibility.' },
+      { Column: 'Main Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://domain.com/images/cat-main.jpg', Description: 'Direct publicly accessible image URL. Do NOT paste Google Search page URLs.' },
+      { Column: 'Category Icon', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://domain.com/images/cat-icon.png', Description: 'Direct publicly accessible icon URL. Must be an independent image file.' },
+      { Column: 'Category Banner', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://domain.com/images/cat-banner.jpg', Description: 'Direct publicly accessible banner URL. Must be an independent image file.' }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sampleRows), 'CATEGORIES');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(guideRows), 'FIELD GUIDE');
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="karviyam_official_categories_template.xlsx"');
+    return res.status(200).send(buf);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.previewCategoryImport = async (req, res, next) => {
+  try {
+    let workbook;
+    if (req.file) {
+      workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    } else if (req.body.fileBase64) {
+      const base64Data = req.body.fileBase64.replace(/^data:.+;base64,/, '');
+      workbook = XLSX.read(Buffer.from(base64Data, 'base64'), { type: 'buffer' });
+    } else {
+      return res.status(400).json(ApiResponse.error('No Excel file provided'));
+    }
+
+    const sheetName = workbook.SheetNames[0];
+    const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    const previewRows = [];
+    let validRows = 0;
+    let invalidRows = 0;
+
+    for (let idx = 0; idx < rawRows.length; idx++) {
+      const r = rawRows[idx];
+      const rowNum = idx + 2;
+      const name = String(getNormalizedRowValue(r, ['Category Name', 'Name', 'category_name'])).trim();
+
+      let status = 'VALID';
+      let problem = '';
+      let field = '';
+
+      if (!name) {
+        status = 'ERROR';
+        field = 'Category Name';
+        problem = 'Category Name is required.';
+      } else {
+        const rawMain = getNormalizedRowValue(r, ['Main Image', 'Image URL', 'image_url', 'main_image']);
+        const rawIcon = getNormalizedRowValue(r, ['Category Icon', 'Icon URL', 'icon_url', 'category_icon']);
+        const rawBanner = getNormalizedRowValue(r, ['Category Banner', 'Banner URL', 'banner_url', 'category_banner']);
+
+        const mainCheck = validateAndExtractImageUrl(rawMain, 'Main Image');
+        const iconCheck = validateAndExtractImageUrl(rawIcon, 'Category Icon');
+        const bannerCheck = validateAndExtractImageUrl(rawBanner, 'Category Banner');
+
+        if (!mainCheck.isValid) {
+          status = 'ERROR';
+          field = 'Main Image';
+          problem = mainCheck.error;
+        } else if (!iconCheck.isValid) {
+          status = 'ERROR';
+          field = 'Category Icon';
+          problem = iconCheck.error;
+        } else if (!bannerCheck.isValid) {
+          status = 'ERROR';
+          field = 'Category Banner';
+          problem = bannerCheck.error;
+        }
+      }
+
+      if (status === 'VALID') validRows++;
+      else invalidRows++;
+
+      previewRows.push({
+        rowNumber: rowNum,
+        name: name || 'N/A',
+        status,
+        field,
+        problem
+      });
+    }
+
+    return res.status(200).json(ApiResponse.success({
+      summary: {
+        totalRows: rawRows.length,
+        validRows,
+        invalidRows
+      },
+      rows: previewRows
+    }, 'Category import preview generated successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.importCategories = async (req, res, next) => {
   try {
     let workbook;
@@ -861,19 +1031,52 @@ exports.importCategories = async (req, res, next) => {
 
     let createdCount = 0;
     let updatedCount = 0;
+    let failedCount = 0;
+    const failedRows = [];
 
-    for (const r of rawRows) {
+    for (let idx = 0; idx < rawRows.length; idx++) {
+      const r = rawRows[idx];
+      const rowNum = idx + 2;
       const name = String(getNormalizedRowValue(r, ['Category Name', 'Name', 'category_name'])).trim();
-      if (!name) continue;
+      if (!name) {
+        failedCount++;
+        failedRows.push({ rowNumber: rowNum, sku: 'N/A', field: 'Category Name', problem: 'Category Name is required.' });
+        continue;
+      }
+
+      const rawMain = getNormalizedRowValue(r, ['Main Image', 'Image URL', 'image_url', 'main_image']);
+      const rawIcon = getNormalizedRowValue(r, ['Category Icon', 'Icon URL', 'icon_url', 'category_icon']);
+      const rawBanner = getNormalizedRowValue(r, ['Category Banner', 'Banner URL', 'banner_url', 'category_banner']);
+
+      const mainCheck = validateAndExtractImageUrl(rawMain, 'Main Image');
+      const iconCheck = validateAndExtractImageUrl(rawIcon, 'Category Icon');
+      const bannerCheck = validateAndExtractImageUrl(rawBanner, 'Category Banner');
+
+      if (!mainCheck.isValid) {
+        failedCount++;
+        failedRows.push({ rowNumber: rowNum, sku: name, field: 'Main Image', problem: mainCheck.error });
+        continue;
+      }
+      if (!iconCheck.isValid) {
+        failedCount++;
+        failedRows.push({ rowNumber: rowNum, sku: name, field: 'Category Icon', problem: iconCheck.error });
+        continue;
+      }
+      if (!bannerCheck.isValid) {
+        failedCount++;
+        failedRows.push({ rowNumber: rowNum, sku: name, field: 'Category Banner', problem: bannerCheck.error });
+        continue;
+      }
+
+      const mainImage = mainCheck.cleanUrl;
+      const iconUrl = iconCheck.cleanUrl;
+      const bannerUrl = bannerCheck.cleanUrl;
 
       const parentName = String(getNormalizedRowValue(r, ['Parent Category Name', 'Parent Category', 'parent_name'])).trim();
       const parentImage = sanitizeImportImageUrl(getNormalizedRowValue(r, ['Parent Category Image', 'parent_image']));
       const type = String(getNormalizedRowValue(r, ['Classification Type', 'Type', 'classification'], 'General')).trim();
       const displayOrder = parseInt(getNormalizedRowValue(r, ['Display Order', 'Sort Order', 'Order Index', 'order_index', 'sort_order'], 0), 10);
       const isActive = parseBool(getNormalizedRowValue(r, ['Active Status', 'Status', 'is_active'], true), true);
-      const mainImage = sanitizeImportImageUrl(getNormalizedRowValue(r, ['Main Image', 'Image URL', 'image_url']));
-      const iconUrl = sanitizeImportImageUrl(getNormalizedRowValue(r, ['Category Icon', 'Icon URL', 'icon_url']));
-      const bannerUrl = sanitizeImportImageUrl(getNormalizedRowValue(r, ['Category Banner', 'Banner URL', 'banner_url']));
       const description = String(getNormalizedRowValue(r, ['Description', 'desc', 'detail'], '')).trim();
       const seoTitle = String(getNormalizedRowValue(r, ['SEO Title', 'seo_title'], name)).trim();
       const metaKeywords = String(getNormalizedRowValue(r, ['Meta Keywords', 'meta_keywords'], '')).trim();
@@ -919,7 +1122,7 @@ exports.importCategories = async (req, res, next) => {
       }
     }
 
-    return res.status(200).json(ApiResponse.success({ createdCount, updatedCount }, 'Category import completed successfully'));
+    return res.status(200).json(ApiResponse.success({ createdCount, updatedCount, failedCount, failedRows }, 'Category import completed successfully'));
   } catch (err) {
     next(err);
   }

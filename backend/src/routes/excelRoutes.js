@@ -15,6 +15,8 @@ router.post('/error-report', optionalToken, requireAdmin, excelController.downlo
 
 // Category Excel Endpoints
 router.get('/categories/export', optionalToken, requireAdmin, excelController.exportCategories);
+router.get('/categories/template', optionalToken, requireAdmin, excelController.downloadCategoryTemplate);
+router.post('/categories/preview', optionalToken, requireAdmin, upload.single('file'), excelController.previewCategoryImport);
 router.post('/categories/import', optionalToken, requireAdmin, upload.single('file'), excelController.importCategories);
 
 // Parent Category Excel Endpoints
