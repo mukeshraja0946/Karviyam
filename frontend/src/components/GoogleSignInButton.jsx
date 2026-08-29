@@ -38,6 +38,21 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
             }
           }
         });
+
+        // Render official GIS Google Sign-In button as primary native option
+        setTimeout(() => {
+          const btnContainer = document.getElementById('google-official-btn-container');
+          if (btnContainer && window.google?.accounts?.id) {
+            btnContainer.innerHTML = '';
+            window.google.accounts.id.renderButton(btnContainer, {
+              theme: 'outline',
+              size: 'large',
+              width: 320,
+              text: 'continue_with',
+              shape: 'rectangular'
+            });
+          }
+        }, 300);
       } catch (e) {
         console.warn('GIS ID Initialization Warning:', e);
       }
@@ -155,6 +170,8 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
           OR
         </span>
       </div>
+
+      <div id="google-official-btn-container" className="flex justify-center w-full min-h-[44px]" />
 
       <button
         type="button"
