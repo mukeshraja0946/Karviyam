@@ -84,7 +84,12 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
         },
         error_callback: (err) => {
           console.error('Google Token Client Error:', err);
-          toast.error('Google Authentication popup failed to initialize');
+          const errStr = JSON.stringify(err || {});
+          if (errStr.includes('origin_mismatch') || err?.error === 'origin_mismatch') {
+            toast.error(`Google OAuth Origin Mismatch: Please add "${window.location.origin}" to Authorized JavaScript Origins in Google Cloud Console.`, { duration: 8000 });
+          } else {
+            toast.error(`Google Authentication popup error: Please register "${window.location.origin}" in Google Cloud Console.`);
+          }
           setLoading(false);
         }
       });
