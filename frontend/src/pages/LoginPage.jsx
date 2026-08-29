@@ -21,14 +21,14 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated) {
       if (isAdmin) {
-        window.location.href = '/admin';
+        navigate('/admin', { replace: true });
       } else if (redirectTarget) {
-        window.location.href = redirectTarget;
+        navigate(redirectTarget, { replace: true });
       } else {
-        window.location.href = '/';
+        navigate('/', { replace: true });
       }
     }
-  }, [isAuthenticated, isAdmin, redirectTarget]);
+  }, [isAuthenticated, isAdmin, redirectTarget, navigate]);
 
   // Custom Admin Uploaded Logo
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');

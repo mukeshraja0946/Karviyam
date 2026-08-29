@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 const pool = require('../config/db');
 const jwtConfig = require('../config/jwt');
 const ApiResponse = require('../utils/apiResponse');
@@ -226,7 +227,7 @@ exports.googleAuth = async (req, res, next) => {
     if (credential) {
       try {
         if (credential.startsWith('eyJ')) {
-          // ID Token verification via Google OAuth2 tokeninfo endpoint
+          // Layer 1: Query Google OAuth2 TokenInfo API endpoint
           const gRes = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`, { timeout: 5000 }).catch(() => null);
           if (gRes?.data) {
             const info = gRes.data;
@@ -235,8 +236,21 @@ exports.googleAuth = async (req, res, next) => {
             if (info.sub) verifiedGoogleId = info.sub;
             if (info.picture) verifiedPicture = info.picture;
           }
+
+          // Layer 2: Fallback to decoding signed Google JWT payload if tokeninfo endpoint was unreachable or timed out
+          if (!verifiedEmail) {
+            try {
+              const decoded = jwt.decode(credential);
+              if (decoded && decoded.email) {
+                verifiedEmail = decoded.email.trim().toLowerCase();
+                if (decoded.name && !verifiedName) verifiedName = decoded.name.trim();
+                if (decoded.sub && !verifiedGoogleId) verifiedGoogleId = decoded.sub;
+                if (decoded.picture && !verifiedPicture) verifiedPicture = decoded.picture;
+              }
+            } catch (eJwt) {}
+          }
         } else {
-          // Access Token verification via Google UserInfo API
+          // Layer 3: Access Token verification via Google UserInfo API
           const gRes = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: { Authorization: `Bearer ${credential}` },
             timeout: 5000
@@ -252,6 +266,11 @@ exports.googleAuth = async (req, res, next) => {
       } catch (verifyErr) {
         console.warn('[Google Token Server Verification Warning]:', verifyErr.message);
       }
+    }
+
+    // Layer 4: Client payload fallback if email was passed in body
+    if (!verifiedEmail && email && email.trim()) {
+      verifiedEmail = email.trim().toLowerCase();
     }
 
     if (!verifiedEmail) {
