@@ -11,6 +11,11 @@ export const isValidImageUrl = (url) => {
   const trimmed = url.trim();
   if (!trimmed) return false;
 
+  // Filter out Google Search / Google Images HTML result pages
+  if (trimmed.includes('google.com/search') || trimmed.includes('google.co.in/search') || trimmed.includes('tbm=isch') || trimmed.includes('google.com/imgres')) {
+    return false;
+  }
+
   // If string contains spaces and no http/uploads/slash/extension, it's title text (e.g. "Test Silk Shirt")
   if (trimmed.includes(' ') && !trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.includes('/')) {
     return false;

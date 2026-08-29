@@ -1,7 +1,76 @@
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
 const pool = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
 const XLSX = require('xlsx');
 const { mapProductRowToDTO } = require('./productController');
+
+// Helper to download external image server-side and save to local storage
+const downloadAndStoreExternalImage = async (url) => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.startsWith('/') && trimmed.includes('/uploads/')) {
+    return trimmed;
+  }
+  if (trimmed.includes('/uploads/')) {
+    const idx = trimmed.indexOf('/uploads/');
+    return trimmed.substring(idx);
+  }
+
+  if (trimmed.includes('google.com/search') || trimmed.includes('google.co.in/search') || trimmed.includes('tbm=isch') || trimmed.includes('google.com/imgres')) {
+    return '';
+  }
+
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    return '';
+  }
+
+  try {
+    const uploadDir = path.join(__dirname, '../../uploads/products');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const response = await axios.get(trimmed, {
+      responseType: 'arraybuffer',
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+
+    const contentType = response.headers['content-type'] || '';
+    if (!contentType.includes('image') && !/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i.test(trimmed)) {
+      console.warn('[Image Downloader]: Skipped non-image Content-Type:', contentType, 'URL:', trimmed);
+      return '';
+    }
+
+    let ext = 'jpg';
+    if (contentType.includes('png')) ext = 'png';
+    else if (contentType.includes('webp')) ext = 'webp';
+    else if (contentType.includes('gif')) ext = 'gif';
+    else if (contentType.includes('svg')) ext = 'svg';
+    else {
+      const match = trimmed.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)/i);
+      if (match) ext = match[1].toLowerCase();
+    }
+
+    const fileName = `imported-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+    const filePath = path.join(uploadDir, fileName);
+
+    fs.writeFileSync(filePath, Buffer.from(response.data));
+    return `/uploads/products/${fileName}`;
+  } catch (err) {
+    console.warn('[Image Downloader Warning]: Failed to download external image:', trimmed, err.message);
+    if (/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i.test(trimmed)) {
+      return trimmed;
+    }
+    return '';
+  }
+};
 
 // Build domain base from environment variables or default to Karviyam domain
 const getAppBaseUrl = () => {
@@ -55,27 +124,12 @@ const validateAndExtractImageUrl = (val, fieldName = 'Image URL') => {
     };
   }
 
-  // 2. Handle Google Search / Google Images Result URLs (extract imgurl, url, or q parameters if present)
-  if (trimmed.includes('google.com') || trimmed.includes('google.co.in')) {
-    try {
-      const urlObj = new URL(trimmed);
-      const targetParam = urlObj.searchParams.get('imgurl') || urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
-      if (targetParam) {
-        const decoded = decodeURIComponent(targetParam);
-        if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
-          if (decoded.includes('/uploads/')) {
-            const idx = decoded.indexOf('/uploads/');
-            return { isValid: true, cleanUrl: decoded.substring(idx), error: null };
-          }
-          return { isValid: true, cleanUrl: decoded, error: null };
-        }
-      }
-    } catch (e) {}
-
+  // 2. Reject Google Search / Google Images Result URLs
+  if (trimmed.includes('google.com/search') || trimmed.includes('google.co.in/search') || trimmed.includes('tbm=isch') || trimmed.includes('google.com/imgres')) {
     return {
       isValid: false,
       cleanUrl: '',
-      error: `${fieldName} contains a Google Search page URL. Use a direct image URL.`
+      error: `${fieldName} contains a Google Search page URL (${trimmed.substring(0, 45)}...). Direct image URLs (.jpg, .jpeg, .png, .webp, .gif) are required.`
     };
   }
 
@@ -614,7 +668,15 @@ exports.executeProductImport = async (req, res, next) => {
       const metaKeywords = String(getNormalizedRowValue(row, ['Meta Keywords', 'meta_keywords'], tags)).trim();
       const metaDescription = String(getNormalizedRowValue(row, ['Meta Description', 'meta_description'], description)).trim();
 
-      const mainProductImage = sanitizeImportImageUrl(getNormalizedRowValue(row, ['Main Product Image', 'Image URL', 'image_url', 'Main Image']));
+      const rawMainImageVal = getNormalizedRowValue(row, ['Main Product Image', 'Image URL', 'image_url', 'Main Image']);
+      const mainImgValRes = validateAndExtractImageUrl(rawMainImageVal, 'Main Product Image');
+      
+      let mainProductImage = '';
+      if (mainImgValRes.isValid && mainImgValRes.cleanUrl) {
+        const storedLocalPath = await downloadAndStoreExternalImage(mainImgValRes.cleanUrl);
+        mainProductImage = storedLocalPath || mainImgValRes.cleanUrl;
+      }
+
       const videoUrl = sanitizeImportImageUrl(getNormalizedRowValue(row, ['Product Video', 'video_url', 'Video URL']));
 
       if (!sku || !name || priceVal === '' || isNaN(price)) {
@@ -625,6 +687,18 @@ exports.executeProductImport = async (req, res, next) => {
           field: !sku ? 'SKU Code' : (!name ? 'Product Name' : 'Selling Price'),
           problem: 'Required field missing or invalid format.',
           suggestedFix: 'Provide a valid non-empty value.'
+        });
+        continue;
+      }
+
+      if (rawMainImageVal && !mainImgValRes.isValid) {
+        failedCount++;
+        failedRows.push({
+          rowNumber: idx + 1,
+          sku: sku || `ROW-${idx + 1}`,
+          field: 'Main Product Image',
+          problem: mainImgValRes.error || 'Invalid Google Search page URL.',
+          suggestedFix: 'Provide a direct image URL (e.g. https://domain.com/image.jpg).'
         });
         continue;
       }
@@ -681,8 +755,13 @@ exports.executeProductImport = async (req, res, next) => {
       // Base Sub Images processing (Sub Image 1..6)
       const baseSubImages = [];
       for (let s = 1; s <= 6; s++) {
-        const sUrl = sanitizeImportImageUrl(getNormalizedRowValue(row, [`Sub Image ${s}`, `SubImage${s}`, `Sub Image${s}`]));
-        if (sUrl) baseSubImages.push(sUrl);
+        const rawSubVal = getNormalizedRowValue(row, [`Sub Image ${s}`, `SubImage${s}`, `Sub Image${s}`]);
+        const subValRes = validateAndExtractImageUrl(rawSubVal, `Sub Image ${s}`);
+        if (subValRes.isValid && subValRes.cleanUrl) {
+          const storedSubPath = await downloadAndStoreExternalImage(subValRes.cleanUrl);
+          const finalSub = storedSubPath || subValRes.cleanUrl;
+          if (finalSub) baseSubImages.push(finalSub);
+        }
       }
       if (baseSubImages.length > 0) {
         await connection.query('DELETE FROM product_images WHERE product_id = ? AND is_main = 0', [productId]);
