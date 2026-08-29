@@ -37,8 +37,23 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
       }).catch(() => null);
 
       if (res?.data?.success) {
-        setPreviewData(res.data.data);
-        toast.success(`Preview generated for ${res.data.data.totalRows} rows!`);
+        const d = res.data.data;
+        const normalized = {
+          totalRows: d.summary?.totalRows ?? d.totalRows ?? (d.rows?.length || 0),
+          newCount: d.summary?.validRows ?? d.newCount ?? 0,
+          updateCount: d.summary?.updateCount ?? d.updateCount ?? 0,
+          errorCount: d.summary?.invalidRows ?? d.errorCount ?? 0,
+          previewRows: (d.rows || d.previewRows || []).map((r, i) => ({
+            rowNumber: r.rowNumber || i + 1,
+            sku: r.sku || r['SKU Code'] || r['SKU'] || 'N/A',
+            productName: r.name || r.productName || r['Product Name'] || r['Category Name'] || r['Title'] || r['Brand Name'] || 'Item',
+            action: r.action || (r.status === 'ERROR' ? 'SKIP' : 'SAVE'),
+            status: r.status || 'VALID',
+            errors: r.problem ? [r.problem] : (r.errors || [])
+          }))
+        };
+        setPreviewData(normalized);
+        toast.success(`Preview generated for ${normalized.totalRows} rows!`);
       } else {
         // Local XLSX preview fallback if backend endpoint returns standard status
         const buffer = await selectedFile.arrayBuffer();
@@ -52,9 +67,9 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
           errorCount: 0,
           previewRows: json.map((r, i) => ({
             rowNumber: i + 1,
-            sku: r['SKU Code'] || r['SKU'] || `ROW-${i + 1}`,
-            productName: r['Product Name'] || r['Title'] || 'Item',
-            action: 'CREATE',
+            sku: r['SKU Code'] || r['SKU'] || 'N/A',
+            productName: r['Category Name'] || r['Product Name'] || r['Brand Name'] || r['Title'] || r['Name'] || 'Item',
+            action: 'SAVE',
             status: 'VALID',
             errors: []
           }))
@@ -71,7 +86,6 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
 
   const handleDownloadTemplate = async () => {
     try {
-      const endpoint = `/admin/excel/${type}/export-template` || `/admin/excel/${type}/template`;
       const response = await api.get(`/admin/excel/${type === 'products' ? 'products' : type}/template`, {
         responseType: 'blob'
       });
@@ -130,7 +144,7 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
         responseType: 'blob'
       });
 
-      const url = window.URL.URL ? window.URL.createObjectURL(new Blob([response.data])) : window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `import_error_report_${Date.now()}.xlsx`);
@@ -143,17 +157,17 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white w-full max-w-4xl rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+      <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
         
-        {/* Modal Header */}
+        {/* Header */}
         <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white">
           <div>
             <h3 className="font-display font-bold text-lg flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
-              <span className="capitalize">Bulk {type} Multi-Sheet Import System</span>
+              <span className="capitalize">Bulk {type.replace('-', ' ')} Import System</span>
             </h3>
-            <p className="text-[11px] text-slate-400">Complete non-destructive Excel backup & restore for all fields, variants & galleries</p>
+            <p className="text-[11px] text-slate-400">Complete non-destructive Excel backup & restore for all fields and media</p>
           </div>
           <button
             onClick={onClose}
@@ -168,15 +182,15 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
           {/* Download Sample Template */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
             <div>
-              <p className="font-bold text-slate-800">Download Complete Excel Template with Field Guide</p>
-              <p className="text-[11px] text-slate-500">Includes Multi-Sheet schema (PRODUCTS, COLORS, MEDIA, FIELD GUIDE)</p>
+              <p className="font-bold text-slate-800">Download Official Excel Template with Field Guide</p>
+              <p className="text-[11px] text-slate-500">Includes schema rules and image URL guidelines for {type.replace('-', ' ')}</p>
             </div>
             <button
               onClick={handleDownloadTemplate}
               className="px-4 py-2.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl transition-all shadow-2xs flex items-center gap-2 shrink-0 cursor-pointer text-xs"
             >
               <Download className="w-4 h-4 text-[#B71C1C]" />
-              <span>Download Official Template</span>
+              <span>Download Template</span>
             </button>
           </div>
 
@@ -190,7 +204,7 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
               <p className="font-bold text-slate-900 text-sm">
                 {fileName ? fileName : 'Click or Drag & Drop Excel File (.xlsx, .xls)'}
               </p>
-              <p className="text-[11px] text-slate-500 mt-0.5">Supports Multi-Sheet or Flat column structures</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Supports standard Excel structure for {type.replace('-', ' ')}</p>
             </div>
             <input
               ref={fileInputRef}
@@ -218,8 +232,7 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
                   <span>IMPORT PREVIEW SUMMARY</span>
                 </span>
                 <div className="flex items-center gap-2 font-bold text-[11px]">
-                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">New: {previewData.newCount || 0}</span>
-                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">Update: {previewData.updateCount || 0}</span>
+                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">Valid: {previewData.newCount || 0}</span>
                   {previewData.errorCount > 0 && (
                     <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded-md">Errors: {previewData.errorCount}</span>
                   )}
@@ -232,8 +245,8 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
                   <thead className="bg-slate-100 text-slate-600 font-bold sticky top-0 border-b border-slate-200">
                     <tr>
                       <th className="p-2">Row</th>
-                      <th className="p-2">SKU Code</th>
-                      <th className="p-2">Product Name</th>
+                      {type === 'products' && <th className="p-2">SKU Code</th>}
+                      <th className="p-2">{type === 'products' ? 'Product Name' : 'Item Name'}</th>
                       <th className="p-2">Action</th>
                       <th className="p-2">Status</th>
                       <th className="p-2">Validation Notes</th>
@@ -243,10 +256,10 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
                     {previewData.previewRows?.map((row, idx) => (
                       <tr key={idx} className={row.status === 'ERROR' ? 'bg-red-50/50' : ''}>
                         <td className="p-2 font-mono">{row.rowNumber}</td>
-                        <td className="p-2 font-mono font-bold text-slate-800">{row.sku}</td>
+                        {type === 'products' && <td className="p-2 font-mono font-bold text-slate-800">{row.sku}</td>}
                         <td className="p-2 truncate max-w-[180px]">{row.productName}</td>
                         <td className="p-2 font-bold">
-                          <span className={row.action === 'CREATE' ? 'text-emerald-700' : 'text-blue-700'}>
+                          <span className={row.status === 'VALID' ? 'text-emerald-700' : 'text-slate-400'}>
                             {row.action}
                           </span>
                         </td>
