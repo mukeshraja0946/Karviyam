@@ -134,7 +134,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('karviyam_token', token);
         localStorage.setItem('karviyam_user', JSON.stringify(userData));
 
-        const userIsAdmin = userData?.roles?.includes('ROLE_ADMIN') || userData?.role === 'admin' || userData?.email?.endsWith('@karviyam.com');
+        const userIsAdmin = userData?.roles?.includes('ROLE_ADMIN') || userData?.role === 'admin' || userData?.isAdmin === true;
 
         toast.success(`Google Sign-In successful! Welcome, ${userData.fullName || 'User'}`);
         return { success: true, isAdmin: userIsAdmin, user: userData };

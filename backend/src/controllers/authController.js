@@ -302,13 +302,31 @@ exports.googleAuth = async (req, res, next) => {
       user = newUsers[0];
     }
 
+    // Read stored database role
+    const dbRole = user.role || 'customer';
     let roles = ['ROLE_USER'];
-    if (user.role === 'admin') roles.push('ROLE_ADMIN');
+    if (dbRole === 'admin') roles.push('ROLE_ADMIN');
+
+    // Also check user_roles table in MySQL for explicit admin role assignment
+    try {
+      const [userRoleRows] = await pool.query(
+        `SELECT r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ?`,
+        [user.id]
+      );
+      for (const rRow of userRoleRows) {
+        if (rRow.name && !roles.includes(rRow.name)) {
+          roles.push(rRow.name);
+        }
+      }
+    } catch (e) {}
+
+    const isAdminUser = dbRole === 'admin' || roles.includes('ROLE_ADMIN');
+    const finalRole = isAdminUser ? 'admin' : 'customer';
 
     const tokenPayload = {
       id: user.id,
       email: user.email,
-      role: user.role || 'customer',
+      role: finalRole,
       roles: roles
     };
 
@@ -320,7 +338,9 @@ exports.googleAuth = async (req, res, next) => {
       id: user.id,
       email: user.email,
       fullName: user.full_name || user.name || user.email.split('@')[0],
-      roles: roles
+      role: finalRole,
+      roles: roles,
+      isAdmin: isAdminUser
     };
 
     return res.status(200).json(ApiResponse.success(jwtResponse, 'Google authentication successful!'));
