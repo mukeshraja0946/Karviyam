@@ -55,21 +55,27 @@ const validateAndExtractImageUrl = (val, fieldName = 'Image URL') => {
     };
   }
 
-  // 2. Handle Google Search / Google Images Result URLs
-  if (trimmed.includes('google.com/search') || trimmed.includes('google.co.in/search') || trimmed.includes('google.com/url?') || trimmed.includes('google.com/imgres')) {
+  // 2. Handle Google Search / Google Images Result URLs (extract imgurl, url, or q parameters if present)
+  if (trimmed.includes('google.com') || trimmed.includes('google.co.in')) {
     try {
       const urlObj = new URL(trimmed);
-      const directImg = urlObj.searchParams.get('imgurl') || urlObj.searchParams.get('url');
-      if (directImg && directImg.startsWith('http')) {
-        const decoded = decodeURIComponent(directImg);
-        return { isValid: true, cleanUrl: decoded, error: null };
+      const targetParam = urlObj.searchParams.get('imgurl') || urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
+      if (targetParam) {
+        const decoded = decodeURIComponent(targetParam);
+        if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
+          if (decoded.includes('/uploads/')) {
+            const idx = decoded.indexOf('/uploads/');
+            return { isValid: true, cleanUrl: decoded.substring(idx), error: null };
+          }
+          return { isValid: true, cleanUrl: decoded, error: null };
+        }
       }
     } catch (e) {}
 
     return {
       isValid: false,
       cleanUrl: '',
-      error: `${fieldName} must be a direct public image URL (e.g. https://domain.com/image.jpg), not a Google Search results page.`
+      error: `${fieldName} contains a Google Search page URL. Use a direct image URL.`
     };
   }
 
@@ -974,18 +980,13 @@ exports.previewCategoryImport = async (req, res, next) => {
         const iconCheck = validateAndExtractImageUrl(rawIcon, 'Category Icon');
         const bannerCheck = validateAndExtractImageUrl(rawBanner, 'Category Banner');
 
-        if (!mainCheck.isValid) {
-          status = 'ERROR';
-          field = 'Main Image';
-          problem = mainCheck.error;
-        } else if (!iconCheck.isValid) {
-          status = 'ERROR';
-          field = 'Category Icon';
-          problem = iconCheck.error;
-        } else if (!bannerCheck.isValid) {
-          status = 'ERROR';
-          field = 'Category Banner';
-          problem = bannerCheck.error;
+        const warnings = [];
+        if (!mainCheck.isValid) warnings.push(mainCheck.error);
+        if (!iconCheck.isValid) warnings.push(iconCheck.error);
+        if (!bannerCheck.isValid) warnings.push(bannerCheck.error);
+
+        if (warnings.length > 0) {
+          problem = warnings.join('; ') + ' (Image left empty, category will still import)';
         }
       }
 
@@ -1052,25 +1053,20 @@ exports.importCategories = async (req, res, next) => {
       const iconCheck = validateAndExtractImageUrl(rawIcon, 'Category Icon');
       const bannerCheck = validateAndExtractImageUrl(rawBanner, 'Category Banner');
 
+      // Optional image validation logging without cancelling row creation
       if (!mainCheck.isValid) {
-        failedCount++;
         failedRows.push({ rowNumber: rowNum, sku: name, field: 'Main Image', problem: mainCheck.error });
-        continue;
       }
       if (!iconCheck.isValid) {
-        failedCount++;
         failedRows.push({ rowNumber: rowNum, sku: name, field: 'Category Icon', problem: iconCheck.error });
-        continue;
       }
       if (!bannerCheck.isValid) {
-        failedCount++;
         failedRows.push({ rowNumber: rowNum, sku: name, field: 'Category Banner', problem: bannerCheck.error });
-        continue;
       }
 
-      const mainImage = mainCheck.cleanUrl;
-      const iconUrl = iconCheck.cleanUrl;
-      const bannerUrl = bannerCheck.cleanUrl;
+      const mainImage = mainCheck.isValid ? mainCheck.cleanUrl : '';
+      const iconUrl = iconCheck.isValid ? iconCheck.cleanUrl : '';
+      const bannerUrl = bannerCheck.isValid ? bannerCheck.cleanUrl : '';
 
       const parentName = String(getNormalizedRowValue(r, ['Parent Category Name', 'Parent Category', 'parent_name'])).trim();
       const parentImage = sanitizeImportImageUrl(getNormalizedRowValue(r, ['Parent Category Image', 'parent_image']));
