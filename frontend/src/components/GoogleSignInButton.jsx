@@ -27,7 +27,7 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
                 const res = await googleLogin({ credential: response.credential });
                 if (res && res.success) {
                   const targetPath = res.isAdmin ? '/admin' : '/';
-                  navigate(targetPath, { replace: true });
+                  window.location.href = targetPath;
                 }
               } catch (err) {
                 console.error('Google One Tap / GIS ID Token Error:', err);
@@ -42,7 +42,7 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
         console.warn('GIS ID Initialization Warning:', e);
       }
     }
-  }, [googleClientId, googleLogin, navigate]);
+  }, [googleClientId, googleLogin]);
 
   const handleGoogleSignIn = () => {
     if (!googleClientId || googleClientId.trim() === '') {
@@ -105,7 +105,7 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
               const res = await googleLogin(payload);
               if (res && res.success) {
                 const targetPath = res.isAdmin ? '/admin' : '/';
-                navigate(targetPath, { replace: true });
+                window.location.href = targetPath;
               }
             } catch (err) {
               console.error('Google Sign-In Error:', err);
