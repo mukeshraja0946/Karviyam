@@ -581,6 +581,8 @@ exports.executeProductImport = async (req, res, next) => {
     try { await connection.query("ALTER TABLE products ADD COLUMN seo_title VARCHAR(255)"); } catch (e) {}
     try { await connection.query("ALTER TABLE products ADD COLUMN meta_keywords VARCHAR(255)"); } catch (e) {}
     try { await connection.query("ALTER TABLE products ADD COLUMN meta_description TEXT"); } catch (e) {}
+    try { await connection.query("ALTER TABLE product_images ADD COLUMN sort_order INT DEFAULT 0"); } catch (e) {}
+    try { await connection.query("ALTER TABLE product_images ADD COLUMN is_main BOOLEAN DEFAULT FALSE"); } catch (e) {}
 
     await connection.beginTransaction();
 
