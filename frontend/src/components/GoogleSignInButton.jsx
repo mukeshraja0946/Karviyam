@@ -40,45 +40,58 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
         callback: async (tokenResponse) => {
           if (tokenResponse && tokenResponse.access_token) {
             try {
-              const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
-              });
-              
-              if (!userInfoRes.ok) {
-                throw new Error('Failed to retrieve Google profile');
+              let userEmail = '';
+              let userName = '';
+              let googleId = '';
+              let profilePhoto = '';
+
+              // Quick client-side profile fetch with 5-second AbortController safeguard
+              try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                  signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (userInfoRes.ok) {
+                  const googleUser = await userInfoRes.json();
+                  userEmail = googleUser.email || '';
+                  userName = googleUser.name || googleUser.given_name || '';
+                  googleId = googleUser.sub || '';
+                  profilePhoto = googleUser.picture || '';
+                }
+              } catch (e) {
+                console.warn('Client-side Google profile fetch bypassed, proceeding to backend verification:', e);
               }
 
-              const googleUser = await userInfoRes.json();
-              
+              // Send credential to backend for server-side verification and database role matching
               const payload = {
-                email: googleUser.email,
-                name: googleUser.name || googleUser.given_name || googleUser.email.split('@')[0],
-                googleId: googleUser.sub,
-                profilePhoto: googleUser.picture,
                 credential: tokenResponse.access_token,
-                idToken: tokenResponse.id_token || tokenResponse.access_token
+                email: userEmail,
+                name: userName,
+                googleId: googleId,
+                profilePhoto: profilePhoto
               };
 
               const res = await googleLogin(payload);
               if (res && res.success) {
-                if (res.isAdmin) {
-                  navigate('/admin', { replace: true });
-                } else {
-                  navigate('/', { replace: true });
-                }
+                const targetPath = res.isAdmin ? '/admin' : '/';
+                window.location.href = targetPath;
               }
             } catch (err) {
-              console.error('Google Profile Fetch Error:', err);
-              toast.error('Google profile retrieval failed. Please try again.');
+              console.error('Google Sign-In Error:', err);
+              toast.error(err.response?.data?.message || err.message || 'Google authentication failed');
             } finally {
               setLoading(false);
             }
-          } else if (tokenResponse.error) {
-            if (tokenResponse.error === 'popup_closed_by_user' || tokenResponse.error === 'access_denied') {
-              console.log('User closed Google popup or cancelled sign-in.');
-            } else {
+          } else if (tokenResponse && tokenResponse.error) {
+            if (tokenResponse.error !== 'popup_closed_by_user' && tokenResponse.error !== 'access_denied') {
               toast.error(`Google Sign-In Error: ${tokenResponse.error}`, { id: 'g-oauth-err' });
             }
+            setLoading(false);
+          } else {
             setLoading(false);
           }
         },

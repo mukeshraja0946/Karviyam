@@ -227,9 +227,9 @@ exports.googleAuth = async (req, res, next) => {
       try {
         if (credential.startsWith('eyJ')) {
           // ID Token verification via Google OAuth2 tokeninfo endpoint
-          const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
-          if (gRes.ok) {
-            const info = await gRes.json();
+          const gRes = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`, { timeout: 5000 }).catch(() => null);
+          if (gRes?.data) {
+            const info = gRes.data;
             if (info.email) verifiedEmail = info.email.trim().toLowerCase();
             if (info.name) verifiedName = info.name.trim();
             if (info.sub) verifiedGoogleId = info.sub;
@@ -237,11 +237,12 @@ exports.googleAuth = async (req, res, next) => {
           }
         } else {
           // Access Token verification via Google UserInfo API
-          const gRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: `Bearer ${credential}` }
-          });
-          if (gRes.ok) {
-            const info = await gRes.json();
+          const gRes = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${credential}` },
+            timeout: 5000
+          }).catch(() => null);
+          if (gRes?.data) {
+            const info = gRes.data;
             if (info.email) verifiedEmail = info.email.trim().toLowerCase();
             if (info.name) verifiedName = info.name.trim();
             if (info.sub) verifiedGoogleId = info.sub;
