@@ -8,17 +8,17 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const rawClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const googleClientId = (rawClientId && rawClientId.trim() !== '' && !rawClientId.includes('YOUR_WEB_CLIENT_ID'))
+    ? rawClientId
+    : '333255083784-u9hu0liup36sgneialgug9fuvr2qgv4u.apps.googleusercontent.com';
 
   useEffect(() => {
-    console.log("Google Client ID:", googleClientId);
-    if (!googleClientId || googleClientId.trim() === '' || googleClientId.includes('YOUR_WEB_CLIENT_ID')) {
-      console.error("Google Client ID not configured.");
-    }
+    console.log("Google Client ID Active:", googleClientId);
   }, [googleClientId]);
 
   const handleGoogleSignIn = () => {
-    if (!googleClientId || googleClientId.trim() === '' || googleClientId.includes('YOUR_WEB_CLIENT_ID')) {
+    if (!googleClientId || googleClientId.trim() === '') {
       console.error("Google Client ID not configured.");
       toast.error("Google OAuth is not configured. Please contact the administrator.");
       return;

@@ -47,6 +47,26 @@ const sanitizeImportImageUrl = (url) => {
   return trimmed;
 };
 
+// Helper to look up an Excel row value matching any alias normalized by removing spaces, underscores, hyphens & casing
+const getNormalizedRowValue = (row, keyAliases, defaultVal = '') => {
+  if (!row || typeof row !== 'object') return defaultVal;
+
+  const normalizedAliases = keyAliases.map(k => String(k).toLowerCase().replace(/[^a-z0-9]/g, ''));
+  const rowKeys = Object.keys(row);
+
+  for (const rawKey of rowKeys) {
+    const normKey = rawKey.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (normalizedAliases.includes(normKey)) {
+      const val = row[rawKey];
+      if (val !== undefined && val !== null && String(val).trim() !== '') {
+        return val;
+      }
+    }
+  }
+
+  return defaultVal;
+};
+
 // Helper to sanitize boolean values from Excel strings/numbers
 const parseBool = (val, defaultVal = false) => {
   if (val === undefined || val === null || val === '') return defaultVal;
@@ -346,7 +366,7 @@ exports.downloadProductTemplate = async (req, res, next) => {
 };
 
 // =========================================================================
-// 3. PRODUCT IMPORT PREVIEW & VALIDATION
+// 3. PRODUCT IMPORT PREVIEW & VALIDATION (NORMALIZED HEADERS)
 // =========================================================================
 exports.previewProductImport = async (req, res, next) => {
   try {
@@ -376,10 +396,13 @@ exports.previewProductImport = async (req, res, next) => {
 
     for (let idx = 0; idx < rawProducts.length; idx++) {
       const row = rawProducts[idx];
-      const sku = String(row['SKU Code'] || row['SKU'] || row['sku'] || '').trim();
-      const name = String(row['Product Name'] || row['Name'] || row['name'] || '').trim();
-      const price = parseFloat(row['Selling Price'] || row['Price'] || row['price']);
-      const stock = parseInt(row['Stock Quantity'] || row['Stock'] || row['stock'] || 0, 10);
+      const sku = String(getNormalizedRowValue(row, ['SKU Code', 'SKU', 'sku_code', 'SKUCode', 'Product SKU', 'Item SKU'])).trim();
+      const name = String(getNormalizedRowValue(row, ['Product Name', 'Name', 'product_name', 'Title', 'Item Name'])).trim();
+      const priceVal = getNormalizedRowValue(row, ['Selling Price', 'Price', 'selling_price', 'Selling Price (₹)', 'Retail Price']);
+      const stockVal = getNormalizedRowValue(row, ['Stock Quantity', 'Stock', 'stock_quantity', 'Quantity', 'Qty'], 0);
+
+      const price = parseFloat(priceVal);
+      const stock = parseInt(stockVal, 10);
 
       const rowErrors = [];
 
@@ -389,7 +412,7 @@ exports.previewProductImport = async (req, res, next) => {
       if (!name) {
         rowErrors.push('Product Name is required.');
       }
-      if (isNaN(price) || price < 0) {
+      if (priceVal === '' || isNaN(price) || price < 0) {
         rowErrors.push('Selling Price must be a valid positive number.');
       }
       if (isNaN(stock) || stock < 0) {
@@ -397,13 +420,13 @@ exports.previewProductImport = async (req, res, next) => {
       }
 
       // Validate image URLs (must not be temporary browser blob/data URLs)
-      const mainImg = row['Main Product Image'] || row['Image URL'];
+      const mainImg = getNormalizedRowValue(row, ['Main Product Image', 'Image URL', 'image_url', 'Main Image']);
       if (mainImg && (String(mainImg).startsWith('blob:') || String(mainImg).startsWith('data:'))) {
         rowErrors.push(`Main Product Image contains invalid temporary browser URL (${mainImg.substring(0, 15)}...). Only permanent URLs are allowed.`);
       }
 
       for (let c = 1; c <= 10; c++) {
-        const cImg = row[`Color ${c} Main Image`];
+        const cImg = getNormalizedRowValue(row, [`Color ${c} Main Image`, `Color${c}MainImage`]);
         if (cImg && (String(cImg).startsWith('blob:') || String(cImg).startsWith('data:'))) {
           rowErrors.push(`Color ${c} Main Image contains invalid temporary browser URL (${cImg.substring(0, 15)}...). Only permanent URLs are allowed.`);
         }
@@ -500,35 +523,47 @@ exports.executeProductImport = async (req, res, next) => {
     let failedCount = 0;
     const failedRows = [];
 
+    try { await connection.query("ALTER TABLE products ADD COLUMN sizes VARCHAR(255)"); } catch (e) {}
+    try { await connection.query("ALTER TABLE products ADD COLUMN size VARCHAR(255)"); } catch (e) {}
+    try { await connection.query("ALTER TABLE products ADD COLUMN is_bestseller BOOLEAN DEFAULT FALSE"); } catch (e) {}
+    try { await connection.query("ALTER TABLE products ADD COLUMN seo_title VARCHAR(255)"); } catch (e) {}
+    try { await connection.query("ALTER TABLE products ADD COLUMN meta_keywords VARCHAR(255)"); } catch (e) {}
+    try { await connection.query("ALTER TABLE products ADD COLUMN meta_description TEXT"); } catch (e) {}
+
     await connection.beginTransaction();
 
     for (let idx = 0; idx < rawProducts.length; idx++) {
       const row = rawProducts[idx];
-      const sku = String(row['SKU Code'] || row['SKU'] || row['sku'] || '').trim();
-      const name = String(row['Product Name'] || row['Name'] || row['name'] || '').trim();
-      const price = parseFloat(row['Selling Price'] || row['Price'] || row['price']);
-      const oldPrice = parseFloat(row['MRP Price'] || row['MRP'] || row['oldPrice'] || price);
-      const stock = parseInt(row['Stock Quantity'] || row['Stock'] || row['stock'] || 0, 10);
-      const categoryName = String(row['Main Category'] || row['Category'] || 'Apparel').trim();
-      const subcategory = String(row['Subcategory'] || '').trim();
-      const brand = String(row['Brand'] || 'Karviyam').trim();
-      const sizes = String(row['Available Sizes'] || row['Sizes'] || 'S, M, L, XL, XXL').trim();
-      const material = String(row['Material / Fabric'] || row['Material'] || 'Cotton Blend').trim();
-      const description = String(row['Description'] || '').trim();
-      const tags = String(row['Tags'] || '').trim();
-      const isFeatured = parseBool(row['Featured Product'] || row['isFeatured'], false);
-      const isTrending = parseBool(row['Trending Product'] || row['isTrending'], false);
-      const isBestseller = parseBool(row['Best Seller'] || row['isBestseller'], false);
-      const isNewArrival = parseBool(row['New Arrival'] || row['isNewArrival'], true);
-      const isActive = parseBool(row['Active Catalog Status'] || row['Active Status'] || row['isActive'], true);
-      const seoTitle = String(row['SEO Title'] || name).trim();
-      const metaKeywords = String(row['Meta Keywords'] || tags).trim();
-      const metaDescription = String(row['Meta Description'] || description).trim();
+      const sku = String(getNormalizedRowValue(row, ['SKU Code', 'SKU', 'sku_code', 'SKUCode', 'Product SKU', 'Item SKU'])).trim();
+      const name = String(getNormalizedRowValue(row, ['Product Name', 'Name', 'product_name', 'Title', 'Item Name'])).trim();
+      const priceVal = getNormalizedRowValue(row, ['Selling Price', 'Price', 'selling_price', 'Selling Price (₹)', 'Retail Price']);
+      const oldPriceVal = getNormalizedRowValue(row, ['MRP Price', 'MRP', 'old_price', 'MRP (₹)', 'Original Price'], priceVal);
+      const stockVal = getNormalizedRowValue(row, ['Stock Quantity', 'Stock', 'stock_quantity', 'Quantity', 'Qty'], 0);
 
-      const mainProductImage = sanitizeImportImageUrl(row['Main Product Image'] || row['Image URL'] || row['main_image']);
-      const videoUrl = sanitizeImportImageUrl(row['Product Video'] || row['video_url']);
+      const price = parseFloat(priceVal);
+      const oldPrice = parseFloat(oldPriceVal);
+      const stock = parseInt(stockVal, 10);
 
-      if (!sku || !name || isNaN(price)) {
+      const categoryName = String(getNormalizedRowValue(row, ['Main Category', 'Category Name', 'Category', 'category_name'], 'Apparel')).trim();
+      const subcategory = String(getNormalizedRowValue(row, ['Subcategory', 'Sub Category', 'subcategory_name'], '')).trim();
+      const brand = String(getNormalizedRowValue(row, ['Brand', 'Brand Name', 'Manufacturer'], 'Karviyam')).trim();
+      const sizes = String(getNormalizedRowValue(row, ['Available Sizes', 'Sizes', 'Size'], 'S, M, L, XL, XXL')).trim();
+      const material = String(getNormalizedRowValue(row, ['Material / Fabric', 'Material', 'Fabric'], 'Cotton Blend')).trim();
+      const description = String(getNormalizedRowValue(row, ['Description', 'desc', 'detail'], '')).trim();
+      const tags = String(getNormalizedRowValue(row, ['Tags', 'keywords'], '')).trim();
+      const isFeatured = parseBool(getNormalizedRowValue(row, ['Featured Product', 'isFeatured', 'is_featured']), false);
+      const isTrending = parseBool(getNormalizedRowValue(row, ['Trending Product', 'isTrending', 'is_trending']), false);
+      const isBestseller = parseBool(getNormalizedRowValue(row, ['Best Seller', 'isBestseller', 'is_bestseller']), false);
+      const isNewArrival = parseBool(getNormalizedRowValue(row, ['New Arrival', 'isNewArrival', 'is_new_arrival']), true);
+      const isActive = parseBool(getNormalizedRowValue(row, ['Active Catalog Status', 'Active Status', 'isActive', 'is_active']), true);
+      const seoTitle = String(getNormalizedRowValue(row, ['SEO Title', 'seo_title'], name)).trim();
+      const metaKeywords = String(getNormalizedRowValue(row, ['Meta Keywords', 'meta_keywords'], tags)).trim();
+      const metaDescription = String(getNormalizedRowValue(row, ['Meta Description', 'meta_description'], description)).trim();
+
+      const mainProductImage = sanitizeImportImageUrl(getNormalizedRowValue(row, ['Main Product Image', 'Image URL', 'image_url', 'Main Image']));
+      const videoUrl = sanitizeImportImageUrl(getNormalizedRowValue(row, ['Product Video', 'video_url', 'Video URL']));
+
+      if (!sku || !name || priceVal === '' || isNaN(price)) {
         failedCount++;
         failedRows.push({
           rowNumber: idx + 1,
@@ -563,7 +598,7 @@ exports.executeProductImport = async (req, res, next) => {
            category_id = ?, name = ?, description = ?, price = ?, old_price = ?, stock_quantity = ?,
            image_url = ?, video_url = ?, brand = ?, sizes = ?, material = ?, tags = ?, is_featured = ?, is_trending = ?,
            is_bestseller = ?, is_new_arrival = ?, is_active = ?, seo_title = ?, meta_keywords = ?,
-           meta_description = ?, updated_at = NOW()
+           meta_description = ?
            WHERE id = ?`,
           [
             categoryId, name, description, price, oldPrice, stock, finalImage, finalVideo, brand, sizes, material, tags,
@@ -592,7 +627,7 @@ exports.executeProductImport = async (req, res, next) => {
       // Base Sub Images processing (Sub Image 1..6)
       const baseSubImages = [];
       for (let s = 1; s <= 6; s++) {
-        const sUrl = sanitizeImportImageUrl(row[`Sub Image ${s}`]);
+        const sUrl = sanitizeImportImageUrl(getNormalizedRowValue(row, [`Sub Image ${s}`, `SubImage${s}`, `Sub Image${s}`]));
         if (sUrl) baseSubImages.push(sUrl);
       }
       if (baseSubImages.length > 0) {
@@ -615,23 +650,23 @@ exports.executeProductImport = async (req, res, next) => {
         // Multi-sheet format
         const relMedia = mediaBySku[skuKey] || [];
         colorsBySku[skuKey].forEach(cRow => {
-          const cName = String(cRow['Color Name'] || '').trim();
-          const cCode = String(cRow['Color Code'] || cRow['Color Hex'] || '#000000').trim();
-          const isDefault = parseBool(cRow['Is Default'], false);
+          const cName = String(getNormalizedRowValue(cRow, ['Color Name', 'Color'])).trim();
+          const cCode = String(getNormalizedRowValue(cRow, ['Color Code', 'Color Hex', 'Hex'], '#000000')).trim();
+          const isDefault = parseBool(getNormalizedRowValue(cRow, ['Is Default', 'Default']), false);
 
-          const cMedia = relMedia.filter(m => String(m['Color Name']).trim().toLowerCase() === cName.toLowerCase());
-          const mainMedia = cMedia.find(m => parseBool(m['Is Main']) || m['Sort Order'] === 1);
-          const subMedia = cMedia.filter(m => m !== mainMedia && String(m['Media Type']).toLowerCase() !== 'video');
-          const videoMedia = cMedia.find(m => String(m['Media Type']).toLowerCase() === 'video');
+          const cMedia = relMedia.filter(m => String(getNormalizedRowValue(m, ['Color Name', 'Color'])).trim().toLowerCase() === cName.toLowerCase());
+          const mainMedia = cMedia.find(m => parseBool(getNormalizedRowValue(m, ['Is Main', 'Main'])) || getNormalizedRowValue(m, ['Sort Order']) === 1);
+          const subMedia = cMedia.filter(m => m !== mainMedia && String(getNormalizedRowValue(m, ['Media Type'])).toLowerCase() !== 'video');
+          const videoMedia = cMedia.find(m => String(getNormalizedRowValue(m, ['Media Type'])).toLowerCase() === 'video');
 
           if (cName || (mainMedia && mainMedia['Media URL'])) {
             parsedColors.push({
               colorName: cName || 'Standard',
               colorCode: cCode,
               isDefault,
-              mainImage: mainMedia ? sanitizeImportImageUrl(mainMedia['Media URL']) : '',
-              subImages: subMedia.map(sm => sanitizeImportImageUrl(sm['Media URL'])).filter(Boolean),
-              videoUrl: videoMedia ? sanitizeImportImageUrl(videoMedia['Media URL']) : ''
+              mainImage: mainMedia ? sanitizeImportImageUrl(getNormalizedRowValue(mainMedia, ['Media URL', 'URL'])) : '',
+              subImages: subMedia.map(sm => sanitizeImportImageUrl(getNormalizedRowValue(sm, ['Media URL', 'URL']))).filter(Boolean),
+              videoUrl: videoMedia ? sanitizeImportImageUrl(getNormalizedRowValue(videoMedia, ['Media URL', 'URL'])) : ''
             });
           }
         });
@@ -640,17 +675,17 @@ exports.executeProductImport = async (req, res, next) => {
       // Flat format columns at the end of row (Color 1 Name ... Color 10 Video)
       if (parsedColors.length === 0) {
         for (let c = 1; c <= 20; c++) {
-          const cName = String(row[`Color ${c} Name`] || '').trim();
-          const cCode = String(row[`Color ${c} Hex`] || row[`Color ${c} Code`] || '').trim();
-          const mainImg = sanitizeImportImageUrl(row[`Color ${c} Main Image`]);
-          const isDef = parseBool(row[`Color ${c} Default`] || row[`Color ${c} Is Default`], c === 1);
+          const cName = String(getNormalizedRowValue(row, [`Color ${c} Name`, `Color${c}Name`, `Color ${c}`])).trim();
+          const cCode = String(getNormalizedRowValue(row, [`Color ${c} Hex`, `Color ${c} Code`, `Color${c}Hex`], '#000000')).trim();
+          const mainImg = sanitizeImportImageUrl(getNormalizedRowValue(row, [`Color ${c} Main Image`, `Color${c}MainImage`]));
+          const isDef = parseBool(getNormalizedRowValue(row, [`Color ${c} Default`, `Color ${c} Is Default`]), c === 1);
 
           const subImgs = [];
           for (let s = 1; s <= 6; s++) {
-            const subUrl = sanitizeImportImageUrl(row[`Color ${c} Sub Image ${s}`] || row[`Color ${c} Image ${s}`]);
+            const subUrl = sanitizeImportImageUrl(getNormalizedRowValue(row, [`Color ${c} Sub Image ${s}`, `Color${c}SubImage${s}`]));
             if (subUrl) subImgs.push(subUrl);
           }
-          const cVideo = sanitizeImportImageUrl(row[`Color ${c} Video`]);
+          const cVideo = sanitizeImportImageUrl(getNormalizedRowValue(row, [`Color ${c} Video`, `Color${c}Video`]));
 
           // RULES: Create ONLY colors that actually contain data.
           const hasData = cName !== '' || mainImg !== '' || subImgs.length > 0;
@@ -673,7 +708,7 @@ exports.executeProductImport = async (req, res, next) => {
         // Delete existing color records before re-inserting updated color variants
         const [oldColors] = await connection.query('SELECT id FROM product_colors WHERE product_id = ?', [productId]);
         for (const oc of oldColors) {
-          await connection.query('DELETE FROM product_color_images WHERE product_color_id = ?', [oc.id]);
+          await connection.query('DELETE FROM product_color_images WHERE product_color_id = ? OR color_id = ?', [oc.id, oc.id]).catch(() => null);
         }
         await connection.query('DELETE FROM product_colors WHERE product_id = ?', [productId]);
 
@@ -682,12 +717,23 @@ exports.executeProductImport = async (req, res, next) => {
           const c = parsedColors[cIdx];
           const isDefaultVal = c.isDefault || (cIdx === 0 && !parsedColors.some(pc => pc.isDefault));
 
+          try { await connection.query("ALTER TABLE product_colors ADD COLUMN hex_code VARCHAR(50)"); } catch (e) {}
+          try { await connection.query("ALTER TABLE product_colors ADD COLUMN is_default BOOLEAN DEFAULT FALSE"); } catch (e) {}
+          try { await connection.query("ALTER TABLE product_colors ADD COLUMN image_url VARCHAR(500)"); } catch (e) {}
+          try { await connection.query("ALTER TABLE product_colors ADD COLUMN main_image VARCHAR(500)"); } catch (e) {}
+          try { await connection.query("ALTER TABLE product_colors ADD COLUMN video_url VARCHAR(500)"); } catch (e) {}
+
           const [cRes] = await connection.query(
-            `INSERT INTO product_colors (product_id, color_name, color_code, hex_code, is_default, main_image, video_url)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [productId, c.colorName, c.colorCode, c.colorCode, isDefaultVal ? 1 : 0, c.mainImage || null, c.videoUrl || null]
+            `INSERT INTO product_colors (product_id, color_name, color_code, hex_code, is_default, image_url, main_image, video_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [productId, c.colorName, c.colorCode, c.colorCode, isDefaultVal ? 1 : 0, c.mainImage || null, c.mainImage || null, c.videoUrl || null]
           );
           const colorId = cRes.insertId;
+
+          try { await connection.query("ALTER TABLE product_color_images ADD COLUMN product_color_id BIGINT"); } catch (e) {}
+          try { await connection.query("ALTER TABLE product_color_images ADD COLUMN color_id BIGINT"); } catch (e) {}
+          try { await connection.query("ALTER TABLE product_color_images ADD COLUMN is_main BOOLEAN DEFAULT FALSE"); } catch (e) {}
+          try { await connection.query("ALTER TABLE product_color_images ADD COLUMN sort_order INT DEFAULT 0"); } catch (e) {}
 
           if (c.mainImage) {
             await connection.query(
@@ -817,21 +863,21 @@ exports.importCategories = async (req, res, next) => {
     let updatedCount = 0;
 
     for (const r of rawRows) {
-      const name = String(r['Category Name'] || r['name'] || '').trim();
+      const name = String(getNormalizedRowValue(r, ['Category Name', 'Name', 'category_name'])).trim();
       if (!name) continue;
 
-      const parentName = String(r['Parent Category Name'] || '').trim();
-      const parentImage = sanitizeImportImageUrl(r['Parent Category Image']);
-      const type = String(r['Classification Type'] || 'General').trim();
-      const displayOrder = parseInt(r['Display Order'] || 0, 10);
-      const isActive = parseBool(r['Active Status'], true);
-      const mainImage = sanitizeImportImageUrl(r['Main Image'] || r['image_url']);
-      const iconUrl = sanitizeImportImageUrl(r['Category Icon'] || r['icon_url']);
-      const bannerUrl = sanitizeImportImageUrl(r['Category Banner'] || r['banner_url']);
-      const description = String(r['Description'] || '').trim();
-      const seoTitle = String(r['SEO Title'] || name).trim();
-      const metaKeywords = String(r['Meta Keywords'] || '').trim();
-      const metaDescription = String(r['Meta Description'] || description).trim();
+      const parentName = String(getNormalizedRowValue(r, ['Parent Category Name', 'Parent Category', 'parent_name'])).trim();
+      const parentImage = sanitizeImportImageUrl(getNormalizedRowValue(r, ['Parent Category Image', 'parent_image']));
+      const type = String(getNormalizedRowValue(r, ['Classification Type', 'Type', 'classification'], 'General')).trim();
+      const displayOrder = parseInt(getNormalizedRowValue(r, ['Display Order', 'Sort Order', 'Order Index', 'order_index', 'sort_order'], 0), 10);
+      const isActive = parseBool(getNormalizedRowValue(r, ['Active Status', 'Status', 'is_active'], true), true);
+      const mainImage = sanitizeImportImageUrl(getNormalizedRowValue(r, ['Main Image', 'Image URL', 'image_url']));
+      const iconUrl = sanitizeImportImageUrl(getNormalizedRowValue(r, ['Category Icon', 'Icon URL', 'icon_url']));
+      const bannerUrl = sanitizeImportImageUrl(getNormalizedRowValue(r, ['Category Banner', 'Banner URL', 'banner_url']));
+      const description = String(getNormalizedRowValue(r, ['Description', 'desc', 'detail'], '')).trim();
+      const seoTitle = String(getNormalizedRowValue(r, ['SEO Title', 'seo_title'], name)).trim();
+      const metaKeywords = String(getNormalizedRowValue(r, ['Meta Keywords', 'meta_keywords'], '')).trim();
+      const metaDescription = String(getNormalizedRowValue(r, ['Meta Description', 'meta_description'], description)).trim();
 
       // Resolve Parent Category
       let parentId = null;
@@ -1569,3 +1615,92 @@ exports.exportOrders = async (req, res, next) => {
     next(err);
   }
 };
+
+// =========================================================================
+// 15. INVENTORY EXPORT & IMPORT
+// =========================================================================
+exports.exportInventory = async (req, res, next) => {
+  try {
+    const [products] = await pool.query(`
+      SELECT p.*, c.name as category_name 
+      FROM products p 
+      LEFT JOIN categories c ON p.category_id = c.id 
+      ORDER BY p.id DESC
+    `);
+
+    const rows = products.map(p => ({
+      'Product ID': p.id,
+      'SKU Code': p.sku || `KV-SKU-${p.id}`,
+      'Product Name': p.name || '',
+      'Main Category': p.category_name || 'Apparel',
+      'Warehouse': p.warehouse || 'Main Warehouse (Hub 1)',
+      'Current Stock': parseInt(p.stock_quantity || 0, 10),
+      'Reorder Threshold': parseInt(p.reorder_threshold || 10, 10),
+      'Stock Status': (p.stock_quantity || 0) === 0 ? 'Out of Stock' : ((p.stock_quantity || 0) < 10 ? 'Low Stock' : 'In Stock'),
+      'Selling Price (₹)': parseFloat(p.price || 0),
+      'Cost Price (₹)': parseFloat(p.cost_price || p.price || 0),
+      'Main Image': resolvePermanentImageUrl(p.image_url)
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'INVENTORY');
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="karviyam_inventory_export.xlsx"');
+    return res.status(200).send(buf);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.importInventory = async (req, res, next) => {
+  try {
+    let workbook;
+    if (req.file) {
+      workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    } else if (req.body.fileBase64) {
+      const base64Data = req.body.fileBase64.replace(/^data:.+;base64,/, '');
+      workbook = XLSX.read(Buffer.from(base64Data, 'base64'), { type: 'buffer' });
+    } else {
+      return res.status(400).json(ApiResponse.error('No Excel file provided for inventory import'));
+    }
+
+    const sheetName = workbook.SheetNames[0];
+    const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    let updatedCount = 0;
+    let failedCount = 0;
+
+    for (const r of rawRows) {
+      const sku = String(getNormalizedRowValue(r, ['SKU Code', 'SKU', 'sku_code'])).trim();
+      if (!sku) continue;
+
+      const stock = parseInt(getNormalizedRowValue(r, ['Current Stock', 'Stock Quantity', 'Stock', 'qty'], 0), 10);
+      const priceVal = getNormalizedRowValue(r, ['Selling Price (₹)', 'Selling Price', 'Price']);
+
+      const [existing] = await pool.query('SELECT id FROM products WHERE LOWER(sku) = ? LIMIT 1', [sku.toLowerCase()]);
+      if (existing.length > 0) {
+        let updates = ['stock_quantity = ?'];
+        let params = [stock];
+
+        if (priceVal !== '') {
+          updates.push('price = ?');
+          params.push(parseFloat(priceVal));
+        }
+        params.push(existing[0].id);
+
+        await pool.query(`UPDATE products SET ${updates.join(', ')} WHERE id = ?`, params);
+        updatedCount++;
+      } else {
+        failedCount++;
+      }
+    }
+
+    return res.status(200).json(ApiResponse.success({ updatedCount, failedCount }, 'Inventory import completed successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+

@@ -422,12 +422,12 @@ export default function DesktopCenterContent() {
               onClick={() => navigate(`/shop?${cat.query}`)}
               className="h-[115px] xl:h-[125px] bg-white rounded-xl p-1.5 flex flex-col items-center justify-between cursor-pointer transition-all border border-slate-200/80 hover:shadow-xs group"
             >
-              <div className="w-full h-[78px] xl:h-[86px] bg-white rounded-lg overflow-hidden flex items-center justify-center">
+              <div className="w-full h-[78px] xl:h-[86px] bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center">
                 <img
                   src={resolveImageUrl(cat.image, cat.id)}
                   alt={cat.name}
                   onError={(e) => handleImageError(e, cat.id)}
-                  className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform"
                 />
               </div>
               <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-800 text-center truncate w-full mb-0.5">

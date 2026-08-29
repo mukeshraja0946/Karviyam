@@ -522,11 +522,11 @@ export default function AdminParentCategoriesPage() {
                 </div>
 
                 {/* Category Image Box */}
-                <div className="w-full h-36 bg-slate-50 rounded-xl overflow-hidden border border-slate-200 p-2 flex items-center justify-center relative group">
+                <div className="w-full h-36 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 relative group">
                   <img
                     src={resolveImageUrl(cat.imageUrl)}
                     alt={cat.name}
-                    className="max-h-full max-w-full object-contain transition-transform group-hover:scale-105"
+                    className="w-full h-full object-cover object-center transition-transform group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button

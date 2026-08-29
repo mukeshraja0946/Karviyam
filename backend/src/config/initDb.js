@@ -106,6 +106,7 @@ async function initDb() {
         icon_url LONGTEXT,
         banner_url LONGTEXT,
         order_index INT DEFAULT 0,
+        sort_order INT DEFAULT 0,
         is_active BOOLEAN DEFAULT TRUE,
         seo_title VARCHAR(150),
         meta_description TEXT,
@@ -117,10 +118,13 @@ async function initDb() {
     `);
 
     try {
+      await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0`);
       await pool.query(`ALTER TABLE categories MODIFY COLUMN image_url LONGTEXT`);
       await pool.query(`ALTER TABLE categories MODIFY COLUMN icon_url LONGTEXT`);
       await pool.query(`ALTER TABLE categories MODIFY COLUMN banner_url LONGTEXT`);
-    } catch (e) {}
+    } catch (e) {
+      try { await pool.query(`ALTER TABLE categories ADD COLUMN sort_order INT DEFAULT 0`); } catch (e2) {}
+    }
 
     // 5. Brands table
     await pool.query(`
@@ -179,6 +183,17 @@ async function initDb() {
       );
     `);
 
+    try {
+      await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes VARCHAR(255)`);
+      await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_bestseller BOOLEAN DEFAULT FALSE`);
+      await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS seo_title VARCHAR(255)`);
+      await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS meta_keywords VARCHAR(255)`);
+      await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS meta_description TEXT`);
+    } catch (e) {
+      try { await pool.query(`ALTER TABLE products ADD COLUMN sizes VARCHAR(255)`); } catch (e2) {}
+      try { await pool.query(`ALTER TABLE products ADD COLUMN seo_title VARCHAR(255)`); } catch (e2) {}
+    }
+
     // 7. Product Images table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS product_images (
@@ -198,17 +213,47 @@ async function initDb() {
         product_id BIGINT NOT NULL,
         color_name VARCHAR(100),
         color_code VARCHAR(50),
+        hex_code VARCHAR(50),
+        is_default BOOLEAN DEFAULT FALSE,
+        image_url VARCHAR(500),
+        main_image VARCHAR(500),
+        video_url VARCHAR(500),
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
       );
     `);
+
+    try {
+      await pool.query("ALTER TABLE product_colors ADD COLUMN IF NOT EXISTS hex_code VARCHAR(50)");
+      await pool.query("ALTER TABLE product_colors ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT FALSE");
+      await pool.query("ALTER TABLE product_colors ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)");
+      await pool.query("ALTER TABLE product_colors ADD COLUMN IF NOT EXISTS main_image VARCHAR(500)");
+      await pool.query("ALTER TABLE product_colors ADD COLUMN IF NOT EXISTS video_url VARCHAR(500)");
+    } catch (e) {
+      try { await pool.query("ALTER TABLE product_colors ADD COLUMN hex_code VARCHAR(50)"); } catch (e2) {}
+      try { await pool.query("ALTER TABLE product_colors ADD COLUMN is_default BOOLEAN DEFAULT FALSE"); } catch (e2) {}
+      try { await pool.query("ALTER TABLE product_colors ADD COLUMN image_url VARCHAR(500)"); } catch (e2) {}
+      try { await pool.query("ALTER TABLE product_colors ADD COLUMN main_image VARCHAR(500)"); } catch (e2) {}
+    }
     await pool.query(`
       CREATE TABLE IF NOT EXISTS product_color_images (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        color_id BIGINT NOT NULL,
+        color_id BIGINT,
+        product_color_id BIGINT,
         image_url VARCHAR(500),
-        FOREIGN KEY (color_id) REFERENCES product_colors(id) ON DELETE CASCADE
+        is_main BOOLEAN DEFAULT FALSE,
+        sort_order INT DEFAULT 0
       );
     `);
+
+    try {
+      await pool.query("ALTER TABLE product_color_images ADD COLUMN IF NOT EXISTS product_color_id BIGINT");
+      await pool.query("ALTER TABLE product_color_images ADD COLUMN IF NOT EXISTS is_main BOOLEAN DEFAULT FALSE");
+      await pool.query("ALTER TABLE product_color_images ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0");
+    } catch (e) {
+      try { await pool.query("ALTER TABLE product_color_images ADD COLUMN product_color_id BIGINT"); } catch (e2) {}
+      try { await pool.query("ALTER TABLE product_color_images ADD COLUMN is_main BOOLEAN DEFAULT FALSE"); } catch (e2) {}
+      try { await pool.query("ALTER TABLE product_color_images ADD COLUMN sort_order INT DEFAULT 0"); } catch (e2) {}
+    }
 
     // 9. Cart & Cart Items
     await pool.query(`

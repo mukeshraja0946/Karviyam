@@ -45,4 +45,8 @@ router.post('/coupons/import', optionalToken, requireAdmin, upload.single('file'
 router.get('/customers/export', optionalToken, requireAdmin, excelController.exportCustomers);
 router.get('/orders/export', optionalToken, requireAdmin, excelController.exportOrders);
 
+// Inventory Excel Endpoints
+router.get('/inventory/export', optionalToken, requireAdmin, excelController.exportInventory);
+router.post('/inventory/import', optionalToken, requireAdmin, upload.single('file'), excelController.importInventory);
+
 module.exports = router;

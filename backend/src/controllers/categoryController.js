@@ -80,6 +80,7 @@ const ensureCategoryTableExists = async () => {
         icon_url LONGTEXT,
         banner_url LONGTEXT,
         order_index INT DEFAULT 0,
+        sort_order INT DEFAULT 0,
         is_active BOOLEAN DEFAULT TRUE,
         seo_title VARCHAR(150),
         meta_description TEXT,
@@ -89,6 +90,7 @@ const ensureCategoryTableExists = async () => {
         FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE
       )
     `);
+    try { await pool.query("ALTER TABLE categories ADD COLUMN sort_order INT DEFAULT 0"); } catch (e) {}
     try { await pool.query("ALTER TABLE categories MODIFY COLUMN image_url LONGTEXT"); } catch (e) {}
     try { await pool.query("ALTER TABLE categories MODIFY COLUMN icon_url LONGTEXT"); } catch (e) {}
     try { await pool.query("ALTER TABLE categories MODIFY COLUMN banner_url LONGTEXT"); } catch (e) {}
@@ -120,8 +122,8 @@ const ensureMainCategoriesExist = async () => {
       if (rows.length === 0) {
         const slug = item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
         await pool.query(
-          'INSERT INTO categories (name, slug, type, description, order_index, is_active) VALUES (?, ?, ?, ?, ?, 1)',
-          [item.name, slug, item.type, item.description, item.order]
+          'INSERT INTO categories (name, slug, type, description, order_index, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)',
+          [item.name, slug, item.type, item.description, item.order, item.order]
         );
       }
     }
@@ -144,6 +146,7 @@ const parseIsActive = (val) => {
 
 const mapCategoryRow = (c) => {
   const activeBool = parseIsActive(c.is_active);
+  const displayOrd = c.sort_order || c.order_index || 0;
   return {
     id: c.id,
     parentId: c.parent_id,
@@ -155,7 +158,10 @@ const mapCategoryRow = (c) => {
     imageUrl: c.image_url,
     iconUrl: c.icon_url,
     bannerUrl: c.banner_url,
-    orderIndex: c.order_index || 0,
+    orderIndex: displayOrd,
+    sortOrder: displayOrd,
+    sort_order: displayOrd,
+    displayOrder: displayOrd,
     isActive: activeBool,
     is_active: activeBool,
     enabled: activeBool,
