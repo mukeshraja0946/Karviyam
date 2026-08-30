@@ -11,12 +11,14 @@ import ClearAllModal from '../components/ClearAllModal';
 import BulkActionBar from '../components/BulkActionBar';
 
 const PRODUCT_EXPORT_HEADERS = [
+  { label: 'Product Image', accessor: (p) => p.imageUrl || (Array.isArray(p.images) && p.images[0]) || p.image || '' },
+  { label: 'SKU Code', accessor: (p) => p.sku || `KV-SKU-${p.id}` },
   { label: 'Product Name', accessor: 'name' },
-  { label: 'SKU', accessor: (p) => p.sku || `KV-SKU-${p.id}` },
-  { label: 'Category', accessor: 'categoryName' },
-  { label: 'Brand', accessor: 'brand' },
-  { label: 'Price (₹)', accessor: 'price' },
-  { label: 'Stock Quantity', accessor: 'stockQuantity' },
+  { label: 'Category', accessor: (p) => p.categoryName || p.category_name || 'Apparel' },
+  { label: 'Brand', accessor: (p) => p.brand || 'Karviyam' },
+  { label: 'Selling Price (₹)', accessor: 'price' },
+  { label: 'MRP Price (₹)', accessor: (p) => p.oldPrice || p.old_price || p.price },
+  { label: 'Stock Quantity', accessor: (p) => `${p.stockQuantity || p.stock_quantity || 0} Units` },
   { label: 'Status', accessor: (p) => p.isActive !== false ? 'Active' : 'Inactive' }
 ];
 const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.75) => {
@@ -1630,16 +1632,7 @@ export default function AdminProductsPage() {
         onClose={() => setExportModalOpen(false)}
         title="Product Catalog Management"
         filename="karviyam_products_export"
-        headers={[
-          { label: 'SKU Code', accessor: (p) => p.sku || `KV-SKU-${p.id}` },
-          { label: 'Product Name', accessor: 'name' },
-          { label: 'Category', accessor: (p) => p.categoryName || p.category_name || 'Apparel' },
-          { label: 'Brand', accessor: (p) => p.brand || 'Karviyam' },
-          { label: 'Selling Price (₹)', accessor: 'price' },
-          { label: 'MRP Price (₹)', accessor: (p) => p.oldPrice || p.old_price || p.price },
-          { label: 'Stock Quantity', accessor: (p) => `${p.stockQuantity || p.stock_quantity || 0} Units` },
-          { label: 'Status', accessor: (p) => p.isActive !== false ? 'Active' : 'Inactive' }
-        ]}
+        headers={PRODUCT_EXPORT_HEADERS}
         data={filtered}
         activeTab={exportActiveTab}
         customExcelHandler={async () => {

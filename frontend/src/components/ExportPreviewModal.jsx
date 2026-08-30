@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, FileSpreadsheet, FileText, Download, Eye, Check, Printer, FileCode } from 'lucide-react';
+import { X, FileSpreadsheet, FileText, Download, Eye, Check, Printer, FileCode, ExternalLink } from 'lucide-react';
 import { exportToCSV, exportToExcel, exportToPDF } from '../utils/exportUtils';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 
 export default function ExportPreviewModal({
@@ -16,6 +17,8 @@ export default function ExportPreviewModal({
   const [tab, setTab] = useState(activeTab || 'pdf');
 
   if (!isOpen) return null;
+
+  const storedLogo = typeof localStorage !== 'undefined' ? localStorage.getItem('karviyam_logo') : null;
 
   const handleExportExcel = async () => {
     try {
@@ -59,7 +62,7 @@ export default function ExportPreviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
@@ -137,10 +140,22 @@ export default function ExportPreviewModal({
             
             {/* Report Letterhead Header */}
             <div className="flex items-center justify-between border-b-2 border-red-700 pb-4">
-              <div>
-                <h3 className="font-extrabold text-xl text-red-800 tracking-tight">KARVIYAM ENTERPRISE</h3>
-                <p className="text-xs text-slate-500 font-semibold">{title}</p>
+              <div className="flex items-center gap-3">
+                {storedLogo ? (
+                  <img src={storedLogo} alt="Karviyam" className="h-10 w-auto object-contain max-w-[160px]" />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-[#B71C1C] text-white flex items-center justify-center font-black shadow-sm shrink-0">
+                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                      <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
+                    </svg>
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-extrabold text-xl text-red-800 tracking-tight leading-none">KARVIYAM ENTERPRISE</h3>
+                  <p className="text-xs text-slate-500 font-semibold mt-0.5">{title}</p>
+                </div>
               </div>
+
               <div className="text-right">
                 <span className="inline-block px-2.5 py-1 bg-red-50 text-red-700 font-bold text-2xs uppercase tracking-wider rounded-md border border-red-200">
                   Official Export
@@ -172,9 +187,38 @@ export default function ExportPreviewModal({
                             ? h.accessor(item)
                             : item[h.accessor]
                           : '';
+                        if (val === null || val === undefined) val = '';
+                        const strVal = String(val).trim();
+                        const isImageVal = strVal.startsWith('http://') || strVal.startsWith('https://') || strVal.startsWith('/uploads/') || /\.(jpg|jpeg|png|webp|avif|gif)(\?.*)?$/i.test(strVal);
+
+                        if (isImageVal) {
+                          const fullUrl = strVal.startsWith('http') ? strVal : `${window.location.origin}${strVal.startsWith('/') ? strVal : '/' + strVal}`;
+                          return (
+                            <td key={i} className="p-2.5 border-r border-slate-200 last:border-r-0 max-w-xs">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={resolveImageUrl(fullUrl)}
+                                  onError={(e) => handleImageError(e)}
+                                  alt="Product"
+                                  className="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0"
+                                />
+                                <a
+                                  href={fullUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-2xs font-bold text-[#B71C1C] hover:underline flex items-center gap-1 truncate max-w-[160px]"
+                                >
+                                  <span>{fullUrl}</span>
+                                  <ExternalLink className="w-3 h-3 shrink-0" />
+                                </a>
+                              </div>
+                            </td>
+                          );
+                        }
+
                         return (
                           <td key={i} className="p-2.5 border-r border-slate-200 last:border-r-0 max-w-xs truncate">
-                            {val !== null && val !== undefined ? String(val) : '-'}
+                            {strVal || '-'}
                           </td>
                         );
                       })}
