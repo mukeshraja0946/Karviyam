@@ -427,16 +427,16 @@ export default function AdminParentCategoriesPage() {
               .map(cat => (
                 <div
                   key={cat?.id || cat?.name}
-                  className="bg-white border border-slate-200/90 rounded-xl p-2 flex flex-col items-center justify-between text-center space-y-1.5 shadow-2xs group hover:border-[#B71C1C] transition-colors"
+                  className="bg-white border border-slate-200/90 rounded-2xl p-2 flex flex-col items-center justify-between text-center shadow-2xs group hover:border-[#B71C1C] transition-colors"
                 >
-                  <div className="w-full h-20 bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-slate-100">
+                  <div className="w-full aspect-square bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center border border-slate-100">
                     <img
                       src={resolveImageUrl(cat?.imageUrl || cat?.imagePath)}
                       alt={cat?.name || 'Category'}
-                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                   </div>
-                  <span className="font-extrabold text-[10px] uppercase text-slate-900 truncate w-full">
+                  <span className="font-extrabold text-[10px] uppercase text-slate-900 truncate w-full mt-2 px-1">
                     {cat?.name || ''}
                   </span>
                 </div>

@@ -414,23 +414,23 @@ export default function DesktopCenterContent() {
           </button>
         </div>
 
-        {/* 7 Identical Category Cards (No Image Background Box) */}
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 xl:gap-2.5 w-full">
+        {/* 7 Identical Category Cards (Square Image Box + Text Below) */}
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2.5 xl:gap-3 w-full">
           {categories.map((cat) => (
             <div
               key={cat.id}
               onClick={() => navigate(`/shop?${cat.query}`)}
-              className="h-[115px] xl:h-[125px] bg-white rounded-xl p-1.5 flex flex-col items-center justify-between cursor-pointer transition-all border border-slate-200/80 hover:shadow-xs group"
+              className="bg-white rounded-2xl p-2 flex flex-col items-center cursor-pointer transition-all border border-slate-200/90 shadow-2xs hover:border-[#B71C1C] hover:shadow-md group"
             >
-              <div className="w-full h-[78px] xl:h-[86px] bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center">
+              <div className="w-full aspect-square bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center border border-slate-100">
                 <img
                   src={resolveImageUrl(cat.image, cat.id)}
                   alt={cat.name}
                   onError={(e) => handleImageError(e, cat.id)}
-                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-800 text-center truncate w-full mb-0.5">
+              <span className="font-extrabold text-[10px] xl:text-[11px] uppercase tracking-wider text-slate-900 text-center truncate w-full mt-2 px-1">
                 {cat.name}
               </span>
             </div>
