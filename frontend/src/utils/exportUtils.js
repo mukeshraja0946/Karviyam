@@ -88,17 +88,17 @@ export const exportToPDF = (filename, title, headers, data) => {
         </svg>
        </div>`;
 
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
-
   const html = `
     <!DOCTYPE html>
     <html>
       <head>
         <title>${title} - Karviyam Enterprise</title>
         <style>
-          @page { size: A4 landscape; margin: 12mm; }
-          body { font-family: 'Inter', system-ui, -apple-system, sans-serif; padding: 20px; color: #0f172a; background: #ffffff; }
+          @page {
+            size: A4 landscape;
+            margin: 10mm;
+          }
+          body { font-family: 'Inter', system-ui, -apple-system, sans-serif; padding: 15px; color: #0f172a; background: #ffffff; }
           .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #B71C1C; padding-bottom: 14px; margin-bottom: 16px; }
           .brand-box { display: flex; align-items: center; }
           .logo-text { font-size: 22px; font-weight: 900; color: #B71C1C; letter-spacing: -0.5px; line-height: 1.1; }
@@ -172,17 +172,32 @@ export const exportToPDF = (filename, title, headers, data) => {
           <span>Karviyam Retail Operations System • Confidential</span>
           <span>Official System Document</span>
         </div>
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 300);
-          };
-        </script>
       </body>
     </html>
   `;
 
-  printWindow.document.write(html);
-  printWindow.document.close();
+  let iframe = document.getElementById('karviyam-print-iframe');
+  if (iframe) {
+    try { document.body.removeChild(iframe); } catch (e) {}
+  }
+
+  iframe = document.createElement('iframe');
+  iframe.id = 'karviyam-print-iframe';
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  setTimeout(() => {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  }, 350);
 };
