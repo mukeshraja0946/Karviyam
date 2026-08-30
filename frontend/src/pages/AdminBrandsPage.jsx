@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Award, Plus, Trash2, CheckCircle2, Upload, Image as ImageIcon, X } from 'lucide-react';
 import api from '../utils/api';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import ExportDropdown from '../components/ExportDropdown';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
@@ -398,9 +399,10 @@ export default function AdminBrandsPage() {
                 </td>
                 <td className="p-4 font-bold text-slate-900 flex items-center gap-3">
                   <img
-                    src={b.logoUrl || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=200'}
+                    src={resolveImageUrl(b.logoUrl, b.id)}
+                    onError={(e) => handleImageError(e, b.id)}
                     alt={b.name}
-                    className="w-9 h-9 rounded-xl object-cover border border-slate-200 bg-slate-50"
+                    className="w-9 h-9 rounded-xl object-cover border border-slate-200 bg-slate-50 shrink-0"
                   />
                   <span>{b.name}</span>
                 </td>

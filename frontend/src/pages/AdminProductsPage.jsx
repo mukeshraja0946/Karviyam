@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, X, Upload, AlertCircle, Eye, EyeOff, Film, FileSpreadsheet } from 'lucide-react';
 import api from '../utils/api';
-import { resolveImageUrl } from '../utils/imageUtils';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import BulkImportModal from '../components/BulkImportModal';
 import ExportDropdown from '../components/ExportDropdown';
@@ -1008,7 +1008,12 @@ export default function AdminProductsPage() {
                 </td>
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    <img src={p.images?.[0] || p.imageUrl} alt="" className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0" />
+                    <img
+                      src={resolveImageUrl(p.imageUrl || (Array.isArray(p.images) && p.images[0]) || p.image, p.id)}
+                      onError={(e) => handleImageError(e, p.id)}
+                      alt={p.name}
+                      className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0 bg-slate-100"
+                    />
                     <div>
                       <p className="font-bold text-slate-900 line-clamp-1">{p.name}</p>
                       <span className="text-[10px] text-slate-400 font-semibold">{p.brand || 'Karviyam'}</span>

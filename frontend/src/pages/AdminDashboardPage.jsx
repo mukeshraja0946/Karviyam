@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import {
   TrendingUp,
   DollarSign,
@@ -250,7 +251,12 @@ export default function AdminDashboardPage() {
                   {topProducts.map((p, i) => (
                     <tr key={i} className="hover:bg-slate-50/80">
                       <td className="py-2.5 flex items-center gap-3">
-                        <img src={p.image} alt="" className="w-8 h-8 rounded-lg object-cover border border-slate-200" />
+                        <img
+                          src={resolveImageUrl(p.image || p.imageUrl, p.id || i)}
+                          onError={(e) => handleImageError(e, p.id || i)}
+                          alt={p.name}
+                          className="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
+                        />
                         <div>
                           <p className="font-bold text-slate-900 line-clamp-1">{p.name}</p>
                           <p className="text-[10px] text-slate-400">{p.category}</p>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Plus, Trash2, Edit2, X, Eye, Upload, Link as LinkIcon, Power, CheckCircle, AlertCircle, Loader2, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 import BulkImportModal from '../components/BulkImportModal';
 import ClearAllModal from '../components/ClearAllModal';
@@ -508,7 +509,7 @@ export default function AdminBannersPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {banners.map((b) => {
             const isActive = (b.status || (b.isActive ? 'active' : 'inactive')).toLowerCase() === 'active';
-            const bannerImage = b.imagePath || b.imageUrl || b.image || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600';
+            const bannerImage = resolveImageUrl(b.imagePath || b.imageUrl || b.image, b.id);
             const isUpdatingThis = Boolean(actionLoading[b.id]);
 
             return (
@@ -526,10 +527,7 @@ export default function AdminBannersPage() {
                     src={bannerImage}
                     alt={b.title || 'Banner'}
                     className="w-full h-full object-cover opacity-80"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600';
-                    }}
+                    onError={(e) => handleImageError(e, b.id)}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent flex flex-col justify-end p-5 text-white">
                     <span className="text-[10px] font-black uppercase text-amber-400">Order #{b.displayOrder || b.sortOrder || b.id}</span>

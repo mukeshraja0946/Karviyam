@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layers, Plus, Trash2, Edit2, Save, X, Search, Image as ImageIcon, Upload, Link as LinkIcon, Eye, EyeOff, Check, FileSpreadsheet } from 'lucide-react';
 import api from '../utils/api';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import BulkImportModal from '../components/BulkImportModal';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
@@ -690,9 +691,10 @@ export default function AdminCategoriesPage() {
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             <img
-                              src={cat.imageUrl || cat.iconUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'}
+                              src={resolveImageUrl(cat.imageUrl || cat.iconUrl || cat.bannerUrl, cat.id)}
+                              onError={(e) => handleImageError(e, cat.id)}
                               alt={cat.name}
-                              className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0"
+                              className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0 bg-slate-100"
                             />
                             <div>
                               <p className="font-bold text-slate-900 text-xs">{cat.name}</p>
