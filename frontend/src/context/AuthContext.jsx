@@ -17,11 +17,28 @@ export const AuthProvider = ({ children }) => {
 
       if (storedToken && storedUser) {
         try {
+          // Client-side JWT expiration check
+          const parts = storedToken.split('.');
+          if (parts.length === 3) {
+            try {
+              const payload = JSON.parse(atob(parts[1]));
+              if (payload.exp && payload.exp * 1000 < Date.now()) {
+                console.warn('[AuthContext]: Expired JWT session token purged on init');
+                localStorage.removeItem('karviyam_token');
+                localStorage.removeItem('karviyam_user');
+                setUser(null);
+                setToken(null);
+                setInitializing(false);
+                return;
+              }
+            } catch (eDec) {}
+          }
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
           setToken(storedToken);
         } catch (e) {
           console.error('Failed to parse cached user data:', e);
+          localStorage.removeItem('karviyam_token');
           localStorage.removeItem('karviyam_user');
         }
       }
@@ -29,6 +46,16 @@ export const AuthProvider = ({ children }) => {
     };
 
     initAuth();
+
+    const handleUnauthorized = () => {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('karviyam_token');
+      localStorage.removeItem('karviyam_user');
+    };
+
+    window.addEventListener('karviyam_auth_unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('karviyam_auth_unauthorized', handleUnauthorized);
   }, []);
 
   const login = async (email, password) => {
@@ -124,6 +151,11 @@ export const AuthProvider = ({ children }) => {
 
   const googleLogin = async (googleData) => {
     setLoading(true);
+    // Purge previous auth keys before processing new Google login
+    localStorage.removeItem('karviyam_token');
+    localStorage.removeItem('karviyam_user');
+    setUser(null);
+    setToken(null);
     try {
       const res = await api.post('/auth/google', googleData);
       const payload = res.data;

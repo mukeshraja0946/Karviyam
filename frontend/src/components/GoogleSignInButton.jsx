@@ -45,6 +45,8 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
   }, [googleClientId, googleLogin]);
 
   const handleGoogleSignIn = () => {
+    if (loading) return;
+
     if (!googleClientId || googleClientId.trim() === '') {
       console.error("Google Client ID not configured.");
       toast.error("Google OAuth is not configured. Please contact the administrator.");
@@ -55,6 +57,13 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
       toast.error("Google Identity Services script is loading. Please try again in a moment.");
       return;
     }
+
+    // Purge any stale auth state before opening popup
+    try {
+      localStorage.removeItem('karviyam_token');
+      localStorage.removeItem('karviyam_user');
+      sessionStorage.clear();
+    } catch (e) {}
 
     setLoading(true);
 
