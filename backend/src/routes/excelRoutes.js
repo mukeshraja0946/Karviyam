@@ -8,7 +8,8 @@ const { requireAdmin } = require('../middleware/adminMiddleware');
 
 // Product Excel Endpoints
 router.get('/products/export', optionalToken, requireAdmin, excelController.exportProducts);
-router.get('/products/template', optionalToken, requireAdmin, excelController.downloadProductTemplate);
+router.get('/products/template', excelController.downloadProductTemplate);
+router.get('/download-sample', excelController.downloadProductTemplate);
 router.post('/products/preview', optionalToken, requireAdmin, upload.single('file'), excelController.previewProductImport);
 router.post('/products/import', optionalToken, requireAdmin, upload.single('file'), excelController.executeProductImport);
 router.post('/error-report', optionalToken, requireAdmin, excelController.downloadErrorReport);
