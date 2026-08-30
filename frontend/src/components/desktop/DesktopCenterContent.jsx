@@ -400,37 +400,44 @@ export default function DesktopCenterContent() {
 
       </div>
 
-      {/* 3. Top Categories Section */}
-      <div className="w-full flex flex-col gap-2">
+      {/* 3. Shop by Category Section (Matching Reference UI) */}
+      <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-display font-black text-sm text-slate-900 tracking-tight">
-            Top Categories
-          </h2>
+          <div>
+            <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
+              Shop by Category
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Explore top categories and find your favorites
+            </p>
+          </div>
           <button
             onClick={() => navigate('/shop')}
-            className="text-[11px] font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5"
+            className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5"
           >
             View All →
           </button>
         </div>
 
-        {/* 7 Identical Category Cards (Square Image Box + Text Below) */}
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2.5 xl:gap-3 w-full">
+        {/* Category Items Grid */}
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 xl:gap-4 w-full">
           {categories.map((cat) => (
             <div
               key={cat.id}
               onClick={() => navigate(`/shop?${cat.query}`)}
-              className="bg-white rounded-2xl p-2 flex flex-col items-center cursor-pointer transition-all border border-slate-200/90 shadow-2xs hover:border-[#B71C1C] hover:shadow-md group"
+              className="flex flex-col items-center cursor-pointer group"
             >
-              <div className="w-full aspect-square bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center border border-slate-100">
+              {/* Soft Ice-Blue Square Background Box */}
+              <div className="w-full aspect-square bg-[#F0F6FE] hover:bg-[#E2EEFE] transition-colors rounded-2xl p-2.5 flex items-center justify-center border border-slate-100/80 shadow-2xs overflow-hidden">
                 <img
                   src={resolveImageUrl(cat.image, cat.id)}
                   alt={cat.name}
                   onError={(e) => handleImageError(e, cat.id)}
-                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <span className="font-extrabold text-[10px] xl:text-[11px] uppercase tracking-wider text-slate-900 text-center truncate w-full mt-2 px-1">
+              {/* Clean Category Name Text Below Box */}
+              <span className="font-bold text-[11px] xl:text-[12px] text-slate-800 text-center truncate w-full mt-2.5 group-hover:text-[#B71C1C] transition-colors">
                 {cat.name}
               </span>
             </div>
