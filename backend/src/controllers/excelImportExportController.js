@@ -383,6 +383,12 @@ exports.exportProducts = async (req, res, next) => {
 // =========================================================================
 exports.downloadProductTemplate = async (req, res, next) => {
   try {
+    const sampleFilePath = path.join(__dirname, '../../karviyam_product_import_sample_100.xlsx');
+    if (fs.existsSync(sampleFilePath)) {
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="karviyam_product_import_sample_100.xlsx"');
+      return res.sendFile(sampleFilePath);
+    }
     const sampleProduct = {
       id: 1,
       sku: 'KV-DEMO-001',
