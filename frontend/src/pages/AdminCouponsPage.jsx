@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import ExportDropdown from '../components/ExportDropdown';
 import { Ticket, Plus, Trash2, Edit2, X, CheckCircle, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import BulkImportModal from '../components/BulkImportModal';
 import ClearAllModal from '../components/ClearAllModal';
 import BulkActionBar from '../components/BulkActionBar';
+
+const COUPON_EXPORT_HEADERS = [
+  { label: 'Coupon Code', accessor: 'code' },
+  { label: 'Discount Type', accessor: (c) => c.discountType || c.discount_type || 'percentage' },
+  { label: 'Discount Value', accessor: (c) => c.discountValue || c.discount_value || 0 },
+  { label: 'Min Order Amount (₹)', accessor: (c) => c.minOrderAmount || c.min_order_amount || 0 },
+  { label: 'Max Usage Limit', accessor: (c) => c.usageLimit || c.usage_limit || 'Unlimited' },
+  { label: 'Used Count', accessor: (c) => c.usedCount || c.used_count || 0 },
+  { label: 'Expiry Date', accessor: (c) => c.expiresAt || c.expires_at ? new Date(c.expiresAt || c.expires_at).toLocaleDateString() : 'No Expiry' },
+  { label: 'Status', accessor: (c) => c.isActive !== false ? 'Active' : 'Inactive' }
+];
 
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState([]);
@@ -262,28 +274,12 @@ export default function AdminCouponsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                const response = await api.get('/admin/excel/coupons/export', { responseType: 'blob' });
-                const url = window.URL.createObjectURL(new Blob([response.data]));
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', 'karviyam_coupons_export.xlsx');
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                toast.success('Exported coupons list!');
-              } catch (err) {
-                toast.error('Failed to export coupons');
-              }
-            }}
-            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-white" />
-            <span>Export Coupons</span>
-          </button>
+          <ExportDropdown
+            filename="coupons_report"
+            title="Coupons & Discount Codes Report"
+            headers={COUPON_EXPORT_HEADERS}
+            data={coupons}
+          />
 
           <button
             onClick={() => setImportModalOpen(true)}

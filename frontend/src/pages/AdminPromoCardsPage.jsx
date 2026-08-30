@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ExportDropdown from '../components/ExportDropdown';
 import {
   Tag,
   Plus,
@@ -21,6 +22,15 @@ import { resolveImageUrl } from '../utils/imageUtils';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 import ClearAllModal from '../components/ClearAllModal';
 import BulkActionBar from '../components/BulkActionBar';
+
+const PROMO_CARD_EXPORT_HEADERS = [
+  { label: 'Title / Headline', accessor: 'title' },
+  { label: 'Sub-title', accessor: 'subtitle' },
+  { label: 'Promo Code / Tag', accessor: (p) => p.code || p.tag || '' },
+  { label: 'Target Route Link', accessor: 'link' },
+  { label: 'Display Order', accessor: (p) => p.orderIndex || p.displayOrder || 0 },
+  { label: 'Status', accessor: (p) => p.isActive !== false ? 'Active' : 'Inactive' }
+];
 
 export default function AdminPromoCardsPage() {
   const [promos, setPromos] = useState([]);
@@ -354,6 +364,13 @@ export default function AdminPromoCardsPage() {
             <Trash2 className="w-4 h-4" />
             <span>Clear All Data</span>
           </button>
+
+          <ExportDropdown
+            filename="promotional_cards_report"
+            title="Promotional Cards & Sidebar Banners Report"
+            headers={PROMO_CARD_EXPORT_HEADERS}
+            data={promos}
+          />
           
           <button
             onClick={handleOpenAddModal}

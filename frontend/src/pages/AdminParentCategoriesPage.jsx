@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ExportDropdown from '../components/ExportDropdown';
 import {
   Layers,
   Plus,
@@ -23,6 +24,14 @@ import { resolveImageUrl } from '../utils/imageUtils';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 import ClearAllModal from '../components/ClearAllModal';
 import BulkActionBar from '../components/BulkActionBar';
+
+const PARENT_CATEGORY_EXPORT_HEADERS = [
+  { label: 'Category Name', accessor: 'name' },
+  { label: 'Classification', accessor: (c) => c.classification || c.gender || 'WOMEN' },
+  { label: 'Sub-title', accessor: 'subtitle' },
+  { label: 'Display Order', accessor: (c) => c.displayOrder || c.orderIndex || 0 },
+  { label: 'Status', accessor: (c) => c.isActive !== false ? 'Active' : 'Inactive' }
+];
 
 export default function AdminParentCategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -370,6 +379,13 @@ export default function AdminParentCategoriesPage() {
             <Trash2 className="w-4 h-4" />
             <span>Clear All Data</span>
           </button>
+
+          <ExportDropdown
+            filename="parent_categories_report"
+            title="Parent Categories Management Report"
+            headers={PARENT_CATEGORY_EXPORT_HEADERS}
+            data={categories}
+          />
 
           <button
             onClick={handleOpenAddModal}

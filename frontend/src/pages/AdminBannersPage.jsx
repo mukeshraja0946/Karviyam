@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Plus, Trash2, Edit2, X, Eye, Upload, Link as LinkIcon, Power, CheckCircle, AlertCircle, Loader2, FileSpreadsheet } from 'lucide-react';
+import ExportDropdown from '../components/ExportDropdown';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
@@ -7,6 +8,15 @@ import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 import BulkImportModal from '../components/BulkImportModal';
 import ClearAllModal from '../components/ClearAllModal';
 import BulkActionBar from '../components/BulkActionBar';
+
+const BANNER_EXPORT_HEADERS = [
+  { label: 'Title / Headline', accessor: 'title' },
+  { label: 'Sub-title', accessor: 'subtitle' },
+  { label: 'Tag / Badge', accessor: 'tag' },
+  { label: 'Target Route Link', accessor: 'link' },
+  { label: 'Sort Order', accessor: (b) => b.orderIndex || b.order_index || 0 },
+  { label: 'Status', accessor: (b) => b.isActive !== false ? 'Active' : 'Inactive' }
+];
 
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState([]);
@@ -368,28 +378,12 @@ export default function AdminBannersPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                const response = await api.get('/admin/excel/banners/export', { responseType: 'blob' });
-                const url = window.URL.createObjectURL(new Blob([response.data]));
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', 'karviyam_banners_export.xlsx');
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                toast.success('Exported homepage banners!');
-              } catch (err) {
-                toast.error('Failed to export banners');
-              }
-            }}
-            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-white" />
-            <span>Export Banners</span>
-          </button>
+          <ExportDropdown
+            filename="banners_report"
+            title="Homepage Hero Banners Report"
+            headers={BANNER_EXPORT_HEADERS}
+            data={banners}
+          />
 
           <button
             onClick={() => setImportModalOpen(true)}

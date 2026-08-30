@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ExportDropdown from '../components/ExportDropdown';
 import {
   MapPin,
   Plus,
@@ -25,6 +26,16 @@ import toast from 'react-hot-toast';
 import BulkImportModal from '../components/BulkImportModal';
 import ClearAllModal from '../components/ClearAllModal';
 import BulkActionBar from '../components/BulkActionBar';
+
+const PINCODE_EXPORT_HEADERS = [
+  { label: 'Pincode', accessor: 'pincode' },
+  { label: 'City / Area', accessor: (p) => p.city || p.area || '' },
+  { label: 'State', accessor: 'state' },
+  { label: 'Estimated Delivery Days', accessor: (p) => p.deliveryDays || p.delivery_days || 3 },
+  { label: 'COD Available', accessor: (p) => p.codAvailable !== false ? 'Yes' : 'No' },
+  { label: 'Express Shipping', accessor: (p) => p.expressAvailable ? 'Yes' : 'No' },
+  { label: 'Status', accessor: (p) => p.isActive !== false ? 'Active' : 'Inactive' }
+];
 
 export default function AdminPincodesPage() {
   const [pincodes, setPincodes] = useState([]);
@@ -561,6 +572,13 @@ export default function AdminPincodesPage() {
             <Trash2 className="w-4 h-4 text-white" />
             <span>Clear All Data</span>
           </button>
+
+          <ExportDropdown
+            filename="deliverable_pincodes_report"
+            title="Deliverable Pincodes Management Report"
+            headers={PINCODE_EXPORT_HEADERS}
+            data={pincodes}
+          />
 
           <button
             onClick={() => setImportModalOpen(true)}

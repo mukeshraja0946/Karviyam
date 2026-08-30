@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Plus, Trash2, Edit2, Save, X, Search, Image as ImageIcon, Upload, Link as LinkIcon, Eye, EyeOff, Check, FileSpreadsheet } from 'lucide-react';
+import { Layers, Plus, Trash2, Edit2, Save, X, Search, Image as ImageIcon, Upload, Link as LinkIcon, Eye, EyeOff, Check, FileSpreadsheet, FileText, Printer } from 'lucide-react';
 import api from '../utils/api';
 import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import BulkImportModal from '../components/BulkImportModal';
+import ExportPreviewModal from '../components/ExportPreviewModal';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 import ClearAllModal from '../components/ClearAllModal';
 import BulkActionBar from '../components/BulkActionBar';
@@ -138,6 +139,8 @@ export default function AdminCategoriesPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportActiveTab, setExportActiveTab] = useState('pdf');
   const [editingCategory, setEditingCategory] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -544,25 +547,26 @@ export default function AdminCategoriesPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={async () => {
-              try {
-                const response = await api.get('/admin/excel/categories/export', { responseType: 'blob' });
-                const url = window.URL.createObjectURL(new Blob([response.data]));
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', 'karviyam_categories_export.xlsx');
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                toast.success('Exported category catalog!');
-              } catch (err) {
-                toast.error('Failed to export categories');
-              }
+            onClick={() => {
+              setExportActiveTab('excel');
+              setExportModalOpen(true);
             }}
             className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-white" />
-            <span>Export Categories</span>
+            <span>Export Categories (Excel)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setExportActiveTab('pdf');
+              setExportModalOpen(true);
+            }}
+            className="flex items-center gap-2 bg-red-700 hover:bg-red-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Printer className="w-4 h-4 text-white" />
+            <span>Export PDF</span>
           </button>
 
           <button
@@ -1127,6 +1131,31 @@ export default function AdminCategoriesPage() {
         }}
         moduleName="Categories"
         loading={batchDeleting}
+      />
+      <ExportPreviewModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        title="Categories Management"
+        filename="karviyam_categories_export"
+        headers={[
+          { label: 'Category Name', accessor: 'name' },
+          { label: 'Type / Classification', accessor: (c) => c.type || c.classification || 'WOMEN' },
+          { label: 'Sort Order', accessor: (c) => c.orderIndex || c.order_index || 0 },
+          { label: 'Status', accessor: (c) => getCategoryActive(c) ? 'Active' : 'Inactive' }
+        ]}
+        data={filtered}
+        activeTab={exportActiveTab}
+        customExcelHandler={async () => {
+          const response = await api.get('/admin/excel/categories/export', { responseType: 'blob' });
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', 'karviyam_categories_export.xlsx');
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          toast.success('Exported category catalog!');
+        }}
       />
 
     </div>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Upload, AlertCircle, Eye, EyeOff, Film, FileSpreadsheet } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Upload, AlertCircle, Eye, EyeOff, Film, FileSpreadsheet, FileText, Printer } from 'lucide-react';
 import api from '../utils/api';
 import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import BulkImportModal from '../components/BulkImportModal';
 import ExportDropdown from '../components/ExportDropdown';
+import ExportPreviewModal from '../components/ExportPreviewModal';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 import ClearAllModal from '../components/ClearAllModal';
 import BulkActionBar from '../components/BulkActionBar';
@@ -85,6 +86,8 @@ const compressBase64Url = (url) => {
 };
 
 export default function AdminProductsPage() {
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportActiveTab, setExportActiveTab] = useState('pdf');
   const [maxImagesLimit, setMaxImagesLimit] = useState(() => {
     const saved = localStorage.getItem('karviyam_max_product_images');
     return saved ? parseInt(saved, 10) : 6;
@@ -891,25 +894,26 @@ export default function AdminProductsPage() {
 
           <button
             type="button"
-            onClick={async () => {
-              try {
-                const response = await api.get('/admin/excel/products/export', { responseType: 'blob' });
-                const url = window.URL.createObjectURL(new Blob([response.data]));
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', 'karviyam_products_export.xlsx');
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                toast.success('Exported complete multi-sheet product catalog!');
-              } catch (err) {
-                toast.error('Failed to export multi-sheet products');
-              }
+            onClick={() => {
+              setExportActiveTab('excel');
+              setExportModalOpen(true);
             }}
             className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-white" />
             <span>Export Products (Excel)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setExportActiveTab('pdf');
+              setExportModalOpen(true);
+            }}
+            className="flex items-center gap-2 bg-red-700 hover:bg-red-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <Printer className="w-4 h-4 text-white" />
+            <span>Export PDF</span>
           </button>
 
           <button
@@ -1620,6 +1624,35 @@ export default function AdminProductsPage() {
         }}
         moduleName="Products"
         loading={batchDeleting}
+      />
+      <ExportPreviewModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        title="Product Catalog Management"
+        filename="karviyam_products_export"
+        headers={[
+          { label: 'SKU Code', accessor: (p) => p.sku || `KV-SKU-${p.id}` },
+          { label: 'Product Name', accessor: 'name' },
+          { label: 'Category', accessor: (p) => p.categoryName || p.category_name || 'Apparel' },
+          { label: 'Brand', accessor: (p) => p.brand || 'Karviyam' },
+          { label: 'Selling Price (₹)', accessor: 'price' },
+          { label: 'MRP Price (₹)', accessor: (p) => p.oldPrice || p.old_price || p.price },
+          { label: 'Stock Quantity', accessor: (p) => `${p.stockQuantity || p.stock_quantity || 0} Units` },
+          { label: 'Status', accessor: (p) => p.isActive !== false ? 'Active' : 'Inactive' }
+        ]}
+        data={filtered}
+        activeTab={exportActiveTab}
+        customExcelHandler={async () => {
+          const response = await api.get('/admin/excel/products/export', { responseType: 'blob' });
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', 'karviyam_products_export.xlsx');
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          toast.success('Exported complete multi-sheet product catalog!');
+        }}
       />
 
     </div>
