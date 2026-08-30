@@ -907,18 +907,6 @@ export default function AdminProductsPage() {
           </button>
 
           <button
-            type="button"
-            onClick={() => {
-              setExportActiveTab('pdf');
-              setExportModalOpen(true);
-            }}
-            className="flex items-center gap-2 bg-red-700 hover:bg-red-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
-          >
-            <Printer className="w-4 h-4 text-white" />
-            <span>Export PDF</span>
-          </button>
-
-          <button
             onClick={() => setImportModalOpen(true)}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
           >
