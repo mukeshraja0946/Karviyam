@@ -231,10 +231,13 @@ exports.googleAuth = async (req, res, next) => {
           const gRes = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`, { timeout: 5000 }).catch(() => null);
           if (gRes?.data) {
             const info = gRes.data;
-            if (info.email) verifiedEmail = info.email.trim().toLowerCase();
-            if (info.name) verifiedName = info.name.trim();
-            if (info.sub) verifiedGoogleId = info.sub;
-            if (info.picture) verifiedPicture = info.picture;
+            const expectedClientId = process.env.GOOGLE_CLIENT_ID || '333255083784-u9hu0liup36sgneialgug9fuvr2qgv4u.apps.googleusercontent.com';
+            if (!info.aud || info.aud === expectedClientId || expectedClientId.includes(info.aud) || String(info.aud).includes('333255083784')) {
+              if (info.email) verifiedEmail = info.email.trim().toLowerCase();
+              if (info.name) verifiedName = info.name.trim();
+              if (info.sub) verifiedGoogleId = info.sub;
+              if (info.picture) verifiedPicture = info.picture;
+            }
           }
 
           // Layer 2: Fallback to decoding signed Google JWT payload if tokeninfo endpoint was unreachable or timed out
