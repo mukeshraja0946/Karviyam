@@ -381,6 +381,15 @@ exports.googleAuth = async (req, res, next) => {
       isAdmin: isAdminUser
     };
 
+    try {
+      res.cookie('karviyam_token', token, {
+        httpOnly: false,
+        secure: true,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 3600 * 1000
+      });
+    } catch (eCookie) {}
+
     return res.status(200).json(ApiResponse.success(jwtResponse, 'Google authentication successful!'));
   } catch (err) {
     next(err);

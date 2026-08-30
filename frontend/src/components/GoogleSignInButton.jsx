@@ -47,6 +47,8 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
   const handleGoogleSignIn = () => {
     if (loading) return;
 
+    console.log('[GOOGLE AUTH] Button clicked');
+
     if (!googleClientId || googleClientId.trim() === '') {
       console.error("Google Client ID not configured.");
       toast.error("Google OAuth is not configured. Please contact the administrator.");
@@ -67,14 +69,30 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
 
     setLoading(true);
 
+    // 15-second safety timeout to reset state if popup is abandoned or hangs
+    const safetyTimeoutId = setTimeout(() => {
+      setLoading((currLoading) => {
+        if (currLoading) {
+          console.warn('[GOOGLE AUTH] 15-second safety timeout reached');
+          toast.error('Google sign-in could not be completed. Please try again.', { id: 'g-timeout' });
+          return false;
+        }
+        return currLoading;
+      });
+    }, 15000);
+
     try {
+      console.log('[GOOGLE AUTH] GIS initializing token client');
       // Official Google Identity Services OAuth 2.0 Account Picker with scope: 'openid email profile'
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: googleClientId,
         scope: 'openid email profile',
         prompt: 'select_account',
         callback: async (tokenResponse) => {
+          clearTimeout(safetyTimeoutId);
+          console.log('[GOOGLE AUTH] Google response received');
           if (tokenResponse && tokenResponse.access_token) {
+            console.log('[GOOGLE AUTH] Credential received');
             try {
               let userEmail = '';
               let userName = '';
@@ -102,7 +120,7 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
                 console.warn('Client-side Google profile fetch bypassed, proceeding to backend verification:', e);
               }
 
-              // Send credential to backend for server-side verification and database role matching
+              console.log('[GOOGLE AUTH] Sending credential to backend');
               const payload = {
                 credential: tokenResponse.access_token,
                 email: userEmail,
@@ -112,8 +130,11 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
               };
 
               const res = await googleLogin(payload);
+              console.log('[GOOGLE AUTH] Backend response received');
               if (res && res.success) {
+                console.log('[GOOGLE AUTH] User authenticated, role loaded from DB');
                 const targetPath = res.isAdmin ? '/admin' : '/';
+                console.log('[GOOGLE AUTH] Redirecting to:', targetPath);
                 window.location.href = targetPath;
               }
             } catch (err) {
@@ -132,6 +153,7 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
           }
         },
         error_callback: (err) => {
+          clearTimeout(safetyTimeoutId);
           console.error('Google Token Client Error:', err);
           setLoading(false);
           if (!err) return;
@@ -150,6 +172,7 @@ export default function GoogleSignInButton({ isMaintenanceMode }) {
 
       tokenClient.requestAccessToken({ prompt: 'select_account' });
     } catch (e) {
+      clearTimeout(safetyTimeoutId);
       console.error('Google Sign-In Exception:', e);
       toast.error('Google Sign-In encountered an error');
       setLoading(false);

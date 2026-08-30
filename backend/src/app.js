@@ -49,11 +49,20 @@ const app = express();
 app.use(
   helmet({
     contentSecurityPolicy: false,
+    crossOriginOpenerPolicy: {
+      policy: 'same-origin-allow-popups'
+    },
     crossOriginResourcePolicy: {
       policy: 'cross-origin'
     }
   })
 );
+
+// Enforce COOP same-origin-allow-popups for Google OAuth Popup postMessage communication
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  next();
+});
 
 // --------------------------------------------------
 // CORS
