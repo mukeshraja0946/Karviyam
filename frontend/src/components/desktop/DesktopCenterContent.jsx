@@ -27,72 +27,18 @@ const CATEGORIES_DATA = [
 ];
 
 const DEFAULT_RECOMMENDED = [
-  {
-    id: 101,
-    name: 'Men Solid Polo T-Shirt',
-    brand: 'KARVIYAM',
-    rating: 4.5,
-    reviews: '1.2k',
-    price: 699,
-    oldPrice: 1299,
-    discount: '46% OFF',
-    image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=600'
-  },
-  {
-    id: 102,
-    name: 'Zari Border Silk Saree',
-    brand: 'KARVIYAM',
-    rating: 4.6,
-    reviews: '980',
-    price: 1299,
-    oldPrice: 2499,
-    discount: '48% OFF',
-    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600'
-  },
-  {
-    id: 103,
-    name: 'Printed Oversized T-Shirt',
-    brand: 'KARVIYAM',
-    rating: 4.3,
-    reviews: '740',
-    price: 599,
-    oldPrice: 999,
-    discount: '40% OFF',
-    image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600'
-  },
-  {
-    id: 104,
-    name: 'Running Sneakers',
-    brand: 'KARVIYAM',
-    rating: 4.6,
-    reviews: '1.5k',
-    price: 1499,
-    oldPrice: 2499,
-    discount: '40% OFF',
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600'
-  },
-  {
-    id: 105,
-    name: 'Cotton Kurta Set',
-    brand: 'KARVIYAM',
-    rating: 4.4,
-    reviews: '620',
-    price: 899,
-    oldPrice: 1599,
-    discount: '44% OFF',
-    image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600'
-  },
-  {
-    id: 106,
-    name: 'Kids Printed Shirt',
-    brand: 'KARVIYAM',
-    rating: 4.5,
-    reviews: '310',
-    price: 499,
-    oldPrice: 799,
-    discount: '38% OFF',
-    image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600'
-  }
+  { id: 101, name: 'Men Solid Polo T-Shirt', brand: 'KARVIYAM', rating: 4.5, reviews: '1.2k', price: 699, oldPrice: 1299, discount: '46% OFF', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=600' },
+  { id: 102, name: 'Zari Border Silk Saree', brand: 'KARVIYAM', rating: 4.6, reviews: '980', price: 1299, oldPrice: 2499, discount: '48% OFF', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600' },
+  { id: 103, name: 'Printed Oversized T-Shirt', brand: 'KARVIYAM', rating: 4.3, reviews: '740', price: 599, oldPrice: 999, discount: '40% OFF', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600' },
+  { id: 104, name: 'Running Sneakers', brand: 'KARVIYAM', rating: 4.6, reviews: '1.5k', price: 1499, oldPrice: 2499, discount: '40% OFF', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600' },
+  { id: 105, name: 'Cotton Kurta Set', brand: 'KARVIYAM', rating: 4.4, reviews: '620', price: 899, oldPrice: 1599, discount: '44% OFF', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600' },
+  { id: 106, name: 'Kids Printed Shirt', brand: 'KARVIYAM', rating: 4.5, reviews: '310', price: 499, oldPrice: 799, discount: '38% OFF', image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600' },
+  { id: 107, name: 'Casual Denim Jacket', brand: 'KARVIYAM', rating: 4.7, reviews: '1.1k', price: 1799, oldPrice: 2999, discount: '40% OFF', image: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=600' },
+  { id: 108, name: 'Floral Summer Dress', brand: 'KARVIYAM', rating: 4.5, reviews: '850', price: 1099, oldPrice: 1999, discount: '45% OFF', image: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600' },
+  { id: 109, name: 'Leather Crossbody Bag', brand: 'KARVIYAM', rating: 4.8, reviews: '420', price: 1499, oldPrice: 2799, discount: '46% OFF', image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600' },
+  { id: 110, name: 'Polarized Retro Sunglasses', brand: 'KARVIYAM', rating: 4.4, reviews: '670', price: 799, oldPrice: 1499, discount: '46% OFF', image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600' },
+  { id: 111, name: 'Unisex Knit Winter Beanie', brand: 'KARVIYAM', rating: 4.6, reviews: '530', price: 499, oldPrice: 899, discount: '44% OFF', image: 'https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=600' },
+  { id: 112, name: 'High-Top Canvas Sneakers', brand: 'KARVIYAM', rating: 4.7, reviews: '1.3k', price: 1899, oldPrice: 3299, discount: '42% OFF', image: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=600' }
 ];
 
 export default function DesktopCenterContent() {
@@ -103,14 +49,25 @@ export default function DesktopCenterContent() {
   const [heroSlides, setHeroSlides] = useState([]);
   const [autoScroll, setAutoScroll] = useState(true);
   const [speed, setSpeed] = useState(5000);
-  const [products, setProducts] = useState(DEFAULT_RECOMMENDED);
-  const [categories, setCategories] = useState(CATEGORIES_DATA);
 
+  const [categories, setCategories] = useState(CATEGORIES_DATA);
+  const [productsRow1, setProductsRow1] = useState([]);
+  const [productsRow2, setProductsRow2] = useState([]);
+
+  // Category carousel ref & state
   const categoryScrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const checkScrollBoundary = () => {
+  // Recommendation Rows refs & states
+  const row1ScrollRef = useRef(null);
+  const row2ScrollRef = useRef(null);
+  const [canRow1Left, setCanRow1Left] = useState(false);
+  const [canRow1Right, setCanRow1Right] = useState(true);
+  const [canRow2Left, setCanRow2Left] = useState(false);
+  const [canRow2Right, setCanRow2Right] = useState(true);
+
+  const checkCategoryScrollBoundary = () => {
     const el = categoryScrollRef.current;
     if (el) {
       const isAtLeft = el.scrollLeft <= 5;
@@ -120,40 +77,112 @@ export default function DesktopCenterContent() {
     }
   };
 
-  useEffect(() => {
-    const el = categoryScrollRef.current;
+  const checkRow1ScrollBoundary = () => {
+    const el = row1ScrollRef.current;
     if (el) {
-      checkScrollBoundary();
-      el.addEventListener('scroll', checkScrollBoundary);
-      window.addEventListener('resize', checkScrollBoundary);
-      return () => {
-        el.removeEventListener('scroll', checkScrollBoundary);
-        window.removeEventListener('resize', checkScrollBoundary);
-      };
+      const isAtLeft = el.scrollLeft <= 5;
+      const isAtRight = el.scrollLeft + el.clientWidth >= el.scrollWidth - 5;
+      setCanRow1Left(!isAtLeft);
+      setCanRow1Right(!isAtRight);
     }
-  }, [categories]);
+  };
+
+  const checkRow2ScrollBoundary = () => {
+    const el = row2ScrollRef.current;
+    if (el) {
+      const isAtLeft = el.scrollLeft <= 5;
+      const isAtRight = el.scrollLeft + el.clientWidth >= el.scrollWidth - 5;
+      setCanRow2Left(!isAtLeft);
+      setCanRow2Right(!isAtRight);
+    }
+  };
+
+  useEffect(() => {
+    const catEl = categoryScrollRef.current;
+    if (catEl) {
+      checkCategoryScrollBoundary();
+      catEl.addEventListener('scroll', checkCategoryScrollBoundary);
+      window.addEventListener('resize', checkCategoryScrollBoundary);
+    }
+    const r1El = row1ScrollRef.current;
+    if (r1El) {
+      checkRow1ScrollBoundary();
+      r1El.addEventListener('scroll', checkRow1ScrollBoundary);
+      window.addEventListener('resize', checkRow1ScrollBoundary);
+    }
+    const r2El = row2ScrollRef.current;
+    if (r2El) {
+      checkRow2ScrollBoundary();
+      r2El.addEventListener('scroll', checkRow2ScrollBoundary);
+      window.addEventListener('resize', checkRow2ScrollBoundary);
+    }
+    return () => {
+      if (catEl) {
+        catEl.removeEventListener('scroll', checkCategoryScrollBoundary);
+        window.removeEventListener('resize', checkCategoryScrollBoundary);
+      }
+      if (r1El) {
+        r1El.removeEventListener('scroll', checkRow1ScrollBoundary);
+        window.removeEventListener('resize', checkRow1ScrollBoundary);
+      }
+      if (r2El) {
+        r2El.removeEventListener('scroll', checkRow2ScrollBoundary);
+        window.removeEventListener('resize', checkRow2ScrollBoundary);
+      }
+    };
+  }, [categories, productsRow1, productsRow2]);
 
   const handleScrollLeft = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    if (e) { e.preventDefault(); e.stopPropagation(); }
     const el = categoryScrollRef.current;
     if (el) {
       el.scrollBy({ left: -320, behavior: 'smooth' });
-      setTimeout(checkScrollBoundary, 350);
+      setTimeout(checkCategoryScrollBoundary, 350);
     }
   };
 
   const handleScrollRight = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    if (e) { e.preventDefault(); e.stopPropagation(); }
     const el = categoryScrollRef.current;
     if (el) {
       el.scrollBy({ left: 320, behavior: 'smooth' });
-      setTimeout(checkScrollBoundary, 350);
+      setTimeout(checkCategoryScrollBoundary, 350);
+    }
+  };
+
+  const handleRow1ScrollLeft = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const el = row1ScrollRef.current;
+    if (el) {
+      el.scrollBy({ left: -360, behavior: 'smooth' });
+      setTimeout(checkRow1ScrollBoundary, 350);
+    }
+  };
+
+  const handleRow1ScrollRight = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const el = row1ScrollRef.current;
+    if (el) {
+      el.scrollBy({ left: 360, behavior: 'smooth' });
+      setTimeout(checkRow1ScrollBoundary, 350);
+    }
+  };
+
+  const handleRow2ScrollLeft = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const el = row2ScrollRef.current;
+    if (el) {
+      el.scrollBy({ left: -360, behavior: 'smooth' });
+      setTimeout(checkRow2ScrollBoundary, 350);
+    }
+  };
+
+  const handleRow2ScrollRight = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const el = row2ScrollRef.current;
+    if (el) {
+      el.scrollBy({ left: 360, behavior: 'smooth' });
+      setTimeout(checkRow2ScrollBoundary, 350);
     }
   };
 
@@ -203,18 +232,32 @@ export default function DesktopCenterContent() {
         list = rawData;
       } else if (rawData && typeof rawData === 'object') {
         if (Array.isArray(rawData.banners)) list = rawData.banners;
+        else if (Array.isArray(rawData.data)) list = rawData.data;
+
         if (rawData.autoScroll !== undefined) currentAuto = Boolean(rawData.autoScroll);
-        if (rawData.speed !== undefined) currentSpeed = Number(rawData.speed);
+        if (rawData.speed !== undefined && !isNaN(Number(rawData.speed))) {
+          currentSpeed = Number(rawData.speed);
+        }
+      }
+
+      if (!list || list.length === 0) {
+        try {
+          const savedBanners = localStorage.getItem('karviyam_admin_banners');
+          if (savedBanners) {
+            const parsed = JSON.parse(savedBanners);
+            if (Array.isArray(parsed)) list = parsed;
+          }
+        } catch (eLoc) {}
       }
 
       setAutoScroll(currentAuto);
       setSpeed(currentSpeed);
 
-      if (Array.isArray(list)) {
-        const activeBanners = list.filter(b => b && b.isActive !== false && String(b.status || 'active').toLowerCase() === 'active');
+      if (list && list.length > 0) {
+        const activeBanners = list.filter(b => b.isActive !== false);
         const formatted = activeBanners.map(b => {
-          const rawImg = b.desktopImageUrl || b.imageUrl || b.imagePath || b.image || '';
-          const resolvedImg = resolveImageUrl(rawImg);
+          const rawImg = b.imageUrl || b.image_url || b.imagePath || b.image || '';
+          const resolvedImg = resolveImageUrl(rawImg, b.id);
           return {
             id: b.id,
             tag: b.tag || 'OFFICIAL DROP',
@@ -253,15 +296,17 @@ export default function DesktopCenterContent() {
 
   const fetchProductsAndCategories = async () => {
     try {
+      // 1. FETCH PRODUCTS
+      let rawProductList = [];
       const featRes = await api.get('/products/featured').catch(() => null);
       const featData = featRes?.data?.data || featRes?.data || featRes;
-      let list = Array.isArray(featData) ? featData : (Array.isArray(featData?.content) ? featData.content : []);
-      
-      if (!list || list.length === 0) {
-        const fallRes = await api.get('/products?size=10').catch(() => null);
-        const fallData = fallRes?.data?.data || fallRes?.data;
-        list = Array.isArray(fallData?.content) ? fallData.content : (Array.isArray(fallData) ? fallData : []);
-      }
+      let featList = Array.isArray(featData) ? featData : (Array.isArray(featData?.content) ? featData.content : []);
+
+      const allRes = await api.get('/products?size=50').catch(() => null);
+      const allData = allRes?.data?.data || allRes?.data;
+      let allList = Array.isArray(allData?.content) ? allData.content : (Array.isArray(allData) ? allData : []);
+
+      rawProductList = [...featList, ...allList.filter(p => !featList.some(f => String(f.id) === String(p.id)))];
 
       try {
         const savedAdmin = localStorage.getItem('karviyam_admin_products');
@@ -270,38 +315,63 @@ export default function DesktopCenterContent() {
           if (Array.isArray(parsed) && parsed.length > 0) {
             const activeAdminProds = parsed.filter(p => p.isActive !== false);
             if (activeAdminProds.length > 0) {
-              list = [...activeAdminProds, ...list.filter(p => !activeAdminProds.some(a => String(a.id) === String(p.id)))];
+              rawProductList = [...activeAdminProds, ...rawProductList.filter(p => !activeAdminProds.some(a => String(a.id) === String(p.id)))];
             }
           }
         }
       } catch (eSaved) {}
 
-      if (list && list.length > 0) {
-        const formatted = list.filter(p => p.isActive !== false).slice(0, 6).map((p, idx) => {
-          const price = p.price || DEFAULT_RECOMMENDED[idx % 6].price;
-          const oldPrice = p.oldPrice || Math.round(price * 1.45);
-          const disc = Math.round(((oldPrice - price) / oldPrice) * 100);
-          return {
-            id: p.id,
-            name: p.name || DEFAULT_RECOMMENDED[idx % 6].name,
-            brand: p.brand || 'KARVIYAM',
-            rating: p.rating || 4.5,
-            reviews: p.reviewsCount ? `${p.reviewsCount}` : DEFAULT_RECOMMENDED[idx % 6].reviews,
-            price: price,
-            oldPrice: oldPrice,
-            discount: `${disc}% OFF`,
-            image: p.imageUrl || (Array.isArray(p.images) && p.images[0]) || DEFAULT_RECOMMENDED[idx % 6].image
-          };
+      const formatProductItem = (p, idx) => {
+        const fallback = DEFAULT_RECOMMENDED[idx % DEFAULT_RECOMMENDED.length];
+        const rawImage = p.imageUrl || p.image_url || p.imagePath || p.image || (Array.isArray(p.images) && p.images[0]) || '';
+        const resolvedImage = resolveImageUrl(rawImage, p.id || idx);
+        const price = Number(p.price) || fallback.price;
+        const oldPrice = Number(p.oldPrice || p.mrp || Math.round(price * 1.45));
+        const disc = oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 30;
+
+        return {
+          id: p.id || fallback.id + idx,
+          name: p.name || fallback.name,
+          brand: p.brand || fallback.brand || 'KARVIYAM',
+          rating: p.rating || fallback.rating || 4.5,
+          reviews: p.reviewsCount ? `${p.reviewsCount}` : fallback.reviews,
+          price: price,
+          oldPrice: oldPrice,
+          discount: `${disc}% OFF`,
+          image: resolvedImage
+        };
+      };
+
+      const activeProducts = rawProductList.filter(p => p && p.isActive !== false);
+      let formattedProducts = activeProducts.map((p, idx) => formatProductItem(p, idx));
+
+      // Guarantee at least 12 rich products for full horizontal scroll tracks
+      if (formattedProducts.length < 12) {
+        const existingIds = new Set(formattedProducts.map(p => String(p.id)));
+        DEFAULT_RECOMMENDED.forEach((def, idx) => {
+          if (!existingIds.has(String(def.id))) {
+            formattedProducts.push({
+              ...def,
+              image: resolveImageUrl(def.image, def.id)
+            });
+            existingIds.add(String(def.id));
+          }
         });
-        
-        while (formatted.length < 6) {
-          const fallback = DEFAULT_RECOMMENDED[formatted.length];
-          formatted.push(fallback);
-        }
-        setProducts(formatted);
       }
 
-      // Fetch Parent / Main Categories from backend API
+      // Divide products into Row 1 (Recommended For You) & Row 2 (More For You)
+      const halfIndex = Math.max(6, Math.floor(formattedProducts.length / 2));
+      const row1 = formattedProducts.slice(0, halfIndex);
+      let row2 = formattedProducts.slice(halfIndex);
+
+      if (row2.length < 6) {
+        row2 = [...formattedProducts].reverse().slice(0, Math.max(6, row1.length));
+      }
+
+      setProductsRow1(row1);
+      setProductsRow2(row2);
+
+      // 2. FETCH PARENT CATEGORIES
       const parentRes = await api.get('/parent-categories').catch(() => null);
       const parentData = parentRes?.data?.data || parentRes?.data;
       let parentList = Array.isArray(parentData) ? parentData : [];
@@ -346,93 +416,161 @@ export default function DesktopCenterContent() {
         setCategories(CATEGORIES_DATA);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Error fetching data in DesktopCenterContent:', e);
+      setProductsRow1(DEFAULT_RECOMMENDED.slice(0, 6));
+      setProductsRow2(DEFAULT_RECOMMENDED.slice(6, 12));
     }
   };
 
   const slide = heroSlides[currentHero] || heroSlides[0];
 
+  const renderProductCard = (prod, idx) => {
+    const liked = isInWishlist(prod.id);
+    return (
+      <div
+        key={prod.id || idx}
+        onClick={() => navigate(`/product/${prod.id}`)}
+        className="h-[215px] xl:h-[230px] w-[150px] sm:w-[165px] xl:w-[175px] bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-1.5 flex flex-col justify-between overflow-hidden cursor-pointer shrink-0 group"
+      >
+        {/* Product Image Box */}
+        <div className="relative w-full h-[120px] xl:h-[130px] bg-white rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+          <img
+            src={resolveImageUrl(prod.image || prod.imageUrl, prod.id)}
+            alt={prod.name}
+            onError={(e) => handleImageError(e, prod.id)}
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+          />
+
+          {/* Wishlist Heart Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleWishlist(prod.id);
+            }}
+            className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-2xs ${
+              liked ? 'bg-[#B71C1C] text-white' : 'bg-white/90 text-slate-600 hover:text-[#B71C1C]'
+            }`}
+            title={liked ? 'Remove from Wishlist' : 'Add to Wishlist'}
+          >
+            <Heart className={`w-3 h-3 ${liked ? 'fill-current' : ''}`} />
+          </button>
+        </div>
+
+        {/* Content Box */}
+        <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5">
+          <div>
+            {/* Brand & Rating */}
+            <div className="flex items-center justify-between text-[9px]">
+              <span className="font-extrabold uppercase tracking-wider text-[#B71C1C] truncate max-w-[70px]">
+                {prod.brand}
+              </span>
+              <div className="flex items-center gap-0.5 text-slate-700 font-bold">
+                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                <span>{prod.rating}</span>
+              </div>
+            </div>
+
+            {/* Single Line Truncated Title */}
+            <h3 className="font-extrabold text-[10px] xl:text-[11px] text-slate-900 leading-snug truncate h-[16px] xl:h-[18px] overflow-hidden mt-0.5 group-hover:text-[#B71C1C] transition-colors" title={prod.name}>
+              {prod.name}
+            </h3>
+          </div>
+
+          {/* Price */}
+          <div className="flex items-baseline gap-1">
+            <span className="font-black text-[11px] xl:text-xs text-slate-900">
+              ₹{prod.price}
+            </span>
+            {prod.oldPrice > prod.price && (
+              <span className="text-[9px] text-slate-400 line-through">
+                ₹{prod.oldPrice}
+              </span>
+            )}
+            <span className="text-[8.5px] font-extrabold text-emerald-700">
+              {prod.discount}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <main className="flex-1 min-w-0 flex flex-col gap-3">
+    <main className="flex-1 min-w-0 flex flex-col gap-4">
       
       {/* 1. Hero Carousel */}
       {heroSlides.length > 0 && slide && (
         <div className="w-full h-[270px] xl:h-[290px] rounded-xl overflow-hidden relative shadow-sm bg-slate-950 group">
-        
-        {/* Slide Background Image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center transition-all duration-700"
-          style={{ backgroundImage: `url(${slide.image})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent" />
-        </div>
+          <div
+            className="absolute inset-0 bg-cover bg-center transition-all duration-700"
+            style={{ backgroundImage: `url(${slide.image})` }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent" />
+          </div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 h-full p-6 xl:p-8 flex flex-col justify-center max-w-xl text-white">
-          <span className="inline-block bg-white/10 backdrop-blur-md border border-white/20 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-widest w-max mb-2">
-            {slide.tag || 'OFFICIAL DROP'}
-          </span>
+          <div className="relative z-10 h-full p-6 xl:p-8 flex flex-col justify-center max-w-xl text-white">
+            <span className="inline-block bg-white/10 backdrop-blur-md border border-white/20 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-widest w-max mb-2">
+              {slide.tag || 'OFFICIAL DROP'}
+            </span>
 
-          <h1 className="font-display font-black text-xl xl:text-3xl leading-tight text-white tracking-tight uppercase drop-shadow-md">
-            {slide.title}
-          </h1>
+            <h1 className="font-display font-black text-xl xl:text-3xl leading-tight text-white tracking-tight uppercase drop-shadow-md">
+              {slide.title}
+            </h1>
 
-          {slide.subtitle ? (
-            <p className="text-[11px] xl:text-xs text-slate-200 font-medium mt-1.5 mb-4">
-              {slide.subtitle}
-            </p>
-          ) : (
-            <div className="mb-4" />
+            {slide.subtitle ? (
+              <p className="text-[11px] xl:text-xs text-slate-200 font-medium mt-1.5 mb-4">
+                {slide.subtitle}
+              </p>
+            ) : (
+              <div className="mb-4" />
+            )}
+
+            <button
+              onClick={() => navigate(slide.link || '/shop')}
+              className="bg-[#B71C1C] hover:bg-[#900C0C] text-white text-xs font-extrabold px-5 py-2.5 rounded-xl uppercase tracking-wider transition-all shadow-lg hover:shadow-red-900/40 w-max cursor-pointer"
+            >
+              {slide.buttonText || 'SHOP NOW'}
+            </button>
+          </div>
+
+          {heroSlides.length > 1 && (
+            <>
+              <button
+                onClick={() => setCurrentHero((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-[#B71C1C] hover:text-white transition-colors shadow-md cursor-pointer z-20"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => setCurrentHero((prev) => (prev + 1) % heroSlides.length)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-[#B71C1C] hover:text-white transition-colors shadow-md cursor-pointer z-20"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </>
           )}
 
-          <button
-            onClick={() => navigate(slide.link)}
-            className="bg-white text-slate-950 font-extrabold text-[11px] uppercase tracking-wider px-6 py-2.5 rounded-full hover:bg-[#B71C1C] hover:text-white transition-all shadow-md w-max cursor-pointer"
-          >
-            {slide.buttonText || 'SHOP NOW'}
-          </button>
+          {heroSlides.length > 1 && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+              {heroSlides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentHero(idx)}
+                  className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                    idx === currentHero ? 'w-6 bg-[#B71C1C]' : 'w-1.5 bg-white/60'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Navigation Arrows */}
-        {heroSlides.length > 1 && (
-          <>
-            <button
-              onClick={() => setCurrentHero((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-[#B71C1C] hover:text-white transition-colors shadow-md cursor-pointer z-20"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => setCurrentHero((prev) => (prev + 1) % heroSlides.length)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-[#B71C1C] hover:text-white transition-colors shadow-md cursor-pointer z-20"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </>
-        )}
-
-        {/* Pagination Dots */}
-        {heroSlides.length > 1 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
-            {heroSlides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentHero(idx)}
-                className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                  idx === currentHero ? 'w-6 bg-[#B71C1C]' : 'w-1.5 bg-white/60'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
       )}
 
       {/* 2. Offer Strip */}
       <div className="w-full min-h-[64px] bg-white rounded-xl border border-slate-200/90 shadow-xs px-3 xl:px-5 py-2 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2">
-        
-        {/* Item 1 */}
         <div className="flex-1 flex items-center gap-2.5 border-r border-slate-100 pr-3 xl:pr-5 min-w-[180px]">
           <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold shrink-0">
             <IndianRupee className="w-4 h-4" />
@@ -443,7 +581,6 @@ export default function DesktopCenterContent() {
           </div>
         </div>
 
-        {/* Item 2 */}
         <div className="flex-1 flex items-center gap-2.5 border-r border-slate-100 px-3 xl:px-5 min-w-[180px]">
           <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
             <Gift className="w-4 h-4" />
@@ -454,7 +591,6 @@ export default function DesktopCenterContent() {
           </div>
         </div>
 
-        {/* Item 3 */}
         <div className="flex-1 flex items-center gap-2.5 pl-3 xl:pl-5 min-w-[180px]">
           <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
             <ShoppingBag className="w-4 h-4" />
@@ -464,10 +600,9 @@ export default function DesktopCenterContent() {
             <p className="text-[10px] text-slate-500 font-medium">Latest Arrivals</p>
           </div>
         </div>
-
       </div>
 
-      {/* 3. Shop by Category Section (10 Parent Categories Carousel + Boundary-Aware Controls) */}
+      {/* 3. Shop by Category Section */}
       <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-3 relative">
         <div className="flex items-center justify-between">
           <div>
@@ -511,10 +646,9 @@ export default function DesktopCenterContent() {
           </div>
         </div>
 
-        {/* 10 Parent Categories Horizontal Carousel Track */}
         <div
           ref={categoryScrollRef}
-          onScroll={checkScrollBoundary}
+          onScroll={checkCategoryScrollBoundary}
           className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap"
         >
           {categories.map((cat) => (
@@ -523,7 +657,6 @@ export default function DesktopCenterContent() {
               onClick={() => navigate(`/shop?${cat.query}`)}
               className="flex flex-col items-center shrink-0 w-[100px] xl:w-[110px] cursor-pointer group"
             >
-              {/* Soft Ice-Blue Square Background Box */}
               <div className="w-full aspect-square bg-[#F0F6FE] hover:bg-[#E2EEFE] transition-colors rounded-2xl p-2 flex items-center justify-center border border-slate-100/80 shadow-2xs overflow-hidden">
                 <img
                   src={resolveImageUrl(cat.image, cat.id)}
@@ -532,7 +665,6 @@ export default function DesktopCenterContent() {
                   className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              {/* Category Name Text Below Box */}
               <span className="font-bold text-[11px] text-slate-800 text-center truncate w-full mt-2 group-hover:text-[#B71C1C] transition-colors">
                 {cat.name}
               </span>
@@ -541,91 +673,105 @@ export default function DesktopCenterContent() {
         </div>
       </div>
 
-      {/* 4. Recommended For You Section */}
-      <div className="w-full flex flex-col gap-2">
+      {/* 4. RECOMMENDED PRODUCTS — ROW 1 */}
+      <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-3 relative">
         <div className="flex items-center justify-between">
-          <h2 className="font-display font-black text-sm text-slate-900 tracking-tight">
-            Recommended For You
-          </h2>
-          <button
-            onClick={() => navigate('/shop')}
-            className="text-[11px] font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5"
-          >
-            View All →
-          </button>
+          <div>
+            <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
+              Recommended For You
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Handpicked selections based on your style
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {canRow1Left && (
+              <button
+                type="button"
+                onClick={handleRow1ScrollLeft}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                title="Scroll Left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+            {canRow1Right && (
+              <button
+                type="button"
+                onClick={handleRow1ScrollRight}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                title="Scroll Right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={() => navigate('/shop')}
+              className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5 ml-1"
+            >
+              View All →
+            </button>
+          </div>
         </div>
 
-        {/* Product Cards Grid (No Image Background Box) */}
-        <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 xl:gap-2.5 w-full">
-          {products.map((prod) => {
-            const liked = isInWishlist(prod.id);
-            return (
-              <div
-                key={prod.id}
-                onClick={() => navigate(`/product/${prod.id}`)}
-                className="h-[215px] xl:h-[230px] bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-1.5 flex flex-col justify-between overflow-hidden cursor-pointer group"
+        {/* Row 1 Independent Horizontal Scroll Track */}
+        <div
+          ref={row1ScrollRef}
+          onScroll={checkRow1ScrollBoundary}
+          className="flex items-center gap-2.5 xl:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap"
+        >
+          {productsRow1.map((prod, idx) => renderProductCard(prod, idx))}
+        </div>
+      </div>
+
+      {/* 5. RECOMMENDED PRODUCTS — ROW 2 (MORE FOR YOU) */}
+      <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-3 relative">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
+              More For You
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Trending arrivals and customer favorites
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {canRow2Left && (
+              <button
+                type="button"
+                onClick={handleRow2ScrollLeft}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                title="Scroll Left"
               >
-                {/* Product Image Box (Directly on White Card Background) */}
-                <div className="relative w-full h-[120px] xl:h-[130px] bg-white rounded-lg overflow-hidden flex items-center justify-center shrink-0">
-                  <img
-                    src={prod.image}
-                    alt={prod.name}
-                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
-                  />
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+            {canRow2Right && (
+              <button
+                type="button"
+                onClick={handleRow2ScrollRight}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                title="Scroll Right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={() => navigate('/shop')}
+              className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5 ml-1"
+            >
+              View All →
+            </button>
+          </div>
+        </div>
 
-                  {/* Wishlist Heart Button */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleWishlist(prod.id);
-                    }}
-                    className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-2xs ${
-                      liked ? 'bg-[#B71C1C] text-white' : 'bg-white/90 text-slate-600 hover:text-[#B71C1C]'
-                    }`}
-                  >
-                    <Heart className={`w-3 h-3 ${liked ? 'fill-current' : ''}`} />
-                  </button>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5">
-                  <div>
-                    {/* Brand Tag & Rating */}
-                    <div className="flex items-center justify-between text-[9px]">
-                      <span className="font-extrabold uppercase tracking-wider text-[#B71C1C] truncate max-w-[70px]">
-                        {prod.brand}
-                      </span>
-                      <div className="flex items-center gap-0.5 text-slate-700 font-bold">
-                        <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                        <span>{prod.rating}</span>
-                      </div>
-                    </div>
-
-                    {/* Title (Single Line Truncated) */}
-                    <h3 className="font-extrabold text-[10px] xl:text-[11px] text-slate-900 leading-snug truncate h-[16px] xl:h-[18px] overflow-hidden mt-0.5 group-hover:text-[#B71C1C] transition-colors" title={prod.name}>
-                      {prod.name}
-                    </h3>
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-black text-[11px] xl:text-xs text-slate-900">
-                      ₹{prod.price}
-                    </span>
-                    {prod.oldPrice > prod.price && (
-                      <span className="text-[9px] text-slate-400 line-through">
-                        ₹{prod.oldPrice}
-                      </span>
-                    )}
-                    <span className="text-[8.5px] font-extrabold text-emerald-700">
-                      {prod.discount}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        {/* Row 2 Independent Horizontal Scroll Track */}
+        <div
+          ref={row2ScrollRef}
+          onScroll={checkRow2ScrollBoundary}
+          className="flex items-center gap-2.5 xl:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap"
+        >
+          {productsRow2.map((prod, idx) => renderProductCard(prod, idx))}
         </div>
       </div>
 
