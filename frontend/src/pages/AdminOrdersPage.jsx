@@ -619,7 +619,7 @@ export default function AdminOrdersPage() {
             className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
           >
             <FileText className="w-3.5 h-3.5 text-white" />
-            <span>Export Orders (Multi-Sheet)</span>
+            <span>Export Orders</span>
           </button>
 
           <ExportDropdown
