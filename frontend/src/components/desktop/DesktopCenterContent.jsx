@@ -692,32 +692,7 @@ export default function DesktopCenterContent() {
         </div>
 
         {/* ROW 1 CAROUSEL */}
-        <div className="flex flex-col gap-1.5 relative group">
-          <div className="flex items-center justify-end text-xs font-bold px-1">
-            <div className="flex items-center gap-1.5">
-              {canRow1Left && (
-                <button
-                  type="button"
-                  onClick={handleRow1ScrollLeft}
-                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                  title="Scroll Left"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-              )}
-              {canRow1Right && (
-                <button
-                  type="button"
-                  onClick={handleRow1ScrollRight}
-                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                  title="Scroll Right"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-
+        <div className="relative group">
           <div
             ref={row1ScrollRef}
             onScroll={checkRow1ScrollBoundary}
@@ -728,32 +703,7 @@ export default function DesktopCenterContent() {
         </div>
 
         {/* ROW 2 CAROUSEL */}
-        <div className="flex flex-col gap-1.5 relative group">
-          <div className="flex items-center justify-end text-xs font-bold px-1">
-            <div className="flex items-center gap-1.5">
-              {canRow2Left && (
-                <button
-                  type="button"
-                  onClick={handleRow2ScrollLeft}
-                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                  title="Scroll Left"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-              )}
-              {canRow2Right && (
-                <button
-                  type="button"
-                  onClick={handleRow2ScrollRight}
-                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                  title="Scroll Right"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-
+        <div className="relative group">
           <div
             ref={row2ScrollRef}
             onScroll={checkRow2ScrollBoundary}
