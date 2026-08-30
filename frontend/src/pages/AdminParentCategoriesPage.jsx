@@ -420,23 +420,23 @@ export default function AdminParentCategoriesPage() {
             No active categories. Click "Add Parent Category" or enable existing categories below.
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full">
             {Array.from(Array.isArray(categories) ? categories : [])
               .filter(c => c && c.isActive !== false)
               .sort((a, b) => (Number(a?.displayOrder) || 0) - (Number(b?.displayOrder) || 0))
               .map(cat => (
                 <div
                   key={cat?.id || cat?.name}
-                  className="flex flex-col items-center group cursor-pointer"
+                  className="flex flex-col items-center shrink-0 w-[100px] group cursor-pointer"
                 >
-                  <div className="w-full aspect-square bg-[#F0F6FE] rounded-2xl p-2.5 flex items-center justify-center border border-slate-100/80 shadow-2xs overflow-hidden">
+                  <div className="w-full aspect-square bg-[#F0F6FE] rounded-2xl p-2 flex items-center justify-center border border-slate-100/80 shadow-2xs overflow-hidden">
                     <img
                       src={resolveImageUrl(cat?.imageUrl || cat?.imagePath)}
                       alt={cat?.name || 'Category'}
                       className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform"
                     />
                   </div>
-                  <span className="font-bold text-[11px] text-slate-800 text-center truncate w-full mt-2.5">
+                  <span className="font-bold text-[11px] text-slate-800 text-center truncate w-full mt-2">
                     {cat?.name || ''}
                   </span>
                 </div>

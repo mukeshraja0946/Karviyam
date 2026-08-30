@@ -400,8 +400,8 @@ export default function DesktopCenterContent() {
 
       </div>
 
-      {/* 3. Shop by Category Section (Matching Reference UI) */}
-      <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-4">
+      {/* 3. Shop by Category Section (Compact Cards + Horizontal Slide) */}
+      <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-3 relative">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
@@ -411,24 +411,52 @@ export default function DesktopCenterContent() {
               Explore top categories and find your favorites
             </p>
           </div>
-          <button
-            onClick={() => navigate('/shop')}
-            className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5"
-          >
-            View All →
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('top-categories-scroll-container');
+                if (el) el.scrollBy({ left: -240, behavior: 'smooth' });
+              }}
+              className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+              title="Scroll Left"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('top-categories-scroll-container');
+                if (el) el.scrollBy({ left: 240, behavior: 'smooth' });
+              }}
+              className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+              title="Scroll Right"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/shop')}
+              className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer ml-1"
+            >
+              View All →
+            </button>
+          </div>
         </div>
 
-        {/* Category Items Grid */}
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 xl:gap-4 w-full">
+        {/* Compact Cards Horizontal Scroll Track */}
+        <div
+          id="top-categories-scroll-container"
+          className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full"
+        >
           {categories.map((cat) => (
             <div
               key={cat.id}
               onClick={() => navigate(`/shop?${cat.query}`)}
-              className="flex flex-col items-center cursor-pointer group"
+              className="flex flex-col items-center shrink-0 w-[100px] xl:w-[110px] cursor-pointer group"
             >
-              {/* Soft Ice-Blue Square Background Box */}
-              <div className="w-full aspect-square bg-[#F0F6FE] hover:bg-[#E2EEFE] transition-colors rounded-2xl p-2.5 flex items-center justify-center border border-slate-100/80 shadow-2xs overflow-hidden">
+              {/* Compact Soft Ice-Blue Square Image Box */}
+              <div className="w-full aspect-square bg-[#F0F6FE] hover:bg-[#E2EEFE] transition-colors rounded-2xl p-2 flex items-center justify-center border border-slate-100/80 shadow-2xs overflow-hidden">
                 <img
                   src={resolveImageUrl(cat.image, cat.id)}
                   alt={cat.name}
@@ -437,7 +465,7 @@ export default function DesktopCenterContent() {
                 />
               </div>
               {/* Clean Category Name Text Below Box */}
-              <span className="font-bold text-[11px] xl:text-[12px] text-slate-800 text-center truncate w-full mt-2.5 group-hover:text-[#B71C1C] transition-colors">
+              <span className="font-bold text-[11px] text-slate-800 text-center truncate w-full mt-2 group-hover:text-[#B71C1C] transition-colors">
                 {cat.name}
               </span>
             </div>
