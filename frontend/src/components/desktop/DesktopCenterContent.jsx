@@ -602,8 +602,8 @@ export default function DesktopCenterContent() {
                       </div>
                     </div>
 
-                    {/* Title */}
-                    <h3 className="font-extrabold text-[10px] xl:text-[11px] text-slate-900 leading-snug line-clamp-2 h-[26px] overflow-hidden mt-0.5 group-hover:text-[#B71C1C] transition-colors" title={prod.name}>
+                    {/* Title (Single Line Truncated) */}
+                    <h3 className="font-extrabold text-[10px] xl:text-[11px] text-slate-900 leading-snug truncate h-[16px] xl:h-[18px] overflow-hidden mt-0.5 group-hover:text-[#B71C1C] transition-colors" title={prod.name}>
                       {prod.name}
                     </h3>
                   </div>

@@ -484,8 +484,9 @@ export default function ShopPage() {
                         </h4>
 
                         <p
-                          className="text-[11px] font-medium text-slate-700 line-clamp-2 leading-tight mt-0.5 cursor-pointer"
+                          className="text-[11px] font-medium text-slate-700 truncate leading-tight mt-0.5 cursor-pointer"
                           onClick={() => navigate(`/product/${product.id}`)}
+                          title={product.name}
                         >
                           {product.name}
                         </p>

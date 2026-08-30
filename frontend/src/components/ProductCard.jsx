@@ -108,10 +108,10 @@ export default function ProductCard({ product }) {
               <span className="text-[9px]">🌸</span>
             </div>
 
-            {/* Product Title (Strict 2 Lines Line-Clamp) */}
+            {/* Product Title (Single Line Truncated) */}
             <h3 
               onClick={() => navigate(`/product/${product.id}`)}
-              className="font-sans font-bold text-slate-900 text-xs leading-snug hover:text-[#B71C1C] transition-colors cursor-pointer line-clamp-2 h-[32px] overflow-hidden"
+              className="font-sans font-bold text-slate-900 text-xs leading-snug hover:text-[#B71C1C] transition-colors cursor-pointer truncate h-[18px] overflow-hidden"
               title={product.name}
             >
               {product.name}
@@ -236,7 +236,7 @@ export default function ProductCard({ product }) {
             </div>
             <h3
               onClick={() => navigate(`/product/${product.id}`)}
-              className="font-bold text-slate-900 text-[10px] leading-tight line-clamp-2 h-[26px] overflow-hidden cursor-pointer"
+              className="font-bold text-slate-900 text-[10px] leading-tight truncate h-[14px] overflow-hidden cursor-pointer"
               title={product.name}
             >
               {product.name}
