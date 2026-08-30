@@ -119,17 +119,44 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      if (res.data?.success) {
-        const d = res.data.data;
+      if (res.data?.success || res.status === 200) {
+        const d = res.data?.data || {};
+        const created = d.createdCount ?? d.successCount ?? d.created ?? 0;
+        const updated = d.updatedCount ?? d.updated ?? 0;
+        const failed = d.failedCount ?? d.failed ?? 0;
+
         setReportLog(d);
-        toast.success(`Import Complete! Created: ${d.createdCount || d.successCount || 0}, Updated: ${d.updatedCount || 0}, Failed: ${d.failedCount || 0}`);
-        if (onImportSuccess) onImportSuccess();
+
+        // Success Toast Notification
+        toast.success(`Import Complete! Created: ${created}, Updated: ${updated}, Failed: ${failed}`);
+
+        // Broadcast global update events so all components across the app update immediately
+        window.dispatchEvent(new CustomEvent(`karviyam_${type}_updated`));
+        window.dispatchEvent(new CustomEvent('karviyam_products_updated'));
+        window.dispatchEvent(new CustomEvent('karviyam_categories_updated'));
+        window.dispatchEvent(new CustomEvent('karviyam_parent_categories_updated'));
+        window.dispatchEvent(new Event('storage'));
+
+        // Refresh parent page table dataset
+        if (onImportSuccess) {
+          await onImportSuccess(d);
+        }
+
+        // Clean up internal states and auto-close import popup immediately
+        setFile(null);
+        setFileName('');
+        setPreviewData(null);
+        if (onClose) {
+          onClose();
+        }
       } else {
         throw new Error(res.data?.message || 'Import failed');
       }
     } catch (err) {
       console.error('Import execution error:', err);
-      toast.error(err.response?.data?.message || 'Failed to execute import.');
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to execute import.';
+      toast.error(errorMsg);
+      // Keep modal open on error so the user can inspect the error message and retry
     } finally {
       setProcessing(false);
     }

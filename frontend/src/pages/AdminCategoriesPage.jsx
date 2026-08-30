@@ -1083,7 +1083,10 @@ export default function AdminCategoriesPage() {
         isOpen={importModalOpen}
         onClose={() => setImportModalOpen(false)}
         type="categories"
-        onImportSuccess={fetchCategories}
+        onImportSuccess={() => {
+          fetchCategories();
+          setImportModalOpen(false);
+        }}
       />
 
       {/* Standardized Category Image Cropper Modal */}

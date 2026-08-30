@@ -1557,7 +1557,10 @@ export default function AdminProductsPage() {
         isOpen={importModalOpen}
         onClose={() => setImportModalOpen(false)}
         type="products"
-        onImportSuccess={fetchData}
+        onImportSuccess={() => {
+          fetchData();
+          setImportModalOpen(false);
+        }}
       />
 
       {/* Standardized Product Image Cropper Modal */}

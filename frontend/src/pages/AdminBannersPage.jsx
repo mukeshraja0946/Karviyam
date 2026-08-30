@@ -757,7 +757,10 @@ export default function AdminBannersPage() {
         isOpen={importModalOpen}
         onClose={() => setImportModalOpen(false)}
         type="banners"
-        onImportSuccess={fetchBanners}
+        onImportSuccess={() => {
+          fetchBanners();
+          setImportModalOpen(false);
+        }}
       />
 
       {/* Standardized Image Cropper Modal */}

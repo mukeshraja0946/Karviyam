@@ -579,7 +579,10 @@ export default function AdminCustomersPage() {
         isOpen={bulkModalOpen}
         onClose={() => setBulkModalOpen(false)}
         type="customers"
-        onImportSuccess={() => fetchCustomers()}
+        onImportSuccess={() => {
+          fetchCustomers();
+          setBulkModalOpen(false);
+        }}
       />
 
       {/* Header */}

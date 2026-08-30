@@ -577,7 +577,10 @@ export default function AdminOrdersPage() {
         isOpen={bulkModalOpen}
         onClose={() => setBulkModalOpen(false)}
         type="orders"
-        onImportSuccess={() => fetchOrders()}
+        onImportSuccess={() => {
+          fetchOrders();
+          setBulkModalOpen(false);
+        }}
       />
 
       {/* Page Header */}

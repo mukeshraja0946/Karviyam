@@ -206,13 +206,30 @@ export default function BulkCategoryImportModal({ isOpen, onClose, onSuccess }) 
       const result = apiData.data || apiData;
 
       if (apiData) {
+        const created = result.createdCount ?? result.successCount ?? result.created ?? validRows.length;
+        const updated = result.updatedCount ?? result.updated ?? 0;
+        const failed = result.failedCount ?? result.failed ?? 0;
+
         setImportResult(result);
-        toast.success(`Import completed! ${result.successCount || 0} categories created.`);
-        if (onSuccess) onSuccess();
+        toast.success(`Import Complete! Created: ${created}, Updated: ${updated}, Failed: ${failed}`);
+
+        window.dispatchEvent(new CustomEvent('karviyam_categories_updated'));
+        window.dispatchEvent(new CustomEvent('karviyam_parent_categories_updated'));
+        window.dispatchEvent(new Event('storage'));
+
+        if (onSuccess) {
+          await onSuccess(result);
+        }
+        setParsedRows([]);
+        setFile(null);
+        if (onClose) {
+          onClose();
+        }
       }
     } catch (e) {
       console.error(e);
-      toast.error('Bulk category import failed. Please check network connection.');
+      toast.error(e.response?.data?.message || 'Bulk category import failed. Please check network connection.');
+      // Keep modal open on error so the user can inspect errors and retry
     } finally {
       setImporting(false);
     }

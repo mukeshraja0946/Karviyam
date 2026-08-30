@@ -447,7 +447,10 @@ export default function AdminCouponsPage() {
         isOpen={importModalOpen}
         onClose={() => setImportModalOpen(false)}
         type="coupons"
-        onImportSuccess={fetchCoupons}
+        onImportSuccess={() => {
+          fetchCoupons();
+          setImportModalOpen(false);
+        }}
       />
       <ClearAllModal
         isOpen={clearAllModalOpen}
