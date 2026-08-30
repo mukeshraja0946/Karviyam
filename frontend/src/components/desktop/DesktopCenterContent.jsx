@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
@@ -14,13 +14,16 @@ import api from '../../utils/api';
 import { resolveImageUrl, handleImageError } from '../../utils/imageUtils';
 
 const CATEGORIES_DATA = [
-  { id: 'men', name: 'MEN', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400', query: 'category=Men' },
+  { id: 'tshirts', name: 'T-SHIRTS', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400', query: 'category=T-Shirts' },
+  { id: 'sneakers', name: 'SNEAKERS', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400', query: 'category=Sneakers' },
+  { id: 'kurtas', name: 'KURTA SETS', image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=400', query: 'category=Kurta' },
   { id: 'women', name: 'WOMEN', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400', query: 'category=Women' },
+  { id: 'men', name: 'MEN', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400', query: 'category=Men' },
   { id: 'kids', name: 'KIDS & BABY', image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400', query: 'category=Kids' },
-  { id: 'unisex', name: 'UNISEX', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400', query: 'category=Unisex' },
+  { id: 'unisex', name: 'UNISEX', image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400', query: 'category=Unisex' },
+  { id: 'jewellery', name: 'JEWELLERY', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400', query: 'category=Jewellery' },
   { id: 'accessories', name: 'ACCESSORIES', image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400', query: 'category=Accessories' },
-  { id: 'kitchen', name: 'KITCHEN & HOME', image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=400', query: 'category=Kitchen' },
-  { id: 'footwear', name: 'FOOTWEAR', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400', query: 'category=Footwear' }
+  { id: 'sarees', name: 'ETHNIC & SAREES', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400', query: 'category=Sarees' }
 ];
 
 const DEFAULT_RECOMMENDED = [
@@ -103,6 +106,31 @@ export default function DesktopCenterContent() {
   const [products, setProducts] = useState(DEFAULT_RECOMMENDED);
   const [categories, setCategories] = useState(CATEGORIES_DATA);
 
+  const catScrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const updateCatScrollButtons = () => {
+    const el = catScrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 5);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5);
+  };
+
+  useEffect(() => {
+    updateCatScrollButtons();
+    const el = catScrollRef.current;
+    if (el) {
+      el.addEventListener('scroll', updateCatScrollButtons);
+      window.addEventListener('resize', updateCatScrollButtons);
+      return () => {
+        el.removeEventListener('scroll', updateCatScrollButtons);
+        window.removeEventListener('resize', updateCatScrollButtons);
+      };
+    }
+  }, [categories]);
+
   useEffect(() => {
     fetchProductsAndCategories();
     fetchBanners();
@@ -149,35 +177,29 @@ export default function DesktopCenterContent() {
         list = rawData;
       } else if (rawData && typeof rawData === 'object') {
         if (Array.isArray(rawData.banners)) list = rawData.banners;
-        if (rawData.autoScroll !== undefined) currentAuto = Boolean(rawData.autoScroll);
-        if (rawData.speed !== undefined) currentSpeed = Number(rawData.speed);
+        if (rawData.autoScroll !== undefined) currentAuto = !!rawData.autoScroll;
+        if (rawData.speed !== undefined) currentSpeed = Number(rawData.speed) || 5000;
       }
 
       setAutoScroll(currentAuto);
       setSpeed(currentSpeed);
 
-      if (Array.isArray(list)) {
-        const activeBanners = list.filter(b => b && b.isActive !== false && String(b.status || 'active').toLowerCase() === 'active');
-        const formatted = activeBanners.map(b => {
-          const rawImg = b.desktopImageUrl || b.imageUrl || b.imagePath || b.image || '';
-          const resolvedImg = resolveImageUrl(rawImg);
-          return {
-            id: b.id,
-            tag: b.tag || 'OFFICIAL DROP',
-            title: b.title || '',
-            subtitle: b.subtitle || '',
-            image: resolvedImg,
-            link: b.buttonLink || b.link || '/shop',
-            buttonText: b.buttonText || b.button_text || 'SHOP NOW'
-          };
-        });
-        setHeroSlides(formatted);
-      } else {
-        setHeroSlides([]);
+      if (list && list.length > 0) {
+        const formatted = list
+          .filter(b => b.active !== false && b.status !== 'Inactive')
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
+          .map(b => ({
+            id: b.id || Math.random(),
+            title: b.title || 'EXCLUSIVE COLLECTION',
+            subtitle: b.subtitle || 'Shop Premium Karviyam Designs',
+            image: resolveImageUrl(b.imageUrl || b.image, b.id),
+            link: b.link || '/shop',
+            tag: b.tag || 'OFFICIAL DROP'
+          }));
+        if (formatted.length > 0) setHeroSlides(formatted);
       }
     } catch (e) {
-      console.error('Error fetching hero banners in DesktopCenterContent:', e);
-      setHeroSlides([]);
+      console.error('[DesktopCenterContent] Error loading banners:', e);
     }
   };
 
@@ -199,44 +221,33 @@ export default function DesktopCenterContent() {
 
   const fetchProductsAndCategories = async () => {
     try {
-      const featRes = await api.get('/products/featured').catch(() => null);
-      const featData = featRes?.data?.data || featRes?.data || featRes;
-      let list = Array.isArray(featData) ? featData : (Array.isArray(featData?.content) ? featData.content : []);
+      const prodRes = await api.get('/products?featured=true&limit=8').catch(() => null);
+      const prodData = prodRes?.data?.data || prodRes?.data;
+      let prodList = Array.isArray(prodData) ? prodData : [];
       
-      if (!list || list.length === 0) {
-        const fallRes = await api.get('/products?size=10').catch(() => null);
-        const fallData = fallRes?.data?.data || fallRes?.data;
-        list = Array.isArray(fallData?.content) ? fallData.content : (Array.isArray(fallData) ? fallData : []);
+      if (!prodList || prodList.length === 0) {
+        const allRes = await api.get('/products?limit=8').catch(() => null);
+        const allData = allRes?.data?.data || allRes?.data;
+        if (Array.isArray(allData)) prodList = allData;
       }
 
-      try {
-        const savedAdmin = localStorage.getItem('karviyam_admin_products');
-        if (savedAdmin) {
-          const parsed = JSON.parse(savedAdmin);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const activeAdminProds = parsed.filter(p => p.isActive !== false);
-            if (activeAdminProds.length > 0) {
-              list = [...activeAdminProds, ...list.filter(p => !activeAdminProds.some(a => String(a.id) === String(p.id)))];
-            }
-          }
-        }
-      } catch (eSaved) {}
-
-      if (list && list.length > 0) {
-        const formatted = list.filter(p => p.isActive !== false).slice(0, 6).map((p, idx) => {
-          const price = p.price || DEFAULT_RECOMMENDED[idx % 6].price;
-          const oldPrice = p.oldPrice || Math.round(price * 1.45);
-          const disc = Math.round(((oldPrice - price) / oldPrice) * 100);
+      if (prodList && prodList.length > 0) {
+        const formatted = prodList.map(p => {
+          const discountPct = p.oldPrice && p.price < p.oldPrice
+            ? `${Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100)}% OFF`
+            : 'SPECIAL OFFER';
+          
           return {
             id: p.id,
-            name: p.name || DEFAULT_RECOMMENDED[idx % 6].name,
-            brand: p.brand || 'KARVIYAM',
+            name: p.name,
+            brand: (p.brandName || p.brand || 'KARVIYAM').toUpperCase(),
             rating: p.rating || 4.5,
-            reviews: p.reviewsCount ? `${p.reviewsCount}` : DEFAULT_RECOMMENDED[idx % 6].reviews,
-            price: price,
-            oldPrice: oldPrice,
-            discount: `${disc}% OFF`,
-            image: p.imageUrl || (Array.isArray(p.images) && p.images[0]) || DEFAULT_RECOMMENDED[idx % 6].image
+            reviews: p.reviewCount ? String(p.reviewCount) : '100+',
+            price: Number(p.price) || 0,
+            oldPrice: p.oldPrice ? Number(p.oldPrice) : null,
+            discount: discountPct,
+            image: resolveImageUrl(p.imageUrl || p.image, p.id),
+            category: p.categoryName || p.category || ''
           };
         });
         
@@ -262,8 +273,9 @@ export default function DesktopCenterContent() {
         } catch (eP) {}
       }
 
+      let formattedCats = [];
       if (parentList && parentList.length > 0) {
-        const formattedCats = parentList.map(c => {
+        formattedCats = parentList.map(c => {
           const rawImg = c.imageUrl || c.image_url || c.imagePath || c.image || '';
           const resolvedImg = resolveImageUrl(rawImg, c.id);
           const linkStr = c.link || `/shop?category=${encodeURIComponent(c.name)}`;
@@ -276,10 +288,22 @@ export default function DesktopCenterContent() {
             link: linkStr
           };
         });
-        setCategories(formattedCats);
       }
+
+      // Fill up to 10 total categories from CATEGORIES_DATA without duplicating names
+      const existingNames = new Set(formattedCats.map(c => c.name.trim().toUpperCase()));
+      for (const fallback of CATEGORIES_DATA) {
+        if (formattedCats.length >= 10) break;
+        const fallbackUpper = fallback.name.trim().toUpperCase();
+        if (!existingNames.has(fallbackUpper)) {
+          formattedCats.push(fallback);
+          existingNames.add(fallbackUpper);
+        }
+      }
+      setCategories(formattedCats);
     } catch (e) {
       console.error(e);
+      setCategories(CATEGORIES_DATA);
     }
   };
 
@@ -400,7 +424,7 @@ export default function DesktopCenterContent() {
 
       </div>
 
-      {/* 3. Shop by Category Section (Compact Cards + Horizontal Slide) */}
+      {/* 3. Shop by Category Section (10 Parent Categories Carousel) */}
       <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-3 relative">
         <div className="flex items-center justify-between">
           <div>
@@ -414,54 +438,69 @@ export default function DesktopCenterContent() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                const el = document.getElementById('top-categories-scroll-container');
-                if (el) el.scrollBy({ left: -240, behavior: 'smooth' });
+              disabled={!canScrollLeft}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (catScrollRef.current) {
+                  catScrollRef.current.scrollBy({ left: -320, behavior: 'smooth' });
+                }
               }}
-              className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
-              title="Scroll Left"
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                canScrollLeft
+                  ? 'bg-slate-100/90 text-slate-800 hover:bg-[#B71C1C] hover:text-white shadow-2xs'
+                  : 'bg-slate-50 text-slate-300 opacity-40 pointer-events-none'
+              }`}
+              title="Previous Categories"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               type="button"
-              onClick={() => {
-                const el = document.getElementById('top-categories-scroll-container');
-                if (el) el.scrollBy({ left: 240, behavior: 'smooth' });
+              disabled={!canScrollRight}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (catScrollRef.current) {
+                  catScrollRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+                }
               }}
-              className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
-              title="Scroll Right"
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                canScrollRight
+                  ? 'bg-slate-100/90 text-slate-800 hover:bg-[#B71C1C] hover:text-white shadow-2xs'
+                  : 'bg-slate-50 text-slate-300 opacity-40 pointer-events-none'
+              }`}
+              title="Next Categories"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
             <button
               type="button"
               onClick={() => navigate('/shop')}
-              className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer ml-1"
+              className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer ml-1.5"
             >
               View All →
             </button>
           </div>
         </div>
 
-        {/* Compact Cards Horizontal Scroll Track */}
+        {/* 10 Parent Categories Track (Single Horizontal Row) */}
         <div
-          id="top-categories-scroll-container"
-          className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full"
+          ref={catScrollRef}
+          className="flex items-center gap-3.5 xl:gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full shrink-0 flex-nowrap whitespace-nowrap"
         >
           {categories.map((cat) => (
             <div
-              key={cat.id}
+              key={cat.id || cat.name}
               onClick={() => navigate(`/shop?${cat.query}`)}
-              className="flex flex-col items-center shrink-0 w-[100px] xl:w-[110px] cursor-pointer group"
+              className="flex flex-col items-center shrink-0 w-[100px] xl:w-[110px] cursor-pointer group select-none"
             >
-              {/* Compact Soft Ice-Blue Square Image Box */}
+              {/* Soft Ice-Blue Square Background Box */}
               <div className="w-full aspect-square bg-[#F0F6FE] hover:bg-[#E2EEFE] transition-colors rounded-2xl p-2 flex items-center justify-center border border-slate-100/80 shadow-2xs overflow-hidden">
                 <img
                   src={resolveImageUrl(cat.image, cat.id)}
                   alt={cat.name}
                   onError={(e) => handleImageError(e, cat.id)}
-                  className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                  loading="lazy"
                 />
               </div>
               {/* Clean Category Name Text Below Box */}
