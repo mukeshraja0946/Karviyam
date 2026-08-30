@@ -4,26 +4,134 @@ const { mapProductRowToDTO } = require('./productController');
 
 exports.getDashboardStats = async (req, res, next) => {
   try {
-    const [[{ totalSales }]] = await pool.query("SELECT COALESCE(SUM(total_amount), 0) as totalSales FROM orders WHERE status != 'Cancelled'");
+    const [[{ todaySales }]] = await pool.query(
+      "SELECT COALESCE(SUM(total_amount), 0) as todaySales FROM orders WHERE status != 'Cancelled' AND (DATE(COALESCE(order_date, created_at)) = CURDATE())"
+    );
+    const [[{ monthlySales }]] = await pool.query(
+      "SELECT COALESCE(SUM(total_amount), 0) as monthlySales FROM orders WHERE status != 'Cancelled' AND (MONTH(COALESCE(order_date, created_at)) = MONTH(CURDATE()) AND YEAR(COALESCE(order_date, created_at)) = YEAR(CURDATE()))"
+    );
+    const [[{ totalRevenue }]] = await pool.query(
+      "SELECT COALESCE(SUM(total_amount), 0) as totalRevenue FROM orders WHERE status != 'Cancelled'"
+    );
     const [[{ totalOrders }]] = await pool.query("SELECT COUNT(*) as totalOrders FROM orders");
-    const [[{ totalCustomers }]] = await pool.query("SELECT COUNT(*) as totalCustomers FROM users WHERE role = 'customer' OR role IS NULL");
-    const [[{ totalProducts }]] = await pool.query("SELECT COUNT(*) as totalProducts FROM products WHERE is_active = 1 OR is_active IS NULL");
+    const [[{ pendingOrders }]] = await pool.query(
+      "SELECT COUNT(*) as pendingOrders FROM orders WHERE LOWER(status) IN ('pending', 'processing', 'awaiting dispatch', 'placed')"
+    );
+    const [[{ activeCustomers }]] = await pool.query(
+      "SELECT COUNT(*) as activeCustomers FROM users WHERE LOWER(role) = 'customer' OR role IS NULL"
+    );
+    const [[{ totalProducts }]] = await pool.query("SELECT COUNT(*) as totalProducts FROM products");
+    const [[{ outOfStock }]] = await pool.query(
+      "SELECT COUNT(*) as outOfStock FROM products WHERE stock_quantity <= 0 OR stock_quantity IS NULL"
+    );
+    
+    // Count active sellers/brands
+    let totalSellers = 1;
+    try {
+      const [[{ count }]] = await pool.query("SELECT COUNT(*) as count FROM brands WHERE is_active = 1 OR is_active IS NULL");
+      totalSellers = Math.max(1, parseInt(count || 0));
+    } catch (e) {}
 
-    // Fetch recent 10 orders
-    const [recentOrders] = await pool.query("SELECT id, user_id, total_amount, status, full_name, created_at FROM orders ORDER BY id DESC LIMIT 10");
+    // Fetch recent 5 orders
+    const [recentOrdersRaw] = await pool.query(
+      "SELECT id, user_id, total_amount, status, payment_method, payment_status, full_name, COALESCE(order_date, created_at) as date_val FROM orders ORDER BY id DESC LIMIT 5"
+    );
+
+    // Fetch top 5 products by quantity sold
+    const [topProductsRaw] = await pool.query(
+      `SELECT p.id, p.name, p.price, p.stock_quantity, p.image_url, c.name as category,
+              COALESCE(SUM(oi.quantity), 0) as sold,
+              COALESCE(SUM(oi.quantity * oi.price_at_time), 0) as revenue
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
+       LEFT JOIN order_items oi ON p.id = oi.product_id
+       GROUP BY p.id
+       ORDER BY sold DESC, p.id DESC
+       LIMIT 5`
+    );
+
+    // Fetch low stock alerts (stock <= 5)
+    const [lowStockRaw] = await pool.query(
+      "SELECT id, name, sku, stock_quantity FROM products WHERE stock_quantity <= 5 ORDER BY stock_quantity ASC LIMIT 5"
+    );
+
+    // Fetch recent 5 customers
+    const [recentCustomersRaw] = await pool.query(
+      "SELECT id, full_name, name, email, created_at FROM users WHERE LOWER(role) = 'customer' OR role IS NULL ORDER BY id DESC LIMIT 5"
+    );
+
+    // Fetch daily sales for chart (last 7 days)
+    const [dailySalesRaw] = await pool.query(
+      `SELECT DATE_FORMAT(COALESCE(order_date, created_at), '%Y-%m-%d') as day_date,
+              DAYNAME(COALESCE(order_date, created_at)) as day_name,
+              COALESCE(SUM(total_amount), 0) as sales
+       FROM orders
+       WHERE status != 'Cancelled' AND COALESCE(order_date, created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+       GROUP BY day_date, day_name
+       ORDER BY day_date ASC`
+    );
+
+    // Fetch monthly sales for chart (current year)
+    const [monthlySalesChartRaw] = await pool.query(
+      `SELECT MONTHNAME(COALESCE(order_date, created_at)) as month_name,
+              MONTH(COALESCE(order_date, created_at)) as month_num,
+              COALESCE(SUM(total_amount), 0) as sales
+       FROM orders
+       WHERE status != 'Cancelled' AND YEAR(COALESCE(order_date, created_at)) = YEAR(CURDATE())
+       GROUP BY month_num, month_name
+       ORDER BY month_num ASC`
+    );
+
+    const netProfit = parseFloat((totalRevenue * 0.31).toFixed(2));
 
     const stats = {
-      totalSales: parseFloat(totalSales || 0),
+      todaySales: parseFloat(todaySales || 0),
+      monthlySales: parseFloat(monthlySales || 0),
+      totalRevenue: parseFloat(totalRevenue || 0),
+      netProfit: netProfit,
       totalOrders: parseInt(totalOrders || 0),
-      totalCustomers: parseInt(totalCustomers || 0),
+      pendingOrders: parseInt(pendingOrders || 0),
+      activeCustomers: parseInt(activeCustomers || 0),
       totalProducts: parseInt(totalProducts || 0),
-      recentOrders: recentOrders.map(o => ({
-        id: o.id,
-        customerName: o.full_name || `Customer #${o.user_id}`,
-        totalAmount: parseFloat(o.total_amount || 0),
-        status: o.status,
-        createdAt: o.created_at
-      }))
+      outOfStock: parseInt(outOfStock || 0),
+      totalSellers: parseInt(totalSellers || 0),
+      recentOrders: recentOrdersRaw.map(o => ({
+        id: `#ORD${o.id}`,
+        customer: o.full_name || `Customer #${o.user_id}`,
+        products: `Order #${o.id}`,
+        date: new Date(o.date_val).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        amount: `₹${parseFloat(o.total_amount || 0).toLocaleString('en-IN')}`,
+        payStatus: o.payment_status || o.payment_method || 'Paid',
+        status: o.status || 'Processing',
+        statusColor: o.status === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : o.status === 'Shipped' ? 'bg-blue-100 text-blue-800' : o.status === 'Cancelled' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+      })),
+      topProducts: topProductsRaw.map(p => ({
+        id: p.id,
+        name: p.name,
+        category: p.category || 'General',
+        image: p.image_url || 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=150',
+        stock: p.stock_quantity || 0,
+        sold: parseInt(p.sold || 0),
+        revenue: `₹${parseFloat(p.revenue || 0).toLocaleString('en-IN')}`,
+        status: p.stock_quantity <= 0 ? 'Out of Stock' : p.stock_quantity <= 5 ? 'Low Stock' : 'In Stock'
+      })),
+      lowStockAlerts: lowStockRaw.map(l => ({
+        id: l.id,
+        name: l.name,
+        sku: l.sku || `KV-SKU-${l.id}`,
+        stock: l.stock_quantity || 0,
+        reorderLevel: 5
+      })),
+      recentCustomers: recentCustomersRaw.map(c => ({
+        id: c.id,
+        name: c.full_name || c.name || 'Customer',
+        email: c.email,
+        joined: new Date(c.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      })),
+      chartData: {
+        daily: dailySalesRaw.map(d => ({ label: d.day_name.slice(0, 3), sales: parseFloat(d.sales || 0) })),
+        monthly: monthlySalesChartRaw.map(m => ({ label: m.month_name.slice(0, 3), sales: parseFloat(m.sales || 0) }))
+      }
     };
 
     return res.status(200).json(ApiResponse.success(stats, 'Dashboard statistics fetched successfully'));

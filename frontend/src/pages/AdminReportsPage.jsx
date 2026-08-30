@@ -238,12 +238,22 @@ export default function AdminReportsPage() {
   const handleResetData = () => {
     if (!window.confirm('Reset all reports metrics to 0 and clear all data entries?')) return;
     saveReportData(ZERO_REPORT_DATA);
+    try {
+      localStorage.setItem('karviyam_admin_reports_reset', 'true');
+      window.dispatchEvent(new Event('karviyam_analytics_reset'));
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {}
     toast.success('Reports reset! All metrics cleared to 0.');
   };
 
   const handleRestoreInitialDefaults = () => {
     if (!window.confirm('Restore initial sample report metrics and sample data?')) return;
     saveReportData(INITIAL_REPORT_DATA);
+    try {
+      localStorage.setItem('karviyam_admin_reports_reset', 'false');
+      window.dispatchEvent(new Event('karviyam_analytics_reset'));
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {}
     toast.success('Sample report data restored!');
   };
 
