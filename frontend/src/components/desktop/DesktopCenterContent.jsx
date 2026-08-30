@@ -429,7 +429,7 @@ export default function DesktopCenterContent() {
       <div
         key={prod.id || idx}
         onClick={() => navigate(`/product/${prod.id}`)}
-        className="h-[215px] xl:h-[230px] w-[150px] sm:w-[165px] xl:w-[175px] bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-1.5 flex flex-col justify-between overflow-hidden cursor-pointer shrink-0 group"
+        className="h-[195px] xl:h-[205px] w-[150px] sm:w-[165px] xl:w-[175px] bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-1.5 flex flex-col overflow-hidden cursor-pointer shrink-0 group gap-1"
       >
         {/* Product Image Box */}
         <div className="relative w-full h-[120px] xl:h-[130px] bg-white rounded-lg overflow-hidden flex items-center justify-center shrink-0">
@@ -458,27 +458,25 @@ export default function DesktopCenterContent() {
         </div>
 
         {/* Content Box */}
-        <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5">
-          <div>
-            {/* Brand & Rating */}
-            <div className="flex items-center justify-between text-[9px]">
-              <span className="font-extrabold uppercase tracking-wider text-[#B71C1C] truncate max-w-[70px]">
-                {prod.brand}
-              </span>
-              <div className="flex items-center gap-0.5 text-slate-700 font-bold">
-                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                <span>{prod.rating}</span>
-              </div>
+        <div className="flex-1 flex flex-col justify-start pt-0.5 px-0.5 gap-0.5">
+          {/* Brand & Rating */}
+          <div className="flex items-center justify-between text-[9px]">
+            <span className="font-extrabold uppercase tracking-wider text-[#B71C1C] truncate max-w-[70px]">
+              {prod.brand}
+            </span>
+            <div className="flex items-center gap-0.5 text-slate-700 font-bold">
+              <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+              <span>{prod.rating}</span>
             </div>
-
-            {/* Single Line Truncated Title */}
-            <h3 className="font-extrabold text-[10px] xl:text-[11px] text-slate-900 leading-snug truncate h-[16px] xl:h-[18px] overflow-hidden mt-0.5 group-hover:text-[#B71C1C] transition-colors" title={prod.name}>
-              {prod.name}
-            </h3>
           </div>
 
+          {/* Single Line Truncated Title */}
+          <h3 className="font-extrabold text-[10px] xl:text-[11px] text-slate-900 leading-tight truncate overflow-hidden group-hover:text-[#B71C1C] transition-colors" title={prod.name}>
+            {prod.name}
+          </h3>
+
           {/* Price & Offer Row */}
-          <div className="flex items-baseline gap-1">
+          <div className="flex items-baseline gap-1 mt-0.5">
             <span className="font-black text-[11px] xl:text-xs text-slate-900">
               ₹{prod.price}
             </span>
