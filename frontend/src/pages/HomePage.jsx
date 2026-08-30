@@ -255,16 +255,9 @@ export default function HomePage() {
       {/* DESKTOP HOMEPAGE LAYOUT (>= 1024px / lg)                   */}
       {/* MATCHES REFERENCE SPECIFICATION EXACTLY                    */}
       {/* ========================================================= */}
-      <div className="hidden lg:block py-3 bg-[#FAFAFA] min-h-screen">
-        <div className="max-w-[1560px] w-full mx-auto px-3 sm:px-4 flex justify-center items-start gap-3 xl:gap-4">
-          {/* Column 1: Left Sidebar */}
-          <DesktopSidebarLeft />
-
-          {/* Column 2: Center Content */}
+      <div className="hidden lg:block py-3 bg-white min-h-screen">
+        <div className="max-w-[1560px] w-full mx-auto px-4 sm:px-6">
           <DesktopCenterContent />
-
-          {/* Column 3: Right Column */}
-          <DesktopSidebarRight />
         </div>
       </div>
 

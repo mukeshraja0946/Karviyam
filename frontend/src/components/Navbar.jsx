@@ -471,9 +471,14 @@ export default function Navbar() {
                         <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
                       </svg>
                     </div>
-                    <span className="font-display font-black text-2xl tracking-tight text-[#B71C1C] leading-none">
-                      KARVIYAM
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="font-display font-black text-2xl tracking-tight text-[#B71C1C] leading-none">
+                        Karviyam
+                      </span>
+                      <span className="text-[8px] font-extrabold text-slate-500 tracking-widest uppercase leading-none mt-0.5">
+                        STYLE. QUALITY. YOU.
+                      </span>
+                    </div>
                   </div>
                 )}
               </Link>
