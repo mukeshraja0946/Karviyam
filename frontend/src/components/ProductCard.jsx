@@ -43,7 +43,7 @@ export default function ProductCard({ product }) {
       {/* DESKTOP PRODUCT CARD (>= 768px) - AMAZON-STYLE KARVIYAM    */}
       {/* STRICT EQUAL HEIGHT (515px) & BOTTOM ALIGNED ADD TO CART   */}
       {/* ========================================================= */}
-      <div className="hidden md:flex group relative bg-white w-full h-[515px] min-h-[515px] max-h-[515px] rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all duration-200 flex-col justify-between overflow-hidden p-3 text-left">
+      <div className="hidden md:flex group relative bg-white w-full h-[465px] min-h-[465px] max-h-[465px] rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all duration-200 flex-col justify-between overflow-hidden p-3 text-left">
         
         {/* 1. Image Container (Fixed 230px Height) */}
         <div 
@@ -179,7 +179,7 @@ export default function ProductCard({ product }) {
           <button
             type="button"
             onClick={() => addToCart(product.id, 1)}
-            className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-xs py-2 rounded-lg shadow-2xs hover:shadow-md transition-colors cursor-pointer text-center mt-auto"
+            className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-xs py-2 rounded-lg shadow-2xs hover:shadow-md transition-colors cursor-pointer text-center mt-2"
           >
             Add to cart
           </button>
