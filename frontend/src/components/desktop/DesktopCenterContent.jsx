@@ -676,7 +676,7 @@ export default function DesktopCenterContent() {
       <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-4 relative">
         
         {/* Single Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
               Recommended For You
@@ -695,8 +695,7 @@ export default function DesktopCenterContent() {
 
         {/* ROW 1 CAROUSEL */}
         <div className="flex flex-col gap-1.5 relative group">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-bold px-1">
-            <span className="uppercase tracking-wider text-[9.5px] text-slate-400">SELECTION 01</span>
+          <div className="flex items-center justify-end text-xs font-bold px-1">
             <div className="flex items-center gap-1.5">
               {canRow1Left && (
                 <button
@@ -731,9 +730,8 @@ export default function DesktopCenterContent() {
         </div>
 
         {/* ROW 2 CAROUSEL */}
-        <div className="flex flex-col gap-1.5 relative group pt-2 border-t border-slate-100/70">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-bold px-1">
-            <span className="uppercase tracking-wider text-[9.5px] text-slate-400">SELECTION 02</span>
+        <div className="flex flex-col gap-1.5 relative group">
+          <div className="flex items-center justify-end text-xs font-bold px-1">
             <div className="flex items-center gap-1.5">
               {canRow2Left && (
                 <button
