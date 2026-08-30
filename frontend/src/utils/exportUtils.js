@@ -95,7 +95,7 @@ export const exportToPDF = (filename, title, headers, data) => {
         <title>${title} - Karviyam Enterprise</title>
         <style>
           @page {
-            size: A4 landscape;
+            size: A4 portrait;
             margin: 10mm;
           }
           body { font-family: 'Inter', system-ui, -apple-system, sans-serif; padding: 15px; color: #0f172a; background: #ffffff; }
