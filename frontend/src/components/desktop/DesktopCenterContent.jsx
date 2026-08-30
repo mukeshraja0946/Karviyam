@@ -51,17 +51,21 @@ export default function DesktopCenterContent() {
   const [speed, setSpeed] = useState(5000);
 
   const [categories, setCategories] = useState(CATEGORIES_DATA);
-  const [products, setProducts] = useState([]);
+  const [productsRow1, setProductsRow1] = useState([]);
+  const [productsRow2, setProductsRow2] = useState([]);
 
   // Category carousel ref & state
   const categoryScrollRef = useRef(null);
   const [canCategoryScrollLeft, setCanCategoryScrollLeft] = useState(false);
   const [canCategoryScrollRight, setCanCategoryScrollRight] = useState(true);
 
-  // Single Recommended Products Row Carousel Ref & State
-  const productScrollRef = useRef(null);
-  const [canProductScrollLeft, setCanProductScrollLeft] = useState(false);
-  const [canProductScrollRight, setCanProductScrollRight] = useState(true);
+  // Recommendation Rows refs & states (Row 1 & Row 2 inside SAME container)
+  const row1ScrollRef = useRef(null);
+  const row2ScrollRef = useRef(null);
+  const [canRow1Left, setCanRow1Left] = useState(false);
+  const [canRow1Right, setCanRow1Right] = useState(true);
+  const [canRow2Left, setCanRow2Left] = useState(false);
+  const [canRow2Right, setCanRow2Right] = useState(true);
 
   const checkCategoryScrollBoundary = () => {
     const el = categoryScrollRef.current;
@@ -73,13 +77,23 @@ export default function DesktopCenterContent() {
     }
   };
 
-  const checkProductScrollBoundary = () => {
-    const el = productScrollRef.current;
+  const checkRow1ScrollBoundary = () => {
+    const el = row1ScrollRef.current;
     if (el) {
       const isAtLeft = el.scrollLeft <= 5;
       const isAtRight = el.scrollLeft + el.clientWidth >= el.scrollWidth - 5;
-      setCanProductScrollLeft(!isAtLeft);
-      setCanProductScrollRight(!isAtRight);
+      setCanRow1Left(!isAtLeft);
+      setCanRow1Right(!isAtRight);
+    }
+  };
+
+  const checkRow2ScrollBoundary = () => {
+    const el = row2ScrollRef.current;
+    if (el) {
+      const isAtLeft = el.scrollLeft <= 5;
+      const isAtRight = el.scrollLeft + el.clientWidth >= el.scrollWidth - 5;
+      setCanRow2Left(!isAtLeft);
+      setCanRow2Right(!isAtRight);
     }
   };
 
@@ -90,23 +104,33 @@ export default function DesktopCenterContent() {
       catEl.addEventListener('scroll', checkCategoryScrollBoundary);
       window.addEventListener('resize', checkCategoryScrollBoundary);
     }
-    const prodEl = productScrollRef.current;
-    if (prodEl) {
-      checkProductScrollBoundary();
-      prodEl.addEventListener('scroll', checkProductScrollBoundary);
-      window.addEventListener('resize', checkProductScrollBoundary);
+    const r1El = row1ScrollRef.current;
+    if (r1El) {
+      checkRow1ScrollBoundary();
+      r1El.addEventListener('scroll', checkRow1ScrollBoundary);
+      window.addEventListener('resize', checkRow1ScrollBoundary);
+    }
+    const r2El = row2ScrollRef.current;
+    if (r2El) {
+      checkRow2ScrollBoundary();
+      r2El.addEventListener('scroll', checkRow2ScrollBoundary);
+      window.addEventListener('resize', checkRow2ScrollBoundary);
     }
     return () => {
       if (catEl) {
         catEl.removeEventListener('scroll', checkCategoryScrollBoundary);
         window.removeEventListener('resize', checkCategoryScrollBoundary);
       }
-      if (prodEl) {
-        prodEl.removeEventListener('scroll', checkProductScrollBoundary);
-        window.removeEventListener('resize', checkProductScrollBoundary);
+      if (r1El) {
+        r1El.removeEventListener('scroll', checkRow1ScrollBoundary);
+        window.removeEventListener('resize', checkRow1ScrollBoundary);
+      }
+      if (r2El) {
+        r2El.removeEventListener('scroll', checkRow2ScrollBoundary);
+        window.removeEventListener('resize', checkRow2ScrollBoundary);
       }
     };
-  }, [categories, products]);
+  }, [categories, productsRow1, productsRow2]);
 
   const handleCategoryScrollLeft = (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -126,21 +150,39 @@ export default function DesktopCenterContent() {
     }
   };
 
-  const handleProductScrollLeft = (e) => {
+  const handleRow1ScrollLeft = (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
-    const el = productScrollRef.current;
+    const el = row1ScrollRef.current;
     if (el) {
-      el.scrollBy({ left: -380, behavior: 'smooth' });
-      setTimeout(checkProductScrollBoundary, 350);
+      el.scrollBy({ left: -360, behavior: 'smooth' });
+      setTimeout(checkRow1ScrollBoundary, 350);
     }
   };
 
-  const handleProductScrollRight = (e) => {
+  const handleRow1ScrollRight = (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
-    const el = productScrollRef.current;
+    const el = row1ScrollRef.current;
     if (el) {
-      el.scrollBy({ left: 380, behavior: 'smooth' });
-      setTimeout(checkProductScrollBoundary, 350);
+      el.scrollBy({ left: 360, behavior: 'smooth' });
+      setTimeout(checkRow1ScrollBoundary, 350);
+    }
+  };
+
+  const handleRow2ScrollLeft = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const el = row2ScrollRef.current;
+    if (el) {
+      el.scrollBy({ left: -360, behavior: 'smooth' });
+      setTimeout(checkRow2ScrollBoundary, 350);
+    }
+  };
+
+  const handleRow2ScrollRight = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const el = row2ScrollRef.current;
+    if (el) {
+      el.scrollBy({ left: 360, behavior: 'smooth' });
+      setTimeout(checkRow2ScrollBoundary, 350);
     }
   };
 
@@ -254,7 +296,7 @@ export default function DesktopCenterContent() {
 
   const fetchProductsAndCategories = async () => {
     try {
-      // 1. FETCH PRODUCTS FOR SINGLE RECOMMENDED FOR YOU CAROUSEL
+      // 1. FETCH PRODUCTS FOR RECOMMENDED FOR YOU (2 ROWS INSIDE SAME CONTAINER)
       let rawProductList = [];
       const featRes = await api.get('/products/featured').catch(() => null);
       const featData = featRes?.data?.data || featRes?.data || featRes;
@@ -303,7 +345,6 @@ export default function DesktopCenterContent() {
       const activeProducts = rawProductList.filter(p => p && p.isActive !== false);
       let formattedProducts = activeProducts.map((p, idx) => formatProductItem(p, idx));
 
-      // Guarantee 12–15 products inside this ONE single horizontal carousel
       if (formattedProducts.length < 12) {
         const existingIds = new Set(formattedProducts.map(p => String(p.id)));
         DEFAULT_RECOMMENDED.forEach((def, idx) => {
@@ -317,7 +358,17 @@ export default function DesktopCenterContent() {
         });
       }
 
-      setProducts(formattedProducts);
+      // Divide products into Row 1 & Row 2 inside the same Recommended For You section
+      const halfIndex = Math.max(6, Math.floor(formattedProducts.length / 2));
+      const row1 = formattedProducts.slice(0, halfIndex);
+      let row2 = formattedProducts.slice(halfIndex);
+
+      if (row2.length < 6) {
+        row2 = [...formattedProducts].reverse().slice(0, Math.max(6, row1.length));
+      }
+
+      setProductsRow1(row1);
+      setProductsRow2(row2);
 
       // 2. FETCH PARENT CATEGORIES
       const parentRes = await api.get('/parent-categories').catch(() => null);
@@ -365,11 +416,85 @@ export default function DesktopCenterContent() {
       }
     } catch (e) {
       console.error('Error fetching data in DesktopCenterContent:', e);
-      setProducts(DEFAULT_RECOMMENDED);
+      setProductsRow1(DEFAULT_RECOMMENDED.slice(0, 6));
+      setProductsRow2(DEFAULT_RECOMMENDED.slice(6, 12));
     }
   };
 
   const slide = heroSlides[currentHero] || heroSlides[0];
+
+  const renderProductCard = (prod, idx) => {
+    const liked = isInWishlist(prod.id);
+    return (
+      <div
+        key={prod.id || idx}
+        onClick={() => navigate(`/product/${prod.id}`)}
+        className="h-[215px] xl:h-[230px] w-[150px] sm:w-[165px] xl:w-[175px] bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-1.5 flex flex-col justify-between overflow-hidden cursor-pointer shrink-0 group"
+      >
+        {/* Product Image Box */}
+        <div className="relative w-full h-[120px] xl:h-[130px] bg-white rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+          <img
+            src={resolveImageUrl(prod.image || prod.imageUrl, prod.id)}
+            alt={prod.name}
+            onError={(e) => handleImageError(e, prod.id)}
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+          />
+
+          {/* Wishlist Heart Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleWishlist(prod.id);
+            }}
+            className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-2xs ${
+              liked ? 'bg-[#B71C1C] text-white' : 'bg-white/90 text-slate-600 hover:text-[#B71C1C]'
+            }`}
+            title={liked ? 'Remove from Wishlist' : 'Add to Wishlist'}
+          >
+            <Heart className={`w-3 h-3 ${liked ? 'fill-current' : ''}`} />
+          </button>
+        </div>
+
+        {/* Content Box */}
+        <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5">
+          <div>
+            {/* Brand & Rating */}
+            <div className="flex items-center justify-between text-[9px]">
+              <span className="font-extrabold uppercase tracking-wider text-[#B71C1C] truncate max-w-[70px]">
+                {prod.brand}
+              </span>
+              <div className="flex items-center gap-0.5 text-slate-700 font-bold">
+                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                <span>{prod.rating}</span>
+              </div>
+            </div>
+
+            {/* Single Line Truncated Title */}
+            <h3 className="font-extrabold text-[10px] xl:text-[11px] text-slate-900 leading-snug truncate h-[16px] xl:h-[18px] overflow-hidden mt-0.5 group-hover:text-[#B71C1C] transition-colors" title={prod.name}>
+              {prod.name}
+            </h3>
+          </div>
+
+          {/* Price & Offer Row */}
+          <div className="flex items-baseline gap-1">
+            <span className="font-black text-[11px] xl:text-xs text-slate-900">
+              ₹{prod.price}
+            </span>
+            {prod.oldPrice > prod.price && (
+              <span className="text-[9px] text-slate-400 line-through">
+                ₹{prod.oldPrice}
+              </span>
+            )}
+            <span className="text-[8.5px] font-extrabold text-emerald-700">
+              {prod.discount}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <main className="flex-1 min-w-0 flex flex-col gap-4">
@@ -547,9 +672,11 @@ export default function DesktopCenterContent() {
         </div>
       </div>
 
-      {/* 4. EXACTLY ONE SINGLE RECOMMENDED FOR YOU SECTION (ONE HORIZONTAL ROW) */}
-      <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-3 relative">
-        <div className="flex items-center justify-between">
+      {/* 4. SINGLE RECOMMENDED FOR YOU CONTAINER WITH TWO INDEPENDENT HORIZONTAL PRODUCT CAROUSEL ROWS */}
+      <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-4 relative">
+        
+        {/* Single Header */}
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div>
             <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
               Recommended For You
@@ -558,117 +685,88 @@ export default function DesktopCenterContent() {
               Handpicked selections based on your style
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {canProductScrollLeft && (
-              <button
-                type="button"
-                onClick={handleProductScrollLeft}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                title="Scroll Left"
-                aria-label="Scroll Left"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
-            {canProductScrollRight && (
-              <button
-                type="button"
-                onClick={handleProductScrollRight}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                title="Scroll Right"
-                aria-label="Scroll Right"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
-            <button
-              onClick={() => navigate('/shop')}
-              className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5 ml-1"
-            >
-              View All →
-            </button>
+          <button
+            onClick={() => navigate('/shop')}
+            className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5"
+          >
+            View All →
+          </button>
+        </div>
+
+        {/* ROW 1 CAROUSEL */}
+        <div className="flex flex-col gap-1.5 relative group">
+          <div className="flex items-center justify-between text-xs text-slate-400 font-bold px-1">
+            <span className="uppercase tracking-wider text-[9.5px] text-slate-400">SELECTION 01</span>
+            <div className="flex items-center gap-1.5">
+              {canRow1Left && (
+                <button
+                  type="button"
+                  onClick={handleRow1ScrollLeft}
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                  title="Scroll Left"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {canRow1Right && (
+                <button
+                  type="button"
+                  onClick={handleRow1ScrollRight}
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                  title="Scroll Right"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div
+            ref={row1ScrollRef}
+            onScroll={checkRow1ScrollBoundary}
+            className="flex items-center gap-2.5 xl:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap"
+          >
+            {productsRow1.map((prod, idx) => renderProductCard(prod, idx))}
           </div>
         </div>
 
-        {/* ONE SINGLE HORIZONTAL PRODUCT CAROUSEL TRACK (12-15+ PRODUCTS) */}
-        <div
-          ref={productScrollRef}
-          onScroll={checkProductScrollBoundary}
-          className="flex items-center gap-2.5 xl:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap"
-        >
-          {products.map((prod, idx) => {
-            const liked = isInWishlist(prod.id);
-            return (
-              <div
-                key={prod.id || idx}
-                onClick={() => navigate(`/product/${prod.id}`)}
-                className="h-[215px] xl:h-[230px] w-[150px] sm:w-[165px] xl:w-[175px] bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-1.5 flex flex-col justify-between overflow-hidden cursor-pointer shrink-0 group"
-              >
-                {/* Product Image Box */}
-                <div className="relative w-full h-[120px] xl:h-[130px] bg-white rounded-lg overflow-hidden flex items-center justify-center shrink-0">
-                  <img
-                    src={resolveImageUrl(prod.image || prod.imageUrl, prod.id)}
-                    alt={prod.name}
-                    onError={(e) => handleImageError(e, prod.id)}
-                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
+        {/* ROW 2 CAROUSEL */}
+        <div className="flex flex-col gap-1.5 relative group pt-2 border-t border-slate-100/70">
+          <div className="flex items-center justify-between text-xs text-slate-400 font-bold px-1">
+            <span className="uppercase tracking-wider text-[9.5px] text-slate-400">SELECTION 02</span>
+            <div className="flex items-center gap-1.5">
+              {canRow2Left && (
+                <button
+                  type="button"
+                  onClick={handleRow2ScrollLeft}
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                  title="Scroll Left"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {canRow2Right && (
+                <button
+                  type="button"
+                  onClick={handleRow2ScrollRight}
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                  title="Scroll Right"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
 
-                  {/* Wishlist Heart Button */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleWishlist(prod.id);
-                    }}
-                    className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-2xs ${
-                      liked ? 'bg-[#B71C1C] text-white' : 'bg-white/90 text-slate-600 hover:text-[#B71C1C]'
-                    }`}
-                    title={liked ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                  >
-                    <Heart className={`w-3 h-3 ${liked ? 'fill-current' : ''}`} />
-                  </button>
-                </div>
-
-                {/* Content Box */}
-                <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5">
-                  <div>
-                    {/* Brand & Rating */}
-                    <div className="flex items-center justify-between text-[9px]">
-                      <span className="font-extrabold uppercase tracking-wider text-[#B71C1C] truncate max-w-[70px]">
-                        {prod.brand}
-                      </span>
-                      <div className="flex items-center gap-0.5 text-slate-700 font-bold">
-                        <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                        <span>{prod.rating}</span>
-                      </div>
-                    </div>
-
-                    {/* Single Line Truncated Title */}
-                    <h3 className="font-extrabold text-[10px] xl:text-[11px] text-slate-900 leading-snug truncate h-[16px] xl:h-[18px] overflow-hidden mt-0.5 group-hover:text-[#B71C1C] transition-colors" title={prod.name}>
-                      {prod.name}
-                    </h3>
-                  </div>
-
-                  {/* Price & Offer Row */}
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-black text-[11px] xl:text-xs text-slate-900">
-                      ₹{prod.price}
-                    </span>
-                    {prod.oldPrice > prod.price && (
-                      <span className="text-[9px] text-slate-400 line-through">
-                        ₹{prod.oldPrice}
-                      </span>
-                    )}
-                    <span className="text-[8.5px] font-extrabold text-emerald-700">
-                      {prod.discount}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          <div
+            ref={row2ScrollRef}
+            onScroll={checkRow2ScrollBoundary}
+            className="flex items-center gap-2.5 xl:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap"
+          >
+            {productsRow2.map((prod, idx) => renderProductCard(prod, idx))}
+          </div>
         </div>
+
       </div>
 
     </main>
