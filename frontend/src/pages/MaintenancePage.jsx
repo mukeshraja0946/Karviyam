@@ -1,25 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 import api from '../utils/api';
+import { resolveImageUrl } from '../utils/imageUtils';
 
 export default function MaintenancePage() {
-  const [maintenanceLogo, setMaintenanceLogo] = useState(() => localStorage.getItem('karviyam_maintenance_logo') || '');
+  const [maintenanceLogo, setMaintenanceLogo] = useState(() => 
+    localStorage.getItem('karviyam_maintenance_logo') || localStorage.getItem('karviyam_logo') || ''
+  );
+  const [logoFailed, setLogoFailed] = useState(false);
   const [title, setTitle] = useState("We'll Be Right Back!");
   const [subtitle, setSubtitle] = useState("SYSTEM UNDER MAINTENANCE");
-  const [message, setMessage] = useState(() => localStorage.getItem('karviyam_maintenance_message') || 'Karviyam is currently undergoing scheduled platform maintenance to bring you exciting new drops! We will be back online shortly.');
+  const [message, setMessage] = useState(() => 
+    localStorage.getItem('karviyam_maintenance_message') || 'Karviyam is currently undergoing scheduled platform maintenance to bring you exciting new drops! We will be back online shortly.'
+  );
   const [estimatedTime, setEstimatedTime] = useState("Estimated Uptime: Back Online Soon");
 
   useEffect(() => {
     fetchLiveMaintenanceSettings();
     const handleUpdate = () => {
-      setMaintenanceLogo(localStorage.getItem('karviyam_maintenance_logo') || '');
-      setMessage(localStorage.getItem('karviyam_maintenance_message') || 'Karviyam is currently undergoing scheduled platform maintenance to bring you exciting new drops! We will be back online shortly.');
+      const storedLogo = localStorage.getItem('karviyam_maintenance_logo') || localStorage.getItem('karviyam_logo') || '';
+      setMaintenanceLogo(storedLogo);
+      setLogoFailed(false);
+      const storedMsg = localStorage.getItem('karviyam_maintenance_message');
+      if (storedMsg) setMessage(storedMsg);
     };
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('karviyam_maintenance_updated', handleUpdate);
+    window.addEventListener('karviyam_logo_updated', handleUpdate);
     return () => {
       window.removeEventListener('storage', handleUpdate);
       window.removeEventListener('karviyam_maintenance_updated', handleUpdate);
+      window.removeEventListener('karviyam_logo_updated', handleUpdate);
     };
   }, []);
 
@@ -33,7 +44,7 @@ export default function MaintenancePage() {
           ? dataObj.reduce((acc, s) => { if (s.settingKey) acc[s.settingKey] = s.settingValue; return acc; }, {})
           : dataObj;
 
-        const logo = dataMap.maintenanceLogoUrl || dataMap.maintenance_logo_url;
+        const logo = dataMap.maintenanceLogoUrl || dataMap.maintenance_logo_url || dataMap.logoUrl || dataMap.logo_url;
         const t = dataMap.maintenanceTitle || dataMap.maintenance_title;
         const sub = dataMap.maintenanceSubtitle || dataMap.maintenance_subtitle;
         const msg = dataMap.maintenanceMessage || dataMap.maintenance_message;
@@ -42,7 +53,11 @@ export default function MaintenancePage() {
         if (logo) {
           setMaintenanceLogo(logo);
           localStorage.setItem('karviyam_maintenance_logo', logo);
+        } else {
+          const generalLogo = localStorage.getItem('karviyam_logo');
+          if (generalLogo) setMaintenanceLogo(generalLogo);
         }
+
         if (t) setTitle(t);
         if (sub) setSubtitle(sub);
         if (msg) setMessage(msg);
@@ -53,20 +68,38 @@ export default function MaintenancePage() {
     }
   };
 
+  const resolvedLogoUrl = maintenanceLogo ? resolveImageUrl(maintenanceLogo) : '';
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4 py-8 sm:py-12 select-none">
       <div className="w-full max-w-[460px] bg-white p-7 sm:p-11 rounded-[36px] border border-gray-100/90 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] text-center space-y-6 mx-auto">
         
-        {/* Logo Container Box (Increased logo size alone) */}
+        {/* Logo Container Box */}
         <div className="flex justify-center pt-1">
-          <div className="flex items-center justify-center min-h-[160px] bg-white w-full max-w-[360px] p-2">
-            {maintenanceLogo ? (
-              <img src={maintenanceLogo} alt="Maintenance Logo" className="h-36 sm:h-44 max-h-48 w-auto object-contain max-w-full" />
+          <div className="flex items-center justify-center min-h-[100px] bg-white w-full max-w-[360px] p-2">
+            {resolvedLogoUrl && !logoFailed ? (
+              <img 
+                src={resolvedLogoUrl} 
+                alt="Karviyam Logo" 
+                className="h-28 sm:h-36 max-h-40 w-auto object-contain max-w-full transition-all" 
+                onError={() => setLogoFailed(true)}
+              />
             ) : (
-              <img src="/brand-mark-gold.png" alt="Karviyam Logo" className="h-36 sm:h-44 max-h-48 w-auto object-contain max-w-full" onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = '/brand_logo.png';
-              }} />
+              <div className="flex items-center gap-3 bg-red-50/70 px-6 py-4 rounded-3xl border border-red-100/80 shadow-2xs">
+                <div className="w-12 h-12 rounded-2xl bg-[#B71C1C] text-white flex items-center justify-center font-black text-2xl shadow-md shrink-0">
+                  <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <span className="font-display font-black text-2xl tracking-tight text-[#B71C1C] leading-none block">
+                    KARVIYAM
+                  </span>
+                  <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400 block mt-0.5">
+                    Exclusive Fashion
+                  </span>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -111,3 +144,4 @@ export default function MaintenancePage() {
     </div>
   );
 }
+
