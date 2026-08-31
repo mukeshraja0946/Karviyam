@@ -415,21 +415,21 @@ export default function HomePage() {
           <div className="mx-3 my-2">
             <div className="w-full rounded-2xl overflow-hidden relative shadow-2xs bg-gradient-to-r from-pink-200 via-rose-100 to-pink-200 border border-pink-200/80 p-3.5 sm:p-4 flex items-center justify-between min-h-[110px]">
               {/* Banner Left Copy */}
-              <div className="max-w-[210px] space-y-0.5 z-10">
+              <div className="flex-1 min-w-0 pr-3 flex flex-col justify-center items-start z-10">
                 {mobileBanners[mobileBannerIndex]?.title ? (
-                  <h3 className="font-display font-black text-base sm:text-lg text-rose-950 leading-tight tracking-tight">
+                  <h3 className="font-display font-black text-base sm:text-lg text-rose-950 leading-tight tracking-tight break-words">
                     {mobileBanners[mobileBannerIndex].title}
                   </h3>
                 ) : null}
                 {mobileBanners[mobileBannerIndex]?.subtitle ? (
-                  <p className="text-[10.5px] text-rose-800 font-semibold leading-snug">
+                  <p className="text-[10.5px] text-rose-900 font-semibold leading-snug break-words mt-0.5">
                     {mobileBanners[mobileBannerIndex].subtitle}
                   </p>
                 ) : null}
                 <button
                   type="button"
                   onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
-                  className="mt-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-[10.5px] px-3.5 py-1 rounded-full transition-all shadow-2xs cursor-pointer flex items-center gap-1"
+                  className="mt-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-[10.5px] px-3.5 py-1 rounded-full transition-all shadow-2xs cursor-pointer flex items-center gap-1 shrink-0"
                 >
                   <span>{mobileBanners[mobileBannerIndex]?.cta || 'Shop Now'}</span>
                   <ArrowRight className="w-3 h-3" />
@@ -438,12 +438,12 @@ export default function HomePage() {
 
               {/* Banner Right Image */}
               {mobileBanners[mobileBannerIndex]?.image ? (
-                <div className="w-24 h-24 shrink-0 relative flex items-center justify-center z-10">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 relative flex items-center justify-center z-10 overflow-hidden rounded-xl bg-white/40 border border-pink-200/60 p-1">
                   <img
                     src={mobileBanners[mobileBannerIndex].image}
                     alt={mobileBanners[mobileBannerIndex]?.title || 'Promo Banner'}
                     onError={(e) => handleImageError(e, mobileBannerIndex)}
-                    className="max-h-full max-w-full object-contain rounded-xl drop-shadow-xs"
+                    className="w-full h-full object-cover rounded-lg drop-shadow-2xs"
                   />
                 </div>
               ) : null}

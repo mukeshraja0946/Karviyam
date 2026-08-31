@@ -118,7 +118,7 @@ export default function AdminBannersPage() {
 
   const handleOpenAddModal = () => {
     setEditingBanner(null);
-    setFormData({ title: '', subtitle: '', imagePath: '', desktopImageUrl: '', mobileImageUrl: '', link: '/shop', status: 'active' });
+    setFormData({ title: '', subtitle: '', buttonText: 'Shop Now', imagePath: '', desktopImageUrl: '', mobileImageUrl: '', link: '/shop', status: 'active' });
     setUseUrlMode(false);
     setSubmitting(false);
     setModalOpen(true);
@@ -130,6 +130,7 @@ export default function AdminBannersPage() {
     setFormData({
       title: b.title || '',
       subtitle: b.subtitle || '',
+      buttonText: b.buttonText || b.button_text || 'Shop Now',
       imagePath: mainImg,
       desktopImageUrl: b.desktopImageUrl || mainImg,
       mobileImageUrl: b.mobileImageUrl || mainImg,
@@ -219,17 +220,20 @@ export default function AdminBannersPage() {
     toast.loading(editingBanner ? 'Updating banner in database...' : 'Saving new banner to database...', { id: 'banner-toast' });
 
     const mainImg = formData.imagePath || formData.desktopImageUrl || formData.mobileImageUrl;
+    const desktopImg = formData.desktopImageUrl || mainImg;
+    const mobileImg = formData.mobileImageUrl || mainImg;
+
     const payload = {
       ...(editingBanner ? { id: editingBanner.id } : {}),
       title: formData.title.trim(),
       subtitle: formData.subtitle ? formData.subtitle.trim() : '',
       imagePath: mainImg,
       imageUrl: mainImg,
-      desktopImageUrl: formData.desktopImageUrl || mainImg,
-      mobileImageUrl: formData.mobileImageUrl || mainImg,
+      desktopImageUrl: desktopImg,
+      mobileImageUrl: mobileImg,
       link: formData.link || '/shop',
       buttonLink: formData.link || '/shop',
-      buttonText: 'Shop Now',
+      buttonText: formData.buttonText ? formData.buttonText.trim() : 'Shop Now',
       status: formData.status || 'active',
       isActive: (formData.status || 'active').toLowerCase() === 'active',
       displayOrder: editingBanner ? (editingBanner.displayOrder || editingBanner.sortOrder || 1) : (banners.length + 1),
@@ -711,6 +715,18 @@ export default function AdminBannersPage() {
               </div>
 
               <div>
+                <label className="block font-bold text-slate-700 mb-1">Button / CTA Text</label>
+                <input
+                  type="text"
+                  value={formData.buttonText || ''}
+                  disabled={submitting}
+                  onChange={(e) => setFormData({ ...formData, buttonText: e.target.value })}
+                  placeholder="e.g. Shop Now, Explore Drop"
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none font-bold focus:border-[#B71C1C] disabled:bg-slate-100"
+                />
+              </div>
+
+              <div>
                 <label className="block font-bold text-slate-700 mb-1">Click Action Link</label>
                 <input
                   type="text"
@@ -720,6 +736,19 @@ export default function AdminBannersPage() {
                   placeholder="/shop or /shop?category=Jewellery"
                   className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:border-[#B71C1C] disabled:bg-slate-100"
                 />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Mobile Specific Banner Image (Optional)</label>
+                <input
+                  type="text"
+                  value={formData.mobileImageUrl || ''}
+                  disabled={submitting}
+                  onChange={(e) => setFormData({ ...formData, mobileImageUrl: e.target.value })}
+                  placeholder="Optional mobile image URL (leave blank to use standard image)"
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:border-[#B71C1C] disabled:bg-slate-100"
+                />
+                <span className="text-[10px] text-slate-400 mt-0.5 block">If provided, mobile devices will display this image instead of the desktop image.</span>
               </div>
 
               <div>
