@@ -132,7 +132,7 @@ export default function ProductDetailPage() {
             }
           }
         }
-      } catch (eSaved) {}
+      } catch (eSaved) { }
 
       if (item && (item.id || item.name)) {
         setProduct(item);
@@ -183,7 +183,7 @@ export default function ProductDetailPage() {
           : (Array.isArray(c.images) && c.images.length > 0 ? c.images.filter(isValidImageUrl) : null)
       }));
     }
-    
+
     if (product?.color_variant_images || product?.colorVariantImages) {
       try {
         const rawMap = product.color_variant_images || product.colorVariantImages;
@@ -218,7 +218,7 @@ export default function ProductDetailPage() {
             });
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (product?.color) {
@@ -233,7 +233,7 @@ export default function ProductDetailPage() {
 
   const mediaGallery = React.useMemo(() => {
     const list = [];
-    
+
     // 1. Main Image
     const mImg = activeColorObj?.mainImage || (Array.isArray(product?.images) ? product.images[0] : product?.imageUrl);
     if (mImg && isValidImageUrl(mImg)) {
@@ -319,7 +319,7 @@ export default function ProductDetailPage() {
 
         setAutoChangeEnabled(enabled);
         setAutoChangeInterval(intervalSec);
-      } catch (e) {}
+      } catch (e) { }
     };
 
     loadAutoChangeSettings();
@@ -456,9 +456,9 @@ export default function ProductDetailPage() {
 
   if (!product) return null;
 
-  const price = product.price || 1128;
-  const oldPrice = product.oldPrice || 1614;
-  const discountPercent = product.discountPercent || Math.round(((oldPrice - price) / oldPrice) * 100) || 40;
+  const price = product?.price || 1128;
+  const oldPrice = product?.oldPrice || 1614;
+  const discountPercent = product?.discountPercent || Math.round(((oldPrice - price) / oldPrice) * 100) || 40;
 
   return (
     <div className="w-full bg-[#FAFAFA] text-slate-900 pb-14 sm:pb-8 lg:pb-12 font-sans">
@@ -469,7 +469,7 @@ export default function ProductDetailPage() {
           <span>/</span>
           <Link to="/shop" className="hover:text-[#B71C1C]">Shop</Link>
           <span>/</span>
-          <span className="text-slate-900 font-bold truncate">{product.name}</span>
+          <span className="text-slate-900 font-bold truncate">{product?.name}</span>
         </div>
       </div>
 
@@ -478,14 +478,14 @@ export default function ProductDetailPage() {
       {/* COLUMN 1: IMAGE GALLERY (FIXED) | COLUMN 2: CONTROLS (FIXED) | COLUMN 3: SCROLLABLE DETAILS */}
       {/* ========================================================================= */}
       <div className="max-w-[1750px] mx-auto px-2 sm:px-8 py-1">
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-4 lg:gap-6 text-left items-start">
-          
+
           {/* ======================================================= */}
           {/* COLUMN 1: LEFT IMAGE GALLERY (STATIONARY / FIXED)       */}
           {/* ======================================================= */}
           <div className="lg:col-span-4 flex flex-col sm:flex-row gap-2 lg:sticky lg:top-[135px] self-start">
-            
+
             {/* Vertical Thumbnail Strip (Desktop >= 640px) */}
             {mediaGallery.length > 1 && (
               <div className="hidden sm:flex flex-col gap-2 w-14 shrink-0 max-h-[420px] overflow-y-auto no-scrollbar">
@@ -494,11 +494,10 @@ export default function ProductDetailPage() {
                     key={idx}
                     type="button"
                     onClick={() => setSelectedMedia(m)}
-                    className={`w-12 h-12 rounded-xl overflow-hidden border transition-all shrink-0 bg-white cursor-pointer relative ${
-                      selectedMedia?.url === m.url
+                    className={`w-12 h-12 rounded-xl overflow-hidden border transition-all shrink-0 bg-white cursor-pointer relative ${selectedMedia?.url === m.url
                         ? 'border-[#B71C1C] ring-2 ring-[#B71C1C]'
                         : 'border-slate-200 opacity-70 hover:opacity-100'
-                    }`}
+                      }`}
                     title={m.label}
                   >
                     {m.type === 'video' ? (
@@ -553,9 +552,8 @@ export default function ProductDetailPage() {
                         e.stopPropagation();
                         togglePlayPause();
                       }}
-                      className={`absolute inset-0 m-auto w-14 h-14 rounded-full bg-slate-900/80 hover:bg-[#B71C1C] text-white flex items-center justify-center shadow-xl transition-all duration-300 transform backdrop-blur-xs z-20 ${
-                        isVideoPlaying ? 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100' : 'opacity-100 scale-100'
-                      }`}
+                      className={`absolute inset-0 m-auto w-14 h-14 rounded-full bg-slate-900/80 hover:bg-[#B71C1C] text-white flex items-center justify-center shadow-xl transition-all duration-300 transform backdrop-blur-xs z-20 ${isVideoPlaying ? 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100' : 'opacity-100 scale-100'
+                        }`}
                       title={isVideoPlaying ? 'Pause Video' : 'Play Video'}
                     >
                       {isVideoPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-0.5" />}
@@ -573,8 +571,8 @@ export default function ProductDetailPage() {
                   </div>
                 ) : (
                   <img
-                    src={resolveImageUrl(selectedMedia?.url || mediaGallery[0]?.url || product.imageUrl, product?.id)}
-                    alt={product.name}
+                    src={resolveImageUrl(selectedMedia?.url || mediaGallery[0]?.url || product?.imageUrl, product?.id)}
+                    alt={product?.name || 'Product'}
                     onError={(e) => handleImageError(e, product?.id)}
                     className="max-h-full max-w-full object-contain rounded-xl transition-transform duration-300 hover:scale-105"
                   />
@@ -611,12 +609,11 @@ export default function ProductDetailPage() {
                 {/* Wishlist Button (Top-Right Circle) */}
                 <button
                   type="button"
-                  onClick={() => toggleWishlist(product.id)}
-                  className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center shadow-xs transition-colors cursor-pointer border z-10 ${
-                    isWish
+                  onClick={() => toggleWishlist(product?.id)}
+                  className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center shadow-xs transition-colors cursor-pointer border z-10 ${isWish
                       ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
                       : 'bg-white text-slate-700 hover:text-[#B71C1C] border-slate-200'
-                  }`}
+                    }`}
                   title={isWish ? 'Remove from Wishlist' : 'Add to Wishlist'}
                 >
                   <Heart className={`w-3.5 h-3.5 ${isWish ? 'fill-current' : ''}`} />
@@ -631,11 +628,10 @@ export default function ProductDetailPage() {
                       key={idx}
                       type="button"
                       onClick={() => setSelectedMedia(m)}
-                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white p-0.5 cursor-pointer relative ${
-                        selectedMedia?.url === m.url
+                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white p-0.5 cursor-pointer relative ${selectedMedia?.url === m.url
                           ? 'border-[#B71C1C] ring-1 ring-[#B71C1C]'
                           : 'border-slate-200 opacity-60'
-                      }`}
+                        }`}
                     >
                       {m.type === 'video' ? (
                         <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white">
@@ -661,7 +657,7 @@ export default function ProductDetailPage() {
           {/* COLUMN 2: CENTER CONTROLS & PRICING (STATIONARY / FIXED) */}
           {/* ======================================================= */}
           <div className="lg:col-span-4 space-y-2.5 lg:sticky lg:top-[135px] self-start">
-            
+
             {/* Karviyam Premium Badge */}
             <div className="inline-flex items-center gap-1.5 bg-rose-50 text-[#B71C1C] px-2.5 py-0.5 rounded-full border border-rose-200/80 font-black text-[9px] sm:text-[9.5px] uppercase tracking-wider shadow-2xs">
               <span>🌸</span>
@@ -671,10 +667,10 @@ export default function ProductDetailPage() {
             {/* Product Title & SKU */}
             <div>
               <h1 className="font-display font-black text-xl sm:text-2xl text-slate-900 leading-tight tracking-tight">
-                {product.name}
+                {product?.name}
               </h1>
-              <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono font-bold mt-0.5">
-                SKU: {product.sku || `KV-${product.id}`}
+              <p className="text-[10px] text-slate-500 font-medium tracking-wide uppercase">
+                SKU: {product?.sku || `KV-${product?.id}`}
               </p>
             </div>
 
@@ -733,11 +729,10 @@ export default function ProductDetailPage() {
                     key={sz}
                     type="button"
                     onClick={() => setSelectedSize(sz)}
-                    className={`w-8 h-8 rounded-lg font-extrabold text-xs transition-all cursor-pointer border flex items-center justify-center ${
-                      selectedSize === sz
+                    className={`w-8 h-8 rounded-lg font-extrabold text-xs transition-all cursor-pointer border flex items-center justify-center ${selectedSize === sz
                         ? 'bg-[#B71C1C] text-white border-[#B71C1C] shadow-md'
                         : 'bg-white text-slate-800 border-slate-200 hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     {sz}
                   </button>
@@ -756,11 +751,10 @@ export default function ProductDetailPage() {
                     key={c.name}
                     type="button"
                     onClick={() => setSelectedColor(c.name)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer border ${
-                      selectedColor === c.name
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer border ${selectedColor === c.name
                         ? 'bg-rose-50/60 border-[#B71C1C] text-[#B71C1C] shadow-2xs'
                         : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     <span
                       className="w-2.5 h-2.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
@@ -871,7 +865,7 @@ export default function ProductDetailPage() {
           {/* DESKTOP: FIXED SCROLLABLE PANEL | MOBILE: NATURAL CONTINUOUS DOCUMENT SCROLL */}
           {/* ======================================================= */}
           <div className="lg:col-span-4 space-y-2.5 sm:space-y-3.5 lg:space-y-4 lg:h-[calc(100vh-160px)] lg:overflow-y-auto lg:overscroll-contain pr-0 lg:pr-2 scrollbar-thin text-xs overflow-visible h-auto px-3.5 sm:px-6 lg:px-0 max-w-xl mx-auto lg:mx-0 w-full">
-            
+
             <div className="space-y-2.5 sm:space-y-3">
               {/* 1. TOP HIGHLIGHTS */}
               {(() => {
