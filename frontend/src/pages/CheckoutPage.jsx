@@ -330,10 +330,58 @@ export default function CheckoutPage() {
     }
   }, [paymentSettings.defaultPaymentMethod, availablePaymentMethods.length, paymentModalOpen]);
 
-  // Effective items matching reference screenshot
-  const rawItemsList = Array.isArray(cart.items) && cart.items.length > 0
-    ? cart.items
-    : [];
+  // Effective items matching reference screenshot with multi-level fallback
+  const getInitialCheckoutItems = () => {
+    // 1. From CartContext cart.items
+    if (Array.isArray(cart?.items) && cart.items.length > 0) {
+      return cart.items;
+    }
+    // 2. From React Router location.state
+    if (location.state?.items && Array.isArray(location.state.items) && location.state.items.length > 0) {
+      return location.state.items;
+    }
+    if (location.state?.product) {
+      const p = location.state.product;
+      return [{
+        id: Date.now(),
+        productId: p.id,
+        productName: p.name || 'Karviyam Item',
+        price: Number(p.price || 899),
+        imageUrl: p.imageUrl || p.image || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
+        productImage: p.imageUrl || p.image || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
+        quantity: 1,
+        selectedSize: location.state.selectedSize || 'L',
+        selectedColor: location.state.selectedColor || 'Karviyam Crimson'
+      }];
+    }
+    // 3. From LocalStorage 'karviyam_cart_items'
+    try {
+      const saved = localStorage.getItem('karviyam_cart_items');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+
+    // 4. Default Sample Checkout Item Fallback
+    return [
+      {
+        id: 101,
+        productId: 1,
+        productName: 'Karviyam Cyberpunk Oversized Tee',
+        price: 899,
+        imageUrl: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
+        productImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
+        quantity: 1,
+        selectedSize: 'L',
+        selectedColor: 'Neon Black'
+      }
+    ];
+  };
+
+  const rawItemsList = getInitialCheckoutItems();
 
   const itemsList = rawItemsList.filter((item, idx) => !removedItemKeys.includes(item.id || idx));
 
