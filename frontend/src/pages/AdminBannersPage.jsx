@@ -741,18 +741,7 @@ export default function AdminBannersPage() {
                 />
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Mobile Specific Banner Image (Optional)</label>
-                <input
-                  type="text"
-                  value={formData.mobileImageUrl || ''}
-                  disabled={submitting}
-                  onChange={(e) => setFormData({ ...formData, mobileImageUrl: e.target.value })}
-                  placeholder="Optional mobile image URL (leave blank to use standard image)"
-                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:border-[#B71C1C] disabled:bg-slate-100"
-                />
-                <span className="text-[10px] text-slate-400 mt-0.5 block">If provided, mobile devices will display this image instead of the desktop image.</span>
-              </div>
+
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Status</label>
