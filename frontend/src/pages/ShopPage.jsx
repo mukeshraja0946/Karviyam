@@ -31,6 +31,87 @@ import {
   User
 } from 'lucide-react';
 
+const DEFAULT_SHOP_PRODUCTS = [
+  {
+    id: 1,
+    name: 'Men Black Printed Crewneck T-Shirt',
+    price: 399,
+    oldPrice: 699,
+    discountPercent: 43,
+    rating: 4.2,
+    reviewsCount: 18,
+    categoryName: 'T-Shirts',
+    gender: 'Men',
+    imageUrl: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400',
+    description: 'Premium cotton crewneck t-shirt.'
+  },
+  {
+    id: 2,
+    name: 'Red Running Performance Sneakers',
+    price: 1299,
+    oldPrice: 2499,
+    discountPercent: 48,
+    rating: 4.4,
+    reviewsCount: 32,
+    categoryName: 'Sneakers',
+    gender: 'Unisex',
+    imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400',
+    description: 'Lightweight running sneakers with cushioned soles.'
+  },
+  {
+    id: 3,
+    name: 'Women Floral Silk Kurta Set with Dupatta',
+    price: 999,
+    oldPrice: 1999,
+    discountPercent: 50,
+    rating: 4.3,
+    reviewsCount: 24,
+    categoryName: 'Kurta Sets',
+    gender: 'Women',
+    imageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400',
+    description: 'Elegant silk kurta set with detailed embroidery.'
+  },
+  {
+    id: 4,
+    name: 'Men Cotton Casual Button Down Shirt',
+    price: 599,
+    oldPrice: 1199,
+    discountPercent: 50,
+    rating: 4.1,
+    reviewsCount: 15,
+    categoryName: 'Shirts',
+    gender: 'Men',
+    imageUrl: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400',
+    description: 'Breathable 100% cotton casual shirt.'
+  },
+  {
+    id: 5,
+    name: 'Men Slim Fit Stretchable Denim Jeans',
+    price: 799,
+    oldPrice: 1499,
+    discountPercent: 46,
+    rating: 4.2,
+    reviewsCount: 29,
+    categoryName: 'Jeans',
+    gender: 'Men',
+    imageUrl: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400',
+    description: 'Comfortable stretchable denim jeans.'
+  },
+  {
+    id: 6,
+    name: 'Women Designer Georgette Saree',
+    price: 1499,
+    oldPrice: 2999,
+    discountPercent: 50,
+    rating: 4.5,
+    reviewsCount: 41,
+    categoryName: 'Sarees',
+    gender: 'Women',
+    imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400',
+    description: 'Traditional designer georgette saree with golden border.'
+  }
+];
+
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { slug } = useParams();
@@ -134,6 +215,10 @@ export default function ShopPage() {
           }
         }
       } catch (eSave) {}
+
+      if (!list || list.length === 0) {
+        list = DEFAULT_SHOP_PRODUCTS;
+      }
 
       // Robust Category & Subcategory Filter Helper
       const matchesCategory = (p, cat) => {
