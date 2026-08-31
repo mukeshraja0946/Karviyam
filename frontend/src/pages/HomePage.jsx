@@ -58,7 +58,7 @@ export default function HomePage() {
       let currentAuto = true;
       let currentSpeed = 5000;
 
-      const res = await api.get('/banners').catch(() => null);
+      const res = await api.get(`/banners?_t=${Date.now()}`).catch(() => null);
       const apiData = res?.data ? res.data : res;
       const rawData = apiData?.data !== undefined ? apiData.data : apiData;
 
@@ -78,14 +78,14 @@ export default function HomePage() {
         const activeBanners = list.filter(b => b && b.isActive !== false && String(b.status || 'active').toLowerCase() === 'active');
         const formatted = activeBanners.map(b => {
           const rawImg = b.mobileImageUrl || b.imageUrl || b.imagePath || b.image || '';
-          const resolvedImg = resolveImageUrl(rawImg);
+          const resolvedImg = resolveImageUrl(rawImg, b.id);
           return {
             id: b.id,
             badge: b.tag || 'OFFICIAL DROP',
             title: b.title || '',
             subtitle: b.subtitle || '',
             image: resolvedImg,
-            cta: b.buttonText || b.button_text || b.cta || 'SHOP NOW',
+            cta: b.buttonText || b.button_text || b.cta || 'Shop Now',
             link: b.buttonLink || b.link || '/shop'
           };
         });
@@ -410,54 +410,64 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 2. PROMOTIONAL BANNER CAROUSEL */}
-        <div className="mx-3 my-2">
-          <div className="w-full rounded-2xl overflow-hidden relative shadow-2xs bg-gradient-to-r from-pink-200 via-rose-100 to-pink-200 border border-pink-200/80 p-3.5 sm:p-4 flex items-center justify-between min-h-[110px]">
-            {/* Banner Left Copy */}
-            <div className="max-w-[210px] space-y-0.5 z-10">
-              <h3 className="font-display font-black text-base sm:text-lg text-rose-950 leading-tight tracking-tight">
-                {mobileBanners[mobileBannerIndex]?.title || 'Decode your perfect cleanse'}
-              </h3>
-              <p className="text-[10.5px] text-rose-800 font-semibold leading-snug">
-                {mobileBanners[mobileBannerIndex]?.subtitle || 'Gentle renewing cleanser'}
-              </p>
-              <button
-                onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
-                className="mt-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-[10.5px] px-3.5 py-1 rounded-full transition-all shadow-2xs cursor-pointer flex items-center gap-1"
-              >
-                <span>{mobileBanners[mobileBannerIndex]?.cta || 'Shop Now'}</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-
-            {/* Banner Right Image */}
-            <div className="w-24 h-24 shrink-0 relative flex items-center justify-center z-10">
-              <img
-                src={resolveImageUrl(mobileBanners[mobileBannerIndex]?.image || 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400', mobileBannerIndex)}
-                alt="Promo Banner"
-                onError={(e) => handleImageError(e, mobileBannerIndex)}
-                className="max-h-full max-w-full object-contain rounded-xl drop-shadow-xs"
-              />
-            </div>
-          </div>
-
-          {/* Carousel Indicator Dots */}
-          {mobileBanners.length > 1 && (
-            <div className="flex items-center justify-center gap-1.5 mt-1.5">
-              {mobileBanners.map((banner, idx) => (
+        {/* 2. PROMOTIONAL BANNER CAROUSEL (Dynamic Admin Mobile Banners) */}
+        {mobileBanners && mobileBanners.length > 0 && (
+          <div className="mx-3 my-2">
+            <div className="w-full rounded-2xl overflow-hidden relative shadow-2xs bg-gradient-to-r from-pink-200 via-rose-100 to-pink-200 border border-pink-200/80 p-3.5 sm:p-4 flex items-center justify-between min-h-[110px]">
+              {/* Banner Left Copy */}
+              <div className="max-w-[210px] space-y-0.5 z-10">
+                {mobileBanners[mobileBannerIndex]?.title ? (
+                  <h3 className="font-display font-black text-base sm:text-lg text-rose-950 leading-tight tracking-tight">
+                    {mobileBanners[mobileBannerIndex].title}
+                  </h3>
+                ) : null}
+                {mobileBanners[mobileBannerIndex]?.subtitle ? (
+                  <p className="text-[10.5px] text-rose-800 font-semibold leading-snug">
+                    {mobileBanners[mobileBannerIndex].subtitle}
+                  </p>
+                ) : null}
                 <button
-                  key={banner.id || idx}
-                  onClick={() => setMobileBannerIndex(idx)}
-                  className={`transition-all duration-300 rounded-full cursor-pointer ${
-                    idx === mobileBannerIndex
-                      ? 'w-4 h-1.5 bg-[#B71C1C]'
-                      : 'w-1.5 h-1.5 bg-slate-300'
-                  }`}
-                />
-              ))}
+                  type="button"
+                  onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
+                  className="mt-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-[10.5px] px-3.5 py-1 rounded-full transition-all shadow-2xs cursor-pointer flex items-center gap-1"
+                >
+                  <span>{mobileBanners[mobileBannerIndex]?.cta || 'Shop Now'}</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+
+              {/* Banner Right Image */}
+              {mobileBanners[mobileBannerIndex]?.image ? (
+                <div className="w-24 h-24 shrink-0 relative flex items-center justify-center z-10">
+                  <img
+                    src={mobileBanners[mobileBannerIndex].image}
+                    alt={mobileBanners[mobileBannerIndex]?.title || 'Promo Banner'}
+                    onError={(e) => handleImageError(e, mobileBannerIndex)}
+                    className="max-h-full max-w-full object-contain rounded-xl drop-shadow-xs"
+                  />
+                </div>
+              ) : null}
             </div>
-          )}
-        </div>
+
+            {/* Carousel Indicator Dots */}
+            {mobileBanners.length > 1 && (
+              <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                {mobileBanners.map((banner, idx) => (
+                  <button
+                    key={banner.id || idx}
+                    type="button"
+                    onClick={() => setMobileBannerIndex(idx)}
+                    className={`transition-all duration-300 rounded-full cursor-pointer ${
+                      idx === mobileBannerIndex
+                        ? 'w-4 h-1.5 bg-[#B71C1C]'
+                        : 'w-1.5 h-1.5 bg-slate-300'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 3. QUICK ACCESS CATEGORY GRID (12 Karviyam Product Categories, Data-Driven) */}
         <div className="mx-3 my-2 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">

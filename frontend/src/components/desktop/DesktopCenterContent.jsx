@@ -256,7 +256,7 @@ export default function DesktopCenterContent() {
       if (list && list.length > 0) {
         const activeBanners = list.filter(b => b.isActive !== false);
         const formatted = activeBanners.map(b => {
-          const rawImg = b.imageUrl || b.image_url || b.imagePath || b.image || '';
+          const rawImg = b.desktopImageUrl || b.imageUrl || b.image_url || b.imagePath || b.image || '';
           const resolvedImg = resolveImageUrl(rawImg, b.id);
           return {
             id: b.id,
