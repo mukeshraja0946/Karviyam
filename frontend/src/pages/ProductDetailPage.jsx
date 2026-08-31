@@ -975,64 +975,7 @@ export default function ProductDetailPage() {
       {/* ========================================================================= */}
       <div className="block lg:hidden bg-slate-50/60 min-h-screen pb-36 select-none text-left font-sans">
         
-        {/* 1. MOBILE HEADER BAR */}
-        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 px-3 py-2 flex items-center justify-between shadow-2xs">
-          {/* Back Button */}
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-700 cursor-pointer"
-            title="Go Back"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
 
-          {/* Brand Logo */}
-          <Link to="/" className="flex items-center gap-1.5">
-            <span className="font-serif font-black text-base text-[#B71C1C] tracking-widest uppercase">
-              KARVIYAM
-            </span>
-          </Link>
-
-          {/* Right Action Icons: Search, Wishlist, Cart */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate('/shop')}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-700 hover:text-[#B71C1C] cursor-pointer"
-              title="Search Products"
-            >
-              <svg className="w-4.5 h-4.5 stroke-current fill-none" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8" strokeWidth="2" />
-                <path d="M21 21l-4.35-4.35" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => toggleWishlist(product?.id)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer relative ${
-                isWish ? 'text-[#B71C1C]' : 'text-slate-700'
-              }`}
-              title="Wishlist"
-            >
-              <Heart className={`w-4.5 h-4.5 ${isWish ? 'fill-current' : ''}`} />
-            </button>
-
-            <Link
-              to="/cart"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-700 hover:text-[#B71C1C] cursor-pointer relative"
-              title="Cart"
-            >
-              <ShoppingBag className="w-4.5 h-4.5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#B71C1C] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-2xs">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-          </div>
-        </div>
 
         {/* 3. BREADCRUMB */}
         <div className="px-3 py-1.5 text-[10.5px] font-semibold text-slate-500">
