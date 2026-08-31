@@ -94,7 +94,8 @@ export default function AdminSettingsPage() {
         const parsed = JSON.parse(localLayouts);
         setSettings(prev => ({
           ...prev,
-          recommendedScrollMode: parsed.recommended || 'grid',
+          recommendedScrollMode: parsed.recommended || 'horizontal',
+          trendingScrollMode: parsed.trending || 'vertical',
           newArrivalsScrollMode: parsed.newArrivals || 'carousel',
           featuredScrollMode: parsed.featured || 'carousel',
           removeImageGreyBox: parsed.removeGreyBox !== false
@@ -391,7 +392,8 @@ export default function AdminSettingsPage() {
 
       // Section Scrolling & Layout Configuration
       localStorage.setItem('karviyam_section_layouts', JSON.stringify({
-        recommended: settings.recommendedScrollMode || 'grid',
+        recommended: settings.recommendedScrollMode || 'horizontal',
+        trending: settings.trendingScrollMode || 'vertical',
         newArrivals: settings.newArrivalsScrollMode || 'carousel',
         featured: settings.featuredScrollMode || 'carousel',
         removeGreyBox: settings.removeImageGreyBox !== false
@@ -1021,7 +1023,51 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
 
-              {/* Section 2: New Arrivals Scroll Mode */}
+              {/* Section 2: Trending Now Scroll Mode */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-xs">"Trending Now" Product Section</h4>
+                    <p className="text-[11px] text-slate-500">Choose scroll direction for Trending Now product section on mobile</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
+                    settings.trendingScrollMode === 'carousel' || settings.trendingScrollMode === 'horizontal' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="trendingScroll"
+                      value="carousel"
+                      checked={settings.trendingScrollMode === 'carousel' || settings.trendingScrollMode === 'horizontal'}
+                      onChange={() => setSettings({ ...settings, trendingScrollMode: 'carousel' })}
+                      className="text-[#B71C1C]"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-900 block text-xs">Horizontal Scroll</span>
+                      <span className="text-[10.5px] text-slate-500">Displays products in a single swipeable horizontal row</span>
+                    </div>
+                  </label>
+
+                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
+                    settings.trendingScrollMode === 'grid' || settings.trendingScrollMode === 'vertical' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="trendingScroll"
+                      value="grid"
+                      checked={settings.trendingScrollMode === 'grid' || settings.trendingScrollMode === 'vertical'}
+                      onChange={() => setSettings({ ...settings, trendingScrollMode: 'grid' })}
+                      className="text-[#B71C1C]"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-900 block text-xs">Vertical Grid</span>
+                      <span className="text-[10.5px] text-slate-500">Displays products in a 2-column vertical grid</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
