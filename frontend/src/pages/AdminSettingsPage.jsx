@@ -186,6 +186,30 @@ export default function AdminSettingsPage() {
           maintenanceShowSocial: dataMap.maintenanceShowSocial !== 'false',
           maintenanceAllowSearchEngines: dataMap.maintenanceAllowSearchEngines !== 'false',
         }));
+
+        const layoutsData = dataMap.karviyam_section_layouts || dataMap.sectionLayouts;
+        let parsedLayouts = null;
+        if (layoutsData) {
+          try {
+            parsedLayouts = typeof layoutsData === 'string' ? JSON.parse(layoutsData) : layoutsData;
+          } catch (e) {}
+        }
+        if (parsedLayouts && typeof parsedLayouts === 'object') {
+          try {
+            localStorage.setItem('karviyam_section_layouts', JSON.stringify(parsedLayouts));
+          } catch (e) {}
+          setSettings(prev => ({
+            ...prev,
+            desktopRecommendedMode: parsedLayouts?.desktop?.recommended || prev.desktopRecommendedMode || 'carousel',
+            desktopNewArrivalsMode: parsedLayouts?.desktop?.newArrivals || prev.desktopNewArrivalsMode || 'carousel',
+            desktopFeaturedMode: parsedLayouts?.desktop?.featured || prev.desktopFeaturedMode || 'carousel',
+            mobileRecommendedMode: parsedLayouts?.mobile?.recommended || parsedLayouts?.recommended || prev.mobileRecommendedMode || 'horizontal',
+            mobileTrendingMode: parsedLayouts?.mobile?.trending || parsedLayouts?.trending || prev.mobileTrendingMode || 'vertical',
+            mobileNewArrivalsMode: parsedLayouts?.mobile?.newArrivals || prev.mobileNewArrivalsMode || 'horizontal',
+            mobileBestSellersMode: parsedLayouts?.mobile?.bestSellers || prev.mobileBestSellersMode || 'vertical',
+            removeImageGreyBox: parsedLayouts?.removeGreyBox !== undefined ? parsedLayouts.removeGreyBox !== false : prev.removeImageGreyBox
+          }));
+        }
       }
     } catch (e) {
       console.error(e);
@@ -356,6 +380,34 @@ export default function AdminSettingsPage() {
         maintenanceShowTimer: String(settings.maintenanceShowTimer),
         maintenanceShowSocial: String(settings.maintenanceShowSocial),
         maintenanceAllowSearchEngines: String(settings.maintenanceAllowSearchEngines),
+        karviyam_section_layouts: JSON.stringify({
+          desktop: {
+            recommended: settings.desktopRecommendedMode || 'carousel',
+            newArrivals: settings.desktopNewArrivalsMode || 'carousel',
+            featured: settings.desktopFeaturedMode || 'carousel'
+          },
+          mobile: {
+            recommended: settings.mobileRecommendedMode || 'horizontal',
+            trending: settings.mobileTrendingMode || 'vertical',
+            newArrivals: settings.mobileNewArrivalsMode || 'horizontal',
+            bestSellers: settings.mobileBestSellersMode || 'vertical'
+          },
+          removeGreyBox: settings.removeImageGreyBox !== false
+        }),
+        sectionLayouts: {
+          desktop: {
+            recommended: settings.desktopRecommendedMode || 'carousel',
+            newArrivals: settings.desktopNewArrivalsMode || 'carousel',
+            featured: settings.desktopFeaturedMode || 'carousel'
+          },
+          mobile: {
+            recommended: settings.mobileRecommendedMode || 'horizontal',
+            trending: settings.mobileTrendingMode || 'vertical',
+            newArrivals: settings.mobileNewArrivalsMode || 'horizontal',
+            bestSellers: settings.mobileBestSellersMode || 'vertical'
+          },
+          removeGreyBox: settings.removeImageGreyBox !== false
+        }
       };
 
       await api.post('/settings', generalPayload);
@@ -1114,13 +1166,13 @@ export default function AdminSettingsPage() {
                       }`}>
                         <input
                           type="radio"
-                          name="mobileRecommended"
+                          name="mobileRecommendedGroup"
                           value="horizontal"
                           checked={(settings.mobileRecommendedMode || 'horizontal') === 'horizontal'}
                           onChange={() => setSettings({ ...settings, mobileRecommendedMode: 'horizontal' })}
                           className="text-[#B71C1C]"
                         />
-                        <span>○ Horizontal Scroll</span>
+                        <span>Horizontal Scroll</span>
                       </label>
 
                       <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
@@ -1128,13 +1180,13 @@ export default function AdminSettingsPage() {
                       }`}>
                         <input
                           type="radio"
-                          name="mobileRecommended"
+                          name="mobileRecommendedGroup"
                           value="vertical"
                           checked={settings.mobileRecommendedMode === 'vertical' || settings.mobileRecommendedMode === 'grid'}
                           onChange={() => setSettings({ ...settings, mobileRecommendedMode: 'vertical' })}
                           className="text-[#B71C1C]"
                         />
-                        <span>○ Vertical 2-Column Grid</span>
+                        <span>Vertical 2-Column Grid</span>
                       </label>
                     </div>
                   </div>
@@ -1149,13 +1201,13 @@ export default function AdminSettingsPage() {
                       }`}>
                         <input
                           type="radio"
-                          name="mobileTrending"
+                          name="mobileTrendingGroup"
                           value="horizontal"
                           checked={settings.mobileTrendingMode === 'horizontal'}
                           onChange={() => setSettings({ ...settings, mobileTrendingMode: 'horizontal' })}
                           className="text-[#B71C1C]"
                         />
-                        <span>○ Horizontal Scroll</span>
+                        <span>Horizontal Scroll</span>
                       </label>
 
                       <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
@@ -1163,13 +1215,13 @@ export default function AdminSettingsPage() {
                       }`}>
                         <input
                           type="radio"
-                          name="mobileTrending"
+                          name="mobileTrendingGroup"
                           value="vertical"
                           checked={(settings.mobileTrendingMode || 'vertical') === 'vertical' || settings.mobileTrendingMode === 'grid'}
                           onChange={() => setSettings({ ...settings, mobileTrendingMode: 'vertical' })}
                           className="text-[#B71C1C]"
                         />
-                        <span>○ Vertical 2-Column Grid</span>
+                        <span>Vertical 2-Column Grid</span>
                       </label>
                     </div>
                   </div>
@@ -1184,13 +1236,13 @@ export default function AdminSettingsPage() {
                       }`}>
                         <input
                           type="radio"
-                          name="mobileNewArrivals"
+                          name="mobileNewArrivalsGroup"
                           value="horizontal"
                           checked={(settings.mobileNewArrivalsMode || 'horizontal') === 'horizontal'}
                           onChange={() => setSettings({ ...settings, mobileNewArrivalsMode: 'horizontal' })}
                           className="text-[#B71C1C]"
                         />
-                        <span>○ Horizontal Scroll</span>
+                        <span>Horizontal Scroll</span>
                       </label>
 
                       <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
@@ -1198,13 +1250,13 @@ export default function AdminSettingsPage() {
                       }`}>
                         <input
                           type="radio"
-                          name="mobileNewArrivals"
+                          name="mobileNewArrivalsGroup"
                           value="vertical"
                           checked={settings.mobileNewArrivalsMode === 'vertical' || settings.mobileNewArrivalsMode === 'grid'}
                           onChange={() => setSettings({ ...settings, mobileNewArrivalsMode: 'vertical' })}
                           className="text-[#B71C1C]"
                         />
-                        <span>○ Vertical 2-Column Grid</span>
+                        <span>Vertical 2-Column Grid</span>
                       </label>
                     </div>
                   </div>
@@ -1219,13 +1271,13 @@ export default function AdminSettingsPage() {
                       }`}>
                         <input
                           type="radio"
-                          name="mobileBestSellers"
+                          name="mobileBestSellersGroup"
                           value="horizontal"
                           checked={settings.mobileBestSellersMode === 'horizontal'}
                           onChange={() => setSettings({ ...settings, mobileBestSellersMode: 'horizontal' })}
                           className="text-[#B71C1C]"
                         />
-                        <span>○ Horizontal Scroll</span>
+                        <span>Horizontal Scroll</span>
                       </label>
 
                       <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
@@ -1233,13 +1285,13 @@ export default function AdminSettingsPage() {
                       }`}>
                         <input
                           type="radio"
-                          name="mobileBestSellers"
+                          name="mobileBestSellersGroup"
                           value="vertical"
                           checked={(settings.mobileBestSellersMode || 'vertical') === 'vertical' || settings.mobileBestSellersMode === 'grid'}
                           onChange={() => setSettings({ ...settings, mobileBestSellersMode: 'vertical' })}
                           className="text-[#B71C1C]"
                         />
-                        <span>○ Vertical 2-Column Grid</span>
+                        <span>Vertical 2-Column Grid</span>
                       </label>
                     </div>
                   </div>

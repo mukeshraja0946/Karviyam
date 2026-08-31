@@ -24,6 +24,11 @@ exports.getSettings = async (req, res, next) => {
       let val = r.setting_value;
       if (val === 'true') val = true;
       else if (val === 'false') val = false;
+      else if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+        try {
+          val = JSON.parse(val);
+        } catch (e) {}
+      }
       settingsObj[r.setting_key] = val;
     });
 

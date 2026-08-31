@@ -152,7 +152,24 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, [mobileBanners.length, mobileAutoScroll, mobileBannerSpeed, mobileBannerIndex]);
 
+  const fetchLayoutSettings = async () => {
+    try {
+      const res = await api.get('/settings').catch(() => null);
+      const apiData = res?.data ? res.data : (res || {});
+      const dataMap = apiData.data || apiData;
+      const layoutsData = dataMap?.karviyam_section_layouts || dataMap?.sectionLayouts;
+      if (layoutsData) {
+        const parsed = typeof layoutsData === 'string' ? JSON.parse(layoutsData) : layoutsData;
+        setSectionLayouts(parsed);
+        try {
+          localStorage.setItem('karviyam_section_layouts', JSON.stringify(parsed));
+        } catch (e) {}
+      }
+    } catch (e) {}
+  };
+
   useEffect(() => {
+    fetchLayoutSettings();
     fetchHomeProducts();
     fetchBanners();
     fetchHomeCategories();
@@ -250,6 +267,19 @@ export default function HomePage() {
     safeFeaturedProducts.length >= 12
       ? safeFeaturedProducts.slice(6, 12)
       : [...safeFeaturedProducts.slice(6), ...DEFAULT_REC_PRODUCTS.slice(Math.max(6, safeFeaturedProducts.length))].slice(0, 6)
+  );
+
+  const safeNewArrivals = Array.isArray(newArrivals) ? newArrivals : [];
+  const displayNewArrivalsProducts = (
+    safeNewArrivals.length >= 6
+      ? safeNewArrivals.slice(0, 6)
+      : [...safeNewArrivals, ...DEFAULT_REC_PRODUCTS.slice(3, 9)].slice(0, 6)
+  );
+
+  const displayBestSellersProducts = (
+    safeFeaturedProducts.length >= 6
+      ? safeFeaturedProducts.slice(0, 6)
+      : DEFAULT_REC_PRODUCTS.slice(6, 12)
   );
 
   const mobileRecommendedMode = sectionLayouts?.mobile?.recommended || sectionLayouts?.recommended || 'horizontal';
@@ -541,6 +571,70 @@ export default function HomePage() {
             /* HORIZONTAL MODE: Single Swipeable Horizontal Row */
             <div className="flex items-center gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full">
               {displayTrendingProducts.map((prod) => renderProductCardItem(prod, false))}
+            </div>
+          )}
+        </div>
+
+        {/* 6. NEW ARRIVALS SECTION (Admin Controlled: Horizontal Row OR Vertical Grid) */}
+        <div className="w-full my-5 px-3.5">
+          <div className="flex items-center justify-between mb-2.5">
+            <div>
+              <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
+                New Arrivals
+              </h2>
+              <p className="text-[11px] font-medium text-slate-500">
+                Explore the latest fashion collections
+              </p>
+            </div>
+            <Link to="/shop?sort=newest" className="text-xs font-extrabold text-[#B71C1C] hover:underline flex items-center gap-0.5">
+              <span>View All</span>
+              <span>→</span>
+            </Link>
+          </div>
+
+          {loading ? (
+            <SkeletonLoader count={4} />
+          ) : (mobileNewArrivalsMode === 'grid' || mobileNewArrivalsMode === 'vertical') ? (
+            /* VERTICAL MODE: 2-Column Vertical Product Grid */
+            <div className="grid grid-cols-2 gap-3 w-full">
+              {displayNewArrivalsProducts.map((prod) => renderProductCardItem(prod, true))}
+            </div>
+          ) : (
+            /* HORIZONTAL MODE: Single Swipeable Horizontal Row */
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full">
+              {displayNewArrivalsProducts.map((prod) => renderProductCardItem(prod, false))}
+            </div>
+          )}
+        </div>
+
+        {/* 7. BEST SELLERS SECTION (Admin Controlled: Horizontal Row OR Vertical Grid) */}
+        <div className="w-full my-5 px-3.5 pb-6">
+          <div className="flex items-center justify-between mb-2.5">
+            <div>
+              <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
+                Best Sellers
+              </h2>
+              <p className="text-[11px] font-medium text-slate-500">
+                Top rated favorites loved by everyone
+              </p>
+            </div>
+            <Link to="/shop?sort=rating" className="text-xs font-extrabold text-[#B71C1C] hover:underline flex items-center gap-0.5">
+              <span>View All</span>
+              <span>→</span>
+            </Link>
+          </div>
+
+          {loading ? (
+            <SkeletonLoader count={4} />
+          ) : (mobileBestSellersMode === 'grid' || mobileBestSellersMode === 'vertical') ? (
+            /* VERTICAL MODE: 2-Column Vertical Product Grid */
+            <div className="grid grid-cols-2 gap-3 w-full">
+              {displayBestSellersProducts.map((prod) => renderProductCardItem(prod, true))}
+            </div>
+          ) : (
+            /* HORIZONTAL MODE: Single Swipeable Horizontal Row */
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full">
+              {displayBestSellersProducts.map((prod) => renderProductCardItem(prod, false))}
             </div>
           )}
         </div>
