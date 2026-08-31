@@ -875,8 +875,9 @@ export default function CheckoutPage() {
                     >
                       <div className="flex items-center gap-4 flex-1 overflow-hidden">
                         <img
-                          src={item.productImage || item.product?.imageUrl || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800'}
-                          alt={item.productName || item.product?.name}
+                          src={resolveImageUrl(item.productImage || item.imageUrl || item.product?.imageUrl || item.image, item.id)}
+                          alt={item.productName || item.product?.name || 'Product'}
+                          onError={(e) => handleImageError(e, item.id)}
                           className="w-16 h-16 object-contain rounded-lg bg-slate-50 border border-slate-100 p-1 shrink-0"
                         />
                         <div className="flex-1 space-y-1 overflow-hidden">

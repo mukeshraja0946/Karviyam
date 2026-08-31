@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Trash2, ArrowRight, Tag, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import api from '../utils/api';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 
 export default function CartPage() {
@@ -18,7 +19,7 @@ export default function CartPage() {
     if (!couponCode.trim()) return;
     try {
       const res = await api.get(`/coupons/validate/${encodeURIComponent(couponCode.trim())}`);
-      if (res.success) {
+      if (res?.success) {
         const coupon = res.data;
         let discount = 0;
         if (coupon.discountType === 'PERCENTAGE') {
@@ -41,7 +42,9 @@ export default function CartPage() {
   const shippingCost = cartSubtotal > 999 || cartSubtotal === 0 ? 0 : 99;
   const finalTotal = Math.max(0, cartSubtotal - discountAmount + shippingCost);
 
-  if (!cart.items || cart.items.length === 0) {
+  const cartItems = (cart?.items || []).filter(Boolean);
+
+  if (!cartItems || cartItems.length === 0) {
     return (
       <div className="w-full px-4 sm:px-8 lg:px-12 py-20 max-w-7xl mx-auto text-center">
         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
@@ -67,56 +70,63 @@ export default function CartPage() {
         
         {/* Cart Items List */}
         <div className="lg:col-span-2 space-y-4">
-          {cart.items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center gap-4 bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs"
-            >
-              <img
-                src={item.product.imageUrl}
-                alt={item.product.name}
-                className="w-24 h-24 object-cover rounded-2xl bg-slate-100 border border-slate-200"
-              />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-display font-extrabold text-sm text-slate-900 truncate">
-                  {item.product.name}
-                </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Size: <span className="font-bold text-slate-900">{item.selectedSize || 'M'}</span>
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="font-display font-black text-sm text-slate-900">
-                    ₹{item.product.price}
-                  </span>
-                </div>
-              </div>
+          {cartItems.map((item) => {
+            const prodName = item.product?.name || item.productName || item.name || 'Karviyam Product';
+            const prodPrice = Number(item.product?.price || item.price || 0);
+            const prodImg = resolveImageUrl(item.product?.imageUrl || item.imageUrl || item.productImage || item.image, item.id);
 
-              {/* Quantity Modifier */}
-              <div className="flex items-center bg-slate-100 rounded-full border border-slate-200 px-3 py-1">
-                <button
-                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                  className="px-2 font-bold text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
-                >
-                  -
-                </button>
-                <span className="px-3 font-bold text-xs text-slate-900">{item.quantity}</span>
-                <button
-                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                  className="px-2 font-bold text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
-                >
-                  +
-                </button>
-              </div>
-
-              <button
-                onClick={() => removeItem(item.id)}
-                className="p-2 text-slate-400 hover:text-[#B71C1C] transition-colors cursor-pointer"
-                title="Remove item"
+            return (
+              <div
+                key={item.id}
+                className="flex items-center gap-4 bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs"
               >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+                <img
+                  src={prodImg}
+                  alt={prodName}
+                  onError={(e) => handleImageError(e, item.id)}
+                  className="w-24 h-24 object-cover rounded-2xl bg-slate-100 border border-slate-200"
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display font-extrabold text-sm text-slate-900 truncate">
+                    {prodName}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Size: <span className="font-bold text-slate-900">{item.selectedSize || 'M'}</span>
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="font-display font-black text-sm text-slate-900">
+                      ₹{prodPrice}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quantity Modifier */}
+                <div className="flex items-center bg-slate-100 rounded-full border border-slate-200 px-3 py-1">
+                  <button
+                    onClick={() => updateQuantity(item.id, (item.quantity || 1) - 1)}
+                    className="px-2 font-bold text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="px-3 font-bold text-xs text-slate-900">{item.quantity || 1}</span>
+                  <button
+                    onClick={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
+                    className="px-2 font-bold text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => removeItem(item.id)}
+                  className="p-2 text-slate-400 hover:text-[#B71C1C] transition-colors cursor-pointer"
+                  title="Remove item"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         {/* Order Summary Sidebar */}

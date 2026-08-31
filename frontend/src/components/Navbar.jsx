@@ -354,7 +354,12 @@ export default function Navbar() {
                   }}
                   className="flex items-center gap-2.5 p-2.5 hover:bg-red-50/50 cursor-pointer border-b border-slate-100 last:border-0"
                 >
-                  <img src={item.imageUrl} alt={item.name} className="w-8 h-8 object-cover rounded-md" />
+                  <img
+                    src={resolveImageUrl(item?.imageUrl || item?.image, item?.id)}
+                    alt={item?.name || 'Product'}
+                    onError={(e) => handleImageError(e, item?.id)}
+                    className="w-8 h-8 object-cover rounded-md"
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">{item.name}</p>
                     <p className="text-[11px] text-[#B71C1C] font-black">₹{item.price}</p>
@@ -476,7 +481,12 @@ export default function Navbar() {
                       }}
                       className="flex items-center gap-3 p-3 hover:bg-red-50/50 cursor-pointer border-b border-slate-100 last:border-0"
                     >
-                      <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded-lg" />
+                      <img
+                        src={resolveImageUrl(item?.imageUrl || item?.image, item?.id)}
+                        alt={item?.name || 'Product'}
+                        onError={(e) => handleImageError(e, item?.id)}
+                        className="w-10 h-10 object-cover rounded-lg"
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-slate-900 truncate">{item.name}</p>
                         <p className="text-xs text-[#B71C1C] font-extrabold">₹{item.price}</p>
