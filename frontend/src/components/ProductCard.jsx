@@ -7,12 +7,14 @@ import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
-  const { isInWishlist, toggleWishlist } = useWishlist();
-  const { addToCart } = useCart();
-
-  const isLiked = isInWishlist(product?.id);
+  const wishlistCtx = useWishlist() || {};
+  const cartCtx = useCart() || {};
+  const isInWishlist = wishlistCtx.isInWishlist || (() => false);
+  const toggleWishlist = wishlistCtx.toggleWishlist || (() => {});
+  const addToCart = cartCtx.addToCart || (() => {});
 
   if (!product) return null;
+  const isLiked = typeof isInWishlist === 'function' ? isInWishlist(product?.id) : false;
 
   const price = product.price || 361;
   const oldPrice = product.oldPrice || Math.round(price * 4.2);

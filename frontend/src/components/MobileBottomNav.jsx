@@ -11,7 +11,7 @@ export default function MobileBottomNav() {
   const { wishlistCount, wishlist } = useWishlist();
   const { user } = useAuth();
 
-  const totalWishlistCount = wishlistCount || wishlist.length;
+  const totalWishlistCount = wishlistCount || (Array.isArray(wishlist) ? wishlist.length : 0);
 
   const navItems = [
     {

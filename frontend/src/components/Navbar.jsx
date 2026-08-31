@@ -96,7 +96,8 @@ export default function Navbar() {
     }
   });
 
-  const unreadNotifCount = notifications.filter(n => !n.read).length;
+  const safeNotifs = Array.isArray(notifications) ? notifications : [];
+  const unreadNotifCount = safeNotifs.filter(n => !n.read).length;
 
   const markAllNotifsRead = () => {
     const updated = notifications.map(n => ({ ...n, read: true }));

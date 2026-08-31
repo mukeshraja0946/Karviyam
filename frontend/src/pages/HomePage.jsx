@@ -243,10 +243,11 @@ export default function HomePage() {
     { id: 6, name: 'Kids Printed Shirt', brand: 'KARVIYAM', price: 499, oldPrice: 799, discount: '38% OFF', rating: 4.5, reviewsCount: 430, imageUrl: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=400' }
   ];
 
+  const safeFeaturedProducts = Array.isArray(featuredProducts) ? featuredProducts : [];
   const displayRecommendedProducts = (
-    featuredProducts.length >= 6
-      ? featuredProducts.slice(0, 6)
-      : [...featuredProducts, ...DEFAULT_REC_PRODUCTS.slice(featuredProducts.length)].slice(0, 6)
+    safeFeaturedProducts.length >= 6
+      ? safeFeaturedProducts.slice(0, 6)
+      : [...safeFeaturedProducts, ...DEFAULT_REC_PRODUCTS.slice(safeFeaturedProducts.length)].slice(0, 6)
   );
 
   return (

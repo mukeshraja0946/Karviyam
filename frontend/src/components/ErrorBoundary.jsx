@@ -40,10 +40,10 @@ export default class ErrorBoundary extends React.Component {
               <span>Reload Page</span>
             </button>
             <a
-              href="/admin"
+              href="/"
               className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all border border-slate-200"
             >
-              <span>Back to Admin Dashboard</span>
+              <span>Back to Store Home</span>
             </a>
           </div>
         </div>
