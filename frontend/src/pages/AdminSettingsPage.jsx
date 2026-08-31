@@ -21,12 +21,68 @@ import {
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 
+const DEFAULT_MOBILE_SECTIONS = [
+  { id: 'parent_categories', title: 'Quick Categories', subtitle: '', enabled: true, layout: 'horizontal', order: 1 },
+  { id: 'hero_banners', title: 'Promotional Banners', subtitle: '', enabled: true, layout: 'horizontal', order: 2 },
+  { id: 'trust_badges', title: 'Trust & Delivery Badges', subtitle: '', enabled: true, layout: 'horizontal', order: 3 },
+  { id: 'categories_style', title: 'Shop Your Style', subtitle: '', enabled: true, layout: 'horizontal', order: 4 },
+  { id: 'flash_picks', title: 'Flash Picks', subtitle: 'Ends in 02 : 41 : 36', enabled: true, layout: 'horizontal', order: 5 },
+  { id: 'complete_look', title: 'Complete The Look', subtitle: 'Curated combos for you', enabled: true, layout: 'horizontal', order: 6 },
+  { id: 'shop_by_occasion', title: 'Shop by Occasion', subtitle: '', enabled: true, layout: 'horizontal', order: 7 },
+  { id: 'find_your_price', title: 'Find Your Price', subtitle: '', enabled: true, layout: 'horizontal', order: 8 },
+  { id: 'recommended', title: 'Recommended For You', subtitle: '', enabled: true, layout: 'horizontal', order: 9 },
+  { id: 'trending', title: 'Trending Now', subtitle: 'Popular styles customers are loving', enabled: true, layout: 'vertical', order: 10 },
+  { id: 'new_arrivals', title: 'New Arrivals', subtitle: 'Explore the latest fashion collections', enabled: true, layout: 'horizontal', order: 11 },
+  { id: 'best_sellers', title: 'Best Sellers', subtitle: 'Top rated favorites loved by everyone', enabled: true, layout: 'vertical', order: 12 },
+  { id: 'continue_shopping', title: 'Continue Shopping', subtitle: '', enabled: true, layout: 'horizontal', order: 13 }
+];
+
 export default function AdminSettingsPage() {
-  const [activeTab, setActiveTab] = useState('company'); // 'company', 'payment', 'sequence', 'general'
+  const [activeTab, setActiveTab] = useState('company');
   const [showEmailPreviewModal, setShowEmailPreviewModal] = useState(false);
 
+  const [mobileSections, setMobileSections] = useState(() => {
+    try {
+      const saved = localStorage.getItem('karviyam_mobile_homepage_sections');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_MOBILE_SECTIONS;
+  });
+
+  const handleToggleSection = (id) => {
+    setMobileSections(prev => prev.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s));
+  };
+
+  const handleChangeSectionLayout = (id, layout) => {
+    setMobileSections(prev => prev.map(s => s.id === id ? { ...s, layout } : s));
+    if (id === 'recommended') setSettings(s => ({ ...s, mobileRecommendedMode: layout }));
+    if (id === 'trending') setSettings(s => ({ ...s, mobileTrendingMode: layout }));
+    if (id === 'new_arrivals') setSettings(s => ({ ...s, mobileNewArrivalsMode: layout }));
+    if (id === 'best_sellers') setSettings(s => ({ ...s, mobileBestSellersMode: layout }));
+  };
+
+  const handleChangeSectionTitle = (id, title) => {
+    setMobileSections(prev => prev.map(s => s.id === id ? { ...s, title } : s));
+  };
+
+  const handleChangeSectionSubtitle = (id, subtitle) => {
+    setMobileSections(prev => prev.map(s => s.id === id ? { ...s, subtitle } : s));
+  };
+
+  const handleMoveSection = (index, direction) => {
+    const newIdx = index + direction;
+    if (newIdx < 0 || newIdx >= mobileSections.length) return;
+    const updated = [...mobileSections];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(newIdx, 0, moved);
+    const reordered = updated.map((sec, idx) => ({ ...sec, order: idx + 1 }));
+    setMobileSections(reordered);
+  };
+
   const [settings, setSettings] = useState({
-    // Company Information
     storeName: 'Karviyam Ventures Private Limited',
     legalCompanyName: 'Karviyam Ventures Private Limited',
     gstNo: '33AAACK1234F1Z9',
@@ -42,40 +98,33 @@ export default function AdminSettingsPage() {
     signatoryName: 'Karviyam Operations',
     signatoryDesignation: 'Authorized Signatory',
 
-    // Order & Invoice Sequences
     orderPrefix: 'KV-ORD-',
     orderNextSeq: '1',
     invoicePrefix: 'KAR-',
     invoiceNextSeq: '1',
 
-    // Payment Methods
     codEnabled: true,
     razorpayEnabled: true,
     stripeEnabled: true,
     onlinePaymentEnabled: true,
     defaultPaymentMethod: 'COD',
 
-    // Branding & General
     footerAbout: 'Karviyam is a premium marketplace destination for high-street streetwear, 925 sterling silver jewellery, luxury kicks, and lifestyle products.',
     announcementText: 'FESTIVE SALE IS LIVE! UP TO 60% OFF ON HIGH-STREET WEAR & FINE JEWELLERY.',
     logoUrl: '',
     emailLogoUrl: '',
     maxProductImages: '6',
-    
-    // Category Navigation Setting
+
     categoryNavigationEnabled: true,
 
-    // Product Section Scrolling & Layout Controls (Managed by Admin)
-    recommendedScrollMode: 'grid', // 'grid' (vertical) or 'carousel' (horizontal)
+    recommendedScrollMode: 'grid',
     newArrivalsScrollMode: 'carousel',
     featuredScrollMode: 'carousel',
     removeImageGreyBox: true,
 
-    // Product Image Gallery Auto-Change Controls
     productImageAutoChange: false,
     productImageChangeInterval: 3,
 
-    // Maintenance Mode & System Controls
     maintenanceMode: false,
     maintenanceTitle: "We'll Be Right Back!",
     maintenanceSubtitle: "SYSTEM UNDER MAINTENANCE",
@@ -87,7 +136,6 @@ export default function AdminSettingsPage() {
   });
 
   useEffect(() => {
-    // Load local section layouts configuration
     try {
       const localLayouts = localStorage.getItem('karviyam_section_layouts');
       if (localLayouts) {
@@ -104,13 +152,18 @@ export default function AdminSettingsPage() {
           removeImageGreyBox: parsed.removeGreyBox !== false
         }));
       }
+
+      const savedMob = localStorage.getItem('karviyam_mobile_homepage_sections');
+      if (savedMob) {
+        const parsedMob = JSON.parse(savedMob);
+        if (Array.isArray(parsedMob) && parsedMob.length > 0) setMobileSections(parsedMob);
+      }
     } catch (e) {}
     fetchSettings();
   }, []);
 
   const fetchSettings = async () => {
     try {
-      // Fetch dedicated company settings record first
       const compRes = await api.get('/settings/company').catch(() => null);
       const compData = compRes?.data?.data || compRes?.data;
 
@@ -140,6 +193,17 @@ export default function AdminSettingsPage() {
         const stpVal = payData.stripeEnabled !== undefined ? payData.stripeEnabled : (dataMap.stripeEnabled !== undefined ? dataMap.stripeEnabled : payData.stripe_enabled);
         const defVal = payData.defaultPaymentMethod || dataMap.defaultPaymentMethod || payData.default_payment_method;
         const catNavVal = dataMap.categoryNavigationEnabled !== undefined ? dataMap.categoryNavigationEnabled : dataMap.category_navigation_enabled;
+
+        const mobData = dataMap.karviyam_mobile_homepage_sections || dataMap.mobile_homepage_sections;
+        if (mobData) {
+          try {
+            const parsedMob = typeof mobData === 'string' ? JSON.parse(mobData) : mobData;
+            if (Array.isArray(parsedMob) && parsedMob.length > 0) {
+              setMobileSections(parsedMob);
+              localStorage.setItem('karviyam_mobile_homepage_sections', JSON.stringify(parsedMob));
+            }
+          } catch (e) {}
+        }
 
         setSettings(prev => ({
           ...prev,
@@ -186,30 +250,6 @@ export default function AdminSettingsPage() {
           maintenanceShowSocial: dataMap.maintenanceShowSocial !== 'false',
           maintenanceAllowSearchEngines: dataMap.maintenanceAllowSearchEngines !== 'false',
         }));
-
-        const layoutsData = dataMap.karviyam_section_layouts || dataMap.sectionLayouts;
-        let parsedLayouts = null;
-        if (layoutsData) {
-          try {
-            parsedLayouts = typeof layoutsData === 'string' ? JSON.parse(layoutsData) : layoutsData;
-          } catch (e) {}
-        }
-        if (parsedLayouts && typeof parsedLayouts === 'object') {
-          try {
-            localStorage.setItem('karviyam_section_layouts', JSON.stringify(parsedLayouts));
-          } catch (e) {}
-          setSettings(prev => ({
-            ...prev,
-            desktopRecommendedMode: parsedLayouts?.desktop?.recommended || prev.desktopRecommendedMode || 'carousel',
-            desktopNewArrivalsMode: parsedLayouts?.desktop?.newArrivals || prev.desktopNewArrivalsMode || 'carousel',
-            desktopFeaturedMode: parsedLayouts?.desktop?.featured || prev.desktopFeaturedMode || 'carousel',
-            mobileRecommendedMode: parsedLayouts?.mobile?.recommended || parsedLayouts?.recommended || prev.mobileRecommendedMode || 'horizontal',
-            mobileTrendingMode: parsedLayouts?.mobile?.trending || parsedLayouts?.trending || prev.mobileTrendingMode || 'vertical',
-            mobileNewArrivalsMode: parsedLayouts?.mobile?.newArrivals || prev.mobileNewArrivalsMode || 'horizontal',
-            mobileBestSellersMode: parsedLayouts?.mobile?.bestSellers || prev.mobileBestSellersMode || 'vertical',
-            removeImageGreyBox: parsedLayouts?.removeGreyBox !== undefined ? parsedLayouts.removeGreyBox !== false : prev.removeImageGreyBox
-          }));
-        }
       }
     } catch (e) {
       console.error(e);
@@ -223,6 +263,7 @@ export default function AdminSettingsPage() {
     window.dispatchEvent(new Event('karviyam_settings_updated'));
     window.dispatchEvent(new Event('karviyam_category_nav_updated'));
     window.dispatchEvent(new Event('karviyam_section_layouts_updated'));
+    window.dispatchEvent(new Event('karviyam_mobile_homepage_updated'));
   };
 
   const handleLogoUpload = (e) => {
@@ -380,6 +421,8 @@ export default function AdminSettingsPage() {
         maintenanceShowTimer: String(settings.maintenanceShowTimer),
         maintenanceShowSocial: String(settings.maintenanceShowSocial),
         maintenanceAllowSearchEngines: String(settings.maintenanceAllowSearchEngines),
+        karviyam_mobile_homepage_sections: JSON.stringify(mobileSections),
+        mobile_homepage_sections: JSON.stringify(mobileSections),
         karviyam_section_layouts: JSON.stringify({
           desktop: {
             recommended: settings.desktopRecommendedMode || 'carousel',
@@ -462,6 +505,7 @@ export default function AdminSettingsPage() {
       };
 
       localStorage.setItem('karviyam_section_layouts', JSON.stringify(layoutConfig));
+      localStorage.setItem('karviyam_mobile_homepage_sections', JSON.stringify(mobileSections));
 
       window.dispatchEvent(new Event('karviyam_auto_change_updated'));
       window.dispatchEvent(new Event('karviyam_settings_updated'));
@@ -1143,158 +1187,115 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
 
-              {/* BLOCK 2: MOBILE PRODUCT LAYOUT & SCROLL CONTROLS */}
+              {/* BLOCK 2: MOBILE PRODUCT LAYOUT & HOMEPAGE CONFIGURATION */}
               <div className="border border-red-200 bg-red-50/20 rounded-2xl p-5 space-y-4 shadow-2xs">
-                <div className="border-b border-red-100 pb-3">
-                  <h4 className="font-extrabold text-[#B71C1C] text-sm uppercase tracking-wider flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-[#B71C1C]" />
-                    <span>MOBILE PRODUCT LAYOUT & SCROLL CONTROLS (&lt;1024px)</span>
-                  </h4>
-                  <p className="text-[11px] text-slate-600 mt-0.5 font-medium">
-                    Configure product section layout and scrolling for mobile storefront only. Changes here must never affect desktop.
-                  </p>
+                <div className="flex items-center justify-between border-b border-red-100 pb-3">
+                  <div>
+                    <h4 className="font-extrabold text-[#B71C1C] text-sm uppercase tracking-wider flex items-center gap-2">
+                      <Sliders className="w-4 h-4 text-[#B71C1C]" />
+                      <span>MOBILE HOMEPAGE SECTIONS & LAYOUT EDITOR (&lt;1024px)</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-600 mt-0.5 font-medium">
+                      Enable, disable, rename, reorder, and set scroll layout (Horizontal Swipe vs Vertical Grid) for every mobile homepage section independently. Desktop view remains 100% untouched.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Mobile Recommended */}
-                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
-                    <label className="font-extrabold text-slate-900 block text-xs">RECOMMENDED FOR YOU (Mobile)</label>
-                    <p className="text-[10.5px] text-slate-500">Mobile Layout:</p>
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
-                        (settings.mobileRecommendedMode || 'horizontal') === 'horizontal' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="mobileRecommendedGroup"
-                          value="horizontal"
-                          checked={(settings.mobileRecommendedMode || 'horizontal') === 'horizontal'}
-                          onChange={() => setSettings({ ...settings, mobileRecommendedMode: 'horizontal' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span>Horizontal Scroll</span>
-                      </label>
+                <div className="space-y-3">
+                  {mobileSections.map((sec, idx) => (
+                    <div
+                      key={sec.id}
+                      className={`p-4 rounded-xl border transition-all ${
+                        sec.enabled ? 'bg-white border-slate-200 shadow-2xs' : 'bg-slate-100 border-slate-200 opacity-60'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        
+                        {/* Left: Position & Section Info */}
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {/* Reorder Buttons */}
+                          <div className="flex flex-col items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveSection(idx, -1)}
+                              disabled={idx === 0}
+                              className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                              title="Move Up"
+                            >
+                              ▲
+                            </button>
+                            <span className="text-[10px] font-black text-slate-500">#{idx + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveSection(idx, 1)}
+                              disabled={idx === mobileSections.length - 1}
+                              className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                              title="Move Down"
+                            >
+                              ▼
+                            </button>
+                          </div>
 
-                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
-                        settings.mobileRecommendedMode === 'vertical' || settings.mobileRecommendedMode === 'grid' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="mobileRecommendedGroup"
-                          value="vertical"
-                          checked={settings.mobileRecommendedMode === 'vertical' || settings.mobileRecommendedMode === 'grid'}
-                          onChange={() => setSettings({ ...settings, mobileRecommendedMode: 'vertical' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span>Vertical 2-Column Grid</span>
-                      </label>
+                          {/* Editable Title & Subtitle */}
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={sec.title || ''}
+                                onChange={(e) => handleChangeSectionTitle(sec.id, e.target.value)}
+                                className="font-extrabold text-xs text-slate-900 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 focus:outline-none focus:border-[#B71C1C] flex-1 min-w-0"
+                                placeholder="Section Title"
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              value={sec.subtitle || ''}
+                              onChange={(e) => handleChangeSectionSubtitle(sec.id, e.target.value)}
+                              className="text-[11px] text-slate-500 bg-slate-50/60 px-2.5 py-0.5 rounded-md border border-slate-200/80 focus:outline-none focus:border-[#B71C1C] w-full"
+                              placeholder="Subtitle (optional)"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Right: Layout Switch & Visibility Toggle */}
+                        <div className="flex items-center gap-3 shrink-0">
+                          {/* Layout Options */}
+                          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                            <button
+                              type="button"
+                              onClick={() => handleChangeSectionLayout(sec.id, 'horizontal')}
+                              className={`px-3 py-1 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
+                                sec.layout === 'horizontal' ? 'bg-[#B71C1C] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              Horizontal Swipe
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleChangeSectionLayout(sec.id, 'vertical')}
+                              className={`px-3 py-1 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
+                                sec.layout === 'vertical' ? 'bg-[#B71C1C] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              Vertical 2-Col Grid
+                            </button>
+                          </div>
+
+                          {/* Enable/Disable Switch */}
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={sec.enabled}
+                              onChange={() => handleToggleSection(sec.id)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#B71C1C]" />
+                          </label>
+                        </div>
+
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Mobile Trending Now */}
-                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
-                    <label className="font-extrabold text-slate-900 block text-xs">TRENDING NOW (Mobile)</label>
-                    <p className="text-[10.5px] text-slate-500">Mobile Layout:</p>
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
-                        settings.mobileTrendingMode === 'horizontal' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="mobileTrendingGroup"
-                          value="horizontal"
-                          checked={settings.mobileTrendingMode === 'horizontal'}
-                          onChange={() => setSettings({ ...settings, mobileTrendingMode: 'horizontal' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span>Horizontal Scroll</span>
-                      </label>
-
-                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
-                        (settings.mobileTrendingMode || 'vertical') === 'vertical' || settings.mobileTrendingMode === 'grid' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="mobileTrendingGroup"
-                          value="vertical"
-                          checked={(settings.mobileTrendingMode || 'vertical') === 'vertical' || settings.mobileTrendingMode === 'grid'}
-                          onChange={() => setSettings({ ...settings, mobileTrendingMode: 'vertical' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span>Vertical 2-Column Grid</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Mobile New Arrivals */}
-                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
-                    <label className="font-extrabold text-slate-900 block text-xs">NEW ARRIVALS (Mobile)</label>
-                    <p className="text-[10.5px] text-slate-500">Mobile Layout:</p>
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
-                        (settings.mobileNewArrivalsMode || 'horizontal') === 'horizontal' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="mobileNewArrivalsGroup"
-                          value="horizontal"
-                          checked={(settings.mobileNewArrivalsMode || 'horizontal') === 'horizontal'}
-                          onChange={() => setSettings({ ...settings, mobileNewArrivalsMode: 'horizontal' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span>Horizontal Scroll</span>
-                      </label>
-
-                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
-                        settings.mobileNewArrivalsMode === 'vertical' || settings.mobileNewArrivalsMode === 'grid' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="mobileNewArrivalsGroup"
-                          value="vertical"
-                          checked={settings.mobileNewArrivalsMode === 'vertical' || settings.mobileNewArrivalsMode === 'grid'}
-                          onChange={() => setSettings({ ...settings, mobileNewArrivalsMode: 'vertical' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span>Vertical 2-Column Grid</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Mobile Best Sellers */}
-                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
-                    <label className="font-extrabold text-slate-900 block text-xs">BEST SELLERS (Mobile)</label>
-                    <p className="text-[10.5px] text-slate-500">Mobile Layout:</p>
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
-                        settings.mobileBestSellersMode === 'horizontal' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="mobileBestSellersGroup"
-                          value="horizontal"
-                          checked={settings.mobileBestSellersMode === 'horizontal'}
-                          onChange={() => setSettings({ ...settings, mobileBestSellersMode: 'horizontal' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span>Horizontal Scroll</span>
-                      </label>
-
-                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
-                        (settings.mobileBestSellersMode || 'vertical') === 'vertical' || settings.mobileBestSellersMode === 'grid' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="mobileBestSellersGroup"
-                          value="vertical"
-                          checked={(settings.mobileBestSellersMode || 'vertical') === 'vertical' || settings.mobileBestSellersMode === 'grid'}
-                          onChange={() => setSettings({ ...settings, mobileBestSellersMode: 'vertical' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span>Vertical 2-Column Grid</span>
-                      </label>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 

@@ -42,7 +42,35 @@ export default function HomePage() {
     return null;
   };
 
+  const DEFAULT_MOBILE_SECTIONS_FALLBACK = [
+    { id: 'parent_categories', title: 'Quick Categories', subtitle: '', enabled: true, layout: 'horizontal', order: 1 },
+    { id: 'hero_banners', title: 'Promotional Banners', subtitle: '', enabled: true, layout: 'horizontal', order: 2 },
+    { id: 'trust_badges', title: 'Trust & Delivery Badges', subtitle: '', enabled: true, layout: 'horizontal', order: 3 },
+    { id: 'categories_style', title: 'Shop Your Style', subtitle: '', enabled: true, layout: 'horizontal', order: 4 },
+    { id: 'flash_picks', title: 'Flash Picks', subtitle: 'Ends in 02 : 41 : 36', enabled: true, layout: 'horizontal', order: 5 },
+    { id: 'complete_look', title: 'Complete The Look', subtitle: 'Curated combos for you', enabled: true, layout: 'horizontal', order: 6 },
+    { id: 'shop_by_occasion', title: 'Shop by Occasion', subtitle: '', enabled: true, layout: 'horizontal', order: 7 },
+    { id: 'find_your_price', title: 'Find Your Price', subtitle: '', enabled: true, layout: 'horizontal', order: 8 },
+    { id: 'recommended', title: 'Recommended For You', subtitle: '', enabled: true, layout: 'horizontal', order: 9 },
+    { id: 'trending', title: 'Trending Now', subtitle: 'Popular styles customers are loving', enabled: true, layout: 'vertical', order: 10 },
+    { id: 'new_arrivals', title: 'New Arrivals', subtitle: 'Explore the latest fashion collections', enabled: true, layout: 'horizontal', order: 11 },
+    { id: 'best_sellers', title: 'Best Sellers', subtitle: 'Top rated favorites loved by everyone', enabled: true, layout: 'vertical', order: 12 },
+    { id: 'continue_shopping', title: 'Continue Shopping', subtitle: '', enabled: true, layout: 'horizontal', order: 13 }
+  ];
+
+  const getMobileSectionsConfig = () => {
+    try {
+      const saved = localStorage.getItem('karviyam_mobile_homepage_sections');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_MOBILE_SECTIONS_FALLBACK;
+  };
+
   const [sectionLayouts, setSectionLayouts] = useState(getSectionLayoutConfig);
+  const [mobileSectionsList, setMobileSectionsList] = useState(getMobileSectionsConfig);
   const [mobileBannerIndex, setMobileBannerIndex] = useState(0);
   const [mobileBanners, setMobileBanners] = useState([]);
   const [mobileBannerSpeed, setMobileBannerSpeed] = useState(5000);
@@ -51,6 +79,7 @@ export default function HomePage() {
 
   const syncLayoutSettings = () => {
     setSectionLayouts(getSectionLayoutConfig());
+    setMobileSectionsList(getMobileSectionsConfig());
   };
 
   const fetchBanners = async () => {
@@ -167,6 +196,17 @@ export default function HomePage() {
           localStorage.setItem('karviyam_section_layouts', JSON.stringify(parsed));
         } catch (e) {}
       }
+
+      const mobData = dataMap?.karviyam_mobile_homepage_sections || dataMap?.mobile_homepage_sections;
+      if (mobData) {
+        const parsedMob = typeof mobData === 'string' ? JSON.parse(mobData) : mobData;
+        if (Array.isArray(parsedMob) && parsedMob.length > 0) {
+          setMobileSectionsList(parsedMob);
+          try {
+            localStorage.setItem('karviyam_mobile_homepage_sections', JSON.stringify(parsedMob));
+          } catch (e) {}
+        }
+      }
     } catch (e) {}
   };
 
@@ -181,6 +221,7 @@ export default function HomePage() {
       if (document.visibilityState === 'visible') {
         fetchBanners();
         fetchHomeProducts();
+        fetchLayoutSettings();
       }
     };
 
@@ -196,6 +237,7 @@ export default function HomePage() {
     window.addEventListener('karviyam_categories_updated', fetchHomeCategories);
     window.addEventListener('karviyam_parent_categories_updated', fetchHomeCategories);
     window.addEventListener('karviyam_section_layouts_updated', syncLayoutSettings);
+    window.addEventListener('karviyam_mobile_homepage_updated', syncLayoutSettings);
     window.addEventListener('focus', handleFocusOrVisible);
     window.addEventListener('visibilitychange', handleFocusOrVisible);
     window.addEventListener('storage', handleStorageChange);
@@ -205,6 +247,7 @@ export default function HomePage() {
       window.removeEventListener('karviyam_categories_updated', fetchHomeCategories);
       window.removeEventListener('karviyam_parent_categories_updated', fetchHomeCategories);
       window.removeEventListener('karviyam_section_layouts_updated', syncLayoutSettings);
+      window.removeEventListener('karviyam_mobile_homepage_updated', syncLayoutSettings);
       window.removeEventListener('focus', handleFocusOrVisible);
       window.removeEventListener('visibilitychange', handleFocusOrVisible);
       window.removeEventListener('storage', handleStorageChange);
@@ -346,6 +389,43 @@ export default function HomePage() {
     );
   };
 
+  const renderProductSection = (sec, products, viewAllLink) => {
+    const isVertical = sec.layout === 'vertical' || sec.layout === 'grid';
+    const sectionTitle = sec.title || 'Products';
+    const sectionSubtitle = sec.subtitle || '';
+
+    return (
+      <div key={sec.id} className="w-full my-2.5 px-3">
+        <div className="flex items-center justify-between mb-1.5">
+          <div>
+            <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
+              {sectionTitle}
+            </h2>
+            {sectionSubtitle ? (
+              <p className="text-[10.5px] font-medium text-slate-500">{sectionSubtitle}</p>
+            ) : null}
+          </div>
+          <Link to={viewAllLink} className="text-xs font-extrabold text-[#B71C1C] hover:underline flex items-center gap-0.5">
+            <span>View All</span>
+            <span>→</span>
+          </Link>
+        </div>
+
+        {loading ? (
+          <SkeletonLoader count={4} />
+        ) : isVertical ? (
+          <div className="grid grid-cols-2 gap-2.5 w-full">
+            {products.map((prod) => renderProductCardItem(prod, true))}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory py-0.5 w-full">
+            {products.map((prod) => renderProductCardItem(prod, false))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div>
       {/* ========================================================= */}
@@ -367,302 +447,202 @@ export default function HomePage() {
 
       {/* ========================================================= */}
       {/* MOBILE HOMEPAGE LAYOUT (< 1024px / lg)                     */}
-      {/* STRICT REBUILD MATCHING REFERENCE IMAGE SPECIFICATIONS     */}
+      {/* DYNAMIC RENDERER CONTROLLED BY ADMIN HOMEPAGE SETTINGS      */}
       {/* ========================================================= */}
       <div className="block lg:hidden bg-slate-50/60 pb-2 select-none">
-        
-        {/* 1. PARENT CATEGORY SWIPEABLE ROW (Circular Cards + MORE Card) */}
-        <div className="w-full bg-white py-2 px-3 border-b border-slate-100 overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-3.5 whitespace-nowrap">
-            {(homeCategories.length > 0 ? homeCategories.slice(0, 5) : [
-              { id: 'tshirts', name: 'T-SHIRTS', query: 'category=Men', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300' },
-              { id: 'sneakers', name: 'SNEAKERS', query: 'category=Unisex', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300' },
-              { id: 'kurta', name: 'KURTA SETS', query: 'category=Women', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300' },
-              { id: 'women', name: 'WOMEN', query: 'category=Women', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300' },
-              { id: 'men', name: 'MEN', query: 'category=Men', image: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300' }
-            ]).map((cat, idx) => (
-              <div
-                key={cat.id || idx}
-                onClick={() => window.location.href = `/shop${cat.query ? `?${cat.query}` : ''}`}
-                className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group"
-              >
-                <div className="w-14 h-14 rounded-full bg-slate-100 border-2 border-slate-100 p-0.5 overflow-hidden flex items-center justify-center shadow-2xs group-active:scale-95 transition-transform">
-                  <img
-                    src={resolveImageUrl(cat.image, cat.id)}
-                    alt={cat.name}
-                    onError={(e) => handleImageError(e, cat.id)}
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                </div>
-                <span className="text-[9.5px] font-black tracking-tight text-slate-800 uppercase truncate max-w-[62px]">
-                  {cat.name}
-                </span>
-              </div>
-            ))}
+        {mobileSectionsList
+          .filter(s => s.enabled !== false)
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
+          .map((sec) => {
+            switch (sec.id) {
+              case 'parent_categories':
+                return (
+                  <div key={sec.id} className="w-full bg-white py-2 px-3 border-b border-slate-100 overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-3.5 whitespace-nowrap">
+                      {(homeCategories.length > 0 ? homeCategories.slice(0, 5) : [
+                        { id: 'tshirts', name: 'T-SHIRTS', query: 'category=Men', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300' },
+                        { id: 'sneakers', name: 'SNEAKERS', query: 'category=Unisex', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300' },
+                        { id: 'kurta', name: 'KURTA SETS', query: 'category=Women', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300' },
+                        { id: 'women', name: 'WOMEN', query: 'category=Women', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300' },
+                        { id: 'men', name: 'MEN', query: 'category=Men', image: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300' }
+                      ]).map((cat, idx) => (
+                        <div
+                          key={cat.id || idx}
+                          onClick={() => window.location.href = `/shop${cat.query ? `?${cat.query}` : ''}`}
+                          className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group"
+                        >
+                          <div className="w-14 h-14 rounded-full bg-slate-100 border-2 border-slate-100 p-0.5 overflow-hidden flex items-center justify-center shadow-2xs group-active:scale-95 transition-transform">
+                            <img
+                              src={resolveImageUrl(cat.image, cat.id)}
+                              alt={cat.name}
+                              onError={(e) => handleImageError(e, cat.id)}
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          </div>
+                          <span className="text-[9.5px] font-black tracking-tight text-slate-800 uppercase truncate max-w-[62px]">
+                            {cat.name}
+                          </span>
+                        </div>
+                      ))}
 
-            {/* MORE Card */}
-            <div
-              onClick={() => window.location.href = '/shop'}
-              className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group"
-            >
-              <div className="w-14 h-14 rounded-full bg-slate-50 border-2 border-slate-200 flex items-center justify-center text-slate-700 shadow-2xs group-active:scale-95 transition-transform">
-                <Plus className="w-5 h-5 text-slate-700" />
-              </div>
-              <span className="text-[9.5px] font-black tracking-tight text-slate-800 uppercase">
-                MORE
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. PROMOTIONAL BANNER CAROUSEL (Responsive Desktop Hero Banner Adaptation for Mobile) */}
-        {mobileBanners && mobileBanners.length > 0 && (
-          <div className="mx-3 my-2">
-            <div className="w-full h-[180px] sm:h-[210px] rounded-2xl overflow-hidden relative shadow-md bg-slate-950 group">
-              {/* Background Image Layer & Dark Gradient Overlay (HTML img tag for guaranteed browser rendering) */}
-              {mobileBanners[mobileBannerIndex]?.image ? (
-                <div className="absolute inset-0 z-0 overflow-hidden">
-                  <img
-                    src={mobileBanners[mobileBannerIndex].image}
-                    alt={mobileBanners[mobileBannerIndex]?.title || 'Hero Banner'}
-                    onError={(e) => handleImageError(e, mobileBanners[mobileBannerIndex]?.id)}
-                    className="w-full h-full object-cover object-center transition-all duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-slate-950/30" />
-                </div>
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950" />
-              )}
-
-              {/* Text & Content Overlay Layer */}
-              <div className="relative z-10 h-full p-4 sm:p-5 flex flex-col justify-center max-w-[88%] text-white">
-                <span className="inline-block bg-white/15 backdrop-blur-md border border-white/25 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-widest w-max mb-1.5 shadow-2xs">
-                  {mobileBanners[mobileBannerIndex]?.tag || mobileBanners[mobileBannerIndex]?.badge || 'OFFICIAL DROP'}
-                </span>
-
-                {mobileBanners[mobileBannerIndex]?.title ? (
-                  <h2 className="font-display font-black text-base sm:text-lg leading-tight text-white tracking-tight uppercase drop-shadow-md line-clamp-2">
-                    {mobileBanners[mobileBannerIndex].title}
-                  </h2>
-                ) : null}
-
-                {mobileBanners[mobileBannerIndex]?.subtitle ? (
-                  <p className="text-[10.5px] sm:text-xs text-slate-200 font-medium mt-1 mb-2.5 line-clamp-2">
-                    {mobileBanners[mobileBannerIndex].subtitle}
-                  </p>
-                ) : (
-                  <div className="mb-2" />
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
-                  className="bg-[#B71C1C] hover:bg-[#900C0C] text-white text-[10.5px] sm:text-xs font-extrabold px-4 py-2 rounded-xl uppercase tracking-wider transition-all shadow-md w-max cursor-pointer flex items-center gap-1.5 shrink-0"
-                >
-                  <span>{mobileBanners[mobileBannerIndex]?.buttonText || mobileBanners[mobileBannerIndex]?.cta || 'SHOP NOW'}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Carousel Indicators (Same styling as Desktop) */}
-              {mobileBanners.length > 1 && (
-                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
-                  {mobileBanners.map((_, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setMobileBannerIndex(idx)}
-                      className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                        idx === mobileBannerIndex ? 'w-5 bg-[#B71C1C]' : 'w-1.5 bg-white/60'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 3. QUICK ACCESS CATEGORY GRID (12 Karviyam Product Categories, Data-Driven) */}
-        <div className="mx-3 my-2 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
-          <div className="grid grid-cols-6 gap-y-2.5 gap-x-1.5">
-            {[
-              // ROW 1
-              { id: 't-shirts', title: 'T-Shirts', query: 'category=T-Shirts', fallbackImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300' },
-              { id: 'shirts', title: 'Shirts', query: 'category=Shirts', fallbackImage: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=300' },
-              { id: 'jeans', title: 'Jeans', query: 'category=Jeans', fallbackImage: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=300' },
-              { id: 'trousers', title: 'Trousers', query: 'category=Trousers', fallbackImage: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300' },
-              { id: 'kurta-sets', title: 'Kurta Sets', query: 'category=Kurta+Sets', fallbackImage: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300' },
-              { id: 'sarees', title: 'Sarees', query: 'category=Sarees', fallbackImage: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300' },
-              // ROW 2
-              { id: 'dresses', title: 'Dresses', query: 'category=Dresses', fallbackImage: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=300' },
-              { id: 'tops', title: 'Tops', query: 'category=Tops', fallbackImage: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300' },
-              { id: 'blazers', title: 'Blazers', query: 'category=Blazers', fallbackImage: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300' },
-              { id: 'suits', title: 'Suits', query: 'category=Suits', fallbackImage: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=300' },
-              { id: 'sneakers', title: 'Sneakers', query: 'category=Sneakers', fallbackImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300' },
-              { id: 'kids-baby', title: 'Kids & Baby', query: 'category=Kids', fallbackImage: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=300' }
-            ].map((defItem) => {
-              const matched = (Array.isArray(homeCategories) ? homeCategories : []).find(
-                c => c.name && (
-                  c.name.toLowerCase() === defItem.title.toLowerCase() ||
-                  c.name.toLowerCase().includes(defItem.title.toLowerCase()) ||
-                  defItem.title.toLowerCase().includes(c.name.toLowerCase())
-                )
-              );
-
-              const catId = matched?.id || defItem.id;
-              const catTitle = matched?.name || defItem.title;
-              const catImg = matched?.image || resolveImageUrl(defItem.fallbackImage, defItem.id);
-              const catQuery = matched?.query || defItem.query;
-
-              return (
-                <div
-                  key={catId}
-                  onClick={() => window.location.href = `/shop?${catQuery}`}
-                  className="flex flex-col items-center gap-1 cursor-pointer group"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200/80 p-0.5 overflow-hidden flex items-center justify-center shadow-2xs group-active:scale-95 transition-transform">
-                    <img
-                      src={catImg}
-                      alt={catTitle}
-                      onError={(e) => handleImageError(e, catId)}
-                      className="w-full h-full object-cover rounded-xl"
-                    />
+                      <div
+                        onClick={() => window.location.href = '/shop'}
+                        className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group"
+                      >
+                        <div className="w-14 h-14 rounded-full bg-slate-50 border-2 border-slate-200 flex items-center justify-center text-slate-700 shadow-2xs group-active:scale-95 transition-transform">
+                          <Plus className="w-5 h-5 text-slate-700" />
+                        </div>
+                        <span className="text-[9.5px] font-black tracking-tight text-slate-800 uppercase">
+                          MORE
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-800 text-center tracking-tight leading-none truncate max-w-full" title={catTitle}>
-                    {catTitle}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                );
 
-        {/* 4. RECOMMENDED FOR YOU SECTION (Admin Controlled: Horizontal Row OR Vertical Grid) */}
-        <div className="w-full my-2.5 px-3">
-          <div className="flex items-center justify-between mb-1.5">
-            <div>
-              <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
-                Recommended For You
-              </h2>
-            </div>
-            <Link to="/shop" className="text-xs font-extrabold text-[#B71C1C] hover:underline flex items-center gap-0.5">
-              <span>View All</span>
-              <span>→</span>
-            </Link>
-          </div>
+              case 'hero_banners':
+                return mobileBanners && mobileBanners.length > 0 ? (
+                  <div key={sec.id} className="mx-3 my-2">
+                    <div className="w-full h-[180px] sm:h-[210px] rounded-2xl overflow-hidden relative shadow-md bg-slate-950 group">
+                      {mobileBanners[mobileBannerIndex]?.image ? (
+                        <div className="absolute inset-0 z-0 overflow-hidden">
+                          <img
+                            src={mobileBanners[mobileBannerIndex].image}
+                            alt={mobileBanners[mobileBannerIndex]?.title || 'Hero Banner'}
+                            onError={(e) => handleImageError(e, mobileBanners[mobileBannerIndex]?.id)}
+                            className="w-full h-full object-cover object-center transition-all duration-700"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-slate-950/30" />
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950" />
+                      )}
 
-          {loading ? (
-            <SkeletonLoader count={4} />
-          ) : (mobileRecommendedMode === 'grid' || mobileRecommendedMode === 'vertical') ? (
-            /* VERTICAL MODE: 2-Column Vertical Product Grid */
-            <div className="grid grid-cols-2 gap-2.5 w-full">
-              {displayRecommendedProducts.map((prod) => renderProductCardItem(prod, true))}
-            </div>
-          ) : (
-            /* HORIZONTAL MODE: Single Swipeable Horizontal Row */
-            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory py-0.5 w-full">
-              {displayRecommendedProducts.map((prod) => renderProductCardItem(prod, false))}
-            </div>
-          )}
-        </div>
+                      <div className="relative z-10 h-full p-4 sm:p-5 flex flex-col justify-center max-w-[88%] text-white">
+                        <span className="inline-block bg-white/15 backdrop-blur-md border border-white/25 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-widest w-max mb-1.5 shadow-2xs">
+                          {mobileBanners[mobileBannerIndex]?.tag || mobileBanners[mobileBannerIndex]?.badge || 'OFFICIAL DROP'}
+                        </span>
 
-        {/* 5. TRENDING NOW SECTION (Admin Controlled: Horizontal Row OR Vertical Grid) */}
-        <div className="w-full my-2.5 px-3">
-          <div className="flex items-center justify-between mb-1.5">
-            <div>
-              <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
-                Trending Now
-              </h2>
-              <p className="text-[10.5px] font-medium text-slate-500">
-                Popular styles customers are loving
-              </p>
-            </div>
-            <Link to="/shop?sort=popular" className="text-xs font-extrabold text-[#B71C1C] hover:underline flex items-center gap-0.5">
-              <span>View All</span>
-              <span>→</span>
-            </Link>
-          </div>
+                        {mobileBanners[mobileBannerIndex]?.title ? (
+                          <h2 className="font-display font-black text-base sm:text-lg leading-tight text-white tracking-tight uppercase drop-shadow-md line-clamp-2">
+                            {mobileBanners[mobileBannerIndex].title}
+                          </h2>
+                        ) : null}
 
-          {loading ? (
-            <SkeletonLoader count={4} />
-          ) : (mobileTrendingMode === 'grid' || mobileTrendingMode === 'vertical') ? (
-            /* VERTICAL MODE: 2-Column Vertical Product Grid */
-            <div className="grid grid-cols-2 gap-2.5 w-full">
-              {displayTrendingProducts.map((prod) => renderProductCardItem(prod, true))}
-            </div>
-          ) : (
-            /* HORIZONTAL MODE: Single Swipeable Horizontal Row */
-            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory py-0.5 w-full">
-              {displayTrendingProducts.map((prod) => renderProductCardItem(prod, false))}
-            </div>
-          )}
-        </div>
+                        {mobileBanners[mobileBannerIndex]?.subtitle ? (
+                          <p className="text-[10.5px] sm:text-xs text-slate-200 font-medium mt-1 mb-2.5 line-clamp-2">
+                            {mobileBanners[mobileBannerIndex].subtitle}
+                          </p>
+                        ) : (
+                          <div className="mb-2" />
+                        )}
 
-        {/* 6. NEW ARRIVALS SECTION (Admin Controlled: Horizontal Row OR Vertical Grid) */}
-        <div className="w-full my-2.5 px-3">
-          <div className="flex items-center justify-between mb-1.5">
-            <div>
-              <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
-                New Arrivals
-              </h2>
-              <p className="text-[10.5px] font-medium text-slate-500">
-                Explore the latest fashion collections
-              </p>
-            </div>
-            <Link to="/shop?sort=newest" className="text-xs font-extrabold text-[#B71C1C] hover:underline flex items-center gap-0.5">
-              <span>View All</span>
-              <span>→</span>
-            </Link>
-          </div>
+                        <button
+                          type="button"
+                          onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
+                          className="bg-[#B71C1C] hover:bg-[#900C0C] text-white text-[10.5px] sm:text-xs font-extrabold px-4 py-2 rounded-xl uppercase tracking-wider transition-all shadow-md w-max cursor-pointer flex items-center gap-1.5 shrink-0"
+                        >
+                          <span>{mobileBanners[mobileBannerIndex]?.buttonText || mobileBanners[mobileBannerIndex]?.cta || 'SHOP NOW'}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
 
-          {loading ? (
-            <SkeletonLoader count={4} />
-          ) : (mobileNewArrivalsMode === 'grid' || mobileNewArrivalsMode === 'vertical') ? (
-            /* VERTICAL MODE: 2-Column Vertical Product Grid */
-            <div className="grid grid-cols-2 gap-2.5 w-full">
-              {displayNewArrivalsProducts.map((prod) => renderProductCardItem(prod, true))}
-            </div>
-          ) : (
-            /* HORIZONTAL MODE: Single Swipeable Horizontal Row */
-            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory py-0.5 w-full">
-              {displayNewArrivalsProducts.map((prod) => renderProductCardItem(prod, false))}
-            </div>
-          )}
-        </div>
+                      {mobileBanners.length > 1 && (
+                        <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+                          {mobileBanners.map((_, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setMobileBannerIndex(idx)}
+                              className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                                idx === mobileBannerIndex ? 'w-5 bg-[#B71C1C]' : 'w-1.5 bg-white/60'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : null;
 
-        {/* 7. BEST SELLERS SECTION (Admin Controlled: Horizontal Row OR Vertical Grid) */}
-        <div className="w-full my-2.5 px-3 pb-1">
-          <div className="flex items-center justify-between mb-1.5">
-            <div>
-              <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
-                Best Sellers
-              </h2>
-              <p className="text-[10.5px] font-medium text-slate-500">
-                Top rated favorites loved by everyone
-              </p>
-            </div>
-            <Link to="/shop?sort=rating" className="text-xs font-extrabold text-[#B71C1C] hover:underline flex items-center gap-0.5">
-              <span>View All</span>
-              <span>→</span>
-            </Link>
-          </div>
+              case 'categories_style':
+                return (
+                  <div key={sec.id} className="mx-3 my-2 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
+                    {sec.title ? (
+                      <h3 className="font-extrabold text-xs text-slate-900 mb-2 uppercase tracking-wider">{sec.title}</h3>
+                    ) : null}
+                    <div className="grid grid-cols-6 gap-y-2.5 gap-x-1.5">
+                      {[
+                        { id: 't-shirts', title: 'T-Shirts', query: 'category=T-Shirts', fallbackImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300' },
+                        { id: 'shirts', title: 'Shirts', query: 'category=Shirts', fallbackImage: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=300' },
+                        { id: 'jeans', title: 'Jeans', query: 'category=Jeans', fallbackImage: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=300' },
+                        { id: 'trousers', title: 'Trousers', query: 'category=Trousers', fallbackImage: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300' },
+                        { id: 'kurta-sets', title: 'Kurta Sets', query: 'category=Kurta+Sets', fallbackImage: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300' },
+                        { id: 'sarees', title: 'Sarees', query: 'category=Sarees', fallbackImage: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300' },
+                        { id: 'dresses', title: 'Dresses', query: 'category=Dresses', fallbackImage: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=300' },
+                        { id: 'tops', title: 'Tops', query: 'category=Tops', fallbackImage: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300' },
+                        { id: 'blazers', title: 'Blazers', query: 'category=Blazers', fallbackImage: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300' },
+                        { id: 'suits', title: 'Suits', query: 'category=Suits', fallbackImage: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=300' },
+                        { id: 'sneakers', title: 'Sneakers', query: 'category=Sneakers', fallbackImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300' },
+                        { id: 'kids-baby', title: 'Kids & Baby', query: 'category=Kids', fallbackImage: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=300' }
+                      ].map((defItem) => {
+                        const matched = (Array.isArray(homeCategories) ? homeCategories : []).find(
+                          c => c.name && (
+                            c.name.toLowerCase() === defItem.title.toLowerCase() ||
+                            c.name.toLowerCase().includes(defItem.title.toLowerCase()) ||
+                            defItem.title.toLowerCase().includes(c.name.toLowerCase())
+                          )
+                        );
+                        const catId = matched?.id || defItem.id;
+                        const catTitle = matched?.name || defItem.title;
+                        const catImg = matched?.image || resolveImageUrl(defItem.fallbackImage, defItem.id);
+                        const catQuery = matched?.query || defItem.query;
+                        return (
+                          <div
+                            key={catId}
+                            onClick={() => window.location.href = `/shop?${catQuery}`}
+                            className="flex flex-col items-center gap-1 cursor-pointer group"
+                          >
+                            <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200/80 p-0.5 overflow-hidden flex items-center justify-center shadow-2xs group-active:scale-95 transition-transform">
+                              <img
+                                src={catImg}
+                                alt={catTitle}
+                                onError={(e) => handleImageError(e, catId)}
+                                className="w-full h-full object-cover rounded-xl"
+                              />
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-800 text-center tracking-tight leading-none truncate max-w-full" title={catTitle}>
+                              {catTitle}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
 
-          {loading ? (
-            <SkeletonLoader count={4} />
-          ) : (mobileBestSellersMode === 'grid' || mobileBestSellersMode === 'vertical') ? (
-            /* VERTICAL MODE: 2-Column Vertical Product Grid */
-            <div className="grid grid-cols-2 gap-2.5 w-full">
-              {displayBestSellersProducts.map((prod) => renderProductCardItem(prod, true))}
-            </div>
-          ) : (
-            /* HORIZONTAL MODE: Single Swipeable Horizontal Row */
-            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory py-0.5 w-full">
-              {displayBestSellersProducts.map((prod) => renderProductCardItem(prod, false))}
-            </div>
-          )}
-        </div>
+              case 'recommended':
+                return renderProductSection(sec, displayRecommendedProducts, '/shop');
 
+              case 'trending':
+                return renderProductSection(sec, displayTrendingProducts, '/shop?sort=popular');
+
+              case 'new_arrivals':
+                return renderProductSection(sec, displayNewArrivalsProducts, '/shop?sort=newest');
+
+              case 'best_sellers':
+                return renderProductSection(sec, displayBestSellersProducts, '/shop?sort=rating');
+
+              case 'flash_picks':
+                return renderProductSection(sec, displayRecommendedProducts.slice(0, 4), '/shop?sort=popular');
+
+              case 'continue_shopping':
+                return renderProductSection(sec, displayRecommendedProducts.slice(0, 4), '/shop');
+
+              default:
+                return null;
+            }
+          })}
       </div>
     </div>
   );
