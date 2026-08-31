@@ -3,6 +3,7 @@ import { Image as ImageIcon, Plus, Trash2, Edit2, X, Eye, Upload, Link as LinkIc
 import ExportDropdown from '../components/ExportDropdown';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import { broadcastSyncEvent } from '../services/api';
 import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import ImageUploadCropperModal from '../components/ImageUploadCropperModal';
 import BulkImportModal from '../components/BulkImportModal';
@@ -112,7 +113,7 @@ export default function AdminBannersPage() {
       await api.post('/banners/settings', { autoScroll: enabled, speed }).catch(() => null);
     } catch (e) {}
 
-    window.dispatchEvent(new Event('karviyam_banners_updated'));
+    broadcastSyncEvent('karviyam_banners_updated');
     toast.success(`Banner auto-scroll ${enabled ? 'ENABLED' : 'DISABLED'} (${speed / 1000}s speed)!`, { id: 'banner-toast' });
   };
 
@@ -177,7 +178,7 @@ export default function AdminBannersPage() {
       if (apiData && apiData.success !== false) {
         try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
         await fetchBanners();
-        window.dispatchEvent(new Event('karviyam_banners_updated'));
+        broadcastSyncEvent('karviyam_banners_updated');
         toast.success(`Banner ${nextStatus === 'active' ? 'activated' : 'deactivated'} successfully!`, { id: 'banner-toast' });
       } else {
         throw new Error(apiData?.message || 'Failed to toggle banner status');
@@ -249,7 +250,7 @@ export default function AdminBannersPage() {
       if (apiData && apiData.success !== false) {
         // 1. Refetch from MySQL database to confirm persistence
         await fetchBanners();
-        window.dispatchEvent(new Event('karviyam_banners_updated'));
+        broadcastSyncEvent('karviyam_banners_updated');
         try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
 
         setModalOpen(false);
@@ -278,7 +279,7 @@ export default function AdminBannersPage() {
       // 2. Clear local storage and refetch
       try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
       await fetchBanners();
-      window.dispatchEvent(new Event('karviyam_banners_updated'));
+      broadcastSyncEvent('karviyam_banners_updated');
 
       toast.success('Banner deleted successfully!', { id: 'banner-toast' });
     } catch (e) {
@@ -336,7 +337,7 @@ export default function AdminBannersPage() {
       setSelectedIds([]);
       setIsAllDatasetSelected(false);
       try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
-      window.dispatchEvent(new Event('karviyam_banners_updated'));
+      broadcastSyncEvent('karviyam_banners_updated');
       toast.success(`Successfully deleted ${count} selected homepage banners.`, { id: 'banner-batch-toast' });
       await fetchBanners();
     } catch (e) {
@@ -360,7 +361,7 @@ export default function AdminBannersPage() {
       setSelectedIds([]);
       setIsAllDatasetSelected(false);
       try { localStorage.removeItem('karviyam_admin_banners'); } catch (e) {}
-      window.dispatchEvent(new Event('karviyam_banners_updated'));
+      broadcastSyncEvent('karviyam_banners_updated');
       toast.success(`Successfully deleted ${count} banners.`, { id: 'banner-toast' });
       setClearAllModalOpen(false);
       await fetchBanners();

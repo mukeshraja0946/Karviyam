@@ -197,16 +197,18 @@ export default function DesktopCenterContent() {
       }
     };
 
+    const handleStorage = () => {
+      fetchBanners();
+      fetchProductsAndCategories();
+    };
+
     window.addEventListener('karviyam_products_updated', fetchProductsAndCategories);
     window.addEventListener('karviyam_categories_updated', fetchProductsAndCategories);
     window.addEventListener('karviyam_parent_categories_updated', fetchProductsAndCategories);
     window.addEventListener('karviyam_banners_updated', fetchBanners);
     window.addEventListener('focus', handleFocusOrVisible);
     window.addEventListener('visibilitychange', handleFocusOrVisible);
-    window.addEventListener('storage', () => {
-      fetchBanners();
-      fetchProductsAndCategories();
-    });
+    window.addEventListener('storage', handleStorage);
     return () => {
       window.removeEventListener('karviyam_products_updated', fetchProductsAndCategories);
       window.removeEventListener('karviyam_categories_updated', fetchProductsAndCategories);
@@ -214,7 +216,7 @@ export default function DesktopCenterContent() {
       window.removeEventListener('karviyam_banners_updated', fetchBanners);
       window.removeEventListener('focus', handleFocusOrVisible);
       window.removeEventListener('visibilitychange', handleFocusOrVisible);
-      window.removeEventListener('storage', fetchProductsAndCategories);
+      window.removeEventListener('storage', handleStorage);
     };
   }, []);
 

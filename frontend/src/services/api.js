@@ -14,11 +14,16 @@ if (syncChannel) {
   };
 }
 
-const broadcastSyncEvent = (eventName) => {
-  window.dispatchEvent(new Event(eventName));
-  try {
-    syncChannel?.postMessage({ eventName });
-  } catch (e) {}
+export const broadcastSyncEvent = (eventName) => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(eventName));
+    try {
+      localStorage.setItem(`karviyam_event_${eventName}`, String(Date.now()));
+    } catch (e) {}
+    try {
+      syncChannel?.postMessage({ eventName });
+    } catch (e) {}
+  }
 };
 
 const api = axios.create({

@@ -184,6 +184,13 @@ export default function HomePage() {
       }
     };
 
+    const handleStorageChange = () => {
+      fetchBanners();
+      fetchHomeProducts();
+      fetchHomeCategories();
+      syncLayoutSettings();
+    };
+
     window.addEventListener('karviyam_products_updated', fetchHomeProducts);
     window.addEventListener('karviyam_banners_updated', fetchBanners);
     window.addEventListener('karviyam_categories_updated', fetchHomeCategories);
@@ -191,12 +198,7 @@ export default function HomePage() {
     window.addEventListener('karviyam_section_layouts_updated', syncLayoutSettings);
     window.addEventListener('focus', handleFocusOrVisible);
     window.addEventListener('visibilitychange', handleFocusOrVisible);
-    window.addEventListener('storage', () => {
-      fetchBanners();
-      fetchHomeProducts();
-      fetchHomeCategories();
-      syncLayoutSettings();
-    });
+    window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('karviyam_products_updated', fetchHomeProducts);
       window.removeEventListener('karviyam_banners_updated', fetchBanners);
@@ -205,6 +207,7 @@ export default function HomePage() {
       window.removeEventListener('karviyam_section_layouts_updated', syncLayoutSettings);
       window.removeEventListener('focus', handleFocusOrVisible);
       window.removeEventListener('visibilitychange', handleFocusOrVisible);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 

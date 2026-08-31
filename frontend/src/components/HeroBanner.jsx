@@ -84,7 +84,7 @@ export default function HeroBanner() {
       {/* Background Image with Fallback */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-all duration-1000 transform scale-105"
-        style={{ backgroundImage: `url(${imageError ? DEFAULT_BANNERS[0].image : current.image})` }}
+        style={{ backgroundImage: `url("${current.image}")` }}
       >
         {/* Hidden img to test load error */}
         <img
