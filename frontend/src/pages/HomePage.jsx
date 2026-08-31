@@ -364,11 +364,11 @@ export default function HomePage() {
       {/* MOBILE HOMEPAGE LAYOUT (< 1024px / lg)                     */}
       {/* STRICT REBUILD MATCHING REFERENCE IMAGE SPECIFICATIONS     */}
       {/* ========================================================= */}
-      <div className="block lg:hidden bg-slate-50/60 pb-20 select-none">
+      <div className="block lg:hidden bg-slate-50/60 pb-2 select-none">
         
         {/* 1. PARENT CATEGORY SWIPEABLE ROW (Circular Cards + MORE Card) */}
-        <div className="w-full bg-white py-3 px-3.5 border-b border-slate-100 overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-4 whitespace-nowrap">
+        <div className="w-full bg-white py-2 px-3 border-b border-slate-100 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-3.5 whitespace-nowrap">
             {(homeCategories.length > 0 ? homeCategories.slice(0, 5) : [
               { id: 'tshirts', name: 'T-SHIRTS', query: 'category=Men', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300' },
               { id: 'sneakers', name: 'SNEAKERS', query: 'category=Unisex', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300' },
@@ -379,9 +379,9 @@ export default function HomePage() {
               <div
                 key={cat.id || idx}
                 onClick={() => window.location.href = `/shop${cat.query ? `?${cat.query}` : ''}`}
-                className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group"
+                className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group"
               >
-                <div className="w-16 h-16 rounded-full bg-slate-100 border-2 border-slate-100 p-0.5 overflow-hidden flex items-center justify-center shadow-2xs group-active:scale-95 transition-transform">
+                <div className="w-14 h-14 rounded-full bg-slate-100 border-2 border-slate-100 p-0.5 overflow-hidden flex items-center justify-center shadow-2xs group-active:scale-95 transition-transform">
                   <img
                     src={resolveImageUrl(cat.image, cat.id)}
                     alt={cat.name}
@@ -389,7 +389,7 @@ export default function HomePage() {
                     className="w-full h-full object-cover rounded-full"
                   />
                 </div>
-                <span className="text-[10px] font-black tracking-tight text-slate-800 uppercase truncate max-w-[68px]">
+                <span className="text-[9.5px] font-black tracking-tight text-slate-800 uppercase truncate max-w-[62px]">
                   {cat.name}
                 </span>
               </div>
@@ -398,12 +398,12 @@ export default function HomePage() {
             {/* MORE Card */}
             <div
               onClick={() => window.location.href = '/shop'}
-              className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group"
+              className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group"
             >
-              <div className="w-16 h-16 rounded-full bg-slate-50 border-2 border-slate-200 flex items-center justify-center text-slate-700 shadow-2xs group-active:scale-95 transition-transform">
-                <Plus className="w-6 h-6 text-slate-700" />
+              <div className="w-14 h-14 rounded-full bg-slate-50 border-2 border-slate-200 flex items-center justify-center text-slate-700 shadow-2xs group-active:scale-95 transition-transform">
+                <Plus className="w-5 h-5 text-slate-700" />
               </div>
-              <span className="text-[10px] font-black tracking-tight text-slate-800 uppercase">
+              <span className="text-[9.5px] font-black tracking-tight text-slate-800 uppercase">
                 MORE
               </span>
             </div>
@@ -411,46 +411,46 @@ export default function HomePage() {
         </div>
 
         {/* 2. PROMOTIONAL BANNER CAROUSEL */}
-        <div className="mx-3.5 my-3">
-          <div className="w-full rounded-2xl overflow-hidden relative shadow-sm bg-gradient-to-r from-pink-200 via-rose-100 to-pink-200 border border-pink-200/80 p-4 sm:p-5 flex items-center justify-between min-h-[140px]">
+        <div className="mx-3 my-2">
+          <div className="w-full rounded-2xl overflow-hidden relative shadow-2xs bg-gradient-to-r from-pink-200 via-rose-100 to-pink-200 border border-pink-200/80 p-3.5 sm:p-4 flex items-center justify-between min-h-[110px]">
             {/* Banner Left Copy */}
-            <div className="max-w-[210px] space-y-1 z-10">
-              <h3 className="font-display font-black text-lg sm:text-xl text-rose-950 leading-tight tracking-tight">
+            <div className="max-w-[210px] space-y-0.5 z-10">
+              <h3 className="font-display font-black text-base sm:text-lg text-rose-950 leading-tight tracking-tight">
                 {mobileBanners[mobileBannerIndex]?.title || 'Decode your perfect cleanse'}
               </h3>
-              <p className="text-[11px] text-rose-800 font-semibold leading-snug">
+              <p className="text-[10.5px] text-rose-800 font-semibold leading-snug">
                 {mobileBanners[mobileBannerIndex]?.subtitle || 'Gentle renewing cleanser'}
               </p>
               <button
                 onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
-                className="mt-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-[11px] px-4 py-1.5 rounded-full transition-all shadow-sm cursor-pointer flex items-center gap-1"
+                className="mt-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-[10.5px] px-3.5 py-1 rounded-full transition-all shadow-2xs cursor-pointer flex items-center gap-1"
               >
                 <span>{mobileBanners[mobileBannerIndex]?.cta || 'Shop Now'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3 h-3" />
               </button>
             </div>
 
             {/* Banner Right Image */}
-            <div className="w-28 h-28 shrink-0 relative flex items-center justify-center z-10">
+            <div className="w-24 h-24 shrink-0 relative flex items-center justify-center z-10">
               <img
                 src={resolveImageUrl(mobileBanners[mobileBannerIndex]?.image || 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400', mobileBannerIndex)}
                 alt="Promo Banner"
                 onError={(e) => handleImageError(e, mobileBannerIndex)}
-                className="max-h-full max-w-full object-contain rounded-xl drop-shadow-md"
+                className="max-h-full max-w-full object-contain rounded-xl drop-shadow-xs"
               />
             </div>
           </div>
 
           {/* Carousel Indicator Dots */}
           {mobileBanners.length > 1 && (
-            <div className="flex items-center justify-center gap-1.5 mt-2">
+            <div className="flex items-center justify-center gap-1.5 mt-1.5">
               {mobileBanners.map((banner, idx) => (
                 <button
                   key={banner.id || idx}
                   onClick={() => setMobileBannerIndex(idx)}
                   className={`transition-all duration-300 rounded-full cursor-pointer ${
                     idx === mobileBannerIndex
-                      ? 'w-5 h-1.5 bg-[#B71C1C]'
+                      ? 'w-4 h-1.5 bg-[#B71C1C]'
                       : 'w-1.5 h-1.5 bg-slate-300'
                   }`}
                 />
@@ -460,8 +460,8 @@ export default function HomePage() {
         </div>
 
         {/* 3. QUICK ACCESS CATEGORY GRID (12 Karviyam Product Categories, Data-Driven) */}
-        <div className="mx-3.5 my-3 bg-white p-3.5 rounded-3xl border border-slate-200/80 shadow-2xs">
-          <div className="grid grid-cols-6 gap-y-3.5 gap-x-2">
+        <div className="mx-3 my-2 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="grid grid-cols-6 gap-y-2.5 gap-x-1.5">
             {[
               // ROW 1
               { id: 't-shirts', title: 'T-Shirts', query: 'category=T-Shirts', fallbackImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300' },
@@ -515,8 +515,8 @@ export default function HomePage() {
         </div>
 
         {/* 4. RECOMMENDED FOR YOU SECTION (Admin Controlled: Horizontal Row OR Vertical Grid) */}
-        <div className="w-full my-4 px-3.5">
-          <div className="flex items-center justify-between mb-2.5">
+        <div className="w-full my-2.5 px-3">
+          <div className="flex items-center justify-between mb-1.5">
             <div>
               <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
                 Recommended For You
@@ -532,25 +532,25 @@ export default function HomePage() {
             <SkeletonLoader count={4} />
           ) : (mobileRecommendedMode === 'grid' || mobileRecommendedMode === 'vertical') ? (
             /* VERTICAL MODE: 2-Column Vertical Product Grid */
-            <div className="grid grid-cols-2 gap-3 w-full">
+            <div className="grid grid-cols-2 gap-2.5 w-full">
               {displayRecommendedProducts.map((prod) => renderProductCardItem(prod, true))}
             </div>
           ) : (
             /* HORIZONTAL MODE: Single Swipeable Horizontal Row */
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full">
+            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory py-0.5 w-full">
               {displayRecommendedProducts.map((prod) => renderProductCardItem(prod, false))}
             </div>
           )}
         </div>
 
         {/* 5. TRENDING NOW SECTION (Admin Controlled: Horizontal Row OR Vertical Grid) */}
-        <div className="w-full my-5 px-3.5">
-          <div className="flex items-center justify-between mb-2.5">
+        <div className="w-full my-2.5 px-3">
+          <div className="flex items-center justify-between mb-1.5">
             <div>
               <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
                 Trending Now
               </h2>
-              <p className="text-[11px] font-medium text-slate-500">
+              <p className="text-[10.5px] font-medium text-slate-500">
                 Popular styles customers are loving
               </p>
             </div>
@@ -564,25 +564,25 @@ export default function HomePage() {
             <SkeletonLoader count={4} />
           ) : (mobileTrendingMode === 'grid' || mobileTrendingMode === 'vertical') ? (
             /* VERTICAL MODE: 2-Column Vertical Product Grid */
-            <div className="grid grid-cols-2 gap-3 w-full">
+            <div className="grid grid-cols-2 gap-2.5 w-full">
               {displayTrendingProducts.map((prod) => renderProductCardItem(prod, true))}
             </div>
           ) : (
             /* HORIZONTAL MODE: Single Swipeable Horizontal Row */
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full">
+            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory py-0.5 w-full">
               {displayTrendingProducts.map((prod) => renderProductCardItem(prod, false))}
             </div>
           )}
         </div>
 
         {/* 6. NEW ARRIVALS SECTION (Admin Controlled: Horizontal Row OR Vertical Grid) */}
-        <div className="w-full my-5 px-3.5">
-          <div className="flex items-center justify-between mb-2.5">
+        <div className="w-full my-2.5 px-3">
+          <div className="flex items-center justify-between mb-1.5">
             <div>
               <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
                 New Arrivals
               </h2>
-              <p className="text-[11px] font-medium text-slate-500">
+              <p className="text-[10.5px] font-medium text-slate-500">
                 Explore the latest fashion collections
               </p>
             </div>
@@ -596,25 +596,25 @@ export default function HomePage() {
             <SkeletonLoader count={4} />
           ) : (mobileNewArrivalsMode === 'grid' || mobileNewArrivalsMode === 'vertical') ? (
             /* VERTICAL MODE: 2-Column Vertical Product Grid */
-            <div className="grid grid-cols-2 gap-3 w-full">
+            <div className="grid grid-cols-2 gap-2.5 w-full">
               {displayNewArrivalsProducts.map((prod) => renderProductCardItem(prod, true))}
             </div>
           ) : (
             /* HORIZONTAL MODE: Single Swipeable Horizontal Row */
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full">
+            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory py-0.5 w-full">
               {displayNewArrivalsProducts.map((prod) => renderProductCardItem(prod, false))}
             </div>
           )}
         </div>
 
         {/* 7. BEST SELLERS SECTION (Admin Controlled: Horizontal Row OR Vertical Grid) */}
-        <div className="w-full my-5 px-3.5 pb-6">
-          <div className="flex items-center justify-between mb-2.5">
+        <div className="w-full my-2.5 px-3 pb-1">
+          <div className="flex items-center justify-between mb-1.5">
             <div>
               <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
                 Best Sellers
               </h2>
-              <p className="text-[11px] font-medium text-slate-500">
+              <p className="text-[10.5px] font-medium text-slate-500">
                 Top rated favorites loved by everyone
               </p>
             </div>
@@ -628,12 +628,12 @@ export default function HomePage() {
             <SkeletonLoader count={4} />
           ) : (mobileBestSellersMode === 'grid' || mobileBestSellersMode === 'vertical') ? (
             /* VERTICAL MODE: 2-Column Vertical Product Grid */
-            <div className="grid grid-cols-2 gap-3 w-full">
+            <div className="grid grid-cols-2 gap-2.5 w-full">
               {displayBestSellersProducts.map((prod) => renderProductCardItem(prod, true))}
             </div>
           ) : (
             /* HORIZONTAL MODE: Single Swipeable Horizontal Row */
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full">
+            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory py-0.5 w-full">
               {displayBestSellersProducts.map((prod) => renderProductCardItem(prod, false))}
             </div>
           )}

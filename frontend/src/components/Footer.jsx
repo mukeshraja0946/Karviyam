@@ -90,7 +90,7 @@ export default function Footer() {
     <footer className="bg-white border-t border-slate-200 text-slate-700">
       
       {/* Top Value Proposition Trust Badges (Dynamic Admin Content) */}
-      <div className="bg-slate-50 border-b border-slate-200 py-6 px-4 sm:px-8">
+      <div className="bg-slate-50 border-b border-slate-200 py-3.5 sm:py-6 px-3 sm:px-8">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-6 text-center md:text-left">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0">
