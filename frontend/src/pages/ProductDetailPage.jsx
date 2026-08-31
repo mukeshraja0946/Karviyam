@@ -1047,10 +1047,11 @@ export default function ProductDetailPage() {
           </div>
 
           {/* IMAGE NAVIGATION DOTS & ACTION ICONS BELOW GALLERY */}
-          <div className="flex items-center justify-between mt-3 px-1">
-            {/* Dynamic Centered Pagination Dots */}
-            {mediaGallery.length > 1 ? (
-              <div className="flex items-center justify-center gap-1.5 mx-auto">
+          {/* Below Gallery Row: Centered Pagination Dots & Right Action Icons */}
+          <div className="relative flex items-center justify-center mt-3 min-h-[36px] px-1">
+            {/* Dynamic 100% Centered Pagination Dots */}
+            {mediaGallery.length > 1 && (
+              <div className="flex items-center justify-center gap-1.5">
                 {mediaGallery.map((m, idx) => (
                   <button
                     key={idx}
@@ -1065,12 +1066,10 @@ export default function ProductDetailPage() {
                   />
                 ))}
               </div>
-            ) : (
-              <div className="flex-1" />
             )}
 
             {/* Right Action Icons: Wishlist & Share */}
-            <div className="flex items-center gap-2 shrink-0 ml-auto">
+            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => toggleWishlist(product?.id)}
