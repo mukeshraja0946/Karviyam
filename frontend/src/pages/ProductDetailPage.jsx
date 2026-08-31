@@ -973,7 +973,7 @@ export default function ProductDetailPage() {
       {/* 2. MOBILE PRODUCT DETAIL PAGE LAYOUT (< 1024px / lg)                          */}
       {/* STRICT REBUILD MATCHING REFERENCE IMAGE SPECIFICATIONS                     */}
       {/* ========================================================================= */}
-      <div className="block lg:hidden bg-slate-50/60 min-h-screen pb-36 select-none text-left font-sans">
+      <div className="block lg:hidden bg-slate-50/60 pb-20 select-none text-left font-sans">
         
 
 

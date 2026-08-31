@@ -331,7 +331,7 @@ export default function ProductReviewsSection({ productId, onRatingUpdated }) {
           <p className="text-xs font-bold text-slate-500">Loading customer reviews...</p>
         </div>
       ) : reviewsData.reviews.length === 0 ? (
-        <div className="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-3">
+        <div className="py-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2.5">
           <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
           <p className="text-sm font-bold text-slate-700">No customer reviews match criteria</p>
           <button
