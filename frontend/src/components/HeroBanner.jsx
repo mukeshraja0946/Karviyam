@@ -54,7 +54,11 @@ export default function HeroBanner() {
             subtitle: b.subtitle || '',
             image: resolvedImg,
             cta: b.buttonText || b.button_text || b.cta || 'Shop Now',
-            link: b.buttonLink || b.link || '/shop'
+            link: b.buttonLink || b.link || '/shop',
+            enableTimer: b.enableTimer !== undefined ? Boolean(b.enableTimer) : false,
+            timerHours: b.timerHours !== undefined ? Number(b.timerHours) : 2,
+            timerMinutes: b.timerMinutes !== undefined ? Number(b.timerMinutes) : 41,
+            timerSeconds: b.timerSeconds !== undefined ? Number(b.timerSeconds) : 36
           };
         });
         setBanners(formatted);
@@ -100,8 +104,8 @@ export default function HeroBanner() {
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-transparent" />
       </div>
 
-      {/* Content */}
-      <div className="relative max-w-7xl mx-auto h-full px-6 sm:px-12 flex flex-col justify-center text-white">
+      {/* Content & Desktop Timer */}
+      <div className="relative max-w-7xl mx-auto h-full px-6 sm:px-12 flex items-center justify-between text-white">
         <div className="max-w-2xl animate-in fade-in slide-in-from-left-6 duration-700">
           <span className="inline-block bg-[#B71C1C] text-white text-[11px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full mb-4 shadow-lg shadow-[#B71C1C]/40">
             NEW SEASON ARRIVAL
@@ -120,6 +124,39 @@ export default function HeroBanner() {
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Desktop Banner Countdown Timer Card */}
+        {current.enableTimer && (
+          <div className="hidden lg:flex flex-col items-center gap-2 bg-black/40 backdrop-blur-md border border-white/20 p-6 rounded-3xl shadow-2xl animate-in fade-in zoom-in duration-500">
+            <span className="text-xs font-extrabold text-rose-100 uppercase tracking-widest drop-shadow-xs">Ends in</span>
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-center">
+                <div className="bg-white/95 px-4 py-2.5 rounded-2xl text-xl font-black text-[#B71C1C] font-mono shadow-md border border-white/80">
+                  {String(current.timerHours !== undefined ? current.timerHours : 2).padStart(2, '0')}
+                </div>
+                <span className="text-[9px] font-black text-rose-100 uppercase mt-1 tracking-wider">HRS</span>
+              </div>
+
+              <span className="font-black text-xl text-white pb-3">:</span>
+
+              <div className="flex flex-col items-center">
+                <div className="bg-white/95 px-4 py-2.5 rounded-2xl text-xl font-black text-[#B71C1C] font-mono shadow-md border border-white/80">
+                  {String(current.timerMinutes !== undefined ? current.timerMinutes : 41).padStart(2, '0')}
+                </div>
+                <span className="text-[9px] font-black text-rose-100 uppercase mt-1 tracking-wider">MINS</span>
+              </div>
+
+              <span className="font-black text-xl text-white pb-3">:</span>
+
+              <div className="flex flex-col items-center">
+                <div className="bg-white/95 px-4 py-2.5 rounded-2xl text-xl font-black text-[#B71C1C] font-mono shadow-md border border-white/80">
+                  {String(current.timerSeconds !== undefined ? current.timerSeconds : 36).padStart(2, '0')}
+                </div>
+                <span className="text-[9px] font-black text-rose-100 uppercase mt-1 tracking-wider">SECS</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Controls */}

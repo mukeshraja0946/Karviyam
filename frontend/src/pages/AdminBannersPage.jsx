@@ -119,7 +119,20 @@ export default function AdminBannersPage() {
 
   const handleOpenAddModal = () => {
     setEditingBanner(null);
-    setFormData({ title: '', subtitle: '', buttonText: 'Shop Now', imagePath: '', desktopImageUrl: '', mobileImageUrl: '', link: '/shop', status: 'active' });
+    setFormData({
+      title: '',
+      subtitle: '',
+      buttonText: 'SHOP NOW',
+      imagePath: '',
+      desktopImageUrl: '',
+      mobileImageUrl: '',
+      link: '/shop',
+      status: 'active',
+      enableTimer: false,
+      timerHours: 2,
+      timerMinutes: 41,
+      timerSeconds: 36
+    });
     setUseUrlMode(false);
     setSubmitting(false);
     setModalOpen(true);
@@ -133,12 +146,16 @@ export default function AdminBannersPage() {
     setFormData({
       title: b.title || '',
       subtitle: b.subtitle || '',
-      buttonText: b.buttonText || b.button_text || 'Shop Now',
+      buttonText: b.buttonText || b.button_text || 'SHOP NOW',
       imagePath: mainImg,
       desktopImageUrl: deskImg,
       mobileImageUrl: mobImg,
       link: b.link || b.buttonLink || '/shop',
-      status: (b.status || (b.isActive !== false ? 'active' : 'inactive')).toLowerCase()
+      status: (b.status || (b.isActive !== false ? 'active' : 'inactive')).toLowerCase(),
+      enableTimer: b.enableTimer !== undefined ? Boolean(b.enableTimer) : false,
+      timerHours: b.timerHours !== undefined ? Number(b.timerHours) : 2,
+      timerMinutes: b.timerMinutes !== undefined ? Number(b.timerMinutes) : 41,
+      timerSeconds: b.timerSeconds !== undefined ? Number(b.timerSeconds) : 36
     });
     setUseUrlMode(false);
     setSubmitting(false);
@@ -236,9 +253,13 @@ export default function AdminBannersPage() {
       mobileImageUrl: mobileImg,
       link: formData.link || '/shop',
       buttonLink: formData.link || '/shop',
-      buttonText: formData.buttonText ? formData.buttonText.trim() : 'Shop Now',
+      buttonText: formData.buttonText ? formData.buttonText.trim() : 'SHOP NOW',
       status: formData.status || 'active',
       isActive: (formData.status || 'active').toLowerCase() === 'active',
+      enableTimer: Boolean(formData.enableTimer),
+      timerHours: Number(formData.timerHours || 2),
+      timerMinutes: Number(formData.timerMinutes || 41),
+      timerSeconds: Number(formData.timerSeconds || 36),
       displayOrder: editingBanner ? (editingBanner.displayOrder || editingBanner.sortOrder || 1) : (banners.length + 1),
       sortOrder: editingBanner ? (editingBanner.sortOrder || editingBanner.displayOrder || 1) : (banners.length + 1)
     };
@@ -741,7 +762,67 @@ export default function AdminBannersPage() {
                 />
               </div>
 
+              {/* BANNER COUNTDOWN TIMER CONFIGURATION CARD */}
+              <div className="p-4 bg-[#FFF8F6] border border-rose-200/90 rounded-2xl space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-extrabold text-[#B71C1C] text-xs uppercase tracking-wider flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 text-[#B71C1C] fill-current" />
+                      <span>Banner Live Countdown Timer</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-600 mt-0.5">
+                      When enabled, banner will display live countdown timer boxes (<span className="font-bold text-slate-900">Ends in 02 : 41 : 36</span>).
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={!!formData.enableTimer}
+                      onChange={(e) => setFormData({ ...formData, enableTimer: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#B71C1C]" />
+                  </label>
+                </div>
 
+                {formData.enableTimer && (
+                  <div className="grid grid-cols-3 gap-2.5 pt-2 border-t border-rose-200/60">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-700 mb-1 uppercase tracking-wider">Hours</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="99"
+                        value={formData.timerHours !== undefined ? formData.timerHours : 2}
+                        onChange={(e) => setFormData({ ...formData, timerHours: parseInt(e.target.value, 10) || 0 })}
+                        className="w-full bg-white border border-slate-300 p-2 rounded-xl text-xs font-black text-slate-900 text-center outline-none focus:border-[#B71C1C]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-700 mb-1 uppercase tracking-wider">Minutes</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        value={formData.timerMinutes !== undefined ? formData.timerMinutes : 41}
+                        onChange={(e) => setFormData({ ...formData, timerMinutes: parseInt(e.target.value, 10) || 0 })}
+                        className="w-full bg-white border border-slate-300 p-2 rounded-xl text-xs font-black text-slate-900 text-center outline-none focus:border-[#B71C1C]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-700 mb-1 uppercase tracking-wider">Seconds</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        value={formData.timerSeconds !== undefined ? formData.timerSeconds : 36}
+                        onChange={(e) => setFormData({ ...formData, timerSeconds: parseInt(e.target.value, 10) || 0 })}
+                        className="w-full bg-white border border-slate-300 p-2 rounded-xl text-xs font-black text-slate-900 text-center outline-none focus:border-[#B71C1C]"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Status</label>

@@ -160,23 +160,31 @@ export default function MobileHomePage() {
         } else if (bList.length > 0) {
           setBanners(bList.filter(b => b.isActive !== false).map(b => ({
             id: b.id,
-            badge: b.tag || 'OFFICIAL DROP',
-            title: b.title || 'FESTIVE COLLECTION',
-            subtitle: b.subtitle || 'Celebrate traditions in timeless style',
-            image: resolveImageUrl(b.mobileImageUrl || b.imageUrl || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600', b.id),
+            badge: b.tag || b.badge || 'FLASH SALE',
+            title: b.title || 'UP TO 60% OFF',
+            subtitle: b.subtitle || 'Limited time only!',
+            image: resolveImageUrl(b.mobileImageUrl || b.imageUrl || b.imagePath || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600', b.id),
             cta: b.buttonText || b.cta || 'SHOP NOW',
-            link: b.buttonLink || b.link || '/shop'
+            link: b.buttonLink || b.link || '/shop',
+            enableTimer: b.enableTimer !== undefined ? Boolean(b.enableTimer) : false,
+            timerHours: b.timerHours !== undefined ? Number(b.timerHours) : 2,
+            timerMinutes: b.timerMinutes !== undefined ? Number(b.timerMinutes) : 41,
+            timerSeconds: b.timerSeconds !== undefined ? Number(b.timerSeconds) : 36
           })));
         } else {
           setBanners([
             {
               id: 'b1',
-              badge: 'OFFICIAL DROP',
-              title: 'FESTIVE COLLECTION',
-              subtitle: 'Celebrate traditions in timeless style',
+              badge: 'FLASH SALE',
+              title: 'UP TO 60% OFF',
+              subtitle: 'Limited time only!',
               image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600',
               cta: 'SHOP NOW',
-              link: '/shop'
+              link: '/shop',
+              enableTimer: true,
+              timerHours: 2,
+              timerMinutes: 41,
+              timerSeconds: 36
             }
           ]);
         }
@@ -475,6 +483,42 @@ export default function MobileHomePage() {
                 <ArrowRight className="w-3 h-3 text-slate-900" />
               </button>
             </div>
+
+            {/* Banner Live Countdown Timer (Shown ONLY if enableTimer is ON for current banner) */}
+            {banners[currentBannerIdx]?.enableTimer && (
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-20">
+                <span className="text-[9px] font-bold text-rose-100 uppercase tracking-widest drop-shadow-xs">Ends in</span>
+                <div className="flex items-center gap-1">
+                  {/* Hours Box */}
+                  <div className="flex flex-col items-center">
+                    <div className="bg-rose-100/90 backdrop-blur-md px-2 py-1 rounded-xl text-xs font-black text-rose-950 font-mono shadow-md border border-white/60">
+                      {String(timeLeft.hours).padStart(2, '0')}
+                    </div>
+                    <span className="text-[7.5px] font-black text-rose-100 uppercase mt-0.5 tracking-wider">HRS</span>
+                  </div>
+
+                  <span className="font-black text-xs text-white pb-2.5">:</span>
+
+                  {/* Minutes Box */}
+                  <div className="flex flex-col items-center">
+                    <div className="bg-rose-100/90 backdrop-blur-md px-2 py-1 rounded-xl text-xs font-black text-rose-950 font-mono shadow-md border border-white/60">
+                      {String(timeLeft.minutes).padStart(2, '0')}
+                    </div>
+                    <span className="text-[7.5px] font-black text-rose-100 uppercase mt-0.5 tracking-wider">MINS</span>
+                  </div>
+
+                  <span className="font-black text-xs text-white pb-2.5">:</span>
+
+                  {/* Seconds Box */}
+                  <div className="flex flex-col items-center">
+                    <div className="bg-rose-100/90 backdrop-blur-md px-2 py-1 rounded-xl text-xs font-black text-rose-950 font-mono shadow-md border border-white/60">
+                      {String(timeLeft.seconds).padStart(2, '0')}
+                    </div>
+                    <span className="text-[7.5px] font-black text-rose-100 uppercase mt-0.5 tracking-wider">SECS</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Pagination Dots */}
             {banners.length > 1 && (
