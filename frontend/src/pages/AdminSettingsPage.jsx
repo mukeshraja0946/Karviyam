@@ -94,10 +94,13 @@ export default function AdminSettingsPage() {
         const parsed = JSON.parse(localLayouts);
         setSettings(prev => ({
           ...prev,
-          recommendedScrollMode: parsed.recommended || 'horizontal',
-          trendingScrollMode: parsed.trending || 'vertical',
-          newArrivalsScrollMode: parsed.newArrivals || 'carousel',
-          featuredScrollMode: parsed.featured || 'carousel',
+          desktopRecommendedMode: parsed.desktop?.recommended || 'carousel',
+          desktopNewArrivalsMode: parsed.desktop?.newArrivals || 'carousel',
+          desktopFeaturedMode: parsed.desktop?.featured || 'carousel',
+          mobileRecommendedMode: parsed.mobile?.recommended || parsed.recommended || 'horizontal',
+          mobileTrendingMode: parsed.mobile?.trending || parsed.trending || 'vertical',
+          mobileNewArrivalsMode: parsed.mobile?.newArrivals || 'horizontal',
+          mobileBestSellersMode: parsed.mobile?.bestSellers || 'vertical',
           removeImageGreyBox: parsed.removeGreyBox !== false
         }));
       }
@@ -390,14 +393,23 @@ export default function AdminSettingsPage() {
       localStorage.setItem('karviyam_product_image_auto_change', String(settings.productImageAutoChange));
       localStorage.setItem('karviyam_product_image_change_interval', String(settings.productImageChangeInterval));
 
-      // Section Scrolling & Layout Configuration
-      localStorage.setItem('karviyam_section_layouts', JSON.stringify({
-        recommended: settings.recommendedScrollMode || 'horizontal',
-        trending: settings.trendingScrollMode || 'vertical',
-        newArrivals: settings.newArrivalsScrollMode || 'carousel',
-        featured: settings.featuredScrollMode || 'carousel',
+      // Section Scrolling & Layout Configuration (Independent Desktop & Mobile Objects)
+      const layoutConfig = {
+        desktop: {
+          recommended: settings.desktopRecommendedMode || 'carousel',
+          newArrivals: settings.desktopNewArrivalsMode || 'carousel',
+          featured: settings.desktopFeaturedMode || 'carousel'
+        },
+        mobile: {
+          recommended: settings.mobileRecommendedMode || 'horizontal',
+          trending: settings.mobileTrendingMode || 'vertical',
+          newArrivals: settings.mobileNewArrivalsMode || 'horizontal',
+          bestSellers: settings.mobileBestSellersMode || 'vertical'
+        },
         removeGreyBox: settings.removeImageGreyBox !== false
-      }));
+      };
+
+      localStorage.setItem('karviyam_section_layouts', JSON.stringify(layoutConfig));
 
       window.dispatchEvent(new Event('karviyam_auto_change_updated'));
       window.dispatchEvent(new Event('karviyam_settings_updated'));
@@ -976,140 +988,261 @@ export default function AdminSettingsPage() {
               <span>Product Section Scroll & Layout Controls (Managed by Admin)</span>
             </h3>
 
-            <div className="space-y-4">
-              {/* Section 1: Recommended For You Scroll Mode */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-xs">"Recommended for You" Product Section</h4>
-                    <p className="text-[11px] text-slate-500">Choose how products in "Recommended for You" section scroll on customer storefront</p>
-                  </div>
+            <div className="space-y-6">
+              {/* BLOCK 1: DESKTOP PRODUCT LAYOUT & SCROLL CONTROLS */}
+              <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4 shadow-2xs">
+                <div className="border-b border-slate-100 pb-3">
+                  <h4 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-slate-700" />
+                    <span>DESKTOP PRODUCT LAYOUT & SCROLL CONTROLS (≥1024px)</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Configure product section layouts for desktop storefront view. Desktop settings are completely separate from mobile.
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
-                    settings.recommendedScrollMode === 'carousel' || settings.recommendedScrollMode === 'horizontal' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="recommendedScroll"
-                      value="carousel"
-                      checked={settings.recommendedScrollMode === 'carousel' || settings.recommendedScrollMode === 'horizontal'}
-                      onChange={() => setSettings({ ...settings, recommendedScrollMode: 'carousel' })}
-                      className="text-[#B71C1C]"
-                    />
-                    <div>
-                      <span className="font-bold text-slate-900 block text-xs">Horizontal (Two Horizontal Swipe Rows)</span>
-                      <span className="text-[10.5px] text-slate-500">Displays products in 2 independently swipeable horizontal rows</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Desktop Recommended */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <label className="font-extrabold text-slate-800 block text-xs">Recommended For You (Desktop)</label>
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="desktopRecommended"
+                          value="carousel"
+                          checked={(settings.desktopRecommendedMode || 'carousel') === 'carousel'}
+                          onChange={() => setSettings({ ...settings, desktopRecommendedMode: 'carousel' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Horizontal Carousel (2 Rows)</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="desktopRecommended"
+                          value="grid"
+                          checked={settings.desktopRecommendedMode === 'grid'}
+                          onChange={() => setSettings({ ...settings, desktopRecommendedMode: 'grid' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Vertical Grid</span>
+                      </label>
                     </div>
-                  </label>
+                  </div>
 
-                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
-                    settings.recommendedScrollMode === 'grid' || settings.recommendedScrollMode === 'vertical' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="recommendedScroll"
-                      value="grid"
-                      checked={settings.recommendedScrollMode === 'grid' || settings.recommendedScrollMode === 'vertical'}
-                      onChange={() => setSettings({ ...settings, recommendedScrollMode: 'grid' })}
-                      className="text-[#B71C1C]"
-                    />
-                    <div>
-                      <span className="font-bold text-slate-900 block text-xs">Vertical (2-Column Normal Grid)</span>
-                      <span className="text-[10.5px] text-slate-500">Displays products in a 2-column vertical grid</span>
+                  {/* Desktop New Arrivals */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <label className="font-extrabold text-slate-800 block text-xs">New Arrivals (Desktop)</label>
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="desktopNewArrivals"
+                          value="carousel"
+                          checked={(settings.desktopNewArrivalsMode || 'carousel') === 'carousel'}
+                          onChange={() => setSettings({ ...settings, desktopNewArrivalsMode: 'carousel' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Horizontal Carousel</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="desktopNewArrivals"
+                          value="grid"
+                          checked={settings.desktopNewArrivalsMode === 'grid'}
+                          onChange={() => setSettings({ ...settings, desktopNewArrivalsMode: 'grid' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Vertical Grid</span>
+                      </label>
                     </div>
-                  </label>
+                  </div>
+
+                  {/* Desktop Featured */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <label className="font-extrabold text-slate-800 block text-xs">Featured Products (Desktop)</label>
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="desktopFeatured"
+                          value="carousel"
+                          checked={(settings.desktopFeaturedMode || 'carousel') === 'carousel'}
+                          onChange={() => setSettings({ ...settings, desktopFeaturedMode: 'carousel' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Horizontal Carousel</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="desktopFeatured"
+                          value="grid"
+                          checked={settings.desktopFeaturedMode === 'grid'}
+                          onChange={() => setSettings({ ...settings, desktopFeaturedMode: 'grid' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Vertical Grid</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Section 2: Trending Now Scroll Mode */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-xs">"Trending Now" Product Section</h4>
-                    <p className="text-[11px] text-slate-500">Choose scroll direction for Trending Now product section on mobile</p>
+              {/* BLOCK 2: MOBILE PRODUCT LAYOUT & SCROLL CONTROLS */}
+              <div className="border border-red-200 bg-red-50/20 rounded-2xl p-5 space-y-4 shadow-2xs">
+                <div className="border-b border-red-100 pb-3">
+                  <h4 className="font-extrabold text-[#B71C1C] text-sm uppercase tracking-wider flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-[#B71C1C]" />
+                    <span>MOBILE PRODUCT LAYOUT & SCROLL CONTROLS (&lt;1024px)</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-600 mt-0.5 font-medium">
+                    Configure product section layout and scrolling for mobile storefront only. Changes here must never affect desktop.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Mobile Recommended */}
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <label className="font-extrabold text-slate-900 block text-xs">RECOMMENDED FOR YOU (Mobile)</label>
+                    <p className="text-[10.5px] text-slate-500">Mobile Layout:</p>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
+                        (settings.mobileRecommendedMode || 'horizontal') === 'horizontal' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="mobileRecommended"
+                          value="horizontal"
+                          checked={(settings.mobileRecommendedMode || 'horizontal') === 'horizontal'}
+                          onChange={() => setSettings({ ...settings, mobileRecommendedMode: 'horizontal' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span>○ Horizontal Scroll</span>
+                      </label>
+
+                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
+                        settings.mobileRecommendedMode === 'vertical' || settings.mobileRecommendedMode === 'grid' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="mobileRecommended"
+                          value="vertical"
+                          checked={settings.mobileRecommendedMode === 'vertical' || settings.mobileRecommendedMode === 'grid'}
+                          onChange={() => setSettings({ ...settings, mobileRecommendedMode: 'vertical' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span>○ Vertical 2-Column Grid</span>
+                      </label>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
-                    settings.trendingScrollMode === 'carousel' || settings.trendingScrollMode === 'horizontal' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="trendingScroll"
-                      value="carousel"
-                      checked={settings.trendingScrollMode === 'carousel' || settings.trendingScrollMode === 'horizontal'}
-                      onChange={() => setSettings({ ...settings, trendingScrollMode: 'carousel' })}
-                      className="text-[#B71C1C]"
-                    />
-                    <div>
-                      <span className="font-bold text-slate-900 block text-xs">Horizontal Scroll</span>
-                      <span className="text-[10.5px] text-slate-500">Displays products in a single swipeable horizontal row</span>
-                    </div>
-                  </label>
+                  {/* Mobile Trending Now */}
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <label className="font-extrabold text-slate-900 block text-xs">TRENDING NOW (Mobile)</label>
+                    <p className="text-[10.5px] text-slate-500">Mobile Layout:</p>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
+                        settings.mobileTrendingMode === 'horizontal' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="mobileTrending"
+                          value="horizontal"
+                          checked={settings.mobileTrendingMode === 'horizontal'}
+                          onChange={() => setSettings({ ...settings, mobileTrendingMode: 'horizontal' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span>○ Horizontal Scroll</span>
+                      </label>
 
-                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
-                    settings.trendingScrollMode === 'grid' || settings.trendingScrollMode === 'vertical' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="trendingScroll"
-                      value="grid"
-                      checked={settings.trendingScrollMode === 'grid' || settings.trendingScrollMode === 'vertical'}
-                      onChange={() => setSettings({ ...settings, trendingScrollMode: 'grid' })}
-                      className="text-[#B71C1C]"
-                    />
-                    <div>
-                      <span className="font-bold text-slate-900 block text-xs">Vertical Grid</span>
-                      <span className="text-[10.5px] text-slate-500">Displays products in a 2-column vertical grid</span>
+                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
+                        (settings.mobileTrendingMode || 'vertical') === 'vertical' || settings.mobileTrendingMode === 'grid' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="mobileTrending"
+                          value="vertical"
+                          checked={(settings.mobileTrendingMode || 'vertical') === 'vertical' || settings.mobileTrendingMode === 'grid'}
+                          onChange={() => setSettings({ ...settings, mobileTrendingMode: 'vertical' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span>○ Vertical 2-Column Grid</span>
+                      </label>
                     </div>
-                  </label>
-                </div>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-xs">"New Arrivals" Product Section</h4>
-                    <p className="text-[11px] text-slate-500">Choose scroll direction for New Arrivals product section</p>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
-                    settings.newArrivalsScrollMode === 'carousel' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="newArrivalsScroll"
-                      value="carousel"
-                      checked={settings.newArrivalsScrollMode === 'carousel'}
-                      onChange={() => setSettings({ ...settings, newArrivalsScrollMode: 'carousel' })}
-                      className="text-[#B71C1C]"
-                    />
-                    <div>
-                      <span className="font-bold text-slate-900 block text-xs">Horizontal Scroll Carousel</span>
-                      <span className="text-[10.5px] text-slate-500">Horizontal swipeable product row</span>
-                    </div>
-                  </label>
+                  {/* Mobile New Arrivals */}
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <label className="font-extrabold text-slate-900 block text-xs">NEW ARRIVALS (Mobile)</label>
+                    <p className="text-[10.5px] text-slate-500">Mobile Layout:</p>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
+                        (settings.mobileNewArrivalsMode || 'horizontal') === 'horizontal' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="mobileNewArrivals"
+                          value="horizontal"
+                          checked={(settings.mobileNewArrivalsMode || 'horizontal') === 'horizontal'}
+                          onChange={() => setSettings({ ...settings, mobileNewArrivalsMode: 'horizontal' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span>○ Horizontal Scroll</span>
+                      </label>
 
-                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
-                    settings.newArrivalsScrollMode === 'grid' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="newArrivalsScroll"
-                      value="grid"
-                      checked={settings.newArrivalsScrollMode === 'grid'}
-                      onChange={() => setSettings({ ...settings, newArrivalsScrollMode: 'grid' })}
-                      className="text-[#B71C1C]"
-                    />
-                    <div>
-                      <span className="font-bold text-slate-900 block text-xs">Vertical Scroll Grid</span>
-                      <span className="text-[10.5px] text-slate-500">Standard 2-column vertical grid</span>
+                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
+                        settings.mobileNewArrivalsMode === 'vertical' || settings.mobileNewArrivalsMode === 'grid' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="mobileNewArrivals"
+                          value="vertical"
+                          checked={settings.mobileNewArrivalsMode === 'vertical' || settings.mobileNewArrivalsMode === 'grid'}
+                          onChange={() => setSettings({ ...settings, mobileNewArrivalsMode: 'vertical' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span>○ Vertical 2-Column Grid</span>
+                      </label>
                     </div>
-                  </label>
+                  </div>
+
+                  {/* Mobile Best Sellers */}
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <label className="font-extrabold text-slate-900 block text-xs">BEST SELLERS (Mobile)</label>
+                    <p className="text-[10.5px] text-slate-500">Mobile Layout:</p>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
+                        settings.mobileBestSellersMode === 'horizontal' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="mobileBestSellers"
+                          value="horizontal"
+                          checked={settings.mobileBestSellersMode === 'horizontal'}
+                          onChange={() => setSettings({ ...settings, mobileBestSellersMode: 'horizontal' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span>○ Horizontal Scroll</span>
+                      </label>
+
+                      <label className={`p-2.5 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-xs font-bold transition-all ${
+                        (settings.mobileBestSellersMode || 'vertical') === 'vertical' || settings.mobileBestSellersMode === 'grid' ? 'border-[#B71C1C] bg-red-50 text-[#B71C1C]' : 'border-slate-200 text-slate-700'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="mobileBestSellers"
+                          value="vertical"
+                          checked={(settings.mobileBestSellersMode || 'vertical') === 'vertical' || settings.mobileBestSellersMode === 'grid'}
+                          onChange={() => setSettings({ ...settings, mobileBestSellersMode: 'vertical' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span>○ Vertical 2-Column Grid</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
 

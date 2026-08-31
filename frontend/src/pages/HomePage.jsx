@@ -34,30 +34,15 @@ export default function HomePage() {
   const [newArrivals, setNewArrivals] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  const getInitialRecommendedMode = () => {
+  const getSectionLayoutConfig = () => {
     try {
       const saved = localStorage.getItem('karviyam_section_layouts');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.recommended) return parsed.recommended;
-      }
+      if (saved) return JSON.parse(saved);
     } catch (e) {}
-    return 'horizontal';
+    return null;
   };
 
-  const getInitialTrendingMode = () => {
-    try {
-      const saved = localStorage.getItem('karviyam_section_layouts');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.trending) return parsed.trending;
-      }
-    } catch (e) {}
-    return 'vertical';
-  };
-
-  const [recommendedScrollMode, setRecommendedScrollMode] = useState(getInitialRecommendedMode);
-  const [trendingScrollMode, setTrendingScrollMode] = useState(getInitialTrendingMode);
+  const [sectionLayouts, setSectionLayouts] = useState(getSectionLayoutConfig);
   const [mobileBannerIndex, setMobileBannerIndex] = useState(0);
   const [mobileBanners, setMobileBanners] = useState([]);
   const [mobileBannerSpeed, setMobileBannerSpeed] = useState(5000);
@@ -65,14 +50,7 @@ export default function HomePage() {
   const [homeCategories, setHomeCategories] = useState([]);
 
   const syncLayoutSettings = () => {
-    try {
-      const saved = localStorage.getItem('karviyam_section_layouts');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.recommended) setRecommendedScrollMode(parsed.recommended);
-        if (parsed.trending) setTrendingScrollMode(parsed.trending);
-      }
-    } catch (e) {}
+    setSectionLayouts(getSectionLayoutConfig());
   };
 
   const fetchBanners = async () => {
@@ -273,6 +251,11 @@ export default function HomePage() {
       ? safeFeaturedProducts.slice(6, 12)
       : [...safeFeaturedProducts.slice(6), ...DEFAULT_REC_PRODUCTS.slice(Math.max(6, safeFeaturedProducts.length))].slice(0, 6)
   );
+
+  const mobileRecommendedMode = sectionLayouts?.mobile?.recommended || sectionLayouts?.recommended || 'horizontal';
+  const mobileTrendingMode = sectionLayouts?.mobile?.trending || sectionLayouts?.trending || 'vertical';
+  const mobileNewArrivalsMode = sectionLayouts?.mobile?.newArrivals || sectionLayouts?.newArrivals || 'horizontal';
+  const mobileBestSellersMode = sectionLayouts?.mobile?.bestSellers || 'vertical';
 
   const renderProductCardItem = (prod, isGrid = false) => {
     const prodImg = resolveImageUrl(prod.imageUrl || prod.image_url || prod.imagePath || prod.image || prod.images?.[0], prod.id);
@@ -517,7 +500,7 @@ export default function HomePage() {
 
           {loading ? (
             <SkeletonLoader count={4} />
-          ) : (recommendedScrollMode === 'grid' || recommendedScrollMode === 'vertical') ? (
+          ) : (mobileRecommendedMode === 'grid' || mobileRecommendedMode === 'vertical') ? (
             /* VERTICAL MODE: 2-Column Vertical Product Grid */
             <div className="grid grid-cols-2 gap-3 w-full">
               {displayRecommendedProducts.map((prod) => renderProductCardItem(prod, true))}
@@ -549,7 +532,7 @@ export default function HomePage() {
 
           {loading ? (
             <SkeletonLoader count={4} />
-          ) : (trendingScrollMode === 'grid' || trendingScrollMode === 'vertical') ? (
+          ) : (mobileTrendingMode === 'grid' || mobileTrendingMode === 'vertical') ? (
             /* VERTICAL MODE: 2-Column Vertical Product Grid */
             <div className="grid grid-cols-2 gap-3 w-full">
               {displayTrendingProducts.map((prod) => renderProductCardItem(prod, true))}
