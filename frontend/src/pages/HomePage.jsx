@@ -234,22 +234,31 @@ export default function HomePage() {
     }
   };
 
-  // Ensure fallback list has exactly 6 products max
+  // Ensure fallback list has 12 products for 2 rows
   const DEFAULT_REC_PRODUCTS = [
     { id: 1, name: 'Men Solid Polo T-Shirt', brand: 'KARVIYAM', price: 699, oldPrice: 1299, discount: '46% OFF', rating: 4.5, reviewsCount: 1200, imageUrl: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400' },
     { id: 2, name: 'Zari Border Silk Saree', brand: 'KARVIYAM', price: 1299, oldPrice: 2499, discount: '48% OFF', rating: 4.6, reviewsCount: 980, imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400' },
     { id: 3, name: 'Printed Oversized T-Shirt', brand: 'KARVIYAM', price: 599, oldPrice: 999, discount: '40% OFF', rating: 4.3, reviewsCount: 750, imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400' },
     { id: 4, name: 'Running Sneakers', brand: 'KARVIYAM', price: 1499, oldPrice: 2499, discount: '40% OFF', rating: 4.6, reviewsCount: 1100, imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400' },
     { id: 5, name: 'Cotton Kurta Set', brand: 'KARVIYAM', price: 899, oldPrice: 1599, discount: '44% OFF', rating: 4.4, reviewsCount: 620, imageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400' },
-    { id: 6, name: 'Kids Printed Shirt', brand: 'KARVIYAM', price: 499, oldPrice: 799, discount: '38% OFF', rating: 4.5, reviewsCount: 430, imageUrl: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=400' }
+    { id: 6, name: 'Kids Printed Shirt', brand: 'KARVIYAM', price: 499, oldPrice: 799, discount: '38% OFF', rating: 4.5, reviewsCount: 430, imageUrl: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=400' },
+    { id: 7, name: 'Casual Denim Jacket', brand: 'KARVIYAM', price: 1799, oldPrice: 2999, discount: '40% OFF', rating: 4.7, reviewsCount: 1100, imageUrl: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=400' },
+    { id: 8, name: 'Floral Summer Dress', brand: 'KARVIYAM', price: 1099, oldPrice: 1999, discount: '45% OFF', rating: 4.5, reviewsCount: 850, imageUrl: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400' },
+    { id: 9, name: 'Polarized Retro Round Sunglasses', brand: 'KARVIYAM', price: 1399, oldPrice: 1999, discount: '30% OFF', rating: 4.5, reviewsCount: 670, imageUrl: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400' },
+    { id: 10, name: 'Unisex Knit Winter Beanie', brand: 'KARVIYAM', price: 499, oldPrice: 799, discount: '38% OFF', rating: 4.6, reviewsCount: 530, imageUrl: 'https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=400' },
+    { id: 11, name: 'Minimalist Crossbody Bag', brand: 'KARVIYAM', price: 1299, oldPrice: 1899, discount: '32% OFF', rating: 4.4, reviewsCount: 420, imageUrl: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400' },
+    { id: 12, name: 'High-Top Canvas Sneakers', brand: 'KARVIYAM', price: 2299, oldPrice: 3499, discount: '34% OFF', rating: 4.4, reviewsCount: 1300, imageUrl: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=400' }
   ];
 
   const safeFeaturedProducts = Array.isArray(featuredProducts) ? featuredProducts : [];
   const displayRecommendedProducts = (
-    safeFeaturedProducts.length >= 6
-      ? safeFeaturedProducts.slice(0, 6)
-      : [...safeFeaturedProducts, ...DEFAULT_REC_PRODUCTS.slice(safeFeaturedProducts.length)].slice(0, 6)
+    safeFeaturedProducts.length >= 12
+      ? safeFeaturedProducts.slice(0, 12)
+      : [...safeFeaturedProducts, ...DEFAULT_REC_PRODUCTS.slice(safeFeaturedProducts.length)].slice(0, 12)
   );
+
+  const recRow1 = displayRecommendedProducts.slice(0, Math.ceil(displayRecommendedProducts.length / 2));
+  const recRow2 = displayRecommendedProducts.slice(Math.ceil(displayRecommendedProducts.length / 2));
 
   return (
     <div>
@@ -424,7 +433,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 4. RECOMMENDED FOR YOU SECTION (Horizontal Scroll Carousel Displaying 3 Cards Per View) */}
+        {/* 4. RECOMMENDED FOR YOU SECTION (Admin Controlled: 2 Horizontal Swipe Rows OR 2-Column Vertical Grid) */}
         <div className="w-full my-4 px-3.5">
           <div className="flex items-center justify-between mb-2.5">
             <div>
@@ -439,18 +448,18 @@ export default function HomePage() {
           </div>
 
           {loading ? (
-            <SkeletonLoader count={3} />
-          ) : (
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full">
+            <SkeletonLoader count={4} />
+          ) : (mobileViewMode === 'grid' || mobileViewMode === 'vertical') ? (
+            /* VERTICAL MODE: 2-Column Vertical Product Grid */
+            <div className="grid grid-cols-2 gap-3 w-full">
               {displayRecommendedProducts.map((prod) => {
                 const prodImg = resolveImageUrl(prod.imageUrl || prod.image_url || prod.imagePath || prod.image || prod.images?.[0], prod.id);
                 return (
                   <div
                     key={prod.id}
                     onClick={() => window.location.href = `/product/${prod.id}`}
-                    className="w-[140px] sm:w-[155px] min-w-[140px] max-w-[155px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-2 relative flex flex-col justify-between overflow-hidden cursor-pointer group transition-all"
+                    className="w-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-2 relative flex flex-col justify-between overflow-hidden cursor-pointer group transition-all"
                   >
-                    {/* Image Area */}
                     <div className="relative w-full h-[120px] bg-slate-50/80 rounded-xl overflow-hidden flex items-center justify-center p-1.5 shrink-0">
                       <img
                         src={prodImg}
@@ -458,13 +467,9 @@ export default function HomePage() {
                         onError={(e) => handleImageError(e, prod.id)}
                         className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
                       />
-
-                      {/* Top-Right Wishlist Badge */}
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
+                        onClick={(e) => { e.stopPropagation(); }}
                         className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/90 text-slate-700 hover:text-[#B71C1C] flex items-center justify-center shadow-2xs border border-slate-100"
                         title="Add to Wishlist"
                       >
@@ -474,43 +479,137 @@ export default function HomePage() {
                       </button>
                     </div>
 
-                    {/* Card Content Area */}
                     <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5 space-y-1">
-                      {/* Brand & Rating Row */}
                       <div className="flex items-center justify-between text-[9.5px]">
-                        <span className="font-black text-[#B71C1C] uppercase tracking-wider">
-                          KARVIYAM
-                        </span>
+                        <span className="font-black text-[#B71C1C] uppercase tracking-wider">KARVIYAM</span>
                         <div className="flex items-center gap-0.5 font-bold text-amber-500">
                           <span>★</span>
                           <span className="text-slate-800 font-extrabold">{prod.rating || 4.5}</span>
                         </div>
                       </div>
-
-                      {/* Product Title */}
                       <h3 className="font-bold text-[11px] text-slate-900 leading-snug line-clamp-2" title={prod.name}>
                         {prod.name}
                       </h3>
-
-                      {/* Price Row */}
                       <div className="pt-0.5 flex flex-wrap items-baseline gap-1">
-                        <span className="font-black text-xs text-slate-900">
-                          ₹{prod.price}
-                        </span>
+                        <span className="font-black text-xs text-slate-900">₹{prod.price}</span>
                         {(prod.oldPrice || 1999) > prod.price && (
-                          <span className="text-[9px] text-slate-400 line-through">
-                            ₹{prod.oldPrice || 1999}
-                          </span>
+                          <span className="text-[9px] text-slate-400 line-through">₹{prod.oldPrice || 1999}</span>
                         )}
-                        <span className="text-[9px] font-extrabold text-emerald-600 ml-auto">
-                          {prod.discount || '30% OFF'}
-                        </span>
+                        <span className="text-[9px] font-extrabold text-emerald-600 ml-auto">{prod.discount || '30% OFF'}</span>
                       </div>
                     </div>
-
                   </div>
                 );
               })}
+            </div>
+          ) : (
+            /* HORIZONTAL MODE: TWO Independently Swipeable Product Rows */
+            <div className="space-y-3 w-full">
+              {/* Row 1 (Independently Horizontal Swipeable) */}
+              <div className="flex items-center gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full">
+                {recRow1.map((prod) => {
+                  const prodImg = resolveImageUrl(prod.imageUrl || prod.image_url || prod.imagePath || prod.image || prod.images?.[0], prod.id);
+                  return (
+                    <div
+                      key={prod.id}
+                      onClick={() => window.location.href = `/product/${prod.id}`}
+                      className="w-[140px] sm:w-[155px] min-w-[140px] max-w-[155px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-2 relative flex flex-col justify-between overflow-hidden cursor-pointer group transition-all"
+                    >
+                      <div className="relative w-full h-[120px] bg-slate-50/80 rounded-xl overflow-hidden flex items-center justify-center p-1.5 shrink-0">
+                        <img
+                          src={prodImg}
+                          alt={prod.name}
+                          onError={(e) => handleImageError(e, prod.id)}
+                          className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); }}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/90 text-slate-700 hover:text-[#B71C1C] flex items-center justify-center shadow-2xs border border-slate-100"
+                          title="Add to Wishlist"
+                        >
+                          <svg className="w-3.5 h-3.5 stroke-current fill-none" viewBox="0 0 24 24">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5 space-y-1">
+                        <div className="flex items-center justify-between text-[9.5px]">
+                          <span className="font-black text-[#B71C1C] uppercase tracking-wider">KARVIYAM</span>
+                          <div className="flex items-center gap-0.5 font-bold text-amber-500">
+                            <span>★</span>
+                            <span className="text-slate-800 font-extrabold">{prod.rating || 4.5}</span>
+                          </div>
+                        </div>
+                        <h3 className="font-bold text-[11px] text-slate-900 leading-snug line-clamp-2" title={prod.name}>
+                          {prod.name}
+                        </h3>
+                        <div className="pt-0.5 flex flex-wrap items-baseline gap-1">
+                          <span className="font-black text-xs text-slate-900">₹{prod.price}</span>
+                          {(prod.oldPrice || 1999) > prod.price && (
+                            <span className="text-[9px] text-slate-400 line-through">₹{prod.oldPrice || 1999}</span>
+                          )}
+                          <span className="text-[9px] font-extrabold text-emerald-600 ml-auto">{prod.discount || '30% OFF'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Row 2 (Independently Horizontal Swipeable) */}
+              <div className="flex items-center gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full">
+                {recRow2.map((prod) => {
+                  const prodImg = resolveImageUrl(prod.imageUrl || prod.image_url || prod.imagePath || prod.image || prod.images?.[0], prod.id);
+                  return (
+                    <div
+                      key={prod.id}
+                      onClick={() => window.location.href = `/product/${prod.id}`}
+                      className="w-[140px] sm:w-[155px] min-w-[140px] max-w-[155px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-2 relative flex flex-col justify-between overflow-hidden cursor-pointer group transition-all"
+                    >
+                      <div className="relative w-full h-[120px] bg-slate-50/80 rounded-xl overflow-hidden flex items-center justify-center p-1.5 shrink-0">
+                        <img
+                          src={prodImg}
+                          alt={prod.name}
+                          onError={(e) => handleImageError(e, prod.id)}
+                          className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); }}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/90 text-slate-700 hover:text-[#B71C1C] flex items-center justify-center shadow-2xs border border-slate-100"
+                          title="Add to Wishlist"
+                        >
+                          <svg className="w-3.5 h-3.5 stroke-current fill-none" viewBox="0 0 24 24">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5 space-y-1">
+                        <div className="flex items-center justify-between text-[9.5px]">
+                          <span className="font-black text-[#B71C1C] uppercase tracking-wider">KARVIYAM</span>
+                          <div className="flex items-center gap-0.5 font-bold text-amber-500">
+                            <span>★</span>
+                            <span className="text-slate-800 font-extrabold">{prod.rating || 4.5}</span>
+                          </div>
+                        </div>
+                        <h3 className="font-bold text-[11px] text-slate-900 leading-snug line-clamp-2" title={prod.name}>
+                          {prod.name}
+                        </h3>
+                        <div className="pt-0.5 flex flex-wrap items-baseline gap-1">
+                          <span className="font-black text-xs text-slate-900">₹{prod.price}</span>
+                          {(prod.oldPrice || 1999) > prod.price && (
+                            <span className="text-[9px] text-slate-400 line-through">₹{prod.oldPrice || 1999}</span>
+                          )}
+                          <span className="text-[9px] font-extrabold text-emerald-600 ml-auto">{prod.discount || '30% OFF'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

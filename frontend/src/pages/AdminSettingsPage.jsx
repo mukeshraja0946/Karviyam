@@ -986,36 +986,36 @@ export default function AdminSettingsPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
-                    settings.recommendedScrollMode === 'grid' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="recommendedScroll"
-                      value="grid"
-                      checked={settings.recommendedScrollMode === 'grid'}
-                      onChange={() => setSettings({ ...settings, recommendedScrollMode: 'grid' })}
-                      className="text-[#B71C1C]"
-                    />
-                    <div>
-                      <span className="font-bold text-slate-900 block text-xs">Vertical Scroll (2-Column Grid)</span>
-                      <span className="text-[10.5px] text-slate-500">Displays products in a 2-column vertical grid</span>
-                    </div>
-                  </label>
-
-                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
-                    settings.recommendedScrollMode === 'carousel' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
+                    settings.recommendedScrollMode === 'carousel' || settings.recommendedScrollMode === 'horizontal' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
                   }`}>
                     <input
                       type="radio"
                       name="recommendedScroll"
                       value="carousel"
-                      checked={settings.recommendedScrollMode === 'carousel'}
+                      checked={settings.recommendedScrollMode === 'carousel' || settings.recommendedScrollMode === 'horizontal'}
                       onChange={() => setSettings({ ...settings, recommendedScrollMode: 'carousel' })}
                       className="text-[#B71C1C]"
                     />
                     <div>
-                      <span className="font-bold text-slate-900 block text-xs">Horizontal Scroll Carousel</span>
-                      <span className="text-[10.5px] text-slate-500">Displays products in a swipeable horizontal row</span>
+                      <span className="font-bold text-slate-900 block text-xs">Horizontal (Two Horizontal Swipe Rows)</span>
+                      <span className="text-[10.5px] text-slate-500">Displays products in 2 independently swipeable horizontal rows</span>
+                    </div>
+                  </label>
+
+                  <label className={`p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
+                    settings.recommendedScrollMode === 'grid' || settings.recommendedScrollMode === 'vertical' ? 'border-[#B71C1C] bg-red-50/50' : 'border-slate-200 bg-white'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="recommendedScroll"
+                      value="grid"
+                      checked={settings.recommendedScrollMode === 'grid' || settings.recommendedScrollMode === 'vertical'}
+                      onChange={() => setSettings({ ...settings, recommendedScrollMode: 'grid' })}
+                      className="text-[#B71C1C]"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-900 block text-xs">Vertical (2-Column Normal Grid)</span>
+                      <span className="text-[10.5px] text-slate-500">Displays products in a 2-column vertical grid</span>
                     </div>
                   </label>
                 </div>
