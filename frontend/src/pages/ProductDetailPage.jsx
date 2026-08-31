@@ -998,12 +998,9 @@ export default function ProductDetailPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                const searchElem = document.getElementById('mobile-pdp-search-input');
-                if (searchElem) searchElem.focus();
-              }}
+              onClick={() => navigate('/shop')}
               className="w-8 h-8 rounded-full flex items-center justify-center text-slate-700 hover:text-[#B71C1C] cursor-pointer"
-              title="Search"
+              title="Search Products"
             >
               <svg className="w-4.5 h-4.5 stroke-current fill-none" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8" strokeWidth="2" />
@@ -1035,26 +1032,6 @@ export default function ProductDetailPage() {
               )}
             </Link>
           </div>
-        </div>
-
-        {/* 2. FULL-WIDTH SEARCH BAR */}
-        <div className="px-3 pt-2.5 pb-1">
-          <form onSubmit={handleMobileSearchSubmit} className="relative w-full">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
-              <svg className="w-4 h-4 stroke-current fill-none" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8" strokeWidth="2" />
-                <path d="M21 21l-4.35-4.35" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <input
-              id="mobile-pdp-search-input"
-              type="text"
-              value={mobileSearchQuery}
-              onChange={(e) => setMobileSearchQuery(e.target.value)}
-              placeholder="Search for products, categories..."
-              className="w-full pl-9 pr-8 py-2 text-xs bg-slate-100/90 text-slate-900 placeholder-slate-400 rounded-xl border border-slate-200/80 focus:outline-none focus:border-[#B71C1C] focus:bg-white transition-all font-medium"
-            />
-          </form>
         </div>
 
         {/* 3. BREADCRUMB */}
