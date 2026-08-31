@@ -272,296 +272,221 @@ export default function HomePage() {
       {/* MOBILE HOMEPAGE LAYOUT (< 1024px / lg)                     */}
       {/* STRICT REBUILD MATCHING REFERENCE IMAGE SPECIFICATIONS     */}
       {/* ========================================================= */}
-      <div className="block lg:hidden bg-slate-50/60 pb-3">
+      <div className="block lg:hidden bg-slate-50/60 pb-20 select-none">
         
-        {/* 1. CATEGORY SHORTCUTS (Horizontal Squircle Cards) */}
+        {/* 1. PARENT CATEGORY SWIPEABLE ROW (Circular Cards + MORE Card) */}
         <div className="w-full bg-white py-3 px-3.5 border-b border-slate-100 overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-3.5 whitespace-nowrap">
-            {(homeCategories.length > 0 ? homeCategories : [
-              { id: 'fashion', name: 'Fashion', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300', query: 'category=Women' },
-              { id: 'tshirts', name: 'T-Shirts', query: 'category=Men', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300' },
-              { id: 'sneakers', name: 'Sneakers', query: 'category=Unisex', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300' },
-              { id: 'kurta', name: 'Kurta Sets', query: 'category=Women', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300' },
-              { id: 'jewels', name: 'Jewellery', query: 'category=Jewellery', image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=300' }
+          <div className="flex items-center gap-4 whitespace-nowrap">
+            {(homeCategories.length > 0 ? homeCategories.slice(0, 5) : [
+              { id: 'tshirts', name: 'T-SHIRTS', query: 'category=Men', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300' },
+              { id: 'sneakers', name: 'SNEAKERS', query: 'category=Unisex', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300' },
+              { id: 'kurta', name: 'KURTA SETS', query: 'category=Women', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300' },
+              { id: 'women', name: 'WOMEN', query: 'category=Women', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300' },
+              { id: 'men', name: 'MEN', query: 'category=Men', image: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300' }
             ]).map((cat, idx) => (
               <div
                 key={cat.id || idx}
                 onClick={() => window.location.href = `/shop${cat.query ? `?${cat.query}` : ''}`}
                 className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group"
               >
-                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-slate-100 border border-slate-200/80 p-0.5 overflow-hidden flex items-center justify-center shadow-2xs group-active:scale-95 transition-transform">
+                <div className="w-16 h-16 rounded-full bg-slate-100 border-2 border-slate-100 p-0.5 overflow-hidden flex items-center justify-center shadow-2xs group-active:scale-95 transition-transform">
                   <img
                     src={resolveImageUrl(cat.image, cat.id)}
                     alt={cat.name}
                     onError={(e) => handleImageError(e, cat.id)}
-                    className="w-full h-full object-cover rounded-xl"
+                    className="w-full h-full object-cover rounded-full"
                   />
                 </div>
-                <span className={`text-[10px] font-bold tracking-tight truncate max-w-[72px] ${idx === 0 ? 'text-[#B71C1C] font-extrabold' : 'text-slate-700'}`}>
+                <span className="text-[10px] font-black tracking-tight text-slate-800 uppercase truncate max-w-[68px]">
                   {cat.name}
+                </span>
+              </div>
+            ))}
+
+            {/* MORE Card */}
+            <div
+              onClick={() => window.location.href = '/shop'}
+              className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group"
+            >
+              <div className="w-16 h-16 rounded-full bg-slate-50 border-2 border-slate-200 flex items-center justify-center text-slate-700 shadow-2xs group-active:scale-95 transition-transform">
+                <Plus className="w-6 h-6 text-slate-700" />
+              </div>
+              <span className="text-[10px] font-black tracking-tight text-slate-800 uppercase">
+                MORE
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. PROMOTIONAL BANNER CAROUSEL */}
+        <div className="mx-3.5 my-3">
+          <div className="w-full rounded-2xl overflow-hidden relative shadow-sm bg-gradient-to-r from-pink-200 via-rose-100 to-pink-200 border border-pink-200/80 p-4 sm:p-5 flex items-center justify-between min-h-[140px]">
+            {/* Banner Left Copy */}
+            <div className="max-w-[210px] space-y-1 z-10">
+              <h3 className="font-display font-black text-lg sm:text-xl text-rose-950 leading-tight tracking-tight">
+                {mobileBanners[mobileBannerIndex]?.title || 'Decode your perfect cleanse'}
+              </h3>
+              <p className="text-[11px] text-rose-800 font-semibold leading-snug">
+                {mobileBanners[mobileBannerIndex]?.subtitle || 'Gentle renewing cleanser'}
+              </p>
+              <button
+                onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
+                className="mt-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-[11px] px-4 py-1.5 rounded-full transition-all shadow-sm cursor-pointer flex items-center gap-1"
+              >
+                <span>{mobileBanners[mobileBannerIndex]?.cta || 'Shop Now'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Banner Right Image */}
+            <div className="w-28 h-28 shrink-0 relative flex items-center justify-center z-10">
+              <img
+                src={resolveImageUrl(mobileBanners[mobileBannerIndex]?.image || 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400', mobileBannerIndex)}
+                alt="Promo Banner"
+                onError={(e) => handleImageError(e, mobileBannerIndex)}
+                className="max-h-full max-w-full object-contain rounded-xl drop-shadow-md"
+              />
+            </div>
+          </div>
+
+          {/* Carousel Indicator Dots */}
+          {mobileBanners.length > 1 && (
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              {mobileBanners.map((banner, idx) => (
+                <button
+                  key={banner.id || idx}
+                  onClick={() => setMobileBannerIndex(idx)}
+                  className={`transition-all duration-300 rounded-full cursor-pointer ${
+                    idx === mobileBannerIndex
+                      ? 'w-5 h-1.5 bg-[#B71C1C]'
+                      : 'w-1.5 h-1.5 bg-slate-300'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 3. QUICK ACCESS CATEGORY GRID (12 Quick-Nav Items) */}
+        <div className="mx-3.5 my-3 bg-white p-3.5 rounded-3xl border border-slate-200/80 shadow-2xs">
+          <div className="grid grid-cols-6 gap-y-3.5 gap-x-2">
+            {[
+              { id: 1, title: 'Prime', color: 'bg-amber-100/90 text-amber-900', icon: '👑' },
+              { id: 2, title: 'Gift Cards', color: 'bg-orange-100/90 text-orange-900', icon: '🎁' },
+              { id: 3, title: 'Mobiles', color: 'bg-purple-100/90 text-purple-900', icon: '📱' },
+              { id: 4, title: 'Rewards', color: 'bg-amber-50 text-amber-900', icon: '👑' },
+              { id: 5, title: 'Deals', color: 'bg-red-100/90 text-red-900', icon: '🏷️' },
+              { id: 6, title: 'Fashion', color: 'bg-pink-100/90 text-pink-900', icon: '👗' },
+              { id: 7, title: 'Electronics', color: 'bg-sky-100/90 text-sky-900', icon: '💻' },
+              { id: 8, title: 'Shop Live', color: 'bg-rose-100/90 text-rose-900', icon: '▶️' },
+              { id: 9, title: 'Home', color: 'bg-amber-100/80 text-amber-900', icon: '🏠' },
+              { id: 10, title: 'Daily Needs', color: 'bg-emerald-100/90 text-emerald-900', icon: '🛍️' },
+              { id: 11, title: 'Beauty', color: 'bg-purple-200/80 text-purple-900', icon: '💄' },
+              { id: 12, title: 'Travel', color: 'bg-cyan-100/90 text-cyan-900', icon: '✈️' },
+            ].map((item) => (
+              <div
+                key={item.id}
+                onClick={() => window.location.href = '/shop'}
+                className="flex flex-col items-center gap-1 cursor-pointer group"
+              >
+                <div className={`w-12 h-12 rounded-2xl ${item.color} flex items-center justify-center text-xl shadow-2xs group-active:scale-95 transition-transform`}>
+                  <span>{item.icon}</span>
+                </div>
+                <span className="text-[10.5px] font-bold text-slate-800 text-center tracking-tight leading-none truncate max-w-full">
+                  {item.title}
                 </span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* 2. COUPON BANNER */}
-        <div className="mx-3.5 my-3 rounded-2xl bg-gradient-to-r from-pink-100 via-rose-50 to-pink-100 border border-pink-200/90 p-3.5 shadow-2xs flex flex-col gap-2 relative overflow-hidden">
-          <div className="flex items-center justify-between z-10">
+        {/* 4. RECOMMENDED FOR YOU SECTION (Horizontal Scroll Carousel Displaying 3 Cards Per View) */}
+        <div className="w-full my-4 px-3.5">
+          <div className="flex items-center justify-between mb-2.5">
             <div>
-              <h3 className="font-display font-black text-lg text-rose-700 leading-tight">
-                Get 25% Off
-              </h3>
-              <p className="text-xs font-extrabold text-slate-800">
-                Up To ₹200 Off*
-              </p>
+              <h2 className="font-display font-black text-base text-[#0F172A] tracking-tight">
+                Recommended For You
+              </h2>
             </div>
-
-            {/* Coupon Code Pill */}
-            <div className="flex items-center gap-2">
-              <div className="bg-white/90 border border-dashed border-rose-300 rounded-xl px-2.5 py-1 text-[10px] font-black text-slate-800 shadow-2xs flex items-center gap-1">
-                <span className="text-slate-400 font-medium">COUPON CODE</span>
-                <span className="text-slate-900 font-extrabold">KARVIYAM25</span>
-              </div>
-              <div className="w-9 h-9 rounded-2xl bg-rose-200/80 border border-rose-300 text-rose-700 flex items-center justify-center font-black text-sm shadow-2xs">
-                %
-              </div>
-            </div>
-          </div>
-
-          <p className="text-[9px] text-slate-500 font-medium z-10">
-            *On your first order | T&C apply
-          </p>
-        </div>
-
-        {/* 3. HERO BANNER & CAROUSEL INDICATORS */}
-        {mobileBanners.length > 0 && (
-          <div className="mx-3.5 my-2.5">
-            <div className="w-full rounded-2xl overflow-hidden relative shadow-md bg-slate-950 h-[180px] sm:h-[220px] text-white p-5 flex flex-col justify-center transition-all duration-700">
-              {/* Model Image Overlay with smooth fade */}
-              <div
-                key={mobileBanners[mobileBannerIndex]?.id || mobileBannerIndex}
-                className="absolute inset-0 bg-cover bg-center opacity-65 transition-all duration-700"
-                style={{
-                  backgroundImage: `url("${resolveImageUrl(mobileBanners[mobileBannerIndex]?.image, mobileBanners[mobileBannerIndex]?.id)}")`
-                }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent" />
-              </div>
-
-              <div className="relative z-10 max-w-[220px]">
-                <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-400/20 px-2 py-0.5 rounded border border-amber-400/30">
-                  {mobileBanners[mobileBannerIndex]?.badge || 'OFFICIAL DROP'}
-                </span>
-                <h2 className="font-display font-black text-xl sm:text-2xl leading-tight text-white tracking-tight mt-1.5 drop-shadow-sm whitespace-pre-line">
-                  {mobileBanners[mobileBannerIndex]?.title}
-                </h2>
-                <p className="text-[10px] text-slate-200 font-medium mt-1">
-                  {mobileBanners[mobileBannerIndex]?.subtitle}
-                </p>
-                <button
-                  onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
-                  className="mt-2.5 bg-white text-slate-900 font-extrabold text-[10px] uppercase tracking-wider px-4 py-2 rounded-full hover:bg-amber-300 transition-colors shadow-md cursor-pointer"
-                >
-                  {mobileBanners[mobileBannerIndex]?.cta || 'SHOP NOW'}
-                </button>
-              </div>
-            </div>
-
-            {/* Interactive Carousel Indicator Dots Directly Below */}
-            {mobileBanners.length > 1 && (
-              <div className="flex items-center justify-center gap-1.5 mt-2.5 mb-3">
-                {mobileBanners.map((banner, idx) => (
-                  <button
-                    key={banner.id || idx}
-                    onClick={() => setMobileBannerIndex(idx)}
-                    className={`transition-all duration-300 rounded-full cursor-pointer ${
-                      idx === mobileBannerIndex
-                        ? 'w-6 h-1.5 bg-[#B71C1C]'
-                        : 'w-1.5 h-1.5 bg-slate-300 hover:bg-slate-400'
-                    }`}
-                    title={`Go to slide ${idx + 1}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 4. BEST DEALS FOR YOU */}
-        <div className="w-full my-3">
-          <div className="px-3.5 mb-2">
-            <h2 className="font-display font-black text-sm text-slate-900 tracking-tight">
-              Best Deals For You
-            </h2>
-          </div>
-
-          {/* Horizontal Scrolling Deal Pills */}
-          <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar px-3.5 py-1">
-            <div
-              onClick={() => window.location.href = '/shop'}
-              className="flex items-center gap-1.5 bg-amber-50 border border-amber-200/80 rounded-full px-3 py-1.5 text-xs font-bold text-slate-900 shrink-0 cursor-pointer shadow-2xs"
-            >
-              <span>🟡</span> <span>UNDER ₹499</span>
-            </div>
-
-            <div
-              onClick={() => window.location.href = '/shop'}
-              className="flex items-center gap-1.5 bg-purple-50 border border-purple-200/80 rounded-full px-3 py-1.5 text-xs font-bold text-slate-900 shrink-0 cursor-pointer shadow-2xs"
-            >
-              <span>💜</span> <span>DEAL OF THE DAY</span>
-            </div>
-
-            <div
-              onClick={() => window.location.href = '/shop'}
-              className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200/80 rounded-full px-3 py-1.5 text-xs font-bold text-slate-900 shrink-0 cursor-pointer shadow-2xs"
-            >
-              <span>🟢</span> <span>WHAT'S NEW</span>
-            </div>
-
-            <div
-              onClick={() => window.location.href = '/shop'}
-              className="flex items-center gap-1.5 bg-orange-50 border border-orange-200/80 rounded-full px-3 py-1.5 text-xs font-bold text-slate-900 shrink-0 cursor-pointer shadow-2xs"
-            >
-              <span>🧡</span> <span>EXPRESS DELIVERY</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 5. RECOMMENDED PRODUCTS (MAX 6 PRODUCTS, HORIZONTAL & VERTICAL SWIPE, COMPACT SIZE, ADMIN SYNCED) */}
-        <div className="w-full my-3 px-3.5">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-display font-black text-sm text-slate-900 tracking-tight">
-              Recommended for You
-            </h2>
-
-            {/* View Mode Toggle Controls (Grid vs Horizontal Swipe) */}
-            <div className="flex items-center gap-1.5 bg-slate-200/60 p-0.5 rounded-lg border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setMobileViewMode('grid')}
-                className={`p-1 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all ${
-                  mobileViewMode === 'grid'
-                    ? 'bg-white text-[#B71C1C] shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="2-Column Grid (Vertical Scroll)"
-              >
-                <Grid className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setMobileViewMode('carousel')}
-                className={`p-1 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all ${
-                  mobileViewMode === 'carousel'
-                    ? 'bg-white text-[#B71C1C] shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Horizontal Swipe Carousel"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <Link to="/shop" className="text-xs font-extrabold text-[#B71C1C] hover:underline flex items-center gap-0.5">
+              <span>View All</span>
+              <span>→</span>
+            </Link>
           </div>
 
           {loading ? (
-            <SkeletonLoader count={4} />
+            <SkeletonLoader count={3} />
           ) : (
-            <div
-              className={
-                mobileViewMode === 'grid'
-                  ? 'grid grid-cols-2 gap-2.5 w-full'
-                  : 'flex items-center gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full'
-              }
-            >
-              {displayRecommendedProducts.map((prod) => (
-                <div
-                  key={prod.id}
-                  onClick={() => window.location.href = `/product/${prod.id}`}
-                  className={`bg-white rounded-xl border border-slate-200/90 shadow-2xs p-1.5 flex flex-col justify-between overflow-hidden relative cursor-pointer group transition-all ${
-                    mobileViewMode === 'carousel'
-                      ? 'w-[155px] min-w-[155px] max-w-[155px] h-[215px] min-h-[215px] max-h-[215px] shrink-0 snap-start'
-                      : 'w-full h-[215px] min-h-[215px] max-h-[215px]'
-                  }`}
-                >
-                  {/* Product Image Area - Pure White (No Grey Box) */}
-                  <div className="relative w-full h-[120px] bg-white rounded-lg overflow-hidden flex items-center justify-center p-1.5 shrink-0">
-                    <img
-                      src={prod.imageUrl || prod.image}
-                      alt={prod.name}
-                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
-                    />
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 w-full">
+              {displayRecommendedProducts.map((prod) => {
+                const prodImg = resolveImageUrl(prod.imageUrl || prod.image_url || prod.imagePath || prod.image || prod.images?.[0], prod.id);
+                return (
+                  <div
+                    key={prod.id}
+                    onClick={() => window.location.href = `/product/${prod.id}`}
+                    className="w-[140px] sm:w-[155px] min-w-[140px] max-w-[155px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-2 relative flex flex-col justify-between overflow-hidden cursor-pointer group transition-all"
+                  >
+                    {/* Image Area */}
+                    <div className="relative w-full h-[120px] bg-slate-50/80 rounded-xl overflow-hidden flex items-center justify-center p-1.5 shrink-0">
+                      <img
+                        src={prodImg}
+                        alt={prod.name}
+                        onError={(e) => handleImageError(e, prod.id)}
+                        className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                      />
 
-                    {/* Wishlist Heart Overlay */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/95 text-slate-700 hover:text-[#B71C1C] flex items-center justify-center shadow-2xs border border-slate-200/60"
-                    >
-                      <svg className="w-3 h-3 stroke-current fill-none" viewBox="0 0 24 24">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  {/* Content Area - Tight Compact Spacing */}
-                  <div className="flex-1 flex flex-col justify-between pt-1 px-0.5">
-                    <div>
-                      {/* Mini Brand Tag */}
-                      <span className="text-[8px] font-extrabold uppercase tracking-wider text-[#B71C1C] block">
-                        🌸 KARVIYAM
-                      </span>
-
-                      {/* Product Title */}
-                      <h3 className="font-bold text-[11px] text-slate-900 leading-snug truncate mt-0.5 group-hover:text-[#B71C1C] transition-colors" title={prod.name}>
-                        {prod.name}
-                      </h3>
-
-                      {/* Rating & Reviews */}
-                      <div className="flex items-center gap-1 text-[9px] text-slate-500 font-bold mt-0.5">
-                        <span className="text-slate-900 font-black">{prod.rating || 4.5}</span>
-                        <span className="text-amber-400">★</span>
-                        <span className="text-slate-400">({prod.reviewsCount || '1.2k'})</span>
-                      </div>
-                    </div>
-
-                    {/* Price & Add to Bag Row */}
-                    <div className="flex items-end justify-between pt-0.5">
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-black text-[11px] text-slate-900">
-                          ₹{prod.price}
-                        </span>
-                        {(prod.oldPrice || 1299) > prod.price && (
-                          <span className="text-[8.5px] text-slate-400 line-through">
-                            ₹{prod.oldPrice || 1299}
-                          </span>
-                        )}
-                        <span className="text-[8px] font-extrabold text-emerald-700">
-                          {prod.discount || '46% OFF'}
-                        </span>
-                      </div>
-
-                      {/* Add to Bag Icon Button */}
+                      {/* Top-Right Wishlist Badge */}
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                         }}
-                        className="w-6 h-6 rounded-lg border border-red-200 text-[#B71C1C] bg-red-50/60 hover:bg-[#B71C1C] hover:text-white flex items-center justify-center transition-colors shadow-2xs shrink-0"
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/90 text-slate-700 hover:text-[#B71C1C] flex items-center justify-center shadow-2xs border border-slate-100"
+                        title="Add to Wishlist"
                       >
-                        <svg className="w-3 h-3 stroke-current fill-none" viewBox="0 0 24 24">
-                          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          <line x1="3" y1="6" x2="21" y2="6" strokeWidth="2" strokeLinecap="round" />
-                          <path d="M16 10a4 4 0 0 1-8 0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg className="w-3.5 h-3.5 stroke-current fill-none" viewBox="0 0 24 24">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </button>
                     </div>
+
+                    {/* Card Content Area */}
+                    <div className="flex-1 flex flex-col justify-between pt-1.5 px-0.5 space-y-1">
+                      {/* Brand & Rating Row */}
+                      <div className="flex items-center justify-between text-[9.5px]">
+                        <span className="font-black text-[#B71C1C] uppercase tracking-wider">
+                          KARVIYAM
+                        </span>
+                        <div className="flex items-center gap-0.5 font-bold text-amber-500">
+                          <span>★</span>
+                          <span className="text-slate-800 font-extrabold">{prod.rating || 4.5}</span>
+                        </div>
+                      </div>
+
+                      {/* Product Title */}
+                      <h3 className="font-bold text-[11px] text-slate-900 leading-snug line-clamp-2" title={prod.name}>
+                        {prod.name}
+                      </h3>
+
+                      {/* Price Row */}
+                      <div className="pt-0.5 flex flex-wrap items-baseline gap-1">
+                        <span className="font-black text-xs text-slate-900">
+                          ₹{prod.price}
+                        </span>
+                        {(prod.oldPrice || 1999) > prod.price && (
+                          <span className="text-[9px] text-slate-400 line-through">
+                            ₹{prod.oldPrice || 1999}
+                          </span>
+                        )}
+                        <span className="text-[9px] font-extrabold text-emerald-600 ml-auto">
+                          {prod.discount || '30% OFF'}
+                        </span>
+                      </div>
+                    </div>
+
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

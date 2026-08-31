@@ -250,153 +250,90 @@ export default function Navbar() {
       {/* ========================================================= */}
       <div className="block lg:hidden bg-white border-b border-slate-200">
         
-        {/* Row 1: Delivery Location & Cashback Chip */}
-        <div className="px-3.5 pt-2.5 pb-1 flex items-center justify-between gap-2">
-          {/* Location Delivery Selector */}
+        {/* Main Mobile Header Bar */}
+        <div className="px-3.5 py-2 flex items-center justify-between gap-2 border-b border-slate-100">
+          
+          {/* Left: Hamburger Menu Button */}
           <button
-            onClick={() => setLocationModalOpen(true)}
-            className="flex items-center gap-1 text-xs font-bold text-slate-800 cursor-pointer"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-1.5 text-slate-800 hover:text-[#B71C1C] transition-colors cursor-pointer rounded-lg hover:bg-slate-50"
+            aria-label="Open Navigation Menu"
           >
-            <MapPin className="w-3.5 h-3.5 text-[#B71C1C] shrink-0" />
-            <span className="text-slate-600 font-medium">Deliver to</span>
-            <span className="font-extrabold text-slate-900 truncate max-w-[140px]">
-              {locationPincode ? `${locationCity} ${locationPincode}` : 'Select Location'}
-            </span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
 
-          {/* Cashback / Offer Chip */}
-          <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-emerald-800 shadow-2xs shrink-0">
-            <span>upto ₹100</span>
-            <span className="text-xs">💸</span>
-          </div>
-        </div>
-
-        {/* Row 2: Brand Logo & Right Action Icons (Wishlist, Bell, Account) */}
-        <div className="px-3.5 py-1.5 flex items-center justify-between gap-2">
-          
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-1.5">
+          {/* Center: Karviyam Logo */}
+          <Link to="/" className="flex items-center gap-1.5 mx-auto">
             {customLogo ? (
-              <img src={customLogo} alt="Karviyam" className="h-7 w-auto object-contain max-w-[120px]" />
+              <img src={customLogo} alt="Karviyam" className="h-8 w-auto object-contain max-w-[130px]" />
             ) : (
               <div className="flex items-center gap-1.5">
-                <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white flex items-center justify-center shadow-2xs">
+                <div className="w-7 h-7 rounded-xl bg-[#B71C1C] text-white flex items-center justify-center shadow-xs">
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                     <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
                   </svg>
                 </div>
-                <span className="font-display font-black text-lg tracking-tight text-[#B71C1C] leading-none">
+                <span className="font-display font-black text-xl tracking-tight text-[#B71C1C] leading-none">
                   KARVIYAM
                 </span>
               </div>
             )}
           </Link>
 
-          {/* Action Icon: Notification Only */}
-          <div className="flex items-center text-slate-700 relative">
-            {/* Notification */}
-            <div 
-              onClick={() => setNotifOpen(!notifOpen)}
-              className="relative p-1 hover:text-[#B71C1C] cursor-pointer" 
-              title="Notifications"
+          {/* Right: Search, Wishlist & Cart Action Icons */}
+          <div className="flex items-center gap-3 text-slate-800">
+            {/* Search Icon Shortcut */}
+            <button
+              onClick={() => {
+                const el = document.getElementById('mobile-search-input');
+                if (el) el.focus();
+              }}
+              className="p-1 hover:text-[#B71C1C] cursor-pointer"
+              title="Search"
             >
-              <Bell className="w-5 h-5 text-slate-700" />
-              {unreadNotifCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#B71C1C] text-white text-[8px] font-black rounded-full h-3.5 min-w-[14px] px-1 flex items-center justify-center animate-pulse">
-                  {unreadNotifCount}
+              <Search className="w-5 h-5 text-slate-800" />
+            </button>
+
+            {/* Wishlist Icon with Badge */}
+            <Link to="/wishlist" className="relative p-1 hover:text-[#B71C1C] cursor-pointer" title="Wishlist">
+              <Heart className="w-5 h-5 text-slate-800" />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1.5 bg-[#B71C1C] text-white text-[9px] font-black rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center shadow-xs">
+                  {wishlistCount}
                 </span>
               )}
-            </div>
+            </Link>
 
-            {/* Mobile Notifications Dropdown Modal */}
-            {notifOpen && (
-              <div 
-                className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-28px)] bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 animate-in fade-in slide-in-from-top-2 text-left"
-              >
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-display font-extrabold text-sm text-slate-900">Notifications</h4>
-                    {unreadNotifCount > 0 && (
-                      <span className="bg-[#B71C1C] text-white text-[9px] font-black px-2 py-0.5 rounded-full">
-                        {unreadNotifCount} NEW
-                      </span>
-                    )}
-                  </div>
-                  {notifications.length > 0 && (
-                    <button 
-                      onClick={markAllNotifsRead}
-                      className="text-[11px] font-bold text-[#B71C1C] hover:underline cursor-pointer"
-                    >
-                      Mark all read
-                    </button>
-                  )}
-                </div>
-
-                {notifications.length === 0 ? (
-                  <div className="py-8 text-center text-slate-400 text-xs font-semibold">
-                    🔔 No new notifications right now.
-                  </div>
-                ) : (
-                  <div className="max-h-72 overflow-y-auto space-y-2 pr-1 no-scrollbar">
-                    {notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        onClick={() => markNotifRead(n.id, n.link)}
-                        className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
-                          n.read ? 'bg-slate-50/60 border-slate-100 opacity-75' : 'bg-rose-50/40 border-rose-100 shadow-2xs'
-                        }`}
-                      >
-                        <div className="w-8 h-8 rounded-full bg-red-100 text-[#B71C1C] flex items-center justify-center shrink-0 text-sm font-bold mt-0.5">
-                          {n.type === 'order' ? '🛍️' : n.type === 'offer' ? '🎉' : '🎧'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <h5 className="text-xs font-bold text-slate-900 truncate">{n.title}</h5>
-                            <span className="text-[9.5px] text-slate-400 font-medium shrink-0 ml-2">{n.time}</span>
-                          </div>
-                          <p className="text-[11px] text-slate-600 leading-snug mt-0.5">{n.description}</p>
-                        </div>
-                        {!n.read && (
-                          <span className="w-2 h-2 rounded-full bg-[#B71C1C] shrink-0 mt-2" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {notifications.length > 0 && (
-                  <div className="border-t border-slate-100 pt-2.5 mt-2 flex items-center justify-between text-[11px]">
-                    <button 
-                      onClick={clearAllNotifs}
-                      className="text-slate-400 hover:text-slate-600 font-semibold cursor-pointer"
-                    >
-                      Clear all
-                    </button>
-                    <span className="text-slate-400 font-medium">Karviyam Support</span>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Cart Icon with Badge */}
+            <Link to="/cart" className="relative p-1 hover:text-[#B71C1C] cursor-pointer" title="Cart">
+              <ShoppingBag className="w-5 h-5 text-slate-800" />
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1.5 bg-[#B71C1C] text-white text-[9px] font-black rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center shadow-xs">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
           </div>
+
         </div>
 
-        {/* Row 3: Rounded Pill Search Bar */}
-        <div className="px-3.5 py-1.5 relative">
+        {/* Mobile Search Bar */}
+        <div className="px-3.5 py-2 relative bg-white">
           <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
             <input
+              id="mobile-search-input"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for T-Shirts, Sneakers, Kurtas..."
-              className="w-full bg-slate-50 text-slate-900 placeholder-slate-400 pl-9 pr-16 py-2.5 rounded-full border border-slate-200 focus:border-[#B71C1C] focus:bg-white text-xs outline-none shadow-2xs transition-all"
+              placeholder="Search for products, categories..."
+              className="w-full bg-[#F3F4F6] text-slate-900 placeholder-slate-400 pl-9 pr-16 py-2.5 rounded-2xl border border-slate-200/80 focus:border-[#B71C1C] focus:bg-white text-xs font-medium outline-none transition-all shadow-2xs"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
             
             <button
               type="button"
               onClick={() => setVoiceModalOpen(true)}
-              className="absolute right-9 p-1 text-slate-400 hover:text-[#B71C1C]"
+              className="absolute right-9 p-1 text-slate-500 hover:text-[#B71C1C]"
               title="Voice Search"
             >
               <Mic className="w-4 h-4" />
@@ -405,8 +342,8 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => navigate('/shop')}
-              className="absolute right-3 p-1 text-slate-400 hover:text-[#B71C1C]"
-              title="Image Search"
+              className="absolute right-3 p-1 text-slate-700 hover:text-[#B71C1C]"
+              title="Camera Search"
             >
               <Camera className="w-4 h-4" />
             </button>

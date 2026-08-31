@@ -25,18 +25,17 @@ export default function MobileBottomNav() {
       icon: Grid
     },
     {
-      label: 'Wishlist',
-      path: '/wishlist',
-      icon: Heart,
-      badge: totalWishlistCount
+      label: 'Offers',
+      path: '/shop?onSale=true',
+      icon: Heart
     },
     {
-      label: user ? 'You' : 'Account',
+      label: user ? 'Account' : 'Login',
       path: user ? '/profile' : '/login',
       icon: User
     },
     {
-      label: 'Bag',
+      label: 'Cart',
       path: '/cart',
       icon: ShoppingBag,
       badge: itemCount
