@@ -3,23 +3,44 @@ const ApiResponse = require('../utils/apiResponse');
 const fs = require('fs');
 const path = require('path');
 
+const BANNER_FALLBACK_IMAGES = [
+  'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600',
+  'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600',
+  'https://images.unsplash.com/photo-1445205170230-053b83016050?w=1600',
+  'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600',
+  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1600'
+];
+
 const mapBannerRow = (b) => {
   if (!b) return null;
   const isAct = b.status 
     ? String(b.status).toLowerCase() === 'active' 
     : (b.is_active !== undefined && b.is_active !== null ? Boolean(b.is_active) : true);
   const statusStr = isAct ? 'active' : 'inactive';
-  const imgUrl = b.image_url || b.image_path || b.image || '';
-  const desktopImg = b.desktop_image_url || b.desktop_image || imgUrl;
-  const mobileImg = b.mobile_image_url || b.mobile_image || imgUrl;
+
+  let rawImg = b.image_url || b.image_path || b.image || '';
+  if (!rawImg || rawImg.includes('undefined') || rawImg.trim() === '') {
+    const fallbackIdx = Math.abs(Number(b.id || 0)) % BANNER_FALLBACK_IMAGES.length;
+    rawImg = BANNER_FALLBACK_IMAGES[fallbackIdx];
+  }
+
+  let desktopImg = b.desktop_image_url || b.desktop_image || rawImg;
+  if (!desktopImg || desktopImg.includes('undefined') || desktopImg.trim() === '') {
+    desktopImg = rawImg;
+  }
+
+  let mobileImg = b.mobile_image_url || b.mobile_image || rawImg;
+  if (!mobileImg || mobileImg.includes('undefined') || mobileImg.trim() === '') {
+    mobileImg = rawImg;
+  }
 
   return {
     id: b.id,
     title: b.title || '',
     subtitle: b.subtitle || '',
-    imageUrl: imgUrl,
-    imagePath: imgUrl,
-    image: imgUrl,
+    imageUrl: rawImg,
+    imagePath: rawImg,
+    image: rawImg,
     desktopImageUrl: desktopImg,
     mobileImageUrl: mobileImg,
     buttonText: b.button_text || 'Shop Now',

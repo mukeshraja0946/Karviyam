@@ -425,10 +425,7 @@ export default function HomePage() {
                   <img
                     src={mobileBanners[mobileBannerIndex].image}
                     alt={mobileBanners[mobileBannerIndex]?.title || 'Hero Banner'}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.style.display = 'none';
-                    }}
+                    onError={(e) => handleImageError(e, mobileBanners[mobileBannerIndex]?.id)}
                     className="w-full h-full object-cover object-center transition-all duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-slate-950/30" />

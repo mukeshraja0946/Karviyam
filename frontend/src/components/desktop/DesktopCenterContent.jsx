@@ -502,10 +502,14 @@ export default function DesktopCenterContent() {
       {/* 1. Hero Carousel */}
       {heroSlides.length > 0 && slide && (
         <div className="w-full h-[270px] xl:h-[290px] rounded-xl overflow-hidden relative shadow-sm bg-slate-950 group">
-          <div
-            className="absolute inset-0 bg-cover bg-center transition-all duration-700"
-            style={{ backgroundImage: `url(${slide.image})` }}
-          >
+          {/* Background Image Layer with HTML img for 100% reliable rendering */}
+          <div className="absolute inset-0 z-0 overflow-hidden">
+            <img
+              src={slide.image}
+              alt={slide.title || 'Hero Banner'}
+              onError={(e) => handleImageError(e, slide.id)}
+              className="w-full h-full object-cover object-center transition-all duration-700"
+            />
             <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent" />
           </div>
 
