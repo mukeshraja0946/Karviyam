@@ -744,30 +744,58 @@ export default function MobileHomePage() {
         </div>
 
         <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-0.5">
-          {(recentlyViewed.length > 0 ? recentlyViewed : flashProducts.slice(0, 5)).map((prod, idx) => (
-            <div
-              key={prod.id || idx}
-              onClick={() => navigate(`/product/${prod.id}`)}
-              className="w-28 h-28 bg-white rounded-2xl border border-slate-200/80 p-1.5 shrink-0 shadow-2xs relative cursor-pointer group flex items-center justify-center"
-            >
-              <img
-                src={resolveImageUrl(prod.image || prod.imageUrl, prod.id || idx)}
-                alt={prod.name}
-                onError={(e) => handleImageError(e, prod.id || idx)}
-                className="max-h-full max-w-full object-contain rounded-xl"
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleWishlist(prod.id);
-                }}
-                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white/90 text-slate-700 flex items-center justify-center border border-slate-200 shadow-2xs"
+          {(recentlyViewed.length > 0 ? recentlyViewed : flashProducts.slice(0, 5)).map((prod, idx) => {
+            const isWish = isInWishlist(prod.id);
+            return (
+              <div
+                key={prod.id || idx}
+                onClick={() => navigate(`/product/${prod.id}`)}
+                className="w-36 shrink-0 bg-white rounded-2xl border border-slate-200/80 p-2 shadow-2xs cursor-pointer group text-left"
               >
-                <Heart className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
+                <div className="relative w-full h-36 bg-slate-50 rounded-xl overflow-hidden mb-2 flex items-center justify-center">
+                  <img
+                    src={resolveImageUrl(prod.image || prod.imageUrl, prod.id || idx)}
+                    alt={prod.name}
+                    onError={(e) => handleImageError(e, prod.id || idx)}
+                    className="max-h-full max-w-full object-contain rounded-lg group-hover:scale-105 transition-transform"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleWishlist(prod.id);
+                    }}
+                    className={`absolute top-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center border shadow-2xs ${
+                      isWish ? 'bg-[#B71C1C] text-white border-[#B71C1C]' : 'bg-white text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${isWish ? 'fill-current' : ''}`} />
+                  </button>
+                </div>
+
+                <h4 className="text-[11px] font-bold text-slate-800 line-clamp-1 leading-tight">
+                  {prod.name}
+                </h4>
+
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="font-extrabold text-xs text-slate-900">₹{prod.price}</span>
+                  {prod.oldPrice && prod.oldPrice > prod.price && (
+                    <span className="text-[9px] text-slate-400 line-through">₹{prod.oldPrice}</span>
+                  )}
+                  {prod.discountPercent && (
+                    <span className="text-[9px] font-extrabold text-emerald-600 ml-auto">
+                      {prod.discountPercent}% OFF
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-700 mt-1">
+                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  <span>{prod.rating || 4.2}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
