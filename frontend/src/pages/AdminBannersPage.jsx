@@ -127,13 +127,15 @@ export default function AdminBannersPage() {
   const handleOpenEditModal = (b) => {
     setEditingBanner(b);
     const mainImg = b.imagePath || b.imageUrl || b.image || '';
+    const deskImg = (b.desktopImageUrl && b.desktopImageUrl !== mainImg) ? b.desktopImageUrl : '';
+    const mobImg = (b.mobileImageUrl && b.mobileImageUrl !== mainImg) ? b.mobileImageUrl : '';
     setFormData({
       title: b.title || '',
       subtitle: b.subtitle || '',
       buttonText: b.buttonText || b.button_text || 'Shop Now',
       imagePath: mainImg,
-      desktopImageUrl: b.desktopImageUrl || mainImg,
-      mobileImageUrl: b.mobileImageUrl || mainImg,
+      desktopImageUrl: deskImg,
+      mobileImageUrl: mobImg,
       link: b.link || b.buttonLink || '/shop',
       status: (b.status || (b.isActive !== false ? 'active' : 'inactive')).toLowerCase()
     });
@@ -799,7 +801,12 @@ export default function AdminBannersPage() {
         imageFile={cropperFile}
         configType="homepageBanner"
         onConfirmCrop={(croppedUrl) => {
-          setFormData(prev => ({ ...prev, imagePath: croppedUrl }));
+          setFormData(prev => ({
+            ...prev,
+            imagePath: croppedUrl,
+            desktopImageUrl: prev.desktopImageUrl ? prev.desktopImageUrl : croppedUrl,
+            mobileImageUrl: prev.mobileImageUrl ? prev.mobileImageUrl : croppedUrl
+          }));
           setCropperFile(null);
         }}
       />

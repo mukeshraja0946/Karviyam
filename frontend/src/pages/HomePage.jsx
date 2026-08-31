@@ -442,7 +442,10 @@ export default function HomePage() {
                   <img
                     src={mobileBanners[mobileBannerIndex].image}
                     alt={mobileBanners[mobileBannerIndex]?.title || 'Promo Banner'}
-                    onError={(e) => handleImageError(e, mobileBannerIndex)}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = 'none';
+                    }}
                     className="w-full h-full object-cover rounded-lg drop-shadow-2xs"
                   />
                 </div>
