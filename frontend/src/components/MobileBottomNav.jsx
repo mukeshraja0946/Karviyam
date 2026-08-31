@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, User, Heart, ShoppingBag, Grid } from 'lucide-react';
+import { Home, User, Tag, ShoppingBag, Grid } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
@@ -26,19 +26,19 @@ export default function MobileBottomNav() {
     },
     {
       label: 'Offers',
-      path: '/shop?onSale=true',
-      icon: Heart
-    },
-    {
-      label: user ? 'Account' : 'Login',
-      path: user ? '/profile' : '/login',
-      icon: User
+      path: '/offers',
+      icon: Tag
     },
     {
       label: 'Cart',
       path: '/cart',
       icon: ShoppingBag,
       badge: itemCount
+    },
+    {
+      label: user ? 'Account' : 'Login',
+      path: user ? '/profile' : '/login',
+      icon: User
     }
   ];
 
