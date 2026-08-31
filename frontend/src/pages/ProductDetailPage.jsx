@@ -521,7 +521,7 @@ export default function ProductDetailPage() {
             {/* Main Media Display Container (Touch Swipeable & Responsive) */}
             <div className="flex-1 space-y-2 min-w-0">
               <div
-                className="relative w-full h-[280px] sm:h-[400px] lg:h-[420px] bg-white rounded-2xl border border-slate-200/80 p-1 sm:p-2 shadow-2xs flex items-center justify-center overflow-hidden touch-pan-y"
+                className="relative w-full h-[320px] sm:h-[400px] lg:h-[420px] bg-white rounded-2xl border border-slate-200/80 p-1 sm:p-2 shadow-2xs flex items-center justify-center overflow-hidden touch-pan-y"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
@@ -599,18 +599,18 @@ export default function ProductDetailPage() {
                       <ChevronRight className="w-4 h-4" />
                     </button>
 
-                    {/* Pagination Count Overlay Badge */}
-                    <div className="absolute bottom-2.5 left-2.5 bg-slate-900/75 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs">
+                    {/* Desktop Pagination Count Overlay Badge */}
+                    <div className="hidden sm:block absolute bottom-2.5 left-2.5 bg-slate-900/75 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs">
                       {activeMediaIndex + 1} / {mediaGallery.length}
                     </div>
                   </>
                 )}
 
-                {/* Wishlist Button (Top-Right Circle) */}
+                {/* Desktop Wishlist Button (Top-Right Circle) */}
                 <button
                   type="button"
                   onClick={() => toggleWishlist(product?.id)}
-                  className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center shadow-xs transition-colors cursor-pointer border z-10 ${isWish
+                  className={`hidden sm:flex absolute top-2.5 right-2.5 w-8 h-8 rounded-full items-center justify-center shadow-xs transition-colors cursor-pointer border z-10 ${isWish
                       ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
                       : 'bg-white text-slate-700 hover:text-[#B71C1C] border-slate-200'
                     }`}
@@ -620,36 +620,64 @@ export default function ProductDetailPage() {
                 </button>
               </div>
 
-              {/* Mobile Horizontal Thumbnail Strip (< 640px) */}
-              {mediaGallery.length > 1 && (
-                <div className="flex sm:hidden items-center gap-2 overflow-x-auto no-scrollbar py-1">
-                  {mediaGallery.map((m, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setSelectedMedia(m)}
-                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white p-0.5 cursor-pointer relative ${selectedMedia?.url === m.url
-                          ? 'border-[#B71C1C] ring-1 ring-[#B71C1C]'
-                          : 'border-slate-200 opacity-60'
+              {/* Mobile Pagination Dots & Action Row (< 640px) */}
+              <div className="flex sm:hidden items-center justify-between mt-2.5 px-1">
+                {/* Center: Dynamic Pagination Dots */}
+                {mediaGallery.length > 1 ? (
+                  <div className="flex items-center justify-center gap-1.5 mx-auto">
+                    {mediaGallery.map((m, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedMedia(m)}
+                        className={`transition-all duration-300 rounded-full cursor-pointer ${
+                          activeMediaIndex === idx
+                            ? 'w-3.5 h-2.5 bg-slate-900'
+                            : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
                         }`}
-                    >
-                      {m.type === 'video' ? (
-                        <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white">
-                          <Film className="w-4 h-4 text-purple-400" />
-                          <span className="text-[7px] font-bold uppercase">VIDEO</span>
-                        </div>
-                      ) : (
-                        <img
-                          src={resolveImageUrl(m.url, product?.id)}
-                          alt=""
-                          onError={(e) => handleImageError(e, product?.id)}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      )}
-                    </button>
-                  ))}
+                        title={`Go to slide ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex-1" />
+                )}
+
+                {/* Right Actions: Wishlist & Share */}
+                <div className="flex items-center gap-2 shrink-0 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => toggleWishlist(product?.id)}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center border shadow-2xs transition-colors cursor-pointer ${
+                      isWish
+                        ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
+                        : 'bg-white text-slate-700 hover:text-[#B71C1C] border-slate-200'
+                    }`}
+                    title={isWish ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                  >
+                    <Heart className={`w-4 h-4 ${isWish ? 'fill-current' : ''}`} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({
+                          title: product?.name || 'Karviyam Product',
+                          url: window.location.href
+                        }).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(window.location.href);
+                        toast.success('Product link copied to clipboard!');
+                      }
+                    }}
+                    className="w-9 h-9 rounded-full bg-white text-slate-700 hover:text-slate-900 border border-slate-200 flex items-center justify-center shadow-2xs cursor-pointer"
+                    title="Share Product"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
