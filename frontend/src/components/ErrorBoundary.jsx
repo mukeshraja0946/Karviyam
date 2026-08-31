@@ -28,9 +28,23 @@ export default class ErrorBoundary extends React.Component {
             <AlertTriangle className="w-8 h-8" />
           </div>
           <h2 className="font-display font-extrabold text-2xl text-slate-900 mb-2">Something went wrong</h2>
-          <p className="text-xs text-slate-500 max-w-md mb-6">
+          <p className="text-xs text-slate-500 max-w-md mb-3">
             An unexpected error occurred while rendering this page. You can reload the page or click below to restore state.
           </p>
+
+          {/* Diagnostic Error Details Box */}
+          {this.state.error && (
+            <div className="w-full max-w-xl bg-slate-900 text-red-300 font-mono text-[11px] p-3.5 rounded-xl text-left overflow-x-auto mb-6 shadow-inner border border-slate-800">
+              <p className="font-bold text-white mb-1">Error Trace:</p>
+              <p className="text-red-400 font-semibold">{this.state.error.toString()}</p>
+              {this.state.error.stack && (
+                <pre className="text-[9.5px] text-slate-400 mt-2 overflow-x-auto whitespace-pre-wrap max-h-40 leading-relaxed">
+                  {this.state.error.stack}
+                </pre>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3">
             <button
               onClick={this.handleReload}
