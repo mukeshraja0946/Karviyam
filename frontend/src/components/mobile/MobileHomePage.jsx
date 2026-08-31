@@ -18,7 +18,8 @@ import {
   X,
   User,
   Layers,
-  Tag
+  Tag,
+  Star
 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
