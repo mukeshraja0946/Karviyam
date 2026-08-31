@@ -416,13 +416,19 @@ export default function HomePage() {
         {mobileBanners && mobileBanners.length > 0 && (
           <div className="mx-3 my-2">
             <div className="w-full h-[180px] sm:h-[210px] rounded-2xl overflow-hidden relative shadow-md bg-slate-950 group">
-              {/* Background Image Layer & Dark Gradient Overlay (Same as Desktop) */}
+              {/* Background Image Layer & Dark Gradient Overlay (HTML img tag for guaranteed browser rendering) */}
               {mobileBanners[mobileBannerIndex]?.image ? (
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition-all duration-700"
-                  style={{ backgroundImage: `url(${mobileBanners[mobileBannerIndex].image})` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-slate-950/30" />
+                <div className="absolute inset-0 z-0 overflow-hidden">
+                  <img
+                    src={mobileBanners[mobileBannerIndex].image}
+                    alt={mobileBanners[mobileBannerIndex]?.title || 'Hero Banner'}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = 'none';
+                    }}
+                    className="w-full h-full object-cover object-center transition-all duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-slate-950/30" />
                 </div>
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950" />
