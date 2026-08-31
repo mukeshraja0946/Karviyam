@@ -315,7 +315,7 @@ export default function MobileHomePage() {
   };
 
   return (
-    <div className="w-full bg-[#FAFAFA] min-h-screen pb-24 text-slate-900 select-none font-sans text-left">
+    <div className="w-full bg-[#FAFAFA] pb-16 text-slate-900 select-none font-sans text-left">
 
       {/* 1. MOBILE HEADER BAR */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 px-3 py-2 flex items-center justify-between shadow-2xs">
