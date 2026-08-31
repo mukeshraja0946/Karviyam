@@ -77,15 +77,17 @@ export default function HomePage() {
       if (Array.isArray(list)) {
         const activeBanners = list.filter(b => b && b.isActive !== false && String(b.status || 'active').toLowerCase() === 'active');
         const formatted = activeBanners.map(b => {
-          const rawImg = b.mobileImageUrl || b.imageUrl || b.imagePath || b.image || '';
+          const rawImg = b.mobileImageUrl || b.desktopImageUrl || b.imageUrl || b.image_url || b.imagePath || b.image || '';
           const resolvedImg = resolveImageUrl(rawImg, b.id);
           return {
             id: b.id,
+            tag: b.tag || 'OFFICIAL DROP',
             badge: b.tag || 'OFFICIAL DROP',
             title: b.title || '',
             subtitle: b.subtitle || '',
             image: resolvedImg,
-            cta: b.buttonText || b.button_text || b.cta || 'Shop Now',
+            buttonText: b.buttonText || b.button_text || b.cta || 'SHOP NOW',
+            cta: b.buttonText || b.button_text || b.cta || 'SHOP NOW',
             link: b.buttonLink || b.link || '/shop'
           };
         });
@@ -410,65 +412,68 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 2. PROMOTIONAL BANNER CAROUSEL (Dynamic Admin Mobile Banners) */}
+        {/* 2. PROMOTIONAL BANNER CAROUSEL (Responsive Desktop Hero Banner Adaptation for Mobile) */}
         {mobileBanners && mobileBanners.length > 0 && (
           <div className="mx-3 my-2">
-            <div className="w-full rounded-2xl overflow-hidden relative shadow-2xs bg-gradient-to-r from-pink-200 via-rose-100 to-pink-200 border border-pink-200/80 p-3.5 sm:p-4 flex items-center justify-between min-h-[110px]">
-              {/* Banner Left Copy */}
-              <div className="flex-1 min-w-0 pr-3 flex flex-col justify-center items-start z-10">
+            <div className="w-full h-[180px] sm:h-[210px] rounded-2xl overflow-hidden relative shadow-md bg-slate-950 group">
+              {/* Background Image Layer & Dark Gradient Overlay (Same as Desktop) */}
+              {mobileBanners[mobileBannerIndex]?.image ? (
+                <div
+                  className="absolute inset-0 bg-cover bg-center transition-all duration-700"
+                  style={{ backgroundImage: `url(${mobileBanners[mobileBannerIndex].image})` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-slate-950/30" />
+                </div>
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950" />
+              )}
+
+              {/* Text & Content Overlay Layer */}
+              <div className="relative z-10 h-full p-4 sm:p-5 flex flex-col justify-center max-w-[88%] text-white">
+                <span className="inline-block bg-white/15 backdrop-blur-md border border-white/25 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-widest w-max mb-1.5 shadow-2xs">
+                  {mobileBanners[mobileBannerIndex]?.tag || mobileBanners[mobileBannerIndex]?.badge || 'OFFICIAL DROP'}
+                </span>
+
                 {mobileBanners[mobileBannerIndex]?.title ? (
-                  <h3 className="font-display font-black text-base sm:text-lg text-rose-950 leading-tight tracking-tight break-words">
+                  <h2 className="font-display font-black text-base sm:text-lg leading-tight text-white tracking-tight uppercase drop-shadow-md line-clamp-2">
                     {mobileBanners[mobileBannerIndex].title}
-                  </h3>
+                  </h2>
                 ) : null}
+
                 {mobileBanners[mobileBannerIndex]?.subtitle ? (
-                  <p className="text-[10.5px] text-rose-900 font-semibold leading-snug break-words mt-0.5">
+                  <p className="text-[10.5px] sm:text-xs text-slate-200 font-medium mt-1 mb-2.5 line-clamp-2">
                     {mobileBanners[mobileBannerIndex].subtitle}
                   </p>
-                ) : null}
+                ) : (
+                  <div className="mb-2" />
+                )}
+
                 <button
                   type="button"
                   onClick={() => window.location.href = mobileBanners[mobileBannerIndex]?.link || '/shop'}
-                  className="mt-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-[10.5px] px-3.5 py-1 rounded-full transition-all shadow-2xs cursor-pointer flex items-center gap-1 shrink-0"
+                  className="bg-[#B71C1C] hover:bg-[#900C0C] text-white text-[10.5px] sm:text-xs font-extrabold px-4 py-2 rounded-xl uppercase tracking-wider transition-all shadow-md w-max cursor-pointer flex items-center gap-1.5 shrink-0"
                 >
-                  <span>{mobileBanners[mobileBannerIndex]?.cta || 'Shop Now'}</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <span>{mobileBanners[mobileBannerIndex]?.buttonText || mobileBanners[mobileBannerIndex]?.cta || 'SHOP NOW'}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              {/* Banner Right Image */}
-              {mobileBanners[mobileBannerIndex]?.image ? (
-                <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 relative flex items-center justify-center z-10 overflow-hidden rounded-xl bg-white/40 border border-pink-200/60 p-1">
-                  <img
-                    src={mobileBanners[mobileBannerIndex].image}
-                    alt={mobileBanners[mobileBannerIndex]?.title || 'Promo Banner'}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.style.display = 'none';
-                    }}
-                    className="w-full h-full object-cover rounded-lg drop-shadow-2xs"
-                  />
+              {/* Carousel Indicators (Same styling as Desktop) */}
+              {mobileBanners.length > 1 && (
+                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+                  {mobileBanners.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setMobileBannerIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                        idx === mobileBannerIndex ? 'w-5 bg-[#B71C1C]' : 'w-1.5 bg-white/60'
+                      }`}
+                    />
+                  ))}
                 </div>
-              ) : null}
+              )}
             </div>
-
-            {/* Carousel Indicator Dots */}
-            {mobileBanners.length > 1 && (
-              <div className="flex items-center justify-center gap-1.5 mt-1.5">
-                {mobileBanners.map((banner, idx) => (
-                  <button
-                    key={banner.id || idx}
-                    type="button"
-                    onClick={() => setMobileBannerIndex(idx)}
-                    className={`transition-all duration-300 rounded-full cursor-pointer ${
-                      idx === mobileBannerIndex
-                        ? 'w-4 h-1.5 bg-[#B71C1C]'
-                        : 'w-1.5 h-1.5 bg-slate-300'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         )}
 
