@@ -254,19 +254,10 @@ export default function Navbar() {
         {/* Main Mobile Header Bar */}
         <div className="px-3.5 py-2 flex items-center justify-between gap-2 border-b border-slate-100">
           
-          {/* Left: Hamburger Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-1.5 text-slate-800 hover:text-[#B71C1C] transition-colors cursor-pointer rounded-lg hover:bg-slate-50"
-            aria-label="Open Navigation Menu"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-
-          {/* Center: Karviyam Logo */}
-          <Link to="/" className="flex items-center gap-1.5 mx-auto">
+          {/* Left: Karviyam Logo */}
+          <Link to="/" className="flex items-center gap-1.5 shrink-0">
             {customLogo ? (
-              <img src={customLogo} alt="Karviyam" className="h-8 w-auto object-contain max-w-[130px]" />
+              <img src={customLogo} alt="Karviyam" className="h-8 w-auto object-contain max-w-[140px]" />
             ) : (
               <div className="flex items-center gap-1.5">
                 <div className="w-7 h-7 rounded-xl bg-[#B71C1C] text-white flex items-center justify-center shadow-xs">
