@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import HeroBanner from '../components/HeroBanner';
 import CategoryCards from '../components/CategoryCards';
 import MobileCategoryBar from '../components/MobileCategoryBar';
