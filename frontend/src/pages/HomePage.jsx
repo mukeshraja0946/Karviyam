@@ -369,36 +369,58 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* 3. QUICK ACCESS CATEGORY GRID (12 Quick-Nav Items) */}
+        {/* 3. QUICK ACCESS CATEGORY GRID (12 Karviyam Product Categories, Data-Driven) */}
         <div className="mx-3.5 my-3 bg-white p-3.5 rounded-3xl border border-slate-200/80 shadow-2xs">
           <div className="grid grid-cols-6 gap-y-3.5 gap-x-2">
             {[
-              { id: 1, title: 'Prime', color: 'bg-amber-100/90 text-amber-900', icon: '👑' },
-              { id: 2, title: 'Gift Cards', color: 'bg-orange-100/90 text-orange-900', icon: '🎁' },
-              { id: 3, title: 'Mobiles', color: 'bg-purple-100/90 text-purple-900', icon: '📱' },
-              { id: 4, title: 'Rewards', color: 'bg-amber-50 text-amber-900', icon: '👑' },
-              { id: 5, title: 'Deals', color: 'bg-red-100/90 text-red-900', icon: '🏷️' },
-              { id: 6, title: 'Fashion', color: 'bg-pink-100/90 text-pink-900', icon: '👗' },
-              { id: 7, title: 'Electronics', color: 'bg-sky-100/90 text-sky-900', icon: '💻' },
-              { id: 8, title: 'Shop Live', color: 'bg-rose-100/90 text-rose-900', icon: '▶️' },
-              { id: 9, title: 'Home', color: 'bg-amber-100/80 text-amber-900', icon: '🏠' },
-              { id: 10, title: 'Daily Needs', color: 'bg-emerald-100/90 text-emerald-900', icon: '🛍️' },
-              { id: 11, title: 'Beauty', color: 'bg-purple-200/80 text-purple-900', icon: '💄' },
-              { id: 12, title: 'Travel', color: 'bg-cyan-100/90 text-cyan-900', icon: '✈️' },
-            ].map((item) => (
-              <div
-                key={item.id}
-                onClick={() => window.location.href = '/shop'}
-                className="flex flex-col items-center gap-1 cursor-pointer group"
-              >
-                <div className={`w-12 h-12 rounded-2xl ${item.color} flex items-center justify-center text-xl shadow-2xs group-active:scale-95 transition-transform`}>
-                  <span>{item.icon}</span>
+              // ROW 1
+              { id: 't-shirts', title: 'T-Shirts', query: 'category=T-Shirts', fallbackImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300' },
+              { id: 'shirts', title: 'Shirts', query: 'category=Shirts', fallbackImage: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=300' },
+              { id: 'jeans', title: 'Jeans', query: 'category=Jeans', fallbackImage: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=300' },
+              { id: 'trousers', title: 'Trousers', query: 'category=Trousers', fallbackImage: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300' },
+              { id: 'kurta-sets', title: 'Kurta Sets', query: 'category=Kurta+Sets', fallbackImage: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300' },
+              { id: 'sarees', title: 'Sarees', query: 'category=Sarees', fallbackImage: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300' },
+              // ROW 2
+              { id: 'dresses', title: 'Dresses', query: 'category=Dresses', fallbackImage: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=300' },
+              { id: 'tops', title: 'Tops', query: 'category=Tops', fallbackImage: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300' },
+              { id: 'blazers', title: 'Blazers', query: 'category=Blazers', fallbackImage: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300' },
+              { id: 'suits', title: 'Suits', query: 'category=Suits', fallbackImage: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=300' },
+              { id: 'sneakers', title: 'Sneakers', query: 'category=Sneakers', fallbackImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300' },
+              { id: 'kids-baby', title: 'Kids & Baby', query: 'category=Kids', fallbackImage: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=300' }
+            ].map((defItem) => {
+              const matched = (Array.isArray(homeCategories) ? homeCategories : []).find(
+                c => c.name && (
+                  c.name.toLowerCase() === defItem.title.toLowerCase() ||
+                  c.name.toLowerCase().includes(defItem.title.toLowerCase()) ||
+                  defItem.title.toLowerCase().includes(c.name.toLowerCase())
+                )
+              );
+
+              const catId = matched?.id || defItem.id;
+              const catTitle = matched?.name || defItem.title;
+              const catImg = matched?.image || resolveImageUrl(defItem.fallbackImage, defItem.id);
+              const catQuery = matched?.query || defItem.query;
+
+              return (
+                <div
+                  key={catId}
+                  onClick={() => window.location.href = `/shop?${catQuery}`}
+                  className="flex flex-col items-center gap-1 cursor-pointer group"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200/80 p-0.5 overflow-hidden flex items-center justify-center shadow-2xs group-active:scale-95 transition-transform">
+                    <img
+                      src={catImg}
+                      alt={catTitle}
+                      onError={(e) => handleImageError(e, catId)}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-800 text-center tracking-tight leading-none truncate max-w-full" title={catTitle}>
+                    {catTitle}
+                  </span>
                 </div>
-                <span className="text-[10.5px] font-bold text-slate-800 text-center tracking-tight leading-none truncate max-w-full">
-                  {item.title}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
