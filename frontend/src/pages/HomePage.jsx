@@ -10,7 +10,7 @@ import DesktopSidebarRight from '../components/desktop/DesktopSidebarRight';
 import DesktopTrustBar from '../components/desktop/DesktopTrustBar';
 import api from '../utils/api';
 import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
-import { Flame, Sparkles, Grid, SlidersHorizontal } from 'lucide-react';
+import { Flame, Sparkles, Grid, SlidersHorizontal, Plus, ArrowRight } from 'lucide-react';
 
 const DEFAULT_CATEGORY_IMAGES = {
   'FASHION': 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300',
