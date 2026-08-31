@@ -283,11 +283,11 @@ export default function MobileHomePage() {
         setPriceChips(adminConfig.findYourPrice.filter(p => p.active !== false));
       } else {
         setPriceChips([
-          { id: '1', label: 'Under ₹499', link: '/shop?maxPrice=499', bgClass: 'bg-rose-100/80 text-rose-900 border-rose-200' },
-          { id: '2', label: 'Under ₹999', link: '/shop?maxPrice=999', bgClass: 'bg-amber-100/80 text-amber-900 border-amber-200' },
-          { id: '3', label: 'Under ₹1499', link: '/shop?maxPrice=1499', bgClass: 'bg-emerald-100/80 text-emerald-900 border-emerald-200' },
-          { id: '4', label: 'Under ₹1999', link: '/shop?maxPrice=1999', bgClass: 'bg-purple-100/80 text-purple-900 border-purple-200' },
-          { id: '5', label: 'Under ₹2999', link: '/shop?maxPrice=2999', bgClass: 'bg-blue-100/80 text-blue-900 border-blue-200' }
+          { id: '1', label: 'Under ₹499', link: '/shop?maxPrice=499', bgClass: 'bg-white text-rose-900 border-rose-200' },
+          { id: '2', label: 'Under ₹999', link: '/shop?maxPrice=999', bgClass: 'bg-white text-amber-900 border-amber-200' },
+          { id: '3', label: 'Under ₹1499', link: '/shop?maxPrice=1499', bgClass: 'bg-white text-emerald-900 border-emerald-200' },
+          { id: '4', label: 'Under ₹1999', link: '/shop?maxPrice=1999', bgClass: 'bg-white text-purple-900 border-purple-200' },
+          { id: '5', label: 'Under ₹2999', link: '/shop?maxPrice=2999', bgClass: 'bg-white text-blue-900 border-blue-200' }
         ]);
       }
 
@@ -722,8 +722,8 @@ export default function MobileHomePage() {
               key={chip.id}
               type="button"
               onClick={() => navigate(chip.link || `/shop?maxPrice=${chip.maxPrice || 999}`)}
-              className={`px-4 py-2 rounded-full text-xs font-black tracking-wide shrink-0 border cursor-pointer active:scale-95 transition-all shadow-2xs ${
-                chip.bgClass || 'bg-rose-100/80 text-rose-900 border-rose-200'
+              className={`px-4 py-2 rounded-full text-xs font-black tracking-wide shrink-0 border cursor-pointer active:scale-95 transition-all shadow-2xs bg-white ${
+                chip.bgClass ? chip.bgClass.replace(/bg-[^\s]+/, '') : 'text-rose-900 border-rose-200'
               }`}
             >
               {chip.label}
