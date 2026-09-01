@@ -54,6 +54,7 @@ import AdminCustomersPage from './pages/AdminCustomersPage';
 import AdminInventoryPage from './pages/AdminInventoryPage';
 import AdminReportsPage from './pages/AdminReportsPage';
 import AdminPincodesPage from './pages/AdminPincodesPage';
+import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
 import AdminHelpSupportPage from './pages/AdminHelpSupportPage';
 import SubscriptionCheckoutPage from './pages/SubscriptionCheckoutPage';
 import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
