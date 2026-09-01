@@ -143,27 +143,27 @@ export default function AdminSubscriptionsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
           <span className="text-[10px] font-black uppercase text-slate-400">Total Subscribers</span>
-          <h3 className="font-black text-xl text-slate-900">{metrics.total}</h3>
+          <h3 className="font-black text-xl text-slate-900">{metrics.totalSubscribers ?? metrics.total ?? 0}</h3>
         </div>
 
         <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200/80 shadow-2xs space-y-1">
           <span className="text-[10px] font-black uppercase text-emerald-800">Active VIP Members</span>
-          <h3 className="font-black text-xl text-emerald-700">{metrics.active}</h3>
+          <h3 className="font-black text-xl text-emerald-700">{metrics.activeSubscribers ?? metrics.active ?? 0}</h3>
         </div>
 
         <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80 shadow-2xs space-y-1">
           <span className="text-[10px] font-black uppercase text-amber-800">Pending Payments</span>
-          <h3 className="font-black text-xl text-amber-700">{metrics.pending}</h3>
+          <h3 className="font-black text-xl text-amber-700">{metrics.pendingSubscribers ?? metrics.pending ?? 0}</h3>
         </div>
 
         <div className="bg-rose-50/60 p-4 rounded-2xl border border-rose-200/80 shadow-2xs space-y-1">
           <span className="text-[10px] font-black uppercase text-rose-800">Failed Payments</span>
-          <h3 className="font-black text-xl text-rose-700">{metrics.failed}</h3>
+          <h3 className="font-black text-xl text-rose-700">{metrics.failedSubscribers ?? metrics.failed ?? 0}</h3>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1 col-span-2 lg:col-span-1">
           <span className="text-[10px] font-black uppercase text-slate-400">Total Revenue Collected</span>
-          <h3 className="font-black text-xl text-[#B71C1C]">₹{metrics.revenue.toLocaleString()}</h3>
+          <h3 className="font-black text-xl text-[#B71C1C]">₹{(parseFloat(metrics.totalRevenue ?? metrics.revenue ?? 0)).toLocaleString('en-IN')}</h3>
         </div>
       </div>
 
