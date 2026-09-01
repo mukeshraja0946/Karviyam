@@ -163,19 +163,23 @@ export default function ImageUploadCropperModal({
       }
 
       // 4. Export Canvas to Blob File preserving PNG/WebP alpha transparency
+      const fileType = imageFile?.type || '';
+      const imgSrc = imageObj?.src || '';
+
       const isPngOrWebp = Boolean(
-        imageSrc &&
-        (imageSrc.includes('data:image/png') ||
-         imageSrc.includes('data:image/webp') ||
-         /\.(png|webp)(\?.*)?$/i.test(imageSrc))
+        fileType.includes('png') ||
+        fileType.includes('webp') ||
+        imgSrc.includes('data:image/png') ||
+        imgSrc.includes('data:image/webp') ||
+        /\.(png|webp)(\?.*)?$/i.test(imageFile?.name || '')
       );
 
       const exportMime = isPngOrWebp
-        ? (imageSrc.includes('webp') ? 'image/webp' : 'image/png')
+        ? (fileType.includes('webp') || imgSrc.includes('webp') ? 'image/webp' : 'image/png')
         : 'image/jpeg';
 
       const ext = isPngOrWebp
-        ? (imageSrc.includes('webp') ? 'webp' : 'png')
+        ? (fileType.includes('webp') || imgSrc.includes('webp') ? 'webp' : 'png')
         : 'jpg';
 
       const blob = await new Promise((resolve) => {
