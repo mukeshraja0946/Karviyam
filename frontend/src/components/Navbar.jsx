@@ -254,38 +254,31 @@ export default function Navbar() {
         {/* Main Mobile Header Bar */}
         <div className="px-3.5 py-2 flex items-center justify-between gap-2 border-b border-slate-100">
           
-          {/* Left: Karviyam Logo */}
-          <Link to="/" className="flex items-center gap-1.5 shrink-0">
-            {customLogo ? (
-              <img src={customLogo} alt="Karviyam" className="h-8 w-auto object-contain max-w-[140px]" />
-            ) : (
-              <div className="flex items-center gap-1.5">
-                <div className="w-7 h-7 rounded-xl bg-[#B71C1C] text-white flex items-center justify-center shadow-xs">
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
-                  </svg>
-                </div>
-                <span className="font-display font-black text-xl tracking-tight text-[#B71C1C] leading-none">
-                  KARVIYAM
-                </span>
-              </div>
-            )}
-          </Link>
-
-          {/* Right: Search, Wishlist & Cart Action Icons */}
-          <div className="flex items-center gap-3 text-slate-800">
-            {/* Search Icon Shortcut */}
+          {/* Left: Hamburger Menu & Karviyam Logo */}
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                const el = document.getElementById('mobile-search-input');
-                if (el) el.focus();
-              }}
-              className="p-1 hover:text-[#B71C1C] cursor-pointer"
-              title="Search"
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-800 hover:bg-slate-100 cursor-pointer active:scale-95 transition-transform"
+              title="Open Navigation Menu"
             >
-              <Search className="w-5 h-5 text-slate-800" />
+              <Menu className="w-5 h-5 stroke-[2.2]" />
             </button>
 
+            <Link to="/" className="flex items-center gap-1.5 shrink-0">
+              {customLogo ? (
+                <img src={customLogo} alt="Karviyam" className="h-7 w-auto object-contain max-w-[140px]" />
+              ) : (
+                <span className="font-serif font-black text-lg text-[#B71C1C] tracking-widest uppercase flex items-center gap-1">
+                  <span className="text-[#B71C1C]">🌸</span>
+                  <span>KARVIYAM</span>
+                </span>
+              )}
+            </Link>
+          </div>
+
+          {/* Right: Wishlist & Cart Action Icons */}
+          <div className="flex items-center gap-3 text-slate-800">
             {/* Wishlist Icon with Badge */}
             <Link to="/wishlist" className="relative p-1 hover:text-[#B71C1C] cursor-pointer" title="Wishlist">
               <Heart className="w-5 h-5 text-slate-800" />
@@ -317,7 +310,7 @@ export default function Navbar() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for products, categories..."
+              placeholder="Search for products, categories, brands..."
               className="w-full bg-[#F3F4F6] text-slate-900 placeholder-slate-400 pl-9 pr-16 py-2.5 rounded-2xl border border-slate-200/80 focus:border-[#B71C1C] focus:bg-white text-xs font-medium outline-none transition-all shadow-2xs"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
