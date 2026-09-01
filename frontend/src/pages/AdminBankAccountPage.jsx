@@ -31,11 +31,17 @@ export default function AdminBankAccountPage() {
       const res = await api.get('/admin/bank-account').catch(() => null);
       const data = res?.data?.data || res?.data;
       if (data) {
-        setBankDetails(prev => ({
-          ...prev,
-          ...data,
-          enabled: data.enabled !== false
-        }));
+        setBankDetails({
+          enabled: data.enabled !== false,
+          accountHolder: data.accountHolder || data.account_holder_name || '',
+          bankName: data.bankName || data.bank_name || '',
+          accountNumber: data.accountNumber || data.account_number || '',
+          ifscCode: data.ifscCode || data.ifsc_code || '',
+          branchName: data.branchName || data.branch_name || '',
+          upiId: data.upiId || data.upi_id || '',
+          accountType: data.accountType || data.account_type || 'Current',
+          instructions: data.instructions || data.payment_instructions || ''
+        });
       }
     } catch (e) {
       toast.error('Failed to load bank account details.');
@@ -46,20 +52,46 @@ export default function AdminBankAccountPage() {
 
   const handleSave = async (e) => {
     if (e) e.preventDefault();
+
+    // Field Validations
+    if (!bankDetails.accountHolder.trim()) {
+      toast.error('Account Holder Name is required.');
+      return;
+    }
+    if (!bankDetails.bankName.trim()) {
+      toast.error('Bank Name is required.');
+      return;
+    }
+    if (!bankDetails.accountNumber.trim()) {
+      toast.error('Account Number is required.');
+      return;
+    }
+    if (!bankDetails.ifscCode.trim()) {
+      toast.error('IFSC Code is required.');
+      return;
+    }
+    if (!bankDetails.upiId.trim()) {
+      toast.error('Receiving UPI ID is required.');
+      return;
+    }
+
     setSaving(true);
-    toast.loading('Saving bank account details...', { id: 'admin-bank-toast' });
+    toast.loading('Saving bank account settings...', { id: 'admin-bank-toast' });
 
     try {
       const res = await api.put('/admin/bank-account', bankDetails);
-      if (res.data?.success) {
-        toast.success('Bank Account receiving details updated successfully! 🎉', { id: 'admin-bank-toast' });
+      const resData = res?.data ? res.data : res;
+
+      if (resData?.success) {
+        toast.success('Bank account settings saved successfully.', { id: 'admin-bank-toast' });
         broadcastSyncEvent('karviyam_bank_account_updated');
         await fetchBankDetails();
       } else {
-        toast.error(res.data?.message || 'Failed to save details.', { id: 'admin-bank-toast' });
+        toast.error(resData?.message || 'Failed to save bank account settings.', { id: 'admin-bank-toast' });
       }
     } catch (err) {
-      toast.error('Error saving bank account details.', { id: 'admin-bank-toast' });
+      const errMsg = err.response?.data?.message || err.message || 'Error saving bank account details.';
+      toast.error(errMsg, { id: 'admin-bank-toast' });
     } finally {
       setSaving(false);
     }

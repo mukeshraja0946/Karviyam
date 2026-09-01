@@ -208,6 +208,24 @@ async function initDb() {
       );
     `);
 
+    // 7b. Bank Account Settings table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bank_account_settings (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        account_holder_name VARCHAR(255),
+        bank_name VARCHAR(255),
+        account_number VARCHAR(255),
+        ifsc_code VARCHAR(100),
+        branch_name VARCHAR(255),
+        upi_id VARCHAR(255),
+        account_type VARCHAR(50) DEFAULT 'Current',
+        payment_instructions TEXT,
+        enabled BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
     // 8. Product Colors & Product Color Images tables
     await pool.query(`
       CREATE TABLE IF NOT EXISTS product_colors (
