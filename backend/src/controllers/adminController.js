@@ -457,9 +457,21 @@ exports.updateProduct = async (req, res, next) => {
     }
 
     if (updates.length > 0) {
-      updates.push('updated_at = NOW()');
       params.push(id);
-      await pool.query(`UPDATE products SET ${updates.join(', ')} WHERE id = ?`, params);
+      try {
+        await pool.query(`UPDATE products SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`, params);
+      } catch (errQuery) {
+        if (errQuery.code === 'ER_BAD_FIELD_ERROR' || (errQuery.message && errQuery.message.includes('updated_at'))) {
+          try {
+            await pool.query(`ALTER TABLE products ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`);
+            await pool.query(`UPDATE products SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`, params);
+          } catch (e2) {
+            await pool.query(`UPDATE products SET ${updates.join(', ')} WHERE id = ?`, params);
+          }
+        } else {
+          throw errQuery;
+        }
+      }
     }
 
     // Update color variants & dedicated image galleries if provided
