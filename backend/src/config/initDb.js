@@ -396,27 +396,43 @@ async function initDb() {
     `);
 
     // 15. Reviews table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS reviews (
-        id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        product_id BIGINT NOT NULL,
-        user_id BIGINT NOT NULL,
-        user_name VARCHAR(100),
-        title VARCHAR(255),
-        rating INT NOT NULL,
-        comment TEXT,
-        images LONGTEXT,
-        verified_purchase BOOLEAN DEFAULT FALSE,
-        helpful_count INT DEFAULT 0,
-        reported BOOLEAN DEFAULT FALSE,
-        order_id BIGINT DEFAULT NULL,
-        status VARCHAR(50) DEFAULT 'Approved',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      );
-    `);
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS reviews (
+          id BIGINT AUTO_INCREMENT PRIMARY KEY,
+          product_id BIGINT NOT NULL,
+          user_id BIGINT NOT NULL,
+          user_name VARCHAR(100),
+          title VARCHAR(255),
+          rating INT NOT NULL,
+          comment TEXT,
+          images LONGTEXT,
+          verified_purchase BOOLEAN DEFAULT FALSE,
+          helpful_count INT DEFAULT 0,
+          reported BOOLEAN DEFAULT FALSE,
+          order_id BIGINT DEFAULT NULL,
+          status VARCHAR(50) DEFAULT 'Approved',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_reviews_product_id (product_id),
+          INDEX idx_reviews_user_id (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+      try {
+        await pool.query(`
+          ALTER TABLE reviews 
+          ADD CONSTRAINT fk_reviews_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+        `);
+      } catch (eFk1) {}
+      try {
+        await pool.query(`
+          ALTER TABLE reviews 
+          ADD CONSTRAINT fk_reviews_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        `);
+      } catch (eFk2) {}
+    } catch (eRev) {
+      console.warn('⚠️ reviews table init warning:', eRev.message);
+    }
 
     try { await pool.query(`ALTER TABLE reviews ADD COLUMN title VARCHAR(255)`); } catch (e) {}
     try { await pool.query(`ALTER TABLE reviews ADD COLUMN images LONGTEXT`); } catch (e) {}
@@ -426,17 +442,33 @@ async function initDb() {
     try { await pool.query(`ALTER TABLE reviews ADD COLUMN order_id BIGINT DEFAULT NULL`); } catch (e) {}
 
     // 15b. Review Helpful Votes table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS review_helpful_votes (
-        id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        review_id BIGINT NOT NULL,
-        user_id BIGINT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_user_review_vote (review_id, user_id),
-        FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      );
-    `);
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS review_helpful_votes (
+          id BIGINT AUTO_INCREMENT PRIMARY KEY,
+          review_id BIGINT NOT NULL,
+          user_id BIGINT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_user_review_vote (review_id, user_id),
+          INDEX idx_rhv_review_id (review_id),
+          INDEX idx_rhv_user_id (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+      try {
+        await pool.query(`
+          ALTER TABLE review_helpful_votes 
+          ADD CONSTRAINT fk_rhv_review FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
+        `);
+      } catch (eFk1) {}
+      try {
+        await pool.query(`
+          ALTER TABLE review_helpful_votes 
+          ADD CONSTRAINT fk_rhv_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        `);
+      } catch (eFk2) {}
+    } catch (eRhv) {
+      console.warn('⚠️ review_helpful_votes table init warning:', eRhv.message);
+    }
 
     // 16. Notifications table
     await pool.query(`
