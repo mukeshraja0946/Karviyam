@@ -345,19 +345,8 @@ export default function MobileHomePage() {
           </span>
         </Link>
 
-        {/* Right Action Icons: Search, Wishlist, Cart */}
+        {/* Right Action Icons: Wishlist, Cart */}
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => {
-              const el = document.getElementById('mobile-homepage-search-input');
-              if (el) el.focus();
-            }}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-700 hover:text-[#B71C1C] cursor-pointer"
-            title="Search"
-          >
-            <Search className="w-4.5 h-4.5" />
-          </button>
 
           <button
             type="button"
