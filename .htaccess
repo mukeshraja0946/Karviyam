@@ -1,5 +1,3 @@
-DirectoryIndex server.js index.html index.php
-
 <IfModule mod_passenger.c>
   PassengerEnabled On
   PassengerAppType node
@@ -10,22 +8,19 @@ DirectoryIndex server.js index.html index.php
   RewriteEngine On
   RewriteBase /
 
-  # 1. REDIRECT LEGACY MAINTENANCE.PHP URL TO REACT ROUTE /maintenance
+  # 1. Redirect legacy maintenance.php URL to React route /maintenance
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 2. IGNORE DEFAULT HOSTINGER WELCOME FILES AND FORWARD TO SERVER.JS
-  RewriteCond %{REQUEST_URI} ^/(default\.php|default\.html|index\.php)?$ [NC]
-  RewriteRule ^ server.js [QSA,L]
-
-  # 3. ALLOW STATIC ASSET DIRECTORIES & PHYSICAL FILES TO SERVE DIRECTLY
+  # 2. Allow uploads and assets directories to serve directly
   RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
   RewriteRule ^ - [L]
 
+  # 3. Allow physical asset files (images, css, js, fonts) to serve directly
   RewriteCond %{REQUEST_FILENAME} -f
+  RewriteCond %{REQUEST_URI} \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json)$ [NC]
   RewriteRule ^ - [L]
 
-  # 4. FORWARD ALL OTHER Dynamic REQUESTS TO PASSENGER SERVER.JS
+  # 4. Forward all other requests (including root / and SPA routes) to Express
   RewriteRule ^ server.js [QSA,L]
 </IfModule>
-
