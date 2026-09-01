@@ -6,8 +6,10 @@ const subscriptionController = require('../controllers/subscriptionController');
 router.get('/settings', subscriptionController.getPublicSettings);
 router.post('/subscribe', subscriptionController.initiateSubscription);
 router.get('/detail/:id', subscriptionController.getSubscriptionById);
+router.get('/:id/payment-status', subscriptionController.getPaymentStatus);
 router.post('/create-payment', subscriptionController.createSubscriptionPayment);
 router.post('/verify-payment', subscriptionController.verifySubscriptionPayment);
+router.post('/webhook', subscriptionController.verifySubscriptionPayment);
 
 // Admin Control Center Routes (Support both /api/admin/subscriptions/subscribers and /api/subscriptions/admin/subscribers)
 router.get('/subscribers', subscriptionController.getAdminSubscribers);

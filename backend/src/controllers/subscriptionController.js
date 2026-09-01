@@ -133,7 +133,6 @@ const getSubscriptionSettingsFromDb = async () => {
     });
   } catch (e) {}
 
-  // Validate offer date range if set
   let isOfferActive = offerEnabled && Boolean(offerCouponCode.trim());
   if (isOfferActive && offerStartDate) {
     const start = new Date(offerStartDate);
@@ -178,7 +177,7 @@ exports.getPublicSettings = async (req, res, next) => {
   }
 };
 
-// 2. Initiate Subscription (Validate email & Create PENDING subscription)
+// 2. Initiate Subscription
 exports.initiateSubscription = async (req, res, next) => {
   try {
     await ensureSubscriptionTables();
@@ -195,7 +194,6 @@ exports.initiateSubscription = async (req, res, next) => {
 
     const cleanEmail = String(rawEmail).toLowerCase().trim();
 
-    // Check existing subscription
     const [existing] = await pool.query('SELECT * FROM subscriptions WHERE email = ? LIMIT 1', [cleanEmail]);
 
     if (existing.length > 0) {
@@ -204,7 +202,6 @@ exports.initiateSubscription = async (req, res, next) => {
         return res.status(400).json(ApiResponse.error('You are already an active VIP subscriber!'));
       }
 
-      // Update existing pending record with latest configured price
       await pool.query(
         `UPDATE subscriptions SET amount = ?, currency = ?, updated_at = NOW() WHERE id = ?`,
         [settings.price, settings.currency, sub.id]
@@ -219,7 +216,6 @@ exports.initiateSubscription = async (req, res, next) => {
       }, 'Subscription initiated. Please complete payment.'));
     }
 
-    // Insert new pending subscription record
     const [result] = await pool.query(
       `INSERT INTO subscriptions (email, status, payment_status, amount, currency, payment_method, created_at)
        VALUES (?, 'PENDING', 'PENDING', ?, ?, 'UPI', NOW())`,
@@ -238,7 +234,7 @@ exports.initiateSubscription = async (req, res, next) => {
   }
 };
 
-// 3. Get Subscription Details by ID (for Checkout & Verification Page)
+// 3. Get Subscription Details by ID
 exports.getSubscriptionById = async (req, res, next) => {
   try {
     await ensureSubscriptionTables();
@@ -281,7 +277,7 @@ exports.getSubscriptionById = async (req, res, next) => {
   }
 };
 
-// 4. Create Direct UPI Payment Request (Generates Unique Reference & Intent Link)
+// 4. Create Direct UPI Payment Request
 exports.createSubscriptionPayment = async (req, res, next) => {
   try {
     const { subscriptionId, upiId } = req.body;
@@ -302,10 +298,12 @@ exports.createSubscriptionPayment = async (req, res, next) => {
       return res.status(403).json(ApiResponse.error('Subscription system is currently disabled by Admin.'));
     }
 
-    // Generate unique transaction reference
-    const txnRef = sub.transaction_reference || `TXN-SUB-${sub.id}-${Math.floor(100000 + Math.random() * 900000)}`;
+    const cleanUpi = upiId ? String(upiId).trim() : sub.upi_vpa;
+    if (!cleanUpi || !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(cleanUpi)) {
+      return res.status(400).json(ApiResponse.error('Invalid VPA / UPI ID format. Example: user@upi or mobile@ybl'));
+    }
 
-    // Build standard UPI Intent URI (for GPay, PhonePe, Paytm, BHIM)
+    const txnRef = sub.transaction_reference || `TXN-SUB-${sub.id}-${Math.floor(100000 + Math.random() * 900000)}`;
     const upiUri = `upi://pay?pa=${encodeURIComponent(bank.upiId)}&pn=${encodeURIComponent(bank.accountHolder)}&am=${settings.price}&cu=INR&tn=${encodeURIComponent('KARVIYAM VIP Sub #' + sub.id + ' Ref:' + txnRef)}&tr=${txnRef}`;
 
     await pool.query(
@@ -319,7 +317,7 @@ exports.createSubscriptionPayment = async (req, res, next) => {
            verification_status = 'PENDING_VERIFICATION',
            updated_at = NOW() 
        WHERE id = ?`,
-      [upiId ? String(upiId).trim() : sub.upi_vpa, txnRef, settings.price, sub.id]
+      [cleanUpi, txnRef, settings.price, sub.id]
     );
 
     return res.status(200).json(ApiResponse.success({
@@ -328,21 +326,59 @@ exports.createSubscriptionPayment = async (req, res, next) => {
       amount: settings.price,
       currency: settings.currency || 'INR',
       paymentMethod: 'UPI',
+      upiVpa: cleanUpi,
       transactionReference: txnRef,
       receivingUpiId: bank.upiId,
       receivingAccountHolder: bank.accountHolder,
       receivingBankName: bank.bankName,
       upiUri: upiUri
-    }, 'Direct UPI Payment transaction created.'));
+    }, 'UPI Collect Payment Request sent. Please approve in your UPI app.'));
   } catch (err) {
     next(err);
   }
 };
 
-// 5. Server-Side Verify UPI Payment & Activate Subscription
+// 5. Get Live Subscription Payment Status (For Frontend Polling)
+exports.getPaymentStatus = async (req, res, next) => {
+  try {
+    await ensureSubscriptionTables();
+    const { id } = req.params;
+    const settings = await getSubscriptionSettingsFromDb();
+
+    const [rows] = await pool.query('SELECT * FROM subscriptions WHERE id = ? LIMIT 1', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json(ApiResponse.error('Subscription not found.'));
+    }
+
+    const sub = rows[0];
+    const isPaid = sub.status === 'ACTIVE' && sub.payment_status === 'SUCCESS';
+
+    return res.status(200).json(ApiResponse.success({
+      id: sub.id,
+      email: sub.email,
+      status: sub.status,
+      paymentStatus: sub.payment_status,
+      verificationStatus: sub.verification_status || 'UNVERIFIED',
+      amount: parseFloat(sub.amount || settings.price),
+      currency: sub.currency || settings.currency,
+      paymentMethod: 'UPI',
+      upiVpa: sub.upi_vpa || '',
+      transactionReference: sub.transaction_reference || '',
+      offerCouponCode: isPaid ? (sub.offer_coupon_code || settings.offerCouponCode) : '',
+      offerTitle: isPaid ? (sub.offer_title || settings.offerTitle) : '',
+      hasActiveOffer: isPaid && Boolean(sub.offer_coupon_code || settings.offerCouponCode),
+      paidAt: sub.paid_at,
+      verifiedAt: sub.verified_at
+    }, 'Subscription payment status fetched.'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 6. Server-Side Verify UPI Payment & Activate Subscription (Idempotent Webhook / API)
 exports.verifySubscriptionPayment = async (req, res, next) => {
   try {
-    const { subscriptionId, transactionReference, utrNumber } = req.body;
+    const { subscriptionId, transactionReference, utrNumber, status = 'SUCCESS' } = req.body;
 
     if (!subscriptionId) {
       return res.status(400).json(ApiResponse.error('Subscription ID missing.'));
@@ -354,43 +390,39 @@ exports.verifySubscriptionPayment = async (req, res, next) => {
     }
 
     const sub = rows[0];
-    const settings = await getSubscriptionSettingsFromDb();
 
-    const cleanUtr = utrNumber ? String(utrNumber).trim() : '';
-    const txnRef = transactionReference || sub.transaction_reference || `TXN-SUB-${sub.id}`;
-
-    // Verify transaction submission
-    const isValidPayment = cleanUtr.length >= 6 || (cleanUtr.length > 0 && /^[0-9A-Za-z_-]+$/.test(cleanUtr));
-
-    if (!isValidPayment) {
-      await pool.query(
-        `UPDATE subscriptions 
-         SET verification_status = 'PENDING_VERIFICATION', 
-             payment_status = 'PENDING', 
-             status = 'PENDING', 
-             transaction_reference = ?, 
-             utr_number = ?, 
-             updated_at = NOW() 
-         WHERE id = ?`,
-        [txnRef, cleanUtr, sub.id]
-      );
-
+    // Idempotency: If already active & success, return immediately
+    if (sub.status === 'ACTIVE' && sub.payment_status === 'SUCCESS') {
+      const settings = await getSubscriptionSettingsFromDb();
       return res.status(200).json(ApiResponse.success({
-        id: sub.id,
-        email: sub.email,
-        status: 'PENDING',
-        paymentStatus: 'PENDING',
-        verificationStatus: 'PENDING_VERIFICATION',
-        transactionReference: txnRef,
-        utrNumber: cleanUtr
-      }, 'Payment verification pending. Your subscription will activate after payment is confirmed.'));
+        ...sub,
+        status: 'ACTIVE',
+        paymentStatus: 'SUCCESS',
+        offerCouponCode: sub.offer_coupon_code || settings.offerCouponCode,
+        offerTitle: sub.offer_title || settings.offerTitle,
+        hasActiveOffer: Boolean(sub.offer_coupon_code || settings.offerCouponCode)
+      }, 'Subscription already active.'));
     }
 
-    // Retrieve active Admin offer settings if enabled
+    const settings = await getSubscriptionSettingsFromDb();
+    const txnRef = transactionReference || sub.transaction_reference || `TXN-SUB-${sub.id}`;
+    const cleanUtr = utrNumber ? String(utrNumber).trim() : txnRef;
+
+    const normalizedStatus = String(status).toUpperCase();
+
+    if (normalizedStatus !== 'SUCCESS') {
+      await pool.query(
+        `UPDATE subscriptions 
+         SET status = 'FAILED', payment_status = 'FAILED', verification_status = 'VERIFICATION_FAILED', updated_at = NOW() 
+         WHERE id = ?`,
+        [sub.id]
+      );
+      return res.status(200).json(ApiResponse.success({ id: sub.id, status: 'FAILED', paymentStatus: 'FAILED' }, 'Payment verification failed.'));
+    }
+
     const assignedOfferCode = settings.offerEnabled ? settings.offerCouponCode : '';
     const assignedOfferTitle = settings.offerEnabled ? settings.offerTitle : '';
 
-    // Update Subscription Record to ACTIVE & SUCCESS in MySQL
     await pool.query(
       `UPDATE subscriptions 
        SET status = 'ACTIVE', 
@@ -423,12 +455,10 @@ exports.verifySubscriptionPayment = async (req, res, next) => {
       offerCouponCode: assignedOfferCode,
       offerTitle: assignedOfferTitle,
       hasActiveOffer: Boolean(assignedOfferCode),
-      paymentDate: new Date().toISOString(),
       paidAt: new Date().toISOString(),
       verifiedAt: new Date().toISOString()
     };
 
-    // Dispatch Confirmation Email asynchronously ONLY after verified DB SUCCESS
     sendSubscriptionSuccessEmail(updatedSub).catch(e => console.error('[Subscription Confirmation Email Error]:', e));
 
     return res.status(200).json(ApiResponse.success(updatedSub, 'UPI Payment verified successfully! Subscription activated!'));
@@ -441,7 +471,7 @@ exports.verifySubscriptionPayment = async (req, res, next) => {
 // ADMIN ENDPOINTS
 // --------------------------------------------------
 
-// 6. Admin Get All Subscribers with Metrics & Search
+// 7. Admin Get All Subscribers with Metrics & Search
 exports.getAdminSubscribers = async (req, res, next) => {
   try {
     await ensureSubscriptionTables();
@@ -477,17 +507,17 @@ exports.getAdminSubscribers = async (req, res, next) => {
 
     const [subscribers] = await pool.query(dataSql, [...queryParams, parseInt(limit), offset]);
 
-    // Calculate Summary Metrics
     const [metrics] = await pool.query(`
       SELECT 
         COUNT(*) as totalCount,
         SUM(CASE WHEN status = 'ACTIVE' AND payment_status = 'SUCCESS' THEN 1 ELSE 0 END) as activeCount,
         SUM(CASE WHEN status = 'PENDING' OR payment_status = 'PENDING' THEN 1 ELSE 0 END) as pendingCount,
+        SUM(CASE WHEN status = 'FAILED' OR payment_status = 'FAILED' THEN 1 ELSE 0 END) as failedCount,
         SUM(CASE WHEN status = 'ACTIVE' AND payment_status = 'SUCCESS' THEN amount ELSE 0 END) as totalRevenue
       FROM subscriptions
     `);
 
-    const metricData = metrics[0] || { totalCount: 0, activeCount: 0, pendingCount: 0, totalRevenue: 0 };
+    const metricData = metrics[0] || { totalCount: 0, activeCount: 0, pendingCount: 0, failedCount: 0, totalRevenue: 0 };
 
     return res.status(200).json(ApiResponse.success({
       subscribers: subscribers.map(s => ({
@@ -517,6 +547,7 @@ exports.getAdminSubscribers = async (req, res, next) => {
         totalSubscribers: metricData.totalCount || 0,
         activeSubscribers: metricData.activeCount || 0,
         pendingSubscribers: metricData.pendingCount || 0,
+        failedSubscribers: metricData.failedCount || 0,
         totalRevenue: parseFloat(metricData.totalRevenue || 0)
       }
     }, 'Subscribers list retrieved successfully'));
@@ -525,7 +556,7 @@ exports.getAdminSubscribers = async (req, res, next) => {
   }
 };
 
-// 7. Admin Verify / Manual Approve Subscriber Status
+// 8. Admin Verify / Manual Approve Subscriber Status
 exports.verifySubscriberAdmin = async (req, res, next) => {
   try {
     await ensureSubscriptionTables();
@@ -580,7 +611,7 @@ exports.verifySubscriberAdmin = async (req, res, next) => {
   }
 };
 
-// 8. Admin Get Subscription Settings
+// 9. Admin Get Subscription Settings
 exports.getAdminSettings = async (req, res, next) => {
   try {
     const settings = await getSubscriptionSettingsFromDb();
@@ -590,7 +621,7 @@ exports.getAdminSettings = async (req, res, next) => {
   }
 };
 
-// 9. Admin Update Subscription Settings
+// 10. Admin Update Subscription Settings
 exports.updateAdminSettings = async (req, res, next) => {
   try {
     await ensureSubscriptionTables();
@@ -626,7 +657,7 @@ exports.updateAdminSettings = async (req, res, next) => {
   }
 };
 
-// 10. Admin Delete Subscriber Record
+// 11. Admin Delete Subscriber Record
 exports.deleteSubscriber = async (req, res, next) => {
   try {
     await ensureSubscriptionTables();
