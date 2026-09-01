@@ -9,7 +9,14 @@ const app = require('./src/app');
 const pool = require('./src/config/db');
 const initDb = require('./src/config/initDb');
 
-const PORT = process.env.PORT || 3000;
+// Process Safety: Prevent uncaught background errors from terminating Node server process
+process.on('uncaughtException', (err) => {
+  console.error('💥 [Server Process Safeguard - Uncaught Exception]:', err.stack || err.message || err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 [Server Process Safeguard - Unhandled Rejection]:', reason);
+});
 
 // Start HTTP Server immediately so Hostinger proxy connects without timeout
 const server = app.listen(PORT, async () => {

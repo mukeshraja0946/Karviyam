@@ -38,7 +38,7 @@ const checkMaintenanceMode = async (req, res, next) => {
           return next();
         }
       }
-      return res.status(503).json({
+      return res.status(200).json({
         success: false,
         message: 'Website is currently under scheduled maintenance. Please check back shortly.',
         maintenanceMode: true
