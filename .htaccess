@@ -1,4 +1,4 @@
-DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
+DirectoryIndex index.html index.php
 
 <IfModule mod_passenger.c>
   PassengerEnabled On
@@ -14,10 +14,7 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 2. FORWARD API REQUESTS TO NODE.JS BACKEND
-  RewriteRule ^api/(.*)$ server.js [QSA,L]
-
-  # 3. ALLOW PHYSICAL FILES AND STATIC ASSET DIRECTORIES TO PASS THROUGH DIRECTLY
+  # 2. ALLOW PHYSICAL FILES AND ASSET DIRECTORIES TO SERVE DIRECTLY
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
@@ -25,14 +22,7 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
   RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
   RewriteRule ^ - [L]
 
-  # 4. REACT SPA CLIENT-SIDE ROUTING FALLBACK
-  # Serves index.html directly via Apache for all storefront and admin URLs
-  RewriteCond %{DOCUMENT_ROOT}/frontend/dist/index.html -f
-  RewriteRule ^ /frontend/dist/index.html [L]
-
-  RewriteCond %{DOCUMENT_ROOT}/dist/index.html -f
-  RewriteRule ^ /dist/index.html [L]
-
-  RewriteRule ^ /index.html [L]
+  # 3. FORWARD ALL OTHER REQUESTS TO PASSENGER SERVER.JS
+  RewriteRule ^ server.js [QSA,L]
 </IfModule>
 
