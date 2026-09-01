@@ -205,7 +205,8 @@ export default function ProductDetailPage() {
 
         // Derive initial color variant
         if (Array.isArray(item.colors) && item.colors.length > 0) {
-          setSelectedColor(item.colors[0].colorName || item.colors[0].name || 'Karviyam Crimson');
+          const defaultCol = item.colors.find(c => c.isDefault) || item.colors[0];
+          setSelectedColor(defaultCol.colorName || defaultCol.name || 'Karviyam Crimson');
         } else if (item.color) {
           setSelectedColor(item.color);
         } else {

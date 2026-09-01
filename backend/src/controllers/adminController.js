@@ -639,7 +639,14 @@ const saveColorVariantsForProduct = async (productId, colorVariants) => {
           [productId, uniqueImgs[i], i === 0 ? 1 : 0, i]
         ).catch(() => null);
       }
-      await pool.query('UPDATE products SET image_url = ? WHERE id = ? AND (image_url IS NULL OR image_url = "")', [uniqueImgs[0], productId]).catch(() => null);
+      
+      const defaultVarObj = colorVariants.find(v => v.isDefault) || colorVariants[0];
+      const defaultMainImg = defaultVarObj ? cleanStr(defaultVarObj.mainImage || (Array.isArray(defaultVarObj.imageUrls) ? defaultVarObj.imageUrls[0] : null)) : null;
+      const primaryImgToSave = defaultMainImg || uniqueImgs[0];
+
+      if (primaryImgToSave) {
+        await pool.query('UPDATE products SET image_url = ? WHERE id = ?', [primaryImgToSave, productId]).catch(() => null);
+      }
     }
   } catch (err) {
     console.error('[saveColorVariantsForProduct Error]:', err.message);

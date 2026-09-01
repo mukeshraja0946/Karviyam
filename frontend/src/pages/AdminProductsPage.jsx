@@ -740,6 +740,8 @@ export default function AdminProductsPage() {
       });
 
       const defaultVar = (formData.colorVariants || []).find(v => v.isDefault) || (formData.colorVariants || [])[0];
+      const defaultVarMainImg = defaultVar ? (defaultVar.mainImage || (defaultVar.imageUrls ? defaultVar.imageUrls[0] : '')) : '';
+      const primaryImageToSubmit = defaultVarMainImg || compressedImages[0] || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800';
 
       const selCat = allCategories.find(c => String(c.id) === String(formData.categoryId));
       const selSub = selCat?.subcategories?.find(s => String(s.id) === String(formData.subcategoryId));
@@ -773,7 +775,7 @@ export default function AdminProductsPage() {
         brand: finalBrandName,
         type: finalCatName,
         weight: formData.weight ? parseFloat(formData.weight) : null,
-        imageUrl: (defaultVar && defaultVar.imageUrls && defaultVar.imageUrls[0]) || compressedImages[0] || 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
+        imageUrl: primaryImageToSubmit,
       };
 
       if (editingProduct) {

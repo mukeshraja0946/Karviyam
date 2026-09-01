@@ -14,7 +14,7 @@ const mapProductRowToDTO = async (p) => {
   // Fetch color variants if table exists
   let colors = [];
   try {
-    const [colorRows] = await pool.query('SELECT * FROM product_colors WHERE product_id = ? ORDER BY id DESC', [p.id]);
+    const [colorRows] = await pool.query('SELECT * FROM product_colors WHERE product_id = ? ORDER BY is_default DESC, id ASC', [p.id]);
     const seenColorNames = new Set();
 
     for (const c of colorRows) {
@@ -176,6 +176,13 @@ const mapProductRowToDTO = async (p) => {
     }
   } catch (e) {}
 
+  const defaultCol = colors.find(c => c.isDefault) || colors[0];
+  const primaryImageUrl = (defaultCol && defaultCol.mainImage) || p.image_url || (imageUrls && imageUrls[0]) || null;
+  const resolvedImages = (defaultCol && defaultCol.imageUrls && defaultCol.imageUrls.length > 0) ? [...defaultCol.imageUrls] : [...imageUrls];
+  if (primaryImageUrl && !resolvedImages.includes(primaryImageUrl)) {
+    resolvedImages.unshift(primaryImageUrl);
+  }
+
   return {
     id: p.id,
     name: p.name,
@@ -187,8 +194,8 @@ const mapProductRowToDTO = async (p) => {
     costPrice: p.cost_price !== null && p.cost_price !== undefined ? parseFloat(p.cost_price) : null,
     discountPercentage: p.discount_percentage !== null && p.discount_percentage !== undefined ? parseFloat(p.discount_percentage) : null,
     stockQuantity: p.stock_quantity !== undefined ? p.stock_quantity : 0,
-    imageUrl: p.image_url,
-    images: imageUrls,
+    imageUrl: primaryImageUrl,
+    images: resolvedImages,
     videoUrl: p.video_url,
     type: p.type || 'General',
     gender: p.gender || 'Unisex',
