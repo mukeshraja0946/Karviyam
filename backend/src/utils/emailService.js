@@ -440,3 +440,239 @@ exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMess
     error: lastErr?.message || 'SMTP Authentication failed. Please verify SMTP_PASS in backend/.env for vanakkam@karviyam.com'
   };
 };
+
+const sendSubscriptionSuccessEmail = async (subscription) => {
+  if (!subscription || !subscription.email) return;
+
+  const toEmail = subscription.email;
+  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+  const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
+
+  const amountText = `${subscription.currency || '₹'} ${subscription.amount || '99'}`;
+  const dateText = subscription.paymentDate ? new Date(subscription.paymentDate).toLocaleString('en-IN') : new Date().toLocaleString('en-IN');
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/></head>
+<body style="margin:0;padding:0;background-color:#F8FAFC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#F8FAFC;padding:20px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E2E8F0;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+          <tr>
+            <td align="center" style="padding:24px;background-color:#ffffff;border-bottom:1px solid #F1F5F9;">
+              ${logoHeaderHtml || '<h1 style="margin:0;color:#B71C1C;font-family:serif;letter-spacing:2px;">🌸 KARVIYAM</h1>'}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 28px;color:#1E293B;">
+              <div style="display:inline-block;background-color:#FEF2F2;border:1px solid #FCA5A5;color:#B71C1C;font-weight:bold;font-size:11px;padding:4px 12px;border-radius:99px;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">
+                VIP DROP ALERTS ACTIVE
+              </div>
+              <h2 style="margin:0 0 12px 0;font-size:22px;color:#0F172A;font-weight:800;">
+                Subscription Confirmed! 🎉
+              </h2>
+              <p style="margin:0 0 20px 0;font-size:14px;color:#475569;line-height:1.6;">
+                Welcome to the KARVIYAM VIP Club! You are now subscribed to receive exclusive drop alerts, VIP coupons, and member discounts.
+              </p>
+
+              <div style="background-color:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:20px;margin-bottom:24px;">
+                <h4 style="margin:0 0 12px 0;font-size:13px;color:#0F172A;text-transform:uppercase;letter-spacing:0.5px;">Subscription Receipt</h4>
+                <table width="100%" border="0" cellspacing="0" cellpadding="6" style="font-size:13px;color:#334155;">
+                  <tr>
+                    <td><strong>Subscriber Email:</strong></td>
+                    <td align="right">${toEmail}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Subscription ID:</strong></td>
+                    <td align="right">#SUB-${subscription.id}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Payment Reference:</strong></td>
+                    <td align="right" style="font-family:monospace;font-weight:bold;">${subscription.paymentId || 'ONLINE_PAYMENT'}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Amount Paid:</strong></td>
+                    <td align="right" style="color:#B71C1C;font-weight:bold;">${amountText}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Status:</strong></td>
+                    <td align="right" style="color:#15803D;font-weight:bold;">🟢 ACTIVE VIP MEMBER</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Date & Time:</strong></td>
+                    <td align="right">${dateText}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <div style="background-color:#FFF1F2;border:1px dashed #FDA4AF;border-radius:12px;padding:16px;text-align:center;margin-bottom:24px;">
+                <span style="font-size:11px;color:#9F1239;font-weight:bold;text-transform:uppercase;display:block;margin-bottom:4px;">VIP Welcome Coupon</span>
+                <span style="font-size:20px;font-family:monospace;font-weight:900;color:#B71C1C;letter-spacing:2px;">KARVIYAM25</span>
+                <span style="font-size:11px;color:#475569;display:block;margin-top:4px;">Use at checkout for an extra 25% OFF your next order!</span>
+              </div>
+
+              <p style="margin:0;font-size:13px;color:#64748B;line-height:1.5;">
+                Thank you for supporting KARVIYAM. Should you have any questions, feel free to contact our customer care at <a href="mailto:support@karviyam.com" style="color:#B71C1C;text-decoration:none;font-weight:bold;">support@karviyam.com</a>.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px;background-color:#F1F5F9;text-align:center;font-size:11px;color:#64748B;">
+              © 2026 KARVIYAM E-Commerce Platform. All Rights Reserved.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  const mailOptions = {
+    from: `"KARVIYAM VIP Club" <${fromUser}>`,
+    to: toEmail,
+    subject: '🎉 Subscription Confirmed! Welcome to KARVIYAM VIP Drop Alerts',
+    html,
+    attachments
+  };
+
+  const transporters = await getTransporters();
+  for (const transporter of transporters) {
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`[Subscription Confirmation Email Sent] -> ${toEmail}`);
+      return { success: true };
+    } catch (err) {
+      console.warn(`[Subscription Email Retry]: ${err.message}`);
+    }
+  }
+};
+
+const sendCampaignEmail = async ({ toEmail, subject, content, couponCode }) => {
+  if (!toEmail) return;
+
+  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+  const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
+
+  const formattedContent = String(content || '').replace(/\n/g, '<br/>');
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/></head>
+<body style="margin:0;padding:0;background-color:#F8FAFC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#F8FAFC;padding:20px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E2E8F0;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+          <tr>
+            <td align="center" style="padding:24px;background-color:#ffffff;border-bottom:1px solid #F1F5F9;">
+              ${logoHeaderHtml || '<h1 style="margin:0;color:#B71C1C;font-family:serif;letter-spacing:2px;">🌸 KARVIYAM</h1>'}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 28px;color:#1E293B;">
+              <h2 style="margin:0 0 16px 0;font-size:20px;color:#0F172A;font-weight:800;">
+                ${subject}
+              </h2>
+
+              <div style="font-size:14px;color:#334155;line-height:1.7;margin-bottom:24px;">
+                ${formattedContent}
+              </div>
+
+              ${couponCode ? `
+              <div style="background-color:#FEF2F2;border:2px dashed #FCA5A5;border-radius:12px;padding:18px;text-align:center;margin-bottom:24px;">
+                <span style="font-size:11px;color:#991B1B;font-weight:bold;text-transform:uppercase;display:block;margin-bottom:4px;">Exclusive Coupon Code</span>
+                <span style="font-size:22px;font-family:monospace;font-weight:900;color:#B71C1C;letter-spacing:3px;">${couponCode}</span>
+                <span style="font-size:11px;color:#64748B;display:block;margin-top:6px;">Apply this coupon at checkout to enjoy your exclusive discount.</span>
+              </div>
+              ` : ''}
+
+              <div style="text-align:center;margin-top:28px;">
+                <a href="https://karviyam.com/shop" style="background-color:#B71C1C;color:#ffffff;text-decoration:none;font-weight:bold;font-size:13px;padding:12px 28px;border-radius:99px;display:inline-block;letter-spacing:1px;text-transform:uppercase;">
+                  Shop Latest Collections →
+                </a>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px;background-color:#F1F5F9;text-align:center;font-size:11px;color:#64748B;">
+              © 2026 KARVIYAM E-Commerce Platform. All Rights Reserved.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  const mailOptions = {
+    from: `"KARVIYAM Offers" <${fromUser}>`,
+    to: toEmail,
+    subject: subject,
+    html,
+    attachments
+  };
+
+  const transporters = await getTransporters();
+  for (const transporter of transporters) {
+    try {
+      await transporter.sendMail(mailOptions);
+      return { success: true };
+    } catch (err) {
+      console.warn(`[Campaign Email Retry for ${toEmail}]: ${err.message}`);
+    }
+  }
+};
+
+const sendTestEmail = async (toEmail) => {
+  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+  const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family:sans-serif;padding:20px;color:#0F172A;">
+  ${logoHeaderHtml || '<h2 style="color:#B71C1C;">🌸 KARVIYAM</h2>'}
+  <h3>SMTP Email Configuration Test</h3>
+  <p>This is a successful test email sent from your KARVIYAM Admin Panel.</p>
+  <p><strong>Configured Sender:</strong> ${fromUser}</p>
+  <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
+</body>
+</html>
+  `;
+
+  const mailOptions = {
+    from: `"KARVIYAM Admin" <${fromUser}>`,
+    to: toEmail,
+    subject: '✅ KARVIYAM SMTP Email Connection Test Successful',
+    html,
+    attachments
+  };
+
+  const transporters = await getTransporters();
+  let lastErr = null;
+  for (const transporter of transporters) {
+    try {
+      await transporter.sendMail(mailOptions);
+      return { success: true };
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw new Error(lastErr?.message || 'Failed to send test email');
+};
+
+module.exports = {
+  sendContactEmail,
+  sendAdminReplyEmail,
+  sendSubscriptionSuccessEmail,
+  sendCampaignEmail,
+  sendTestEmail
+};
+

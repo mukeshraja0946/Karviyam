@@ -184,6 +184,8 @@ export default function AdminLayout() {
       title: 'Marketing & Homepage',
       icon: Megaphone,
       subItems: [
+        { name: 'VIP Subscriptions', path: '/admin/subscriptions' },
+        { name: 'Email Marketing', path: '/admin/email-marketing' },
         { name: 'Hero Banners', path: '/admin/banners' },
         { name: 'Promotional Cards', path: '/admin/promo-cards' },
         { name: 'Coupons', path: '/admin/coupons' },

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Truck, RotateCcw, ShieldCheck, Tag, Headphones, Mail, Phone, MapPin } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Truck, RotateCcw, ShieldCheck, Tag, Headphones, Mail, Phone, MapPin, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import api from '../utils/api';
 
 export default function Footer() {
+  const navigate = useNavigate();
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
   
   const [footerData, setFooterData] = useState(() => ({
@@ -23,17 +25,50 @@ export default function Footer() {
     b5Sub: localStorage.getItem('karviyam_badge5Sub') || 'Dedicated assistance',
   }));
 
+  // Subscription Settings & State
+  const [subSettings, setSubSettings] = useState({
+    enabled: true,
+    title: 'STAY UPDATED',
+    description: 'Subscribe to get special drop alerts, VIP coupons & discounts.',
+    buttonText: 'SUBSCRIBE NOW'
+  });
+  const [subEmail, setSubEmail] = useState('');
+  const [subSubmitting, setSubSubmitting] = useState(false);
+
   useEffect(() => {
     fetchPublicSettings();
-    window.addEventListener('storage', fetchPublicSettings);
-    window.addEventListener('karviyam_logo_updated', fetchPublicSettings);
-    window.addEventListener('karviyam_footer_updated', fetchPublicSettings);
+    fetchSubscriptionSettings();
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('karviyam_logo_updated', handleSync);
+    window.addEventListener('karviyam_footer_updated', handleSync);
+    window.addEventListener('karviyam_subscription_updated', handleSync);
     return () => {
-      window.removeEventListener('storage', fetchPublicSettings);
-      window.removeEventListener('karviyam_logo_updated', fetchPublicSettings);
-      window.removeEventListener('karviyam_footer_updated', fetchPublicSettings);
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('karviyam_logo_updated', handleSync);
+      window.removeEventListener('karviyam_footer_updated', handleSync);
+      window.removeEventListener('karviyam_subscription_updated', handleSync);
     };
   }, []);
+
+  const handleSync = () => {
+    fetchPublicSettings();
+    fetchSubscriptionSettings();
+  };
+
+  const fetchSubscriptionSettings = async () => {
+    try {
+      const res = await api.get('/subscriptions/settings').catch(() => null);
+      const data = res?.data?.data || res?.data;
+      if (data && typeof data === 'object') {
+        setSubSettings({
+          enabled: data.enabled !== false,
+          title: data.title || 'STAY UPDATED',
+          description: data.description || 'Subscribe to get special drop alerts, VIP coupons & discounts.',
+          buttonText: data.buttonText || 'SUBSCRIBE NOW'
+        });
+      }
+    } catch (e) {}
+  };
 
   const fetchPublicSettings = async () => {
     try {
@@ -213,26 +248,68 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Newsletter Subscription */}
-        <div>
-          <h4 className="font-display font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">Stay Updated</h4>
-          <p className="text-xs text-slate-500 mb-3">
-            Subscribe to get special drop alerts, VIP coupons & discounts.
-          </p>
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-2">
-            <input
-              type="email"
-              placeholder="Enter your email address"
-              className="w-full bg-slate-100 border border-slate-200 text-xs px-4 py-3 rounded-xl outline-none focus:border-[#B71C1C] focus:bg-white transition-all font-medium"
-            />
-            <button
-              type="submit"
-              className="w-full bg-[#B71C1C] hover:bg-[#900C0C] text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl shadow-xs transition-colors"
+        {/* Newsletter Subscription (Shown ONLY if enabled by Admin) */}
+        {subSettings.enabled && (
+          <div>
+            <h4 className="font-display font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">
+              {subSettings.title || 'Stay Updated'}
+            </h4>
+            <p className="text-xs text-slate-500 mb-3">
+              {subSettings.description || 'Subscribe to get special drop alerts, VIP coupons & discounts.'}
+            </p>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (subSubmitting) return;
+
+                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!subEmail || !emailPattern.test(subEmail.trim())) {
+                  toast.error('Please enter a valid email address.');
+                  return;
+                }
+
+                setSubSubmitting(true);
+                toast.loading('Initiating subscription...', { id: 'footer-sub-toast' });
+
+                try {
+                  const res = await api.post('/subscriptions/subscribe', { email: subEmail.trim() });
+                  const data = res.data?.data || res.data;
+
+                  if (res.data?.success && data?.subscriptionId) {
+                    toast.success('Redirecting to Subscription Checkout...', { id: 'footer-sub-toast' });
+                    setSubEmail('');
+                    navigate(`/subscribe/payment?id=${data.subscriptionId}`);
+                  } else {
+                    toast.error(res.data?.message || 'Subscription failed. Please try again.', { id: 'footer-sub-toast' });
+                  }
+                } catch (err) {
+                  const msg = err.response?.data?.message || 'Unable to complete subscription request.';
+                  toast.error(msg, { id: 'footer-sub-toast' });
+                } finally {
+                  setSubSubmitting(false);
+                }
+              }}
+              className="space-y-2"
             >
-              Subscribe Now
-            </button>
-          </form>
-        </div>
+              <input
+                type="email"
+                value={subEmail}
+                onChange={(e) => setSubEmail(e.target.value)}
+                placeholder="Enter your email address"
+                disabled={subSubmitting}
+                className="w-full bg-slate-100 border border-slate-200 text-xs px-4 py-3 rounded-xl outline-none focus:border-[#B71C1C] focus:bg-white transition-all font-medium disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={subSubmitting}
+                className="w-full bg-[#B71C1C] hover:bg-[#900C0C] disabled:bg-slate-400 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                {subSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>{subSettings.buttonText || 'Subscribe Now'}</span>
+              </button>
+            </form>
+          </div>
+        )}
 
       </div>
 

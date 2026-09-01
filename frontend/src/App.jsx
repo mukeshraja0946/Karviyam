@@ -54,8 +54,11 @@ import AdminCustomersPage from './pages/AdminCustomersPage';
 import AdminInventoryPage from './pages/AdminInventoryPage';
 import AdminReportsPage from './pages/AdminReportsPage';
 import AdminPincodesPage from './pages/AdminPincodesPage';
-import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
 import AdminHelpSupportPage from './pages/AdminHelpSupportPage';
+import SubscriptionCheckoutPage from './pages/SubscriptionCheckoutPage';
+import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
+import AdminSubscriptionsPage from './pages/AdminSubscriptionsPage';
+import AdminEmailMarketingPage from './pages/AdminEmailMarketingPage';
 
 export default function App() {
   return (
@@ -84,6 +87,8 @@ export default function App() {
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/offers" element={<OffersPage />} />
+                  <Route path="/subscribe/payment" element={<SubscriptionCheckoutPage />} />
+                  <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
 
                   {/* Protected Customer Routes */}
                   <Route element={<ProtectedRoute />}>
@@ -104,6 +109,9 @@ export default function App() {
                     <Route path="/admin/inventory" element={<AdminInventoryPage />} />
                     <Route path="/admin/customers" element={<AdminCustomersPage />} />
                     <Route path="/admin/coupons" element={<AdminCouponsPage />} />
+                    <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
+                    <Route path="/admin/email-marketing" element={<AdminEmailMarketingPage />} />
+                    <Route path="/admin/mail" element={<AdminEmailMarketingPage />} />
                     <Route path="/admin/banners" element={<AdminBannersPage />} />
                     <Route path="/admin/promo-cards" element={<AdminPromoCardsPage />} />
                     <Route path="/admin/pincodes" element={<AdminPincodesPage />} />
