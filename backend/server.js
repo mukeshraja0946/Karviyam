@@ -18,8 +18,10 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 [Server Process Safeguard - Unhandled Rejection]:', reason);
 });
 
+const PORT = process.env.PORT || 3000;
+
 // Start HTTP Server immediately so Hostinger proxy connects without timeout
-const server = app.listen(PORT, async () => {
+const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Karviyam Node.js Express Backend running on port ${PORT}`);
 
   // Non-blocking database connection check & schema initialization
