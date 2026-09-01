@@ -196,7 +196,52 @@ const getEmailLogoHeader = async () => {
   return { logoHeaderHtml, attachments };
 };
 
-exports.sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMessage, originalMessage = '', orderId = '' }) => {
+const sendContactEmail = async ({ name, email, subject, message }) => {
+  try {
+    const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+    const supportEmail = process.env.SUPPORT_EMAIL || 'vanakkam@karviyam.com';
+    const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
+
+    const mailOptions = {
+      from: `"Karviyam Contact Form" <${fromUser}>`,
+      to: supportEmail,
+      replyTo: email,
+      subject: `New Contact Submission: ${subject || 'Customer Inquiry'}`,
+      text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\nMessage:\n${message}`,
+      attachments,
+      html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b;">
+  ${logoHeaderHtml || '<h2>KARVIYAM</h2>'}
+  <h3>New Support / Contact Submission</h3>
+  <p><strong>Name:</strong> ${name}</p>
+  <p><strong>Email:</strong> ${email}</p>
+  <p><strong>Subject:</strong> ${subject || 'N/A'}</p>
+  <hr/>
+  <p><strong>Message:</strong></p>
+  <blockquote style="background:#f8fafc; padding:12px; border-left:4px solid #b71c1c;">${message}</blockquote>
+</body>
+</html>
+      `
+    };
+
+    const transporters = await getTransporters();
+    for (const transporter of transporters) {
+      try {
+        await transporter.sendMail(mailOptions);
+        return { success: true };
+      } catch (err) {
+        console.warn(`[Send Contact Email Warning]: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    console.error('[sendContactEmail Error]:', err.message);
+  }
+  return { success: false };
+};
+
+const sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMessage, originalMessage = '', orderId = '' }) => {
   const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
   const supportEmail = process.env.SUPPORT_EMAIL || 'vanakkam@karviyam.com';
 
