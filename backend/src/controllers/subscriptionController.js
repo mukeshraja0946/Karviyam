@@ -625,3 +625,20 @@ exports.updateAdminSettings = async (req, res, next) => {
     next(err);
   }
 };
+
+// 10. Admin Delete Subscriber Record
+exports.deleteSubscriber = async (req, res, next) => {
+  try {
+    await ensureSubscriptionTables();
+    const { id } = req.params;
+    const [rows] = await pool.query('SELECT * FROM subscriptions WHERE id = ? LIMIT 1', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json(ApiResponse.error('Subscriber not found.'));
+    }
+
+    await pool.query('DELETE FROM subscriptions WHERE id = ?', [id]);
+    return res.status(200).json(ApiResponse.success(null, `Subscriber #${id} deleted successfully.`));
+  } catch (err) {
+    next(err);
+  }
+};
