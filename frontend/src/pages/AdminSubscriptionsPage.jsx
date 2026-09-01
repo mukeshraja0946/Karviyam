@@ -61,7 +61,9 @@ export default function AdminSubscriptionsPage() {
     toast.loading('Saving subscription settings...', { id: 'sub-admin-toast' });
 
     try {
-      const res = await api.put('/admin/subscriptions/settings', settings);
+      const res = await api.put('/admin/subscriptions/settings')
+        .catch(() => api.put('/admin/subscriptions/admin-settings'))
+        .catch(() => api.put('/subscriptions/admin/settings', settings));
       if (res.data?.success) {
         toast.success('Subscription settings updated successfully!', { id: 'sub-admin-toast' });
         broadcastSyncEvent('karviyam_subscription_updated');
