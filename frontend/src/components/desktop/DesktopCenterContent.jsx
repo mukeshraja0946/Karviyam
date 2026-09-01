@@ -7,7 +7,17 @@ import {
   Star,
   IndianRupee,
   Gift,
-  ShoppingBag
+  ShoppingBag,
+  Truck,
+  RotateCcw,
+  ShieldCheck,
+  Award,
+  Zap,
+  Sparkles,
+  ArrowRight,
+  Clock,
+  Tag,
+  Layers
 } from 'lucide-react';
 import { useWishlist } from '../../context/WishlistContext';
 import api from '../../utils/api';
@@ -32,53 +42,53 @@ const DEFAULT_RECOMMENDED = [
   { id: 103, name: 'Printed Oversized T-Shirt', brand: 'KARVIYAM', rating: 4.3, reviews: '740', price: 599, oldPrice: 999, discount: '40% OFF', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600' },
   { id: 104, name: 'Running Sneakers', brand: 'KARVIYAM', rating: 4.6, reviews: '1.5k', price: 1499, oldPrice: 2499, discount: '40% OFF', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600' },
   { id: 105, name: 'Cotton Kurta Set', brand: 'KARVIYAM', rating: 4.4, reviews: '620', price: 899, oldPrice: 1599, discount: '44% OFF', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600' },
-  { id: 106, name: 'Kids Printed Shirt', brand: 'KARVIYAM', rating: 4.5, reviews: '310', price: 499, oldPrice: 799, discount: '38% OFF', image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600' },
-  { id: 107, name: 'Casual Denim Jacket', brand: 'KARVIYAM', rating: 4.7, reviews: '1.1k', price: 1799, oldPrice: 2999, discount: '40% OFF', image: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=600' },
-  { id: 108, name: 'Floral Summer Dress', brand: 'KARVIYAM', rating: 4.5, reviews: '850', price: 1099, oldPrice: 1999, discount: '45% OFF', image: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600' },
-  { id: 109, name: 'Leather Crossbody Bag', brand: 'KARVIYAM', rating: 4.8, reviews: '420', price: 1499, oldPrice: 2799, discount: '46% OFF', image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600' },
-  { id: 110, name: 'Polarized Retro Sunglasses', brand: 'KARVIYAM', rating: 4.4, reviews: '670', price: 799, oldPrice: 1499, discount: '46% OFF', image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600' },
-  { id: 111, name: 'Unisex Knit Winter Beanie', brand: 'KARVIYAM', rating: 4.6, reviews: '530', price: 499, oldPrice: 899, discount: '44% OFF', image: 'https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=600' },
-  { id: 112, name: 'High-Top Canvas Sneakers', brand: 'KARVIYAM', rating: 4.7, reviews: '1.3k', price: 1899, oldPrice: 3299, discount: '42% OFF', image: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=600' }
+  { id: 106, name: 'Kids Printed Shirt', brand: 'KARVIYAM', rating: 4.5, reviews: '310', price: 499, oldPrice: 799, discount: '38% OFF', image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600' }
 ];
 
 export default function DesktopCenterContent() {
   const navigate = useNavigate();
   const { isInWishlist, toggleWishlist } = useWishlist();
 
+  // 1. Hero Carousel State
   const [currentHero, setCurrentHero] = useState(0);
   const [heroSlides, setHeroSlides] = useState([]);
   const [autoScroll, setAutoScroll] = useState(true);
   const [speed, setSpeed] = useState(5000);
 
+  // 2. Data States from Backend API & Settings
   const [categories, setCategories] = useState(CATEGORIES_DATA);
   const [productsRow1, setProductsRow1] = useState([]);
   const [productsRow2, setProductsRow2] = useState([]);
   const [homepageSections, setHomepageSections] = useState([]);
+  const [flashProducts, setFlashProducts] = useState([]);
+  const [styleCategories, setStyleCategories] = useState([]);
+  const [occasionCategories, setOccasionCategories] = useState([]);
+  const [priceChips, setPriceChips] = useState([]);
 
-  const fetchHomepageSections = async () => {
-    try {
-      const res = await api.get('/homepage-sections').catch(() => null);
-      const data = res?.data?.data || res?.data;
-      if (Array.isArray(data)) {
-        setHomepageSections(data);
-      }
-    } catch (e) {
-      console.error('Error fetching homepage sections in DesktopCenterContent:', e);
-    }
-  };
+  // Timer State for Flash Picks
+  const [timeLeft, setTimeLeft] = useState({ hours: 2, minutes: 41, seconds: 36 });
 
-  // Category carousel ref & state
+  // Carousel Refs & Scroll Boundary States
   const categoryScrollRef = useRef(null);
+  const row1ScrollRef = useRef(null);
+  const row2ScrollRef = useRef(null);
+  const flashScrollRef = useRef(null);
+
   const [canCategoryScrollLeft, setCanCategoryScrollLeft] = useState(false);
   const [canCategoryScrollRight, setCanCategoryScrollRight] = useState(true);
 
-  // Recommendation Rows refs & states (Row 1 & Row 2 inside SAME container)
-  const row1ScrollRef = useRef(null);
-  const row2ScrollRef = useRef(null);
-  const [canRow1Left, setCanRow1Left] = useState(false);
-  const [canRow1Right, setCanRow1Right] = useState(true);
-  const [canRow2Left, setCanRow2Left] = useState(false);
-  const [canRow2Right, setCanRow2Right] = useState(true);
+  // Flash Picks Countdown Timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
+        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
+        if (prev.hours > 0) return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
+        return { hours: 2, minutes: 41, seconds: 36 };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const checkCategoryScrollBoundary = () => {
     const el = categoryScrollRef.current;
@@ -89,61 +99,6 @@ export default function DesktopCenterContent() {
       setCanCategoryScrollRight(!isAtRight);
     }
   };
-
-  const checkRow1ScrollBoundary = () => {
-    const el = row1ScrollRef.current;
-    if (el) {
-      const isAtLeft = el.scrollLeft <= 5;
-      const isAtRight = el.scrollLeft + el.clientWidth >= el.scrollWidth - 5;
-      setCanRow1Left(!isAtLeft);
-      setCanRow1Right(!isAtRight);
-    }
-  };
-
-  const checkRow2ScrollBoundary = () => {
-    const el = row2ScrollRef.current;
-    if (el) {
-      const isAtLeft = el.scrollLeft <= 5;
-      const isAtRight = el.scrollLeft + el.clientWidth >= el.scrollWidth - 5;
-      setCanRow2Left(!isAtLeft);
-      setCanRow2Right(!isAtRight);
-    }
-  };
-
-  useEffect(() => {
-    const catEl = categoryScrollRef.current;
-    if (catEl) {
-      checkCategoryScrollBoundary();
-      catEl.addEventListener('scroll', checkCategoryScrollBoundary);
-      window.addEventListener('resize', checkCategoryScrollBoundary);
-    }
-    const r1El = row1ScrollRef.current;
-    if (r1El) {
-      checkRow1ScrollBoundary();
-      r1El.addEventListener('scroll', checkRow1ScrollBoundary);
-      window.addEventListener('resize', checkRow1ScrollBoundary);
-    }
-    const r2El = row2ScrollRef.current;
-    if (r2El) {
-      checkRow2ScrollBoundary();
-      r2El.addEventListener('scroll', checkRow2ScrollBoundary);
-      window.addEventListener('resize', checkRow2ScrollBoundary);
-    }
-    return () => {
-      if (catEl) {
-        catEl.removeEventListener('scroll', checkCategoryScrollBoundary);
-        window.removeEventListener('resize', checkCategoryScrollBoundary);
-      }
-      if (r1El) {
-        r1El.removeEventListener('scroll', checkRow1ScrollBoundary);
-        window.removeEventListener('resize', checkRow1ScrollBoundary);
-      }
-      if (r2El) {
-        r2El.removeEventListener('scroll', checkRow2ScrollBoundary);
-        window.removeEventListener('resize', checkRow2ScrollBoundary);
-      }
-    };
-  }, [categories, productsRow1, productsRow2]);
 
   const handleCategoryScrollLeft = (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -163,81 +118,38 @@ export default function DesktopCenterContent() {
     }
   };
 
-  const handleRow1ScrollLeft = (e) => {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    const el = row1ScrollRef.current;
-    if (el) {
-      el.scrollBy({ left: -360, behavior: 'smooth' });
-      setTimeout(checkRow1ScrollBoundary, 350);
-    }
-  };
-
-  const handleRow1ScrollRight = (e) => {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    const el = row1ScrollRef.current;
-    if (el) {
-      el.scrollBy({ left: 360, behavior: 'smooth' });
-      setTimeout(checkRow1ScrollBoundary, 350);
-    }
-  };
-
-  const handleRow2ScrollLeft = (e) => {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    const el = row2ScrollRef.current;
-    if (el) {
-      el.scrollBy({ left: -360, behavior: 'smooth' });
-      setTimeout(checkRow2ScrollBoundary, 350);
-    }
-  };
-
-  const handleRow2ScrollRight = (e) => {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    const el = row2ScrollRef.current;
-    if (el) {
-      el.scrollBy({ left: 360, behavior: 'smooth' });
-      setTimeout(checkRow2ScrollBoundary, 350);
-    }
-  };
-
+  // 3. Load All Desktop Data from Unified Backend API
   useEffect(() => {
-    fetchProductsAndCategories();
-    fetchBanners();
-    fetchHomepageSections();
+    fetchAllDesktopData();
 
-    const handleFocusOrVisible = () => {
-      if (document.visibilityState === 'visible') {
-        fetchBanners();
-        fetchProductsAndCategories();
-        fetchHomepageSections();
-      }
+    const handleSync = () => {
+      fetchAllDesktopData();
     };
 
-    const handleStorage = () => {
-      fetchBanners();
-      fetchProductsAndCategories();
-      fetchHomepageSections();
-    };
+    window.addEventListener('karviyam_products_updated', handleSync);
+    window.addEventListener('karviyam_categories_updated', handleSync);
+    window.addEventListener('karviyam_parent_categories_updated', handleSync);
+    window.addEventListener('karviyam_homepage_sections_updated', handleSync);
+    window.addEventListener('karviyam_banners_updated', handleSync);
+    window.addEventListener('storage', handleSync);
 
-    window.addEventListener('karviyam_products_updated', fetchProductsAndCategories);
-    window.addEventListener('karviyam_categories_updated', fetchProductsAndCategories);
-    window.addEventListener('karviyam_parent_categories_updated', fetchProductsAndCategories);
-    window.addEventListener('karviyam_homepage_sections_updated', fetchHomepageSections);
-    window.addEventListener('karviyam_banners_updated', fetchBanners);
-    window.addEventListener('focus', handleFocusOrVisible);
-    window.addEventListener('visibilitychange', handleFocusOrVisible);
-    window.addEventListener('storage', handleStorage);
     return () => {
-      window.removeEventListener('karviyam_products_updated', fetchProductsAndCategories);
-      window.removeEventListener('karviyam_categories_updated', fetchProductsAndCategories);
-      window.removeEventListener('karviyam_parent_categories_updated', fetchProductsAndCategories);
-      window.removeEventListener('karviyam_homepage_sections_updated', fetchHomepageSections);
-      window.removeEventListener('karviyam_banners_updated', fetchBanners);
-      window.removeEventListener('focus', handleFocusOrVisible);
-      window.removeEventListener('visibilitychange', handleFocusOrVisible);
-      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('karviyam_products_updated', handleSync);
+      window.removeEventListener('karviyam_categories_updated', handleSync);
+      window.removeEventListener('karviyam_parent_categories_updated', handleSync);
+      window.removeEventListener('karviyam_homepage_sections_updated', handleSync);
+      window.removeEventListener('karviyam_banners_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
     };
   }, []);
 
+  const fetchAllDesktopData = async () => {
+    fetchBanners();
+    fetchHomepageSections();
+    fetchProductsAndCategories();
+  };
+
+  // Fetch Hero Banners
   const fetchBanners = async () => {
     try {
       let currentAuto = true;
@@ -258,16 +170,6 @@ export default function DesktopCenterContent() {
         if (rawData.speed !== undefined && !isNaN(Number(rawData.speed))) {
           currentSpeed = Number(rawData.speed);
         }
-      }
-
-      if (!list || list.length === 0) {
-        try {
-          const savedBanners = localStorage.getItem('karviyam_admin_banners');
-          if (savedBanners) {
-            const parsed = JSON.parse(savedBanners);
-            if (Array.isArray(parsed)) list = parsed;
-          }
-        } catch (eLoc) {}
       }
 
       setAutoScroll(currentAuto);
@@ -293,11 +195,11 @@ export default function DesktopCenterContent() {
         setHeroSlides([]);
       }
     } catch (e) {
-      console.error('Error fetching hero banners in DesktopCenterContent:', e);
       setHeroSlides([]);
     }
   };
 
+  // Banner Auto-rotate
   useEffect(() => {
     if (heroSlides.length === 0) {
       setCurrentHero(0);
@@ -314,32 +216,24 @@ export default function DesktopCenterContent() {
     return () => clearInterval(timer);
   }, [heroSlides.length, autoScroll, speed, currentHero]);
 
+  // Fetch Dynamic Admin Homepage Sections
+  const fetchHomepageSections = async () => {
+    try {
+      const res = await api.get('/homepage-sections').catch(() => null);
+      const data = res?.data?.data || res?.data;
+      if (Array.isArray(data)) {
+        setHomepageSections(data);
+      }
+    } catch (e) {}
+  };
+
+  // Fetch Products, Parent Categories & Extra Sections Data
   const fetchProductsAndCategories = async () => {
     try {
-      // 1. FETCH PRODUCTS FOR RECOMMENDED FOR YOU (2 ROWS INSIDE SAME CONTAINER)
-      let rawProductList = [];
-      const featRes = await api.get('/products/featured').catch(() => null);
-      const featData = featRes?.data?.data || featRes?.data || featRes;
-      let featList = Array.isArray(featData) ? featData : (Array.isArray(featData?.content) ? featData.content : []);
-
+      // 1. Products
       const allRes = await api.get('/products?size=50').catch(() => null);
       const allData = allRes?.data?.data || allRes?.data;
       let allList = Array.isArray(allData?.content) ? allData.content : (Array.isArray(allData) ? allData : []);
-
-      rawProductList = [...featList, ...allList.filter(p => !featList.some(f => String(f.id) === String(p.id)))];
-
-      try {
-        const savedAdmin = localStorage.getItem('karviyam_admin_products');
-        if (savedAdmin) {
-          const parsed = JSON.parse(savedAdmin);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const activeAdminProds = parsed.filter(p => p.isActive !== false);
-            if (activeAdminProds.length > 0) {
-              rawProductList = [...activeAdminProds, ...rawProductList.filter(p => !activeAdminProds.some(a => String(a.id) === String(p.id)))];
-            }
-          }
-        }
-      } catch (eSaved) {}
 
       const formatProductItem = (p, idx) => {
         const fallback = DEFAULT_RECOMMENDED[idx % DEFAULT_RECOMMENDED.length];
@@ -353,7 +247,7 @@ export default function DesktopCenterContent() {
           id: p.id || fallback.id + idx,
           name: p.name || fallback.name,
           brand: p.brand || fallback.brand || 'KARVIYAM',
-          rating: p.rating || fallback.rating || 4.5,
+          rating: Number(p.rating || fallback.rating || 4.5).toFixed(1),
           reviews: p.reviewsCount ? `${p.reviewsCount}` : fallback.reviews,
           price: price,
           oldPrice: oldPrice,
@@ -362,7 +256,7 @@ export default function DesktopCenterContent() {
         };
       };
 
-      const activeProducts = rawProductList.filter(p => p && p.isActive !== false);
+      const activeProducts = allList.filter(p => p && p.isActive !== false);
       let formattedProducts = activeProducts.map((p, idx) => formatProductItem(p, idx));
 
       if (formattedProducts.length < 12) {
@@ -378,32 +272,15 @@ export default function DesktopCenterContent() {
         });
       }
 
-      // Divide products into Row 1 & Row 2 inside the same Recommended For You section
       const halfIndex = Math.max(6, Math.floor(formattedProducts.length / 2));
-      const row1 = formattedProducts.slice(0, halfIndex);
-      let row2 = formattedProducts.slice(halfIndex);
+      setProductsRow1(formattedProducts.slice(0, halfIndex));
+      setProductsRow2(formattedProducts.slice(halfIndex));
+      setFlashProducts(formattedProducts.slice(0, 8));
 
-      if (row2.length < 6) {
-        row2 = [...formattedProducts].reverse().slice(0, Math.max(6, row1.length));
-      }
-
-      setProductsRow1(row1);
-      setProductsRow2(row2);
-
-      // 2. FETCH PARENT CATEGORIES
+      // 2. Parent Categories
       const parentRes = await api.get('/parent-categories').catch(() => null);
       const parentData = parentRes?.data?.data || parentRes?.data;
       let parentList = Array.isArray(parentData) ? parentData : [];
-
-      if (!parentList || parentList.length === 0) {
-        try {
-          const saved = localStorage.getItem('karviyam_admin_parent_categories');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed)) parentList = parsed.filter(c => c.isActive !== false);
-          }
-        } catch (eP) {}
-      }
 
       if (parentList && parentList.length > 0) {
         const formattedCats = parentList.map(c => {
@@ -419,26 +296,41 @@ export default function DesktopCenterContent() {
             link: linkStr
           };
         });
-
-        if (formattedCats.length < 10) {
-          const existingNames = new Set(formattedCats.map(fc => fc.name));
-          for (const defCat of CATEGORIES_DATA) {
-            if (formattedCats.length >= 10) break;
-            if (!existingNames.has(defCat.name)) {
-              formattedCats.push(defCat);
-              existingNames.add(defCat.name);
-            }
-          }
-        }
         setCategories(formattedCats);
       } else {
         setCategories(CATEGORIES_DATA);
       }
-    } catch (e) {
-      console.error('Error fetching data in DesktopCenterContent:', e);
-      setProductsRow1(DEFAULT_RECOMMENDED.slice(0, 6));
-      setProductsRow2(DEFAULT_RECOMMENDED.slice(6, 12));
-    }
+
+      // 3. Shop Your Style
+      setStyleCategories([
+        { id: '1', label: 'Casual', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400', link: '/shop?style=Casual' },
+        { id: '2', label: 'Formal', image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400', link: '/shop?style=Formal' },
+        { id: '3', label: 'Festive', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400', link: '/shop?style=Festive' },
+        { id: '4', label: 'Streetwear', image: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=400', link: '/shop?style=Streetwear' },
+        { id: '5', label: 'Jewellery', image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400', link: '/shop?category=Jewellery' },
+        { id: '6', label: 'Kids', image: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=400', link: '/shop?category=Kids' }
+      ]);
+
+      // 4. Shop by Occasion
+      setOccasionCategories([
+        { id: '1', label: 'Wedding', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400', link: '/shop?occasion=Wedding' },
+        { id: '2', label: 'Festival', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400', link: '/shop?occasion=Festival' },
+        { id: '3', label: 'Office', image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400', link: '/shop?occasion=Office' },
+        { id: '4', label: 'Date Night', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400', link: '/shop?occasion=Date+Night' },
+        { id: '5', label: 'Vacation', image: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=400', link: '/shop?occasion=Vacation' },
+        { id: '6', label: 'Gifting', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=400', link: '/shop?occasion=Gifting' }
+      ]);
+
+      // 5. Price Chips
+      setPriceChips([
+        { id: '1', label: 'Under ₹499', link: '/shop?max_price=499', bgClass: 'bg-[#B71C1C] text-white' },
+        { id: '2', label: 'Under ₹999', link: '/shop?max_price=999', bgClass: 'bg-slate-900 text-white' },
+        { id: '3', label: 'Under ₹1499', link: '/shop?max_price=1499', bgClass: 'bg-indigo-900 text-white' },
+        { id: '4', label: 'Under ₹1999', link: '/shop?max_price=1999', bgClass: 'bg-purple-900 text-white' },
+        { id: '5', label: 'Under ₹2999', link: '/shop?max_price=2999', bgClass: 'bg-emerald-900 text-white' }
+      ]);
+
+    } catch (e) {}
   };
 
   const slide = heroSlides[currentHero] || heroSlides[0];
@@ -449,10 +341,10 @@ export default function DesktopCenterContent() {
       <div
         key={prod.id || idx}
         onClick={() => navigate(`/product/${prod.id}`)}
-        className="h-[195px] xl:h-[205px] w-[150px] sm:w-[165px] xl:w-[175px] bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-1.5 flex flex-col overflow-hidden cursor-pointer shrink-0 group gap-1"
+        className="h-[210px] xl:h-[220px] w-[160px] sm:w-[175px] xl:w-[185px] bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-2 flex flex-col overflow-hidden cursor-pointer shrink-0 group gap-1"
       >
         {/* Product Image Box */}
-        <div className="relative w-full h-[120px] xl:h-[130px] bg-white rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+        <div className="relative w-full h-[125px] xl:h-[135px] bg-white rounded-xl overflow-hidden flex items-center justify-center shrink-0">
           <img
             src={resolveImageUrl(prod.image || prod.imageUrl, prod.id)}
             alt={prod.name}
@@ -468,44 +360,44 @@ export default function DesktopCenterContent() {
               e.stopPropagation();
               toggleWishlist(prod.id);
             }}
-            className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-2xs ${
-              liked ? 'bg-[#B71C1C] text-white' : 'bg-white/90 text-slate-600 hover:text-[#B71C1C]'
+            className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center border shadow-2xs transition-transform active:scale-90 ${
+              liked
+                ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
+                : 'bg-white/90 backdrop-blur-xs text-slate-600 border-slate-200 hover:text-[#B71C1C]'
             }`}
-            title={liked ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
-            <Heart className={`w-3 h-3 ${liked ? 'fill-current' : ''}`} />
+            <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-current' : ''}`} />
           </button>
         </div>
 
-        {/* Content Box */}
-        <div className="flex-1 flex flex-col justify-start pt-0.5 px-0.5 gap-0.5">
-          {/* Brand & Rating */}
-          <div className="flex items-center justify-between text-[9px]">
-            <span className="font-extrabold uppercase tracking-wider text-[#B71C1C] truncate max-w-[70px]">
-              {prod.brand}
-            </span>
-            <div className="flex items-center gap-0.5 text-slate-700 font-bold">
-              <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-              <span>{prod.rating}</span>
+        {/* Product Info */}
+        <div className="flex-1 flex flex-col justify-between pt-0.5 min-w-0">
+          <div>
+            <div className="flex items-center justify-between gap-1 text-[9.5px]">
+              <span className="font-extrabold text-[#B71C1C] truncate uppercase">
+                {prod.brand || 'KARVIYAM'}
+              </span>
+              <span className="flex items-center gap-0.5 font-bold text-slate-700 shrink-0">
+                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                <span>{prod.rating || 4.5}</span>
+              </span>
             </div>
+
+            <h3 className="font-bold text-[11.5px] text-slate-900 leading-tight truncate group-hover:text-[#B71C1C] transition-colors mt-0.5">
+              {prod.name}
+            </h3>
           </div>
 
-          {/* Single Line Truncated Title */}
-          <h3 className="font-extrabold text-[10px] xl:text-[11px] text-slate-900 leading-tight truncate overflow-hidden group-hover:text-[#B71C1C] transition-colors" title={prod.name}>
-            {prod.name}
-          </h3>
-
-          {/* Price & Offer Row */}
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="font-black text-[11px] xl:text-xs text-slate-900">
+          <div className="flex items-baseline gap-1 mt-auto">
+            <span className="font-black text-xs text-slate-900">
               ₹{prod.price}
             </span>
-            {prod.oldPrice > prod.price && (
+            {prod.oldPrice && prod.oldPrice > prod.price && (
               <span className="text-[9px] text-slate-400 line-through">
                 ₹{prod.oldPrice}
               </span>
             )}
-            <span className="text-[8.5px] font-extrabold text-emerald-700">
+            <span className="text-[9px] font-extrabold text-emerald-700 ml-auto">
               {prod.discount}
             </span>
           </div>
@@ -519,8 +411,7 @@ export default function DesktopCenterContent() {
       
       {/* 1. Hero Carousel */}
       {heroSlides.length > 0 && slide && (
-        <div className="w-full h-[270px] xl:h-[290px] rounded-xl overflow-hidden relative shadow-sm bg-slate-950 group">
-          {/* Background Image Layer with HTML img for 100% reliable rendering */}
+        <div className="w-full h-[270px] xl:h-[290px] rounded-2xl overflow-hidden relative shadow-sm bg-slate-950 group">
           <div className="absolute inset-0 z-0 overflow-hidden">
             <img
               src={slide.image}
@@ -590,40 +481,50 @@ export default function DesktopCenterContent() {
         </div>
       )}
 
-      {/* 2. Offer Strip */}
-      <div className="w-full min-h-[64px] bg-white rounded-xl border border-slate-200/90 shadow-xs px-3 xl:px-5 py-2 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2">
+      {/* 2. Trust & Delivery Highlights Bar */}
+      <div className="w-full min-h-[64px] bg-white rounded-2xl border border-slate-200/90 shadow-xs px-3 xl:px-5 py-2 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2">
         <div className="flex-1 flex items-center gap-2.5 border-r border-slate-100 pr-3 xl:pr-5 min-w-[180px]">
-          <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold shrink-0">
-            <IndianRupee className="w-4 h-4" />
+          <div className="w-8 h-8 rounded-full bg-red-100 text-[#B71C1C] flex items-center justify-center font-bold shrink-0">
+            <Truck className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="font-extrabold text-[11px] text-slate-900 uppercase">UNDER ₹499</h4>
-            <p className="text-[10px] text-slate-500 font-medium">Best Under Budget Finds</p>
+            <h4 className="font-extrabold text-[11px] text-slate-900 uppercase">Free Delivery</h4>
+            <p className="text-[10px] text-slate-500 font-medium">On orders above ₹499</p>
           </div>
         </div>
 
         <div className="flex-1 flex items-center gap-2.5 border-r border-slate-100 px-3 xl:px-5 min-w-[180px]">
           <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-            <Gift className="w-4 h-4" />
+            <RotateCcw className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="font-extrabold text-[11px] text-slate-900 uppercase">DEAL OF THE DAY</h4>
-            <p className="text-[10px] text-slate-500 font-medium">New Deals Everyday</p>
+            <h4 className="font-extrabold text-[11px] text-slate-900 uppercase">Easy Returns</h4>
+            <p className="text-[10px] text-slate-500 font-medium">7 Days hassle-free returns</p>
+          </div>
+        </div>
+
+        <div className="flex-1 flex items-center gap-2.5 border-r border-slate-100 px-3 xl:px-5 min-w-[180px]">
+          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-4 h-4" />
+          </div>
+          <div>
+            <h4 className="font-extrabold text-[11px] text-slate-900 uppercase">100% Secure Payment</h4>
+            <p className="text-[10px] text-slate-500 font-medium">UPI & Encrypted Checkout</p>
           </div>
         </div>
 
         <div className="flex-1 flex items-center gap-2.5 pl-3 xl:pl-5 min-w-[180px]">
-          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-            <ShoppingBag className="w-4 h-4" />
+          <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+            <Award className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="font-extrabold text-[11px] text-slate-900 uppercase">WHAT'S NEW</h4>
-            <p className="text-[10px] text-slate-500 font-medium">Latest Arrivals</p>
+            <h4 className="font-extrabold text-[11px] text-slate-900 uppercase">Best Price Guarantee</h4>
+            <p className="text-[10px] text-slate-500 font-medium">Unmatched quality</p>
           </div>
         </div>
       </div>
 
-      {/* 3. Shop by Category Section */}
+      {/* 3. Top Categories Carousel */}
       <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-3 relative">
         <div className="flex items-center justify-between">
           <div>
@@ -631,7 +532,7 @@ export default function DesktopCenterContent() {
               Shop by Category
             </h2>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Explore top categories and find your favorites
+              Explore top categories and find your style
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -640,8 +541,6 @@ export default function DesktopCenterContent() {
                 type="button"
                 onClick={handleCategoryScrollLeft}
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                title="Previous Categories"
-                aria-label="Previous Categories"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -651,8 +550,6 @@ export default function DesktopCenterContent() {
                 type="button"
                 onClick={handleCategoryScrollRight}
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                title="Next Categories"
-                aria-label="Next Categories"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -694,10 +591,93 @@ export default function DesktopCenterContent() {
         </div>
       </div>
 
-      {/* 4. SINGLE RECOMMENDED FOR YOU CONTAINER WITH TWO INDEPENDENT HORIZONTAL PRODUCT CAROUSEL ROWS */}
+      {/* 4. Flash Picks Section with Countdown Timer */}
+      <div className="w-full bg-gradient-to-r from-red-950 via-slate-900 to-red-900 text-white rounded-3xl p-5 shadow-md flex flex-col gap-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-sm">
+              <Zap className="w-5 h-5 fill-current" />
+            </div>
+            <div>
+              <h2 className="font-display font-black text-base xl:text-lg tracking-tight uppercase flex items-center gap-2">
+                <span>Flash Picks</span>
+                <span className="text-[10px] bg-red-600/80 px-2 py-0.5 rounded-full font-sans tracking-normal">LIMITED TIME</span>
+              </h2>
+              <div className="flex items-center gap-2 text-xs text-slate-300 font-mono font-bold mt-0.5">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span>Ends in {String(timeLeft.hours).padStart(2, '0')} : {String(timeLeft.minutes).padStart(2, '0')} : {String(timeLeft.seconds).padStart(2, '0')}</span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => navigate('/shop?filter=flash')}
+            className="text-xs font-bold text-amber-300 hover:underline cursor-pointer"
+          >
+            Explore Deals →
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap">
+          {flashProducts.map((prod, idx) => renderProductCard(prod, idx))}
+        </div>
+      </div>
+
+      {/* 5. Shop Your Style Section */}
+      <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
+              Shop Your Style
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Curated aesthetics tailored for every mood
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+          {styleCategories.map(st => (
+            <div
+              key={st.id}
+              onClick={() => navigate(st.link || '/shop')}
+              className="bg-slate-50 border border-slate-200/80 hover:border-[#B71C1C] rounded-2xl p-2 flex flex-col items-center text-center cursor-pointer transition-all group shadow-2xs"
+            >
+              <div className="w-full aspect-square bg-white rounded-xl overflow-hidden mb-2">
+                <img
+                  src={st.image}
+                  alt={st.label}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <span className="font-black text-xs text-slate-900 group-hover:text-[#B71C1C]">{st.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 6. Find Your Price Chips */}
+      <div className="w-full bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Tag className="w-4 h-4 text-[#B71C1C]" />
+          <span className="font-extrabold text-xs text-slate-900 uppercase">Budget Store:</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {priceChips.map(chip => (
+            <button
+              key={chip.id}
+              onClick={() => navigate(chip.link)}
+              className={`px-4 py-1.5 rounded-full text-xs font-black transition-transform active:scale-95 cursor-pointer shadow-2xs ${chip.bgClass}`}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 7. Recommended For You Container */}
       <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-4 relative">
-        
-        {/* Single Header */}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
@@ -715,38 +695,34 @@ export default function DesktopCenterContent() {
           </button>
         </div>
 
-        {/* ROW 1 CAROUSEL */}
+        {/* Row 1 Carousel */}
         <div className="relative group">
           <div
             ref={row1ScrollRef}
-            onScroll={checkRow1ScrollBoundary}
             className="flex items-center gap-2.5 xl:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap"
           >
             {productsRow1.map((prod, idx) => renderProductCard(prod, idx))}
           </div>
         </div>
 
-        {/* ROW 2 CAROUSEL */}
+        {/* Row 2 Carousel */}
         <div className="relative group">
           <div
             ref={row2ScrollRef}
-            onScroll={checkRow2ScrollBoundary}
             className="flex items-center gap-2.5 xl:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap"
           >
             {productsRow2.map((prod, idx) => renderProductCard(prod, idx))}
           </div>
         </div>
-
       </div>
 
-      {/* 5. DYNAMIC ADMIN-CONTROLLED HOMEPAGE SECTIONS (Trending, Most-Loved Fashion for You, Starting @ ₹199) */}
+      {/* 8. Dynamic Admin-Controlled Homepage Sections (Trending, Most-Loved Fashion for You, Starting @ ₹199) */}
       {homepageSections.map((sec) => {
         if (!sec || sec.enabled === false || !Array.isArray(sec.products) || sec.products.length === 0) return null;
         const isGrid = sec.display_type === 'grid';
 
         return (
           <div key={sec.id || sec.section_key} className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-4 relative">
-            {/* Section Header */}
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
@@ -766,7 +742,6 @@ export default function DesktopCenterContent() {
               </button>
             </div>
 
-            {/* Products Layout (Grid vs Horizontal Scroll) */}
             {isGrid ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {sec.products.map((prod, idx) => renderProductCard(prod, idx))}
@@ -779,6 +754,39 @@ export default function DesktopCenterContent() {
           </div>
         );
       })}
+
+      {/* 9. Shop by Occasion Section */}
+      <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
+              Shop by Occasion
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Find perfect outfits for every event
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+          {occasionCategories.map(occ => (
+            <div
+              key={occ.id}
+              onClick={() => navigate(occ.link || '/shop')}
+              className="bg-slate-50 border border-slate-200/80 hover:border-[#B71C1C] rounded-2xl p-2 flex flex-col items-center text-center cursor-pointer transition-all group shadow-2xs"
+            >
+              <div className="w-full aspect-square bg-white rounded-xl overflow-hidden mb-2">
+                <img
+                  src={occ.image}
+                  alt={occ.label}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <span className="font-black text-xs text-slate-900 group-hover:text-[#B71C1C]">{occ.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
     </main>
   );
