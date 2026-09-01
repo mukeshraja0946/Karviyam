@@ -459,8 +459,8 @@ export default function CheckoutPage() {
           email: formData.email || 'arunkumar@example.com',
           phone: formData.phone || '9876543210',
           shippingAddress: formData,
-          status: 'PENDING',
-          paymentStatus: selectedPaymentMethod === 'COD' ? 'Pending' : 'Paid',
+          status: selectedPaymentMethod === 'COD' ? 'Pending' : 'PAYMENT_PENDING',
+          paymentStatus: 'PENDING',
           paymentMethod: selectedPaymentMethod,
           totalAmount: orderTotal,
           items: itemsList,
@@ -480,8 +480,14 @@ export default function CheckoutPage() {
 
       clearCart();
       setPaymentModalOpen(false);
-      toast.success('Order placed successfully! 🎉');
-      navigate('/order-success', { state: { order: createdOrder } });
+      
+      if (selectedPaymentMethod === 'COD') {
+        toast.success('COD Order placed successfully! 🎉');
+      } else {
+        toast.success('Order created! Please complete UPI payment verification.', { duration: 4000 });
+      }
+
+      navigate(`/order-success?id=${createdOrder.id}`, { state: { order: createdOrder } });
     } catch (err) {
       console.error(err);
       toast.error('Failed to place order. Please try again.');

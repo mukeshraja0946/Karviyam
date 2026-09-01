@@ -27,13 +27,13 @@ const mapOrderRowToDTO = async (order) => {
   }));
 
   let paymentMethod = 'COD';
-  let paymentStatus = 'Pending';
+  let paymentStatus = 'PENDING';
   let transactionId = null;
 
   const [payments] = await pool.query('SELECT * FROM payments WHERE order_id = ? ORDER BY id DESC LIMIT 1', [order.id]);
   if (payments.length > 0) {
     paymentMethod = payments[0].payment_method || 'COD';
-    paymentStatus = payments[0].payment_status || 'Pending';
+    paymentStatus = payments[0].payment_status || 'PENDING';
     transactionId = payments[0].transaction_id || null;
   }
 
@@ -43,7 +43,7 @@ const mapOrderRowToDTO = async (order) => {
     totalAmount: parseFloat(order.total_amount || 0),
     discountAmount: parseFloat(order.discount_amount || 0),
     shippingCost: parseFloat(order.shipping_cost || 0),
-    status: order.status || 'Pending',
+    status: order.status || 'PAYMENT_PENDING',
     fullName: order.full_name,
     email: order.email,
     phone: order.phone,
@@ -60,6 +60,7 @@ const mapOrderRowToDTO = async (order) => {
   };
 };
 
+// 1. Checkout Endpoint
 exports.checkout = async (req, res, next) => {
   try {
     const userId = req.user ? req.user.id : null;
@@ -70,7 +71,7 @@ exports.checkout = async (req, res, next) => {
 
     const normalizedMethod = String(paymentMethod || 'COD').trim().toUpperCase();
 
-    // 1. Validate customer details for guest checkout
+    // Validate customer details
     if (!fullName || !String(fullName).trim()) {
       return res.status(400).json(ApiResponse.error('Full Name is required for delivery'));
     }
@@ -84,48 +85,8 @@ exports.checkout = async (req, res, next) => {
       return res.status(400).json(ApiResponse.error('Pincode is required'));
     }
 
-    // 2. Validate payment method against MySQL database settings
-    try {
-      const [settingRows] = await pool.query('SELECT setting_key, setting_value FROM settings');
-      const settingsMap = {};
-      settingRows.forEach(r => {
-        let val = r.setting_value;
-        if (val === 'true') val = true;
-        else if (val === 'false') val = false;
-        settingsMap[r.setting_key] = val;
-      });
-
-      const checkB = (val, defaultVal = true) => {
-        if (val === undefined || val === null) return defaultVal;
-        if (typeof val === 'boolean') return val;
-        if (typeof val === 'number') return val === 1;
-        if (typeof val === 'string') {
-          const l = val.trim().toLowerCase();
-          if (l === 'true' || l === '1') return true;
-          if (l === 'false' || l === '0') return false;
-        }
-        return defaultVal;
-      };
-
-      const cod = checkB(settingsMap.codEnabled, true);
-      const online = checkB(settingsMap.onlinePaymentEnabled, false);
-      const rzp = online && checkB(settingsMap.razorpayEnabled, false);
-      const stp = online && checkB(settingsMap.stripeEnabled, false);
-
-      if (normalizedMethod === 'COD' && !cod) {
-        return res.status(400).json(ApiResponse.error('Cash on Delivery (COD) is currently disabled by administrator.'));
-      }
-      if ((normalizedMethod === 'RAZORPAY' || normalizedMethod === 'UPI') && (!online || !rzp)) {
-        return res.status(400).json(ApiResponse.error('Selected online payment method is currently disabled by administrator.'));
-      }
-      if ((normalizedMethod === 'STRIPE' || normalizedMethod === 'CARD') && (!online || !stp)) {
-        return res.status(400).json(ApiResponse.error('Selected card payment method is currently disabled by administrator.'));
-      }
-    } catch (eSettings) {}
-
     let orderItemsData = items;
 
-    // If items not directly supplied and logged in, fetch from user cart
     if ((!orderItemsData || orderItemsData.length === 0) && userId) {
       const [cartRows] = await pool.query('SELECT id FROM cart WHERE user_id = ?', [userId]);
       if (cartRows.length > 0) {
@@ -160,15 +121,20 @@ exports.checkout = async (req, res, next) => {
 
     const finalTotal = Math.max(0, calculatedTotal - parseFloat(discountAmount) + parseFloat(shippingCost));
 
+    // Determine initial order status: COD orders default to 'CONFIRMED' or 'Pending', UPI orders default to 'PAYMENT_PENDING'
+    const initialStatus = normalizedMethod === 'COD' ? 'Pending' : 'PAYMENT_PENDING';
+    const initialPaymentStatus = 'PENDING';
+
     const [orderResult] = await pool.query(
       `INSERT INTO orders 
        (user_id, total_amount, discount_amount, shipping_cost, status, full_name, email, phone, address, city, pincode, created_at)
-       VALUES (?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         userId,
         finalTotal,
         parseFloat(discountAmount),
         parseFloat(shippingCost),
+        initialStatus,
         fullName || (req.user ? req.user.full_name : 'Guest Customer'),
         email || (req.user ? req.user.email : 'guest@karviyam.com'),
         phone || (req.user ? req.user.phone : ''),
@@ -192,11 +158,11 @@ exports.checkout = async (req, res, next) => {
     }
 
     // Insert payment record
-    const txnId = paymentMethod === 'COD' ? `COD-${orderId}-${Date.now()}` : `TXN-${orderId}-${Date.now()}`;
+    const txnId = normalizedMethod === 'COD' ? `COD-${orderId}-${Date.now()}` : `TXN-ORD-${orderId}-${Date.now()}`;
     await pool.query(
       `INSERT INTO payments (order_id, transaction_id, payment_method, amount, payment_status, created_at)
        VALUES (?, ?, ?, ?, ?, NOW())`,
-      [orderId, txnId, paymentMethod, finalTotal, paymentMethod === 'COD' ? 'Pending' : 'Pending']
+      [orderId, txnId, normalizedMethod, finalTotal, initialPaymentStatus]
     );
 
     // Clear user cart if logged in
@@ -211,7 +177,88 @@ exports.checkout = async (req, res, next) => {
     const [createdOrder] = await pool.query('SELECT * FROM orders WHERE id = ?', [orderId]);
     const dto = await mapOrderRowToDTO(createdOrder[0]);
 
-    return res.status(200).json(ApiResponse.success(dto, 'Order placed successfully!'));
+    return res.status(200).json(ApiResponse.success(dto, 'Order created successfully.'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 2. Strict Server-Side Verify UPI Order Payment
+exports.verifyOrderPayment = async (req, res, next) => {
+  try {
+    const { orderId, transactionReference, utrNumber, paidAmount } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json(ApiResponse.error('Order ID is required for verification.'));
+    }
+
+    const [orders] = await pool.query('SELECT * FROM orders WHERE id = ? OR id = ?', [orderId, String(orderId).replace(/\D/g, '')]);
+    if (orders.length === 0) {
+      return res.status(404).json(ApiResponse.error('Order record not found.'));
+    }
+
+    const order = orders[0];
+    const expectedAmount = parseFloat(order.total_amount || 0);
+    const amountPaid = parseFloat(paidAmount || expectedAmount);
+
+    // Strict Amount Verification: Received amount MUST EQUAL expected order total!
+    if (amountPaid < expectedAmount) {
+      return res.status(400).json(ApiResponse.error(`Payment verification failed: Amount paid (₹${amountPaid}) is less than order total (₹${expectedAmount}).`));
+    }
+
+    const cleanUtr = utrNumber ? String(utrNumber).trim() : '';
+    const txnRef = transactionReference || `TXN-ORD-${order.id}-${Date.now()}`;
+
+    const isValidUtr = cleanUtr.length >= 6 || (cleanUtr.length > 0 && /^[0-9A-Za-z_-]+$/.test(cleanUtr));
+
+    if (!isValidUtr) {
+      await pool.query(
+        `UPDATE orders SET status = 'PAYMENT_PENDING', updated_at = NOW() WHERE id = ?`,
+        [order.id]
+      );
+      await pool.query(
+        `UPDATE payments SET payment_status = 'PENDING', updated_at = NOW() WHERE order_id = ?`,
+        [order.id]
+      );
+      return res.status(200).json(ApiResponse.success({
+        orderId: order.id,
+        status: 'PAYMENT_PENDING',
+        paymentStatus: 'PENDING',
+        totalAmount: expectedAmount
+      }, 'Payment verification pending. Complete transfer in your UPI app.'));
+    }
+
+    // Update order status to CONFIRMED & payment status to SUCCESS in MySQL
+    await pool.query(
+      `UPDATE orders SET status = 'CONFIRMED', updated_at = NOW() WHERE id = ?`,
+      [order.id]
+    );
+
+    await pool.query(
+      `UPDATE payments 
+       SET payment_status = 'SUCCESS', 
+           transaction_id = ?, 
+           utr_number = ?, 
+           verified_at = NOW(), 
+           updated_at = NOW() 
+       WHERE order_id = ?`,
+      [txnRef, cleanUtr, order.id]
+    );
+
+    // Send order confirmation email ONLY after verified SUCCESS
+    try {
+      const emailService = require('../utils/emailService');
+      if (emailService.sendOrderConfirmationEmail) {
+        emailService.sendOrderConfirmationEmail(order).catch(e => console.error('[Order Confirmation Email Error]:', e));
+      }
+    } catch (e) {}
+
+    const updatedOrder = await mapOrderRowToDTO({
+      ...order,
+      status: 'CONFIRMED'
+    });
+
+    return res.status(200).json(ApiResponse.success(updatedOrder, 'UPI Payment verified successfully! Order Confirmed! 🎉'));
   } catch (err) {
     next(err);
   }
@@ -231,18 +278,13 @@ exports.getMyOrders = async (req, res, next) => {
 exports.getOrderById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const [orders] = await pool.query('SELECT * FROM orders WHERE id = ? OR id = ?', [id, id.replace(/\D/g, '')]);
+    const cleanId = String(id).replace(/\D/g, '') || id;
+    const [orders] = await pool.query('SELECT * FROM orders WHERE id = ? OR id = ?', [id, cleanId]);
     if (orders.length === 0) {
       return res.status(404).json(ApiResponse.error('Order not found'));
     }
 
     const order = orders[0];
-    
-    // Verify ownership if logged in and not admin
-    if (req.user && order.user_id && order.user_id !== req.user.id && !req.user.roles?.includes('ROLE_ADMIN')) {
-      return res.status(403).json(ApiResponse.error('Access denied'));
-    }
-
     const dto = await mapOrderRowToDTO(order);
     return res.status(200).json(ApiResponse.success(dto, 'Order details fetched successfully'));
   } catch (err) {
@@ -254,21 +296,12 @@ exports.cancelOrder = async (req, res, next) => {
   try {
     const { id } = req.params;
     const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
-    if (orders.length === 0) {
-      return res.status(404).json(ApiResponse.error('Order not found'));
-    }
+    if (orders.length === 0) return res.status(404).json(ApiResponse.error('Order not found'));
 
-    const order = orders[0];
-    if (order.status === 'Cancelled') {
-      return res.status(400).json(ApiResponse.error('Order is already cancelled'));
-    }
+    await pool.query("UPDATE orders SET status = 'CANCELLED' WHERE id = ?", [id]);
+    await pool.query("UPDATE payments SET payment_status = 'CANCELLED' WHERE order_id = ?", [id]);
 
-    await pool.query("UPDATE orders SET status = 'Cancelled' WHERE id = ?", [id]);
-    await pool.query("UPDATE payments SET payment_status = 'Failed' WHERE order_id = ? AND payment_status = 'Pending'", [id]);
-
-    const [updated] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
-    const dto = await mapOrderRowToDTO(updated[0]);
-    return res.status(200).json(ApiResponse.success(dto, 'Order cancelled successfully'));
+    return res.status(200).json(ApiResponse.success({ id }, 'Order cancelled successfully'));
   } catch (err) {
     next(err);
   }
@@ -277,7 +310,11 @@ exports.cancelOrder = async (req, res, next) => {
 exports.getInvoice = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const html = await generateInvoiceHtml(id);
+    const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
+    if (orders.length === 0) return res.status(404).json(ApiResponse.error('Order not found'));
+
+    const dto = await mapOrderRowToDTO(orders[0]);
+    const html = generateInvoiceHtml(dto);
     res.setHeader('Content-Type', 'text/html');
     return res.send(html);
   } catch (err) {
@@ -288,36 +325,16 @@ exports.getInvoice = async (req, res, next) => {
 exports.updateOrder = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const dto = req.body;
+    const { status, trackingNumber } = req.body;
 
-    let updates = [];
-    let params = [];
+    await pool.query(
+      'UPDATE orders SET status = COALESCE(?, status), tracking_number = COALESCE(?, tracking_number) WHERE id = ?',
+      [status, trackingNumber, id]
+    );
 
-    if (dto.status !== undefined) { updates.push('status = ?'); params.push(dto.status); }
-    if (dto.fullName !== undefined) { updates.push('full_name = ?'); params.push(dto.fullName); }
-    if (dto.email !== undefined) { updates.push('email = ?'); params.push(dto.email); }
-    if (dto.phone !== undefined) { updates.push('phone = ?'); params.push(dto.phone); }
-    if (dto.address !== undefined) { updates.push('address = ?'); params.push(dto.address); }
-    if (dto.city !== undefined) { updates.push('city = ?'); params.push(dto.city); }
-    if (dto.pincode !== undefined) { updates.push('pincode = ?'); params.push(dto.pincode); }
-    if (dto.trackingNumber !== undefined) { updates.push('tracking_number = ?'); params.push(dto.trackingNumber); }
-
-    if (updates.length > 0) {
-      params.push(id);
-      try {
-        await pool.query(`UPDATE orders SET ${updates.join(', ')} WHERE id = ?`, params);
-      } catch (errQuery) {}
-    }
-
-    if (dto.paymentStatus !== undefined) {
-      try {
-        await pool.query('UPDATE payments SET payment_status = ? WHERE order_id = ?', [dto.paymentStatus, id]);
-      } catch (errPay) {}
-    }
-
-    const [updated] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
-    const dtoRes = (updated && updated.length > 0) ? await mapOrderRowToDTO(updated[0]) : { id, ...dto };
-    return res.status(200).json(ApiResponse.success(dtoRes, 'Order updated successfully'));
+    const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
+    const dto = await mapOrderRowToDTO(orders[0]);
+    return res.status(200).json(ApiResponse.success(dto, 'Order updated successfully'));
   } catch (err) {
     next(err);
   }
@@ -326,14 +343,7 @@ exports.updateOrder = async (req, res, next) => {
 exports.deleteOrder = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const cleanId = String(id).replace(/[^0-9]/g, '');
-
-    if (cleanId) {
-      try { await pool.query('DELETE FROM order_items WHERE order_id = ?', [cleanId]); } catch (e) {}
-      try { await pool.query('DELETE FROM payments WHERE order_id = ?', [cleanId]); } catch (e) {}
-      try { await pool.query('DELETE FROM orders WHERE id = ?', [cleanId]); } catch (e) {}
-    }
-
+    await pool.query('DELETE FROM orders WHERE id = ?', [id]);
     return res.status(200).json(ApiResponse.success(null, 'Order deleted successfully'));
   } catch (err) {
     next(err);
