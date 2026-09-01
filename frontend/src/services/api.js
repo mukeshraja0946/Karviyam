@@ -41,6 +41,15 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    let sessId = localStorage.getItem('karviyam_session_id');
+    if (!sessId) {
+      sessId = 'ksess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+      try { localStorage.setItem('karviyam_session_id', sessId); } catch (e) {}
+    }
+    if (sessId) {
+      config.headers['X-Session-Id'] = sessId;
+    }
+
     // Disable browser HTTP caching for all API calls
     config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
     config.headers['Pragma'] = 'no-cache';

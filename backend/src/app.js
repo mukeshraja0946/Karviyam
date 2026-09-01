@@ -36,6 +36,8 @@ const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const emailMarketingRoutes = require('./routes/emailMarketingRoutes');
 const homepageSectionRoutes = require('./routes/homepageSectionRoutes');
 const bankAccountRoutes = require('./routes/bankAccountRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const recommendationRoutes = require('./routes/recommendationRoutes');
 const settingController = require('./controllers/settingController');
 const contactController = require('./controllers/contactController');
 
@@ -242,6 +244,9 @@ app.use('/api/admin/homepage-sections', homepageSectionRoutes);
 
 app.use('/api/bank-account', bankAccountRoutes);
 app.use('/api/admin/bank-account', bankAccountRoutes);
+
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/home', recommendationRoutes);
 
 app.use('/api/admin', adminRoutes);
 

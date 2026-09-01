@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { trackUserEvent } from '../utils/analytics';
 import {
   Star,
   ShoppingBag,
@@ -181,6 +182,14 @@ export default function ProductDetailPage() {
       }
 
       setProduct(item);
+      try {
+        trackUserEvent('VIEW', {
+          productId: item.id,
+          categoryId: item.category_id || item.categoryId,
+          categoryName: item.category_name || item.category,
+          price: item.price
+        });
+      } catch (e) {}
 
       // Derive valid initial images array
       const rawImgs = Array.isArray(item.images) && item.images.length > 0
