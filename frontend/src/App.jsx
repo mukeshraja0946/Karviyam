@@ -61,6 +61,7 @@ import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
 import AdminSubscriptionsPage from './pages/AdminSubscriptionsPage';
 import AdminEmailMarketingPage from './pages/AdminEmailMarketingPage';
 import AdminHomepageSectionsPage from './pages/AdminHomepageSectionsPage';
+import AdminBankAccountPage from './pages/AdminBankAccountPage';
 
 export default function App() {
   return (
@@ -122,6 +123,7 @@ export default function App() {
                     <Route path="/admin/users" element={<AdminUsersPage />} />
                     <Route path="/admin/reviews" element={<AdminReviewsPage />} />
                     <Route path="/admin/payments" element={<AdminOrdersPage />} />
+                    <Route path="/admin/bank-account" element={<AdminBankAccountPage />} />
                     <Route path="/admin/reports" element={<AdminReportsPage />} />
                     <Route path="/admin/settings" element={<AdminSettingsPage />} />
                     <Route path="/admin/website-settings" element={<AdminSettingsPage />} />

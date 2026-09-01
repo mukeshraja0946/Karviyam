@@ -199,6 +199,7 @@ export default function AdminLayout() {
       icon: CreditCard,
       subItems: [
         { name: 'Payment History', path: '/admin/payments' },
+        { name: 'Bank Account Details', path: '/admin/bank-account' },
         { name: 'Invoices & GST', path: '/admin/orders' },
       ],
     },

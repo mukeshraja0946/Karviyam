@@ -15,6 +15,19 @@ export default function SubscriptionCheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('RAZORPAY'); // 'RAZORPAY' or 'UPI'
   const [upiId, setUpiId] = useState('');
   const [upiError, setUpiError] = useState('');
+  const [bankAccount, setBankAccount] = useState(null);
+
+  useEffect(() => {
+    fetchBankAccount();
+  }, []);
+
+  const fetchBankAccount = async () => {
+    try {
+      const res = await api.get('/bank-account/public').catch(() => null);
+      const data = res?.data?.data || res?.data;
+      if (data) setBankAccount(data);
+    } catch (e) {}
+  };
 
   useEffect(() => {
     if (!subscriptionId) {
