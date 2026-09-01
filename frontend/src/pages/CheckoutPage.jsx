@@ -6,6 +6,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, Lock, CreditCard, Smartphone, Banknote, Building, X, RefreshCw, Trash2, MapPin, Plus } from 'lucide-react';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 
 export default function CheckoutPage() {
   const { user, login } = useAuth();
