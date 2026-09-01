@@ -20,11 +20,23 @@ process.on('unhandledRejection', (reason, promise) => {
 
 const PORT = process.env.PORT || 3000;
 
-// Start HTTP Server immediately so Hostinger proxy connects without timeout
-const server = app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`🚀 Karviyam Node.js Express Backend running on port ${PORT}`);
+// Start HTTP Server safely supporting both numeric ports and Hostinger socket paths
+const startServer = () => {
+  if (typeof PORT === 'string' && (PORT.startsWith('/') || PORT.includes('.sock'))) {
+    return app.listen(PORT, async () => {
+      console.log(`🚀 Karviyam Express Backend listening on socket ${PORT}`);
+      initDbSafe();
+    });
+  } else {
+    const numericPort = parseInt(PORT, 10) || 3000;
+    return app.listen(numericPort, '0.0.0.0', async () => {
+      console.log(`🚀 Karviyam Express Backend listening on port ${numericPort}`);
+      initDbSafe();
+    });
+  }
+};
 
-  // Non-blocking database connection check & schema initialization
+const initDbSafe = async () => {
   try {
     const conn = await pool.getConnection();
     console.log('✅ Connected to MySQL Database successfully!');
@@ -34,7 +46,9 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
   } catch (err) {
     console.error('⚠️ MySQL Database warning:', err.message);
   }
-});
+};
+
+const server = startServer();
 
 module.exports = app;
 module.exports.server = server;
