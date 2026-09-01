@@ -34,34 +34,12 @@ const initDbSafe = async () => {
   }
 };
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
-let server;
-
-if (typeof PhusionPassenger !== 'undefined') {
-  console.log('🚀 Running under Phusion Passenger application manager...');
-  server = app.listen('passenger', () => {
-    console.log('✅ Karviyam Express Backend connected to Phusion Passenger socket!');
-    initDbSafe();
-  });
-} else if (PORT && typeof PORT === 'string' && (PORT.startsWith('/') || PORT.includes('.sock') || PORT === 'passenger')) {
-  console.log(`🚀 Running with socket/port parameter: ${PORT}`);
-  server = app.listen(PORT, () => {
-    console.log(`✅ Karviyam Express Backend listening on socket ${PORT}`);
-    initDbSafe();
-  });
-} else if (PORT) {
-  const numericPort = parseInt(PORT, 10) || 3000;
-  server = app.listen(numericPort, () => {
-    console.log(`🚀 Karviyam Express Backend listening on port ${numericPort}`);
-    initDbSafe();
-  });
-} else {
-  server = app.listen(3000, '0.0.0.0', () => {
-    console.log('🚀 Karviyam Express Backend listening on 0.0.0.0:3000');
-    initDbSafe();
-  });
-}
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Karviyam Express Backend listening on ${PORT}`);
+  initDbSafe();
+});
 
 module.exports = app;
 module.exports.server = server;
