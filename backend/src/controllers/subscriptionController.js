@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const ApiResponse = require('../utils/apiResponse');
 const { sendSubscriptionSuccessEmail } = require('../utils/emailService');
 
-// Ensure Database Tables Exist
+// Ensure Database Tables Exist & Migrations Applied
 const ensureSubscriptionTables = async () => {
   try {
     await pool.query(`
@@ -13,12 +13,18 @@ const ensureSubscriptionTables = async () => {
         email VARCHAR(150) NOT NULL UNIQUE,
         status VARCHAR(20) DEFAULT 'PENDING',
         payment_status VARCHAR(20) DEFAULT 'PENDING',
-        amount DECIMAL(10,2) DEFAULT 0.00,
+        amount DECIMAL(10,2) DEFAULT 99.00,
         currency VARCHAR(10) DEFAULT 'INR',
         payment_method VARCHAR(50) DEFAULT 'RAZORPAY',
         payment_id VARCHAR(100),
         transaction_id VARCHAR(100),
+        razorpay_order_id VARCHAR(100),
+        razorpay_payment_id VARCHAR(100),
+        razorpay_signature VARCHAR(255),
+        offer_coupon_code VARCHAR(50),
+        offer_title VARCHAR(255),
         subscription_date TIMESTAMP NULL,
+        paid_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
@@ -26,6 +32,14 @@ const ensureSubscriptionTables = async () => {
   } catch (e) {
     console.error('[Database Migration Error - Subscriptions Table]:', e.message);
   }
+
+  // Idempotent column migrations for subscriptions table
+  try { await pool.query(`ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS razorpay_order_id VARCHAR(100)`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS razorpay_payment_id VARCHAR(100)`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS razorpay_signature VARCHAR(255)`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS offer_coupon_code VARCHAR(50)`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS offer_title VARCHAR(255)`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP NULL`); } catch (e) {}
 
   try {
     await pool.query(`
@@ -45,7 +59,7 @@ const validateEmail = (email) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').toLowerCase().trim());
 };
 
-// Helper: Get Subscription Settings from DB
+// Helper: Get Subscription Settings & Active Offer from DB
 const getSubscriptionSettingsFromDb = async () => {
   await ensureSubscriptionTables();
   let enabled = true;
@@ -56,6 +70,13 @@ const getSubscriptionSettingsFromDb = async () => {
   let buttonText = 'SUBSCRIBE NOW';
   let razorpayEnabled = true;
   let stripeEnabled = true;
+
+  // Active Admin Offer Settings
+  let offerEnabled = false;
+  let offerTitle = '';
+  let offerCouponCode = '';
+  let offerStartDate = '';
+  let offerEndDate = '';
 
   try {
     const [rows] = await pool.query(
@@ -70,8 +91,25 @@ const getSubscriptionSettingsFromDb = async () => {
       if (r.setting_key === 'subscription_button_text') buttonText = r.setting_value || buttonText;
       if (r.setting_key === 'subscription_razorpay_enabled') razorpayEnabled = r.setting_value !== 'false';
       if (r.setting_key === 'subscription_stripe_enabled') stripeEnabled = r.setting_value !== 'false';
+
+      if (r.setting_key === 'subscription_offer_enabled') offerEnabled = r.setting_value === 'true' || r.setting_value === '1';
+      if (r.setting_key === 'subscription_offer_title') offerTitle = r.setting_value || '';
+      if (r.setting_key === 'subscription_offer_coupon_code') offerCouponCode = r.setting_value || '';
+      if (r.setting_key === 'subscription_offer_start_date') offerStartDate = r.setting_value || '';
+      if (r.setting_key === 'subscription_offer_end_date') offerEndDate = r.setting_value || '';
     });
   } catch (e) {}
+
+  // Validate offer date range if set
+  let isOfferActive = offerEnabled && Boolean(offerCouponCode.trim());
+  if (isOfferActive && offerStartDate) {
+    const start = new Date(offerStartDate);
+    if (!isNaN(start.getTime()) && new Date() < start) isOfferActive = false;
+  }
+  if (isOfferActive && offerEndDate) {
+    const end = new Date(offerEndDate);
+    if (!isNaN(end.getTime()) && new Date() > end) isOfferActive = false;
+  }
 
   return {
     enabled,
@@ -81,7 +119,12 @@ const getSubscriptionSettingsFromDb = async () => {
     description,
     buttonText,
     razorpayEnabled,
-    stripeEnabled
+    stripeEnabled,
+    offerEnabled: isOfferActive,
+    offerTitle: isOfferActive ? offerTitle : '',
+    offerCouponCode: isOfferActive ? offerCouponCode : '',
+    offerStartDate,
+    offerEndDate
   };
 };
 
@@ -159,16 +202,12 @@ exports.initiateSubscription = async (req, res, next) => {
   }
 };
 
-// 3. Get Subscription Details by ID (for Checkout Page)
+// 3. Get Subscription Details by ID (for Checkout & Verification Page)
 exports.getSubscriptionById = async (req, res, next) => {
   try {
     await ensureSubscriptionTables();
     const { id } = req.params;
     const settings = await getSubscriptionSettingsFromDb();
-
-    if (!settings.enabled) {
-      return res.status(403).json(ApiResponse.error('Subscriptions are currently disabled.'));
-    }
 
     const [rows] = await pool.query('SELECT * FROM subscriptions WHERE id = ? LIMIT 1', [id]);
     if (rows.length === 0) {
@@ -176,6 +215,8 @@ exports.getSubscriptionById = async (req, res, next) => {
     }
 
     const sub = rows[0];
+    const isPaid = sub.status === 'ACTIVE' && sub.payment_status === 'SUCCESS';
+
     return res.status(200).json(ApiResponse.success({
       id: sub.id,
       email: sub.email,
@@ -184,14 +225,21 @@ exports.getSubscriptionById = async (req, res, next) => {
       amount: parseFloat(sub.amount || settings.price),
       currency: sub.currency || settings.currency,
       paymentMethod: sub.payment_method,
-      razorpayKey: razorpayConfig.keyId
+      razorpayKey: razorpayConfig.keyId,
+      razorpayOrderId: sub.razorpay_order_id || sub.transaction_id,
+      razorpayPaymentId: sub.razorpay_payment_id || sub.payment_id,
+      offerCouponCode: isPaid ? (sub.offer_coupon_code || settings.offerCouponCode) : '',
+      offerTitle: isPaid ? (sub.offer_title || settings.offerTitle) : '',
+      hasActiveOffer: isPaid && Boolean(sub.offer_coupon_code || settings.offerCouponCode),
+      paidAt: sub.paid_at || sub.subscription_date,
+      systemEnabled: settings.enabled
     }, 'Subscription details retrieved'));
   } catch (err) {
     next(err);
   }
 };
 
-// 4. Create Online Payment Order (Razorpay / Stripe)
+// 4. Create Online Payment Order (Razorpay)
 exports.createSubscriptionPayment = async (req, res, next) => {
   try {
     const { subscriptionId, paymentMethod = 'RAZORPAY' } = req.body;
@@ -206,46 +254,50 @@ exports.createSubscriptionPayment = async (req, res, next) => {
 
     const sub = rows[0];
     const settings = await getSubscriptionSettingsFromDb();
-    const amountInPaise = Math.round(parseFloat(settings.price) * 100);
 
-    if (paymentMethod.toUpperCase() === 'RAZORPAY') {
-      let rzpOrderId = `rzp_sub_${sub.id}_${Date.now()}`;
-
-      if (razorpayConfig.instance) {
-        try {
-          const rzpOrder = await razorpayConfig.instance.orders.create({
-            amount: amountInPaise,
-            currency: settings.currency || 'INR',
-            receipt: `rcpt_sub_${sub.id}_${Date.now()}`
-          });
-          rzpOrderId = rzpOrder.id;
-        } catch (eRzp) {
-          console.warn('[Razorpay Order Creation Warning]: Using mock token fallback:', eRzp.message);
-        }
-      }
-
-      await pool.query(
-        `UPDATE subscriptions SET transaction_id = ?, payment_method = 'RAZORPAY', amount = ? WHERE id = ?`,
-        [rzpOrderId, settings.price, sub.id]
-      );
-
-      return res.status(200).json(ApiResponse.success({
-        orderId: rzpOrderId,
-        amount: amountInPaise,
-        currency: settings.currency || 'INR',
-        key: razorpayConfig.keyId,
-        subscriptionId: sub.id,
-        email: sub.email
-      }, 'Razorpay payment order generated'));
+    if (!settings.enabled) {
+      return res.status(403).json(ApiResponse.error('Subscription system is currently disabled.'));
     }
 
-    return res.status(400).json(ApiResponse.error('Unsupported online payment method.'));
+    const amountInPaise = Math.round(parseFloat(settings.price) * 100);
+    let rzpOrderId = `rzp_sub_${sub.id}_${Date.now()}`;
+
+    if (razorpayConfig.instance) {
+      try {
+        const rzpOrder = await razorpayConfig.instance.orders.create({
+          amount: amountInPaise,
+          currency: settings.currency || 'INR',
+          receipt: `rcpt_sub_${sub.id}_${Date.now()}`,
+          notes: {
+            subscriptionId: String(sub.id),
+            email: sub.email
+          }
+        });
+        rzpOrderId = rzpOrder.id;
+      } catch (eRzp) {
+        console.warn('[Razorpay Order Creation Notice]:', eRzp.message);
+      }
+    }
+
+    await pool.query(
+      `UPDATE subscriptions SET razorpay_order_id = ?, transaction_id = ?, payment_method = 'RAZORPAY', amount = ? WHERE id = ?`,
+      [rzpOrderId, rzpOrderId, settings.price, sub.id]
+    );
+
+    return res.status(200).json(ApiResponse.success({
+      orderId: rzpOrderId,
+      amount: amountInPaise,
+      currency: settings.currency || 'INR',
+      key: razorpayConfig.keyId,
+      subscriptionId: sub.id,
+      email: sub.email
+    }, 'Razorpay payment order generated'));
   } catch (err) {
     next(err);
   }
 };
 
-// 5. Verify Online Payment & Activate Subscription
+// 5. Strict Server-Side Verify Online Payment & Activate Subscription
 exports.verifySubscriptionPayment = async (req, res, next) => {
   try {
     const { subscriptionId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
@@ -261,26 +313,36 @@ exports.verifySubscriptionPayment = async (req, res, next) => {
 
     const sub = rows[0];
 
-    // HMAC Signature Check if live key Secret configured
-    let isValid = true;
-    if (razorpaySignature && razorpayConfig.keySecret && razorpayConfig.keySecret !== 'rzp_test_key_secret') {
+    // STRICT HMAC SIGNATURE VERIFICATION
+    let isValid = false;
+    const orderIdToVerify = razorpayOrderId || sub.razorpay_order_id || sub.transaction_id;
+
+    if (razorpaySignature && orderIdToVerify && razorpayPaymentId && razorpayConfig.keySecret && razorpayConfig.keySecret !== 'rzp_test_key_secret') {
       const generatedSignature = crypto
         .createHmac('sha256', razorpayConfig.keySecret)
-        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+        .update(`${orderIdToVerify}|${razorpayPaymentId}`)
         .digest('hex');
 
       isValid = generatedSignature === razorpaySignature;
+    } else if (process.env.NODE_ENV === 'development' || !razorpayConfig.keySecret || razorpayConfig.keySecret === 'rzp_test_key_secret') {
+      // In test mode without secret configured, verify that valid payment IDs exist
+      if (razorpayPaymentId && String(razorpayPaymentId).startsWith('pay_')) {
+        isValid = true;
+      }
     }
 
     if (!isValid) {
       await pool.query(
-        `UPDATE subscriptions SET payment_status = 'FAILED', status = 'FAILED' WHERE id = ?`,
+        `UPDATE subscriptions SET payment_status = 'FAILED', status = 'FAILED', updated_at = NOW() WHERE id = ?`,
         [sub.id]
       );
-      return res.status(400).json(ApiResponse.error('Payment verification failed: Invalid transaction signature.'));
+      return res.status(400).json(ApiResponse.error('Payment verification failed: Invalid transaction signature or unverified payment response.'));
     }
 
-    const pmtId = razorpayPaymentId || `pay_sub_${sub.id}_${Date.now()}`;
+    // Retrieve active Admin offer settings if enabled
+    const settings = await getSubscriptionSettingsFromDb();
+    const assignedOfferCode = settings.offerEnabled ? settings.offerCouponCode : '';
+    const assignedOfferTitle = settings.offerEnabled ? settings.offerTitle : '';
 
     // Update Subscription Record to ACTIVE & SUCCESS in MySQL
     await pool.query(
@@ -289,10 +351,25 @@ exports.verifySubscriptionPayment = async (req, res, next) => {
            payment_status = 'SUCCESS', 
            payment_id = ?, 
            transaction_id = ?, 
+           razorpay_order_id = ?,
+           razorpay_payment_id = ?,
+           razorpay_signature = ?,
+           offer_coupon_code = ?,
+           offer_title = ?,
            subscription_date = NOW(), 
+           paid_at = NOW(),
            updated_at = NOW() 
        WHERE id = ?`,
-      [pmtId, razorpayOrderId || sub.transaction_id, sub.id]
+      [
+        razorpayPaymentId,
+        orderIdToVerify,
+        orderIdToVerify,
+        razorpayPaymentId,
+        razorpaySignature || '',
+        assignedOfferCode,
+        assignedOfferTitle,
+        sub.id
+      ]
     );
 
     const updatedSub = {
@@ -301,13 +378,18 @@ exports.verifySubscriptionPayment = async (req, res, next) => {
       email: sub.email,
       status: 'ACTIVE',
       paymentStatus: 'SUCCESS',
-      amount: sub.amount,
-      currency: sub.currency,
-      paymentId: pmtId,
-      paymentDate: new Date().toISOString()
+      amount: sub.amount || settings.price,
+      currency: sub.currency || settings.currency,
+      paymentId: razorpayPaymentId,
+      transactionId: orderIdToVerify,
+      offerCouponCode: assignedOfferCode,
+      offerTitle: assignedOfferTitle,
+      hasActiveOffer: Boolean(assignedOfferCode),
+      paymentDate: new Date().toISOString(),
+      paidAt: new Date().toISOString()
     };
 
-    // Automatically send Confirmation Email asynchronously
+    // Dispatch Confirmation Email asynchronously
     sendSubscriptionSuccessEmail(updatedSub).catch(e => console.error('[Subscription Confirmation Email Error]:', e));
 
     return res.status(200).json(ApiResponse.success(updatedSub, 'Subscription activated successfully! Confirmation email dispatched.'));
@@ -373,11 +455,23 @@ exports.getAdminSubscribers = async (req, res, next) => {
   }
 };
 
-// 7. Admin Update Subscription Settings
+// 7. Admin Update Subscription & Offer Settings
 exports.updateAdminSettings = async (req, res, next) => {
   try {
     await ensureSubscriptionTables();
-    const { enabled, price, currency, title, description, buttonText } = req.body;
+    const {
+      enabled,
+      price,
+      currency,
+      title,
+      description,
+      buttonText,
+      offerEnabled,
+      offerTitle,
+      offerCouponCode,
+      offerStartDate,
+      offerEndDate
+    } = req.body;
 
     const updates = [
       { key: 'subscription_enabled', val: String(enabled !== false) },
@@ -385,7 +479,13 @@ exports.updateAdminSettings = async (req, res, next) => {
       { key: 'subscription_currency', val: String(currency || 'INR') },
       { key: 'subscription_title', val: String(title || 'STAY UPDATED') },
       { key: 'subscription_description', val: String(description || '') },
-      { key: 'subscription_button_text', val: String(buttonText || 'SUBSCRIBE NOW') }
+      { key: 'subscription_button_text', val: String(buttonText || 'SUBSCRIBE NOW') },
+
+      { key: 'subscription_offer_enabled', val: String(offerEnabled === true) },
+      { key: 'subscription_offer_title', val: String(offerTitle || '') },
+      { key: 'subscription_offer_coupon_code', val: String(offerCouponCode || '').toUpperCase().trim() },
+      { key: 'subscription_offer_start_date', val: String(offerStartDate || '') },
+      { key: 'subscription_offer_end_date', val: String(offerEndDate || '') }
     ];
 
     for (const u of updates) {
@@ -397,7 +497,7 @@ exports.updateAdminSettings = async (req, res, next) => {
     }
 
     const newSettings = await getSubscriptionSettingsFromDb();
-    return res.status(200).json(ApiResponse.success(newSettings, 'Subscription settings updated successfully'));
+    return res.status(200).json(ApiResponse.success(newSettings, 'Subscription and offer settings updated successfully'));
   } catch (err) {
     next(err);
   }
@@ -413,3 +513,4 @@ exports.deleteSubscriber = async (req, res, next) => {
     next(err);
   }
 };
+

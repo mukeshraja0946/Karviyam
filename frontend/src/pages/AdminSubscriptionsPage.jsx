@@ -30,7 +30,12 @@ export default function AdminSubscriptionsPage() {
     currency: 'INR',
     title: 'STAY UPDATED',
     description: 'Subscribe to get special drop alerts, VIP coupons & discounts.',
-    buttonText: 'SUBSCRIBE NOW'
+    buttonText: 'SUBSCRIBE NOW',
+    offerEnabled: false,
+    offerTitle: 'VIP WELCOME GIFT COUPON',
+    offerCouponCode: 'KARVIYAMVIP20',
+    offerStartDate: '',
+    offerEndDate: ''
   });
 
   useEffect(() => {
@@ -46,7 +51,18 @@ export default function AdminSubscriptionsPage() {
       if (data) {
         setSubscribers(data.subscribers || []);
         if (data.metrics) setMetrics(data.metrics);
-        if (data.settings) setSettings(data.settings);
+        if (data.settings) {
+          setSettings(prev => ({
+            ...prev,
+            ...data.settings,
+            price: data.settings.price || prev.price,
+            offerEnabled: data.settings.offerEnabled !== undefined ? data.settings.offerEnabled : prev.offerEnabled,
+            offerTitle: data.settings.offerTitle || prev.offerTitle,
+            offerCouponCode: data.settings.offerCouponCode || prev.offerCouponCode,
+            offerStartDate: data.settings.offerStartDate || '',
+            offerEndDate: data.settings.offerEndDate || ''
+          }));
+        }
       }
     } catch (e) {
       toast.error('Failed to fetch subscribers.');
@@ -232,6 +248,77 @@ export default function AdminSubscriptionsPage() {
               placeholder="Subscribe to get special drop alerts, VIP coupons & discounts."
               className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl font-medium text-xs outline-none focus:border-[#B71C1C]"
             />
+          </div>
+
+          {/* Active VIP Subscription Offer Settings */}
+          <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3 pt-4 mt-2">
+            <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+              <div>
+                <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span>Active VIP Welcome Offer & Coupon</span>
+                </h4>
+                <p className="text-[10.5px] text-slate-500">
+                  New subscribers will see this offer coupon on their success receipt and email after verified payment.
+                </p>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.offerEnabled}
+                  onChange={(e) => setSettings({ ...settings, offerEnabled: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600" />
+              </label>
+            </div>
+
+            {settings.offerEnabled && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Offer Title</label>
+                  <input
+                    type="text"
+                    value={settings.offerTitle}
+                    onChange={(e) => setSettings({ ...settings, offerTitle: e.target.value })}
+                    placeholder="VIP WELCOME GIFT COUPON"
+                    className="w-full bg-white border border-slate-200 p-2 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Coupon Code</label>
+                  <input
+                    type="text"
+                    value={settings.offerCouponCode}
+                    onChange={(e) => setSettings({ ...settings, offerCouponCode: e.target.value.toUpperCase() })}
+                    placeholder="KARVIYAMVIP20"
+                    className="w-full bg-white border border-slate-200 p-2 rounded-xl text-xs font-mono font-black text-[#B71C1C] outline-none focus:border-[#B71C1C]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Offer Start Date (Optional)</label>
+                  <input
+                    type="date"
+                    value={settings.offerStartDate}
+                    onChange={(e) => setSettings({ ...settings, offerStartDate: e.target.value })}
+                    className="w-full bg-white border border-slate-200 p-2 rounded-xl text-xs outline-none focus:border-[#B71C1C]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Offer End Date (Optional)</label>
+                  <input
+                    type="date"
+                    value={settings.offerEndDate}
+                    onChange={(e) => setSettings({ ...settings, offerEndDate: e.target.value })}
+                    className="w-full bg-white border border-slate-200 p-2 rounded-xl text-xs outline-none focus:border-[#B71C1C]"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end pt-2">
