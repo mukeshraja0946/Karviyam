@@ -1,4 +1,4 @@
-DirectoryIndex index.html index.php
+DirectoryIndex server.js index.html index.php
 
 <IfModule mod_passenger.c>
   PassengerEnabled On
@@ -14,15 +14,18 @@ DirectoryIndex index.html index.php
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 2. ALLOW PHYSICAL FILES AND ASSET DIRECTORIES TO SERVE DIRECTLY
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
+  # 2. IGNORE DEFAULT HOSTINGER WELCOME FILES AND FORWARD TO SERVER.JS
+  RewriteCond %{REQUEST_URI} ^/(default\.php|default\.html|index\.php)?$ [NC]
+  RewriteRule ^ server.js [QSA,L]
 
+  # 3. ALLOW STATIC ASSET DIRECTORIES & PHYSICAL FILES TO SERVE DIRECTLY
   RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
   RewriteRule ^ - [L]
 
-  # 3. FORWARD ALL OTHER REQUESTS TO PASSENGER SERVER.JS
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  # 4. FORWARD ALL OTHER Dynamic REQUESTS TO PASSENGER SERVER.JS
   RewriteRule ^ server.js [QSA,L]
 </IfModule>
 
