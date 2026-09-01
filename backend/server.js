@@ -34,4 +34,5 @@ const server = app.listen(PORT, async () => {
   }
 });
 
-module.exports = server;
+module.exports = app;
+module.exports.server = server;
