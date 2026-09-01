@@ -167,9 +167,25 @@ if (fs.existsSync(rootAssetsDir)) {
 
 app.use(maintenanceMiddleware);
 
-// --------------------------------------------------
-// API ROUTES
-// --------------------------------------------------
+// HEALTH CHECK ENDPOINTS
+app.get(['/api/health', '/health'], async (req, res) => {
+  let dbStatus = 'UNKNOWN';
+  try {
+    const conn = await pool.getConnection();
+    await conn.ping();
+    conn.release();
+    dbStatus = 'CONNECTED';
+  } catch (e) {
+    dbStatus = 'DISCONNECTED';
+  }
+
+  res.status(200).json({
+    status: 'ok',
+    message: 'Karviyam Backend API is running',
+    database: dbStatus,
+    timestamp: new Date().toISOString()
+  });
+});
 
 app.use('/api/auth', authRoutes);
 
