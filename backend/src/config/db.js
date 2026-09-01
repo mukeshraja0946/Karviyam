@@ -2,10 +2,19 @@ const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Try loading .env from candidate paths
-dotenv.config({ path: path.join(__dirname, '../../.env') });
-dotenv.config({ path: path.join(__dirname, '../.env') });
-dotenv.config({ path: path.join(__dirname, '.env') });
+// Try loading .env from all possible candidate paths in workspace & server
+const candidateEnvPaths = [
+  path.join(__dirname, '../../.env'),
+  path.join(__dirname, '../.env'),
+  path.join(__dirname, '.env'),
+  path.join(process.cwd(), '.env'),
+  path.join(process.cwd(), 'backend/.env'),
+  path.join(process.cwd(), '../.env')
+];
+
+candidateEnvPaths.forEach(envPath => {
+  try { dotenv.config({ path: envPath }); } catch (e) {}
+});
 dotenv.config();
 
 const dbHost = process.env.DB_HOST || 'localhost';
