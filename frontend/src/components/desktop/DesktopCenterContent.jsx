@@ -624,7 +624,7 @@ export default function DesktopCenterContent() {
       </div>
 
       {/* 3. Shop by Category Section */}
-      <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-3 relative">
+      <div className="w-full bg-white rounded-3xl p-4 flex flex-col gap-3 relative">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
@@ -676,17 +676,17 @@ export default function DesktopCenterContent() {
             <div
               key={cat.id || cat.name}
               onClick={() => navigate(`/shop?${cat.query}`)}
-              className="flex flex-col items-center shrink-0 w-[100px] xl:w-[110px] cursor-pointer group"
+              className="flex flex-col items-center shrink-0 w-[84px] sm:w-[90px] xl:w-[96px] cursor-pointer group"
             >
-              <div className="w-full aspect-square bg-[#F0F6FE] hover:bg-[#E2EEFE] transition-colors rounded-2xl p-2 flex items-center justify-center border border-slate-100/80 shadow-2xs overflow-hidden">
+              <div className="w-full aspect-square bg-slate-100 rounded-2xl overflow-hidden shadow-2xs group-hover:shadow-md transition-all duration-300">
                 <img
                   src={resolveImageUrl(cat.image, cat.id)}
                   alt={cat.name}
                   onError={(e) => handleImageError(e, cat.id)}
-                  className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <span className="font-bold text-[11px] text-slate-800 text-center truncate w-full mt-2 group-hover:text-[#B71C1C] transition-colors">
+              <span className="font-bold text-[11px] text-slate-800 text-center truncate w-full mt-1.5 group-hover:text-[#B71C1C] transition-colors">
                 {cat.name}
               </span>
             </div>
