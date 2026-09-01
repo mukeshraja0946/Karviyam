@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ShieldCheck, CreditCard, Lock, Sparkles, CheckCircle, AlertCircle, Loader2, ArrowLeft, QrCode, Smartphone } from 'lucide-react';
+import { ShieldCheck, Lock, Sparkles, CheckCircle, AlertCircle, Loader2, ArrowLeft, QrCode, Smartphone, Copy, Check, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 
@@ -12,16 +12,22 @@ export default function SubscriptionCheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [subscription, setSubscription] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('RAZORPAY'); // 'RAZORPAY' or 'UPI'
-  const [upiId, setUpiId] = useState('');
-  const [upiError, setUpiError] = useState('');
   const [bankAccount, setBankAccount] = useState(null);
+  
+  const [upiId, setUpiId] = useState('');
+  const [utrNumber, setUtrNumber] = useState('');
+  const [upiError, setUpiError] = useState('');
+  const [utrError, setUtrError] = useState('');
+  
+  const [copiedUpi, setCopiedUpi] = useState(false);
+  const [txnDetails, setTxnDetails] = useState(null);
+  const [step, setStep] = useState(1); // 1: Pay via UPI, 2: Submit UTR Verification
 
   useEffect(() => {
-    fetchBankAccount();
+    fetchReceivingAccount();
   }, []);
 
-  const fetchBankAccount = async () => {
+  const fetchReceivingAccount = async () => {
     try {
       const res = await api.get('/bank-account/public').catch(() => null);
       const data = res?.data?.data || res?.data;
@@ -51,7 +57,7 @@ export default function SubscriptionCheckoutPage() {
           navigate(`/subscription-success?id=${data.id}`);
         }
       } else {
-        toast.error(res?.data?.message || 'Subscription not found.');
+        toast.error(res?.data?.message || 'Subscription record not found.');
         navigate('/');
       }
     } catch (err) {
@@ -66,28 +72,16 @@ export default function SubscriptionCheckoutPage() {
     return /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(String(vpa || '').trim());
   };
 
-  const loadRazorpaySdk = () => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) {
-        resolve(true);
-        return;
-      }
-      const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
-      if (existingScript) {
-        existingScript.addEventListener('load', () => resolve(true));
-        existingScript.addEventListener('error', () => resolve(false));
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.async = true;
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
+  const handleCopyUpi = (text) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedUpi(true);
+    toast.success('Receiving UPI ID copied!');
+    setTimeout(() => setCopiedUpi(false), 2000);
   };
 
-  const handleOnlinePayment = async () => {
+  // STEP 1: Generate UPI Intent & Payment Request
+  const handleInitiateUpiPayment = async () => {
     if (!subscription || submitting) return;
 
     if (!upiId.trim()) {
@@ -101,98 +95,86 @@ export default function SubscriptionCheckoutPage() {
     setUpiError('');
 
     setSubmitting(true);
-    toast.loading('Initializing secure UPI payment request...', { id: 'sub-checkout-toast' });
+    toast.loading('Generating secure UPI payment request...', { id: 'sub-checkout-toast' });
 
     try {
-      // 1. Ensure Razorpay SDK script is loaded
-      const sdkReady = await loadRazorpaySdk();
-
-      // 2. Create Payment Order on Backend
       const resOrder = await api.post('/subscriptions/create-payment', {
         subscriptionId: subscription.id,
-        paymentMethod: 'UPI',
         upiId: upiId.trim()
       });
 
       const orderData = resOrder.data?.data || resOrder.data;
 
-      if (!resOrder.data?.success || !orderData?.orderId) {
-        throw new Error(resOrder.data?.message || 'Failed to generate UPI payment order.');
+      if (!resOrder.data?.success || !orderData?.transactionReference) {
+        throw new Error(resOrder.data?.message || 'Failed to generate UPI transaction reference.');
       }
 
-      if (sdkReady && window.Razorpay) {
-        const options = {
-          key: orderData.key || 'rzp_test_key',
-          amount: orderData.amount,
-          currency: orderData.currency || 'INR',
-          name: 'KARVIYAM VIP Subscription',
-          description: 'VIP Drop Alerts & Special Member Coupons',
-          order_id: orderData.orderId.startsWith('rzp_sub_') ? undefined : orderData.orderId,
-          prefill: {
-            email: subscription.email,
-            vpa: upiId.trim()
-          },
-          theme: {
-            color: '#B71C1C'
-          },
-          handler: async function (response) {
-            toast.loading('Verifying payment with bank server...', { id: 'sub-checkout-toast' });
-            try {
-              const resVerify = await api.post('/subscriptions/verify-payment', {
-                subscriptionId: subscription.id,
-                razorpayOrderId: response.razorpay_order_id || orderData.orderId,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature
-              });
+      setTxnDetails(orderData);
+      setStep(2);
+      toast.success('UPI Payment Request generated! Open your UPI App to complete transfer.', { id: 'sub-checkout-toast' });
 
-              if (resVerify.data?.success && resVerify.data?.data?.paymentStatus === 'SUCCESS') {
-                toast.success('Payment Verified! Subscription Activated! 🎉', { id: 'sub-checkout-toast' });
-                navigate(`/subscription-success?id=${subscription.id}`);
-              } else {
-                toast.error(resVerify.data?.message || 'Payment verification pending confirmation.', { id: 'sub-checkout-toast' });
-                setSubmitting(false);
-              }
-            } catch (errVerify) {
-              toast.error(errVerify.response?.data?.message || 'Payment verification pending. Subscription will activate after confirmation.', { id: 'sub-checkout-toast' });
-              setSubmitting(false);
-            }
-          },
-          modal: {
-            ondismiss: function () {
-              toast.error('Payment pending verification. Complete payment in your UPI app to activate.', { id: 'sub-checkout-toast' });
-              setSubmitting(false);
-            }
-          }
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.on('payment.failed', function (resp) {
-          toast.error(`Payment Unverified: ${resp.error?.description || 'Transaction incomplete'}`, { id: 'sub-checkout-toast' });
-          setSubmitting(false);
-        });
-        rzp.open();
-      } else {
-        // Fallback for strict ad-blocker environments: Show transaction pending reference instruction
-        toast.success(`UPI Payment Request generated (#${orderData.orderId}). Authorize payment in your UPI app to activate.`, { id: 'sub-checkout-toast' });
-        setTimeout(() => {
-          navigate(`/subscription-success?id=${subscription.id}`);
-        }, 1500);
+      // Trigger UPI Intent link if on mobile
+      if (orderData.upiUri && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.location.href = orderData.upiUri;
       }
     } catch (err) {
-      console.error('[Subscription Checkout Error]:', err);
-      toast.error(err.message || 'Unable to initiate online payment.', { id: 'sub-checkout-toast' });
+      console.error('[Subscription UPI Error]:', err);
+      toast.error(err.message || 'Unable to initiate UPI payment request.', { id: 'sub-checkout-toast' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // STEP 2: Submit UTR / Reference ID for Server Verification
+  const handleVerifyUpiPayment = async () => {
+    if (!subscription || submitting) return;
+
+    if (!utrNumber.trim()) {
+      setUtrError('Please enter the 12-digit UPI UTR / Reference number from your payment app.');
+      return;
+    }
+    setUtrError('');
+
+    setSubmitting(true);
+    toast.loading('Submitting payment for server verification...', { id: 'sub-checkout-toast' });
+
+    try {
+      const resVerify = await api.post('/subscriptions/verify-payment', {
+        subscriptionId: subscription.id,
+        transactionReference: txnDetails?.transactionReference || `TXN-SUB-${subscription.id}`,
+        utrNumber: utrNumber.trim()
+      });
+
+      const verifyData = resVerify.data?.data || resVerify.data;
+
+      if (resVerify.data?.success && verifyData?.paymentStatus === 'SUCCESS') {
+        toast.success('UPI Payment Verified! Subscription Activated! 🎉', { id: 'sub-checkout-toast' });
+      } else {
+        toast.success('Payment submitted for verification! Your subscription will activate after confirmation.', { id: 'sub-checkout-toast' });
+      }
+
+      navigate(`/subscription-success?id=${subscription.id}`);
+    } catch (err) {
+      console.error('[Subscription Verification Error]:', err);
+      toast.error(err.response?.data?.message || 'Error submitting payment verification.', { id: 'sub-checkout-toast' });
+    } finally {
       setSubmitting(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6 text-center font-sans">
         <Loader2 className="w-10 h-10 text-[#B71C1C] animate-spin mb-3" />
-        <h3 className="font-bold text-slate-800 text-sm">Loading Subscription Payment Gateway...</h3>
+        <h3 className="font-bold text-slate-800 text-sm">Loading Subscription Payment Details...</h3>
       </div>
     );
   }
+
+  const receivingUpi = bankAccount?.upiId || 'karviyam@hdfcbank';
+  const receivingName = bankAccount?.accountHolder || 'KARVIYAM RETAILS PRIVATE LIMITED';
+  const receivingBank = bankAccount?.bankName || 'HDFC Bank';
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${receivingUpi}&pn=${receivingName}&am=${subscription.amount}&cu=INR`)}`;
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] py-10 px-4 flex justify-center items-center font-sans">
@@ -214,17 +196,17 @@ export default function SubscriptionCheckoutPage() {
           </div>
 
           <h2 className="font-display font-black text-2xl uppercase tracking-tight text-white drop-shadow-sm">
-            Complete Subscription Payment
+            UPI Direct Subscription
           </h2>
           <p className="text-xs text-slate-100 mt-1 font-medium">
-            Unlock drop alerts, exclusive VIP coupons & instant member perks.
+            Pay directly via Google Pay, PhonePe, Paytm, or BHIM UPI app.
           </p>
         </div>
 
-        {/* Subscription Details & Summary */}
+        {/* Main Form Content */}
         <div className="p-6 space-y-6 text-xs">
           
-          {/* Order Summary Box */}
+          {/* Subscription Summary Box */}
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200/70 pb-2.5">
               <span className="font-bold text-slate-600">Subscriber Email</span>
@@ -237,96 +219,165 @@ export default function SubscriptionCheckoutPage() {
             </div>
 
             <div className="flex items-center justify-between pt-1">
-              <span className="font-black text-slate-900 text-sm">Total Subscription Fee</span>
+              <span className="font-black text-slate-900 text-sm">Total Subscription Amount</span>
               <span className="font-black text-lg text-[#B71C1C]">
                 {subscription.currency || '₹'} {subscription.amount}
               </span>
             </div>
           </div>
 
-          {/* UPI PAYMENT ONLY Section */}
-          <div className="space-y-3">
+          {/* UPI APP DIRECT SECTION ONLY */}
+          <div className="p-4 rounded-2xl border-2 border-[#B71C1C] bg-red-50/20 shadow-xs space-y-4">
+            
             <div className="flex items-center justify-between">
-              <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-                Payment Method (UPI Only)
-              </h4>
-              <span className="text-[10px] text-emerald-700 font-extrabold flex items-center gap-1">
-                <Lock className="w-3 h-3 text-emerald-600" />
-                <span>256-Bit SSL Encrypted</span>
-              </span>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#B71C1C] text-white flex items-center justify-center font-bold shrink-0 shadow-sm">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h5 className="font-black text-slate-900 text-xs uppercase">UPI APP DIRECT (GPay, PhonePe, Paytm, BHIM)</h5>
+                  <p className="text-[11px] text-slate-600 font-medium">Direct UPI transfer to official KARVIYAM account</p>
+                </div>
+              </div>
+              <div className="w-4 h-4 rounded-full bg-[#B71C1C] flex items-center justify-center text-white shrink-0">
+                <CheckCircle className="w-3.5 h-3.5" />
+              </div>
             </div>
 
-            {/* ONLY UPI Payment Option */}
-            <div className="p-4 rounded-2xl border-2 border-[#B71C1C] bg-red-50/30 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#B71C1C] text-white flex items-center justify-center font-bold shrink-0 shadow-sm">
-                    <Smartphone className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h5 className="font-black text-slate-900 text-xs uppercase">UPI App Direct (GPay, PhonePe, Paytm, BHIM)</h5>
-                    <p className="text-[11px] text-slate-600 font-medium">Instant activation via Google Pay, PhonePe, Paytm & BHIM</p>
-                  </div>
-                </div>
-                <div className="w-4 h-4 rounded-full bg-[#B71C1C] flex items-center justify-center text-white">
-                  <CheckCircle className="w-3.5 h-3.5" />
+            {/* Receiving Account Box */}
+            <div className="bg-white border border-slate-200 p-3.5 rounded-xl space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-slate-500">Receiving UPI ID:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-black text-slate-900">{receivingUpi}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyUpi(receivingUpi)}
+                    className="p-1 text-slate-500 hover:text-[#B71C1C] cursor-pointer"
+                    title="Copy UPI ID"
+                  >
+                    {copiedUpi ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-200/80 space-y-2">
-                <label className="block text-[11px] font-bold text-slate-800">
-                  Enter your VPA / UPI ID <span className="text-red-600">*</span>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-slate-500">Account Name:</span>
+                <span className="font-bold text-slate-800">{receivingName}</span>
+              </div>
+            </div>
+
+            {/* QR Code Scanner (Desktop/Tablet Display) */}
+            <div className="flex flex-col items-center justify-center bg-white p-3 rounded-xl border border-slate-200 text-center">
+              <span className="text-[10.5px] font-bold text-slate-600 uppercase mb-2 flex items-center gap-1">
+                <QrCode className="w-3.5 h-3.5 text-[#B71C1C]" />
+                <span>Scan QR Code with any UPI App</span>
+              </span>
+              <img
+                src={qrCodeUrl}
+                alt="KARVIYAM UPI Payment QR"
+                className="w-36 h-36 border p-1.5 rounded-xl shadow-2xs"
+              />
+              <span className="text-[10px] text-slate-400 font-medium mt-1">GPay • PhonePe • Paytm • BHIM • Amazon Pay</span>
+            </div>
+
+            {/* STEP 1 INPUT: VPA / UPI ID */}
+            <div className="space-y-2 pt-1 border-t border-slate-200">
+              <label className="block text-[11px] font-bold text-slate-800">
+                1. Enter your VPA / UPI ID <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="text"
+                value={upiId}
+                onChange={(e) => {
+                  setUpiId(e.target.value);
+                  setUpiError('');
+                }}
+                placeholder="e.g. username@okhdfcbank, mobile@ybl, name@upi"
+                className="w-full bg-white border border-slate-300 text-xs px-3.5 py-2.5 rounded-xl outline-none focus:border-[#B71C1C] font-mono shadow-2xs"
+              />
+              {upiError && <p className="text-[11px] text-red-600 font-bold">{upiError}</p>}
+            </div>
+
+            {/* STEP 2 INPUT: UTR / Reference ID (After Initiating Payment) */}
+            {step === 2 && (
+              <div className="space-y-2 pt-2 border-t border-red-200 bg-red-50/50 p-3 rounded-xl">
+                <div className="flex items-center gap-1.5 text-emerald-800 text-[11px] font-extrabold">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <span>Request Created (#{txnDetails?.transactionReference})</span>
+                </div>
+                <label className="block text-[11px] font-bold text-slate-900">
+                  2. Enter 12-Digit UPI UTR / Ref Number <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
-                  value={upiId}
+                  value={utrNumber}
                   onChange={(e) => {
-                    setUpiId(e.target.value);
-                    setUpiError('');
+                    setUtrNumber(e.target.value);
+                    setUtrError('');
                   }}
-                  placeholder="e.g. username@okhdfcbank, mobile@ybl, name@upi"
+                  placeholder="e.g. 423901827491 or Transaction Ref ID"
                   className="w-full bg-white border border-slate-300 text-xs px-3.5 py-2.5 rounded-xl outline-none focus:border-[#B71C1C] font-mono shadow-2xs"
                 />
-                {upiError && <p className="text-[11px] text-red-600 font-bold">{upiError}</p>}
-                
-                <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-[10.5px] text-amber-900 font-medium flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Mandatory Step:</strong> Clicking the button below sends a ₹{subscription.amount} payment request to your UPI app. You MUST open your UPI app (GPay / PhonePe / Paytm / BHIM) and authorize the transaction to activate your VIP subscription. Entering a UPI ID alone does NOT complete payment.
-                  </span>
-                </div>
+                {utrError && <p className="text-[11px] text-red-600 font-bold">{utrError}</p>}
+                <p className="text-[10px] text-slate-500 font-medium">
+                  Found in your UPI app payment history receipt after completing transfer.
+                </p>
               </div>
-            </div>
-          </div>
-
-          {/* Secure Checkout Disclaimer */}
-          <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center gap-2.5 text-emerald-900 text-[11px] font-medium">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Only verified online payments are accepted for VIP Subscriptions. Unpaid requests will remain pending.</span>
-          </div>
-
-          {/* Pay Button */}
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={handleOnlinePayment}
-            className="w-full bg-[#B71C1C] hover:bg-[#900C0C] disabled:bg-slate-400 text-white font-extrabold py-4 rounded-2xl shadow-lg text-xs uppercase tracking-wider cursor-pointer transition-all flex items-center justify-center gap-2"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Authorizing Payment...</span>
-              </>
-            ) : (
-              <>
-                <span>Pay {subscription.currency || '₹'} {subscription.amount} & Activate VIP Access</span>
-              </>
             )}
-          </button>
+
+          </div>
+
+          {/* Secure Notice */}
+          <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-[10.5px] text-amber-900 font-medium flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <span>
+              <strong>Server Verified:</strong> Subscriptions activate strictly upon backend transaction verification. Unpaid or unconfirmed requests will remain pending.
+            </span>
+          </div>
+
+          {/* Action Button */}
+          {step === 1 ? (
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={handleInitiateUpiPayment}
+              className="w-full bg-[#B71C1C] hover:bg-[#900C0C] disabled:bg-slate-400 text-white font-extrabold py-4 rounded-2xl shadow-lg text-xs uppercase tracking-wider cursor-pointer transition-all flex items-center justify-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Initiating UPI Request...</span>
+                </>
+              ) : (
+                <>
+                  <span>Pay {subscription.currency || '₹'} {subscription.amount} via UPI App</span>
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={handleVerifyUpiPayment}
+              className="w-full bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-400 text-white font-extrabold py-4 rounded-2xl shadow-lg text-xs uppercase tracking-wider cursor-pointer transition-all flex items-center justify-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Verifying Transaction...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Submit UTR & Verify VIP Access</span>
+                </>
+              )}
+            </button>
+          )}
 
         </div>
       </div>
     </div>
   );
 }
-
