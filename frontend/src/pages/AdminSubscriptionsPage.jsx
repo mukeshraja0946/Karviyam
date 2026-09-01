@@ -200,6 +200,17 @@ export default function AdminSubscriptionsPage() {
         </div>
 
         <form onSubmit={handleSaveSettings} className="space-y-4">
+          {/* Active Payment Gateway Badge */}
+          <div className="bg-indigo-50/70 border border-indigo-200 p-3 rounded-2xl flex items-center justify-between">
+            <div className="flex items-center gap-2 text-indigo-950 font-bold text-xs">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Active Subscription Payment Provider: <strong>UPI App Direct ONLY (GPay, PhonePe, Paytm, BHIM)</strong></span>
+            </div>
+            <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-100 px-2.5 py-1 rounded-lg">
+              UPI ENFORCED
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Subscription Price</label>

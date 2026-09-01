@@ -239,10 +239,10 @@ exports.getSubscriptionById = async (req, res, next) => {
   }
 };
 
-// 4. Create Online Payment Order (Razorpay)
+// 4. Create Online UPI Payment Order
 exports.createSubscriptionPayment = async (req, res, next) => {
   try {
-    const { subscriptionId, paymentMethod = 'RAZORPAY' } = req.body;
+    const { subscriptionId, paymentMethod = 'UPI', upiId } = req.body;
     if (!subscriptionId) {
       return res.status(400).json(ApiResponse.error('Subscription ID is required.'));
     }
@@ -270,17 +270,19 @@ exports.createSubscriptionPayment = async (req, res, next) => {
           receipt: `rcpt_sub_${sub.id}_${Date.now()}`,
           notes: {
             subscriptionId: String(sub.id),
-            email: sub.email
+            email: sub.email,
+            paymentMethod: 'UPI',
+            vpa: upiId || ''
           }
         });
         rzpOrderId = rzpOrder.id;
       } catch (eRzp) {
-        console.warn('[Razorpay Order Creation Notice]:', eRzp.message);
+        console.warn('[UPI Payment Order Notice]:', eRzp.message);
       }
     }
 
     await pool.query(
-      `UPDATE subscriptions SET razorpay_order_id = ?, transaction_id = ?, payment_method = 'RAZORPAY', amount = ? WHERE id = ?`,
+      `UPDATE subscriptions SET razorpay_order_id = ?, transaction_id = ?, payment_method = 'UPI', amount = ? WHERE id = ?`,
       [rzpOrderId, rzpOrderId, settings.price, sub.id]
     );
 
@@ -290,8 +292,9 @@ exports.createSubscriptionPayment = async (req, res, next) => {
       currency: settings.currency || 'INR',
       key: razorpayConfig.keyId,
       subscriptionId: sub.id,
-      email: sub.email
-    }, 'Razorpay payment order generated'));
+      email: sub.email,
+      paymentMethod: 'UPI'
+    }, 'UPI payment order generated'));
   } catch (err) {
     next(err);
   }

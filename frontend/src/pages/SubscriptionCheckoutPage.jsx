@@ -206,11 +206,11 @@ export default function SubscriptionCheckoutPage() {
             </div>
           </div>
 
-          {/* ONLINE PAYMENT Options */}
+          {/* UPI PAYMENT ONLY Section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-                Select Payment Method
+                Payment Method (UPI Only)
               </h4>
               <span className="text-[10px] text-emerald-700 font-extrabold flex items-center gap-1">
                 <Lock className="w-3 h-3 text-emerald-600" />
@@ -218,88 +218,47 @@ export default function SubscriptionCheckoutPage() {
               </span>
             </div>
 
-            {/* Option 1: Razorpay Checkout (Cards, NetBanking, UPI, Wallets) */}
-            <div
-              onClick={() => setPaymentMethod('RAZORPAY')}
-              className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
-                paymentMethod === 'RAZORPAY'
-                  ? 'border-[#B71C1C] bg-red-50/30 shadow-xs'
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-100 text-[#B71C1C] flex items-center justify-center font-bold shrink-0">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div>
-                  <h5 className="font-extrabold text-slate-900 text-xs">Razorpay Standard (Cards, UPI, NetBanking)</h5>
-                  <p className="text-[11px] text-slate-500 font-medium">All major credit/debit cards, GPay, PhonePe, NetBanking</p>
-                </div>
-              </div>
-              <input
-                type="radio"
-                name="subPayment"
-                checked={paymentMethod === 'RAZORPAY'}
-                onChange={() => setPaymentMethod('RAZORPAY')}
-                className="w-4 h-4 accent-[#B71C1C] cursor-pointer"
-              />
-            </div>
-
-            {/* Option 2: Direct UPI (GPay / PhonePe / Paytm / BHIM) */}
-            <div
-              onClick={() => setPaymentMethod('UPI')}
-              className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col gap-3 ${
-                paymentMethod === 'UPI'
-                  ? 'border-[#B71C1C] bg-red-50/30 shadow-xs'
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
-              }`}
-            >
+            {/* ONLY UPI Payment Option */}
+            <div className="p-4 rounded-2xl border-2 border-[#B71C1C] bg-red-50/30 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#B71C1C] text-white flex items-center justify-center font-bold shrink-0 shadow-sm">
                     <Smartphone className="w-5 h-5" />
                   </div>
                   <div>
-                    <h5 className="font-extrabold text-slate-900 text-xs">UPI App Direct (GPay, PhonePe, Paytm, BHIM)</h5>
-                    <p className="text-[11px] text-slate-500 font-medium">Enter your UPI ID to trigger a payment request</p>
+                    <h5 className="font-black text-slate-900 text-xs uppercase">UPI App Direct (GPay, PhonePe, Paytm, BHIM)</h5>
+                    <p className="text-[11px] text-slate-600 font-medium">Instant activation via Google Pay, PhonePe, Paytm & BHIM</p>
                   </div>
                 </div>
-                <input
-                  type="radio"
-                  name="subPayment"
-                  checked={paymentMethod === 'UPI'}
-                  onChange={() => setPaymentMethod('UPI')}
-                  className="w-4 h-4 accent-[#B71C1C] cursor-pointer"
-                />
+                <div className="w-4 h-4 rounded-full bg-[#B71C1C] flex items-center justify-center text-white">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                </div>
               </div>
 
-              {paymentMethod === 'UPI' && (
-                <div className="pt-2 border-t border-slate-200/80 space-y-2" onClick={(e) => e.stopPropagation()}>
-                  <label className="block text-[11px] font-bold text-slate-700">
-                    Enter your VPA / UPI ID:
-                  </label>
-                  <input
-                    type="text"
-                    value={upiId}
-                    onChange={(e) => {
-                      setUpiId(e.target.value);
-                      setUpiError('');
-                    }}
-                    placeholder="e.g. mobile@ybl, name@okhdfcbank"
-                    className="w-full bg-white border border-slate-300 text-xs px-3.5 py-2.5 rounded-xl outline-none focus:border-[#B71C1C] font-mono"
-                  />
-                  {upiError && <p className="text-[11px] text-red-600 font-bold">{upiError}</p>}
-                  
-                  <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-xl text-[10px] text-amber-900 font-medium flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    <span>
-                      <strong>Important Notice:</strong> Entering a UPI ID triggers a payment request to your UPI app. You MUST open your UPI app (GPay, PhonePe, Paytm) and approve the ₹{subscription.amount} transaction to complete subscription activation. Entering a UPI ID alone does NOT complete payment.
-                    </span>
-                  </div>
+              <div className="pt-2 border-t border-slate-200/80 space-y-2">
+                <label className="block text-[11px] font-bold text-slate-800">
+                  Enter your VPA / UPI ID <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={upiId}
+                  onChange={(e) => {
+                    setUpiId(e.target.value);
+                    setUpiError('');
+                  }}
+                  placeholder="e.g. username@okhdfcbank, mobile@ybl, name@upi"
+                  className="w-full bg-white border border-slate-300 text-xs px-3.5 py-2.5 rounded-xl outline-none focus:border-[#B71C1C] font-mono shadow-2xs"
+                />
+                {upiError && <p className="text-[11px] text-red-600 font-bold">{upiError}</p>}
+                
+                <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-[10.5px] text-amber-900 font-medium flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Mandatory Step:</strong> Clicking the button below sends a ₹{subscription.amount} payment request to your UPI app. You MUST open your UPI app (GPay / PhonePe / Paytm / BHIM) and authorize the transaction to activate your VIP subscription. Entering a UPI ID alone does NOT complete payment.
+                  </span>
                 </div>
-              )}
+              </div>
             </div>
-
           </div>
 
           {/* Secure Checkout Disclaimer */}
