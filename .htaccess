@@ -1,6 +1,5 @@
 DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
 
-# 1. HOSTINGER PASSENGER NODE.JS APPLICATION ENTRYPOINT
 <IfModule mod_passenger.c>
   PassengerEnabled On
   PassengerAppType node
@@ -11,24 +10,29 @@ DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
   RewriteEngine On
   RewriteBase /
 
-  # 2. REDIRECT LEGACY MAINTENANCE.PHP URL TO REACT ROUTE /maintenance
+  # 1. REDIRECT LEGACY MAINTENANCE.PHP URL TO REACT ROUTE /maintenance
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 3. ALWAYS FORWARD API REQUESTS DIRECTLY TO PASSENGER SERVER.JS (NODE.JS)
+  # 2. FORWARD API REQUESTS TO NODE.JS BACKEND
   RewriteRule ^api/(.*)$ server.js [QSA,L]
 
-  # 4. ALLOW PHYSICAL FILES AND STATIC ASSETS TO PASS THROUGH DIRECTLY
-  RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
-  RewriteRule ^ - [L]
-
+  # 3. ALLOW PHYSICAL FILES AND STATIC ASSET DIRECTORIES TO PASS THROUGH DIRECTLY
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # 5. ROUTE ALL OTHER NON-FILE REQUESTS TO PASSENGER SERVER.JS / EXPRESS
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ server.js [L]
+  RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
+  RewriteRule ^ - [L]
+
+  # 4. REACT SPA CLIENT-SIDE ROUTING FALLBACK
+  # Serves index.html directly via Apache for all storefront and admin URLs
+  RewriteCond %{DOCUMENT_ROOT}/frontend/dist/index.html -f
+  RewriteRule ^ /frontend/dist/index.html [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/dist/index.html -f
+  RewriteRule ^ /dist/index.html [L]
+
+  RewriteRule ^ /index.html [L]
 </IfModule>
 
