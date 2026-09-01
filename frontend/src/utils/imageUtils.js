@@ -36,30 +36,39 @@ export const isValidImageUrl = (url) => {
   return false;
 };
 
-export const resolveImageUrl = (path, fallbackSeed = 0) => {
+export const resolveImageUrl = (path, fallbackSeed = 0, updatedAt = null) => {
   if (!isValidImageUrl(path)) {
     const idx = Math.abs(Number(fallbackSeed) || 0) % DEFAULT_FALLBACK_IMAGES.length;
     return DEFAULT_FALLBACK_IMAGES[idx];
   }
 
   const trimmed = path.trim();
+  let baseResolvedUrl = trimmed;
+
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/') || trimmed.startsWith('blob:')) {
-    return trimmed;
+    baseResolvedUrl = trimmed;
+  } else {
+    const relativePath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    const viteApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
+    if (viteApiUrl && (viteApiUrl.startsWith('http://') || viteApiUrl.startsWith('https://'))) {
+      const origin = viteApiUrl.replace(/\/api\/?$/, '');
+      baseResolvedUrl = `${origin}${relativePath}`;
+    } else if (typeof window !== 'undefined' && window.location && window.location.origin) {
+      baseResolvedUrl = `${window.location.origin}${relativePath}`;
+    } else {
+      baseResolvedUrl = relativePath;
+    }
   }
 
-  const relativePath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-
-  const viteApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
-  if (viteApiUrl && (viteApiUrl.startsWith('http://') || viteApiUrl.startsWith('https://'))) {
-    const origin = viteApiUrl.replace(/\/api\/?$/, '');
-    return `${origin}${relativePath}`;
+  if (updatedAt && !baseResolvedUrl.includes('data:image/') && !baseResolvedUrl.includes('blob:')) {
+    const timeVer = new Date(updatedAt).getTime();
+    if (!isNaN(timeVer) && timeVer > 0) {
+      const delim = baseResolvedUrl.includes('?') ? '&' : '?';
+      return `${baseResolvedUrl}${delim}v=${timeVer}`;
+    }
   }
 
-  if (typeof window !== 'undefined' && window.location && window.location.origin) {
-    return `${window.location.origin}${relativePath}`;
-  }
-
-  return relativePath;
+  return baseResolvedUrl;
 };
 
 export const isValidVideoUrl = (url) => {

@@ -21,7 +21,7 @@ const CLASSIFICATION_OPTIONS = [
   'OTHER'
 ];
 
-const compressImage = (file, maxWidth = 600, maxHeight = 600, quality = 0.75) => {
+const compressImage = (file, maxWidth = 600, maxHeight = 600, quality = 0.85) => {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -44,8 +44,11 @@ const compressImage = (file, maxWidth = 600, maxHeight = 600, quality = 0.75) =>
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL(file.type || 'image/jpeg', quality));
+
+        const mimeType = file.type || 'image/png';
+        resolve(canvas.toDataURL(mimeType, quality));
       };
       img.onerror = () => resolve(event.target.result);
       img.src = event.target.result;
@@ -79,8 +82,11 @@ const compressBase64Url = (url) => {
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.75));
+
+      const mimeType = url.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/)?.[1] || 'image/png';
+      resolve(canvas.toDataURL(mimeType, 0.85));
     };
     img.onerror = () => resolve(url);
     img.src = url;

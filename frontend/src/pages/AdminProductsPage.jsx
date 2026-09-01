@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, X, Upload, AlertCircle, Eye, EyeOff, Film, FileSpreadsheet, FileText, Printer } from 'lucide-react';
 import api from '../utils/api';
+import { broadcastSyncEvent } from '../services/api';
 import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import BulkImportModal from '../components/BulkImportModal';
@@ -21,7 +22,7 @@ const PRODUCT_EXPORT_HEADERS = [
   { label: 'Stock Quantity', accessor: (p) => `${p.stockQuantity || p.stock_quantity || 0} Units` },
   { label: 'Status', accessor: (p) => p.isActive !== false ? 'Active' : 'Inactive' }
 ];
-const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.75) => {
+const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.85) => {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -44,8 +45,11 @@ const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.75) =>
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL(file.type || 'image/jpeg', quality));
+
+        const mimeType = file.type || 'image/png';
+        resolve(canvas.toDataURL(mimeType, quality));
       };
       img.onerror = () => resolve(event.target.result);
       img.src = event.target.result;
@@ -79,8 +83,11 @@ const compressBase64Url = (url) => {
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.75));
+
+      const mimeType = url.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/)?.[1] || 'image/png';
+      resolve(canvas.toDataURL(mimeType, 0.85));
     };
     img.onerror = () => resolve(url);
     img.src = url;
@@ -800,6 +807,7 @@ export default function AdminProductsPage() {
             return updated;
           });
           try { await fetchData(); } catch (eFetch) {}
+          broadcastSyncEvent('karviyam_products_updated');
           setModalOpen(false);
         } else {
           throw new Error(apiData?.message || 'Failed to update product');
@@ -820,6 +828,7 @@ export default function AdminProductsPage() {
             return updated;
           });
           try { await fetchData(); } catch (eFetch) {}
+          broadcastSyncEvent('karviyam_products_updated');
           setModalOpen(false);
         } else {
           throw new Error(apiData?.message || 'Failed to create product');
@@ -855,6 +864,7 @@ export default function AdminProductsPage() {
           return updated;
         });
         setSelectedIds(prev => prev.filter(i => String(i) !== strId));
+        broadcastSyncEvent('karviyam_products_updated');
         toast.success('Product deleted successfully from database.', { id: 'prod-del-toast' });
         await fetchData();
       } else {

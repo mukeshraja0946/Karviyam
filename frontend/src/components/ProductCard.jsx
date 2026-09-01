@@ -53,7 +53,7 @@ export default function ProductCard({ product }) {
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
-            src={resolveImageUrl(product?.imageUrl || product?.image || (Array.isArray(product?.images) && product?.images[0]), product?.id)}
+            src={resolveImageUrl(product?.imageUrl || product?.image || (Array.isArray(product?.images) && product?.images[0]), product?.id, product?.updatedAt || product?.updated_at)}
             alt={product?.name || 'Product'}
             onError={(e) => handleImageError(e, product?.id)}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"

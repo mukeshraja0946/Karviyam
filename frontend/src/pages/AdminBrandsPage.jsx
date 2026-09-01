@@ -37,8 +37,11 @@ const compressImage = (file, maxWidth = 400, maxHeight = 400, quality = 0.8) => 
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL(file.type || 'image/jpeg', quality));
+
+        const mimeType = file.type || 'image/png';
+        resolve(canvas.toDataURL(mimeType, quality));
       };
       img.onerror = () => resolve(event.target.result);
       img.src = event.target.result;

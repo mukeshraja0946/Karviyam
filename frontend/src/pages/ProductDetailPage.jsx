@@ -288,14 +288,14 @@ export default function ProductDetailPage() {
     // 1. Main Image
     const mImg = activeColorObj?.mainImage || (Array.isArray(product?.images) ? product.images[0] : product?.imageUrl);
     if (mImg && isValidImageUrl(mImg)) {
-      list.push({ type: 'image', url: resolveImageUrl(mImg, product?.id), label: 'Main Image' });
+      list.push({ type: 'image', url: resolveImageUrl(mImg, product?.id, product?.updatedAt || product?.updated_at), label: 'Main Image' });
     }
 
     // 2. Sub Images (up to 6)
     const sImgs = activeColorObj?.subImages || (Array.isArray(product?.images) && product.images.length > 1 ? product.images.slice(1) : []);
     sImgs.forEach((s, idx) => {
       if (s && isValidImageUrl(s)) {
-        const resolved = resolveImageUrl(s, product?.id);
+        const resolved = resolveImageUrl(s, product?.id, product?.updatedAt || product?.updated_at);
         if (!list.some(item => item.url === resolved)) {
           list.push({ type: 'image', url: resolved, label: `Sub Image ${idx + 1}` });
         }
@@ -304,7 +304,7 @@ export default function ProductDetailPage() {
 
     // Ensure at least 1 image
     if (list.length === 0) {
-      list.push({ type: 'image', url: resolveImageUrl(product?.imageUrl, product?.id), label: 'Main Image' });
+      list.push({ type: 'image', url: resolveImageUrl(product?.imageUrl, product?.id, product?.updatedAt || product?.updated_at), label: 'Main Image' });
     }
 
     // 3. Video File (if available)

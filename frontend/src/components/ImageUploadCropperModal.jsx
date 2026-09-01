@@ -162,16 +162,31 @@ export default function ImageUploadCropperModal({
         throw new Error(`Output dimensions (${canvas.width}x${canvas.height}) do not match required (${config.width}x${config.height})`);
       }
 
-      // 4. Export Canvas to Blob File
+      // 4. Export Canvas to Blob File preserving PNG/WebP alpha transparency
+      const isPngOrWebp = Boolean(
+        imageSrc &&
+        (imageSrc.includes('data:image/png') ||
+         imageSrc.includes('data:image/webp') ||
+         /\.(png|webp)(\?.*)?$/i.test(imageSrc))
+      );
+
+      const exportMime = isPngOrWebp
+        ? (imageSrc.includes('webp') ? 'image/webp' : 'image/png')
+        : 'image/jpeg';
+
+      const ext = isPngOrWebp
+        ? (imageSrc.includes('webp') ? 'webp' : 'png')
+        : 'jpg';
+
       const blob = await new Promise((resolve) => {
-        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.92);
+        canvas.toBlob((b) => resolve(b), exportMime, 0.92);
       });
 
       if (!blob) throw new Error('Failed to generate image blob');
 
       // 5. Upload Cropped File to Backend Server Disk
       const formData = new FormData();
-      const fileName = `cropped-${configType}-${Date.now()}.jpg`;
+      const fileName = `cropped-${configType}-${Date.now()}.${ext}`;
       formData.append('file', blob, fileName);
 
       const uploadRes = await api.post('/upload', formData, {
@@ -189,7 +204,7 @@ export default function ImageUploadCropperModal({
       }
 
       // Base64 Fallback if API endpoint is unreachable
-      const base64Data = canvas.toDataURL('image/jpeg', 0.90);
+      const base64Data = canvas.toDataURL(exportMime, 0.90);
       toast.success(`Saved cropped image: ${config.width} × ${config.height} px!`, { id: 'cropper-toast' });
       onConfirmCrop(base64Data);
       onClose();

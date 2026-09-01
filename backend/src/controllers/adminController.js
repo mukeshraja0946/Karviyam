@@ -457,6 +457,7 @@ exports.updateProduct = async (req, res, next) => {
     }
 
     if (updates.length > 0) {
+      updates.push('updated_at = NOW()');
       params.push(id);
       await pool.query(`UPDATE products SET ${updates.join(', ')} WHERE id = ?`, params);
     }
