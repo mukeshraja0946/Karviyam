@@ -52,6 +52,7 @@ export default function MobileHomePage() {
   const [completeLook, setCompleteLook] = useState(null);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [trustBadges, setTrustBadges] = useState([]);
+  const [homepageSections, setHomepageSections] = useState([]);
 
   // Timer State for Flash Picks
   const [timeLeft, setTimeLeft] = useState({ hours: 2, minutes: 41, seconds: 36 });
@@ -61,12 +62,14 @@ export default function MobileHomePage() {
     loadAllMobileData();
 
     window.addEventListener('karviyam_mobile_homepage_updated', loadAllMobileData);
+    window.addEventListener('karviyam_homepage_sections_updated', loadAllMobileData);
     window.addEventListener('karviyam_products_updated', loadAllMobileData);
     window.addEventListener('karviyam_banners_updated', loadAllMobileData);
     window.addEventListener('storage', loadAllMobileData);
 
     return () => {
       window.removeEventListener('karviyam_mobile_homepage_updated', loadAllMobileData);
+      window.removeEventListener('karviyam_homepage_sections_updated', loadAllMobileData);
       window.removeEventListener('karviyam_products_updated', loadAllMobileData);
       window.removeEventListener('karviyam_banners_updated', loadAllMobileData);
       window.removeEventListener('storage', loadAllMobileData);
@@ -299,7 +302,16 @@ export default function MobileHomePage() {
         ]);
       }
 
-      // 10. Recently Viewed / Continue Shopping
+      // 10. Dynamic Admin-Controlled Homepage Sections
+      try {
+        const resSec = await api.get('/homepage-sections').catch(() => null);
+        const dataSec = resSec?.data?.data || resSec?.data;
+        if (Array.isArray(dataSec)) {
+          setHomepageSections(dataSec);
+        }
+      } catch (eSec) {}
+
+      // 11. Recently Viewed / Continue Shopping
       try {
         const localRV = localStorage.getItem('karviyam_recently_viewed');
         if (localRV) {
@@ -750,6 +762,115 @@ export default function MobileHomePage() {
           })}
         </div>
       </div>
+
+      {/* DYNAMIC ADMIN-CONTROLLED HOMEPAGE SECTIONS (Trending, Most-Loved Fashion for You, Starting @ ₹199) */}
+      {homepageSections.map((sec) => {
+        if (!sec || sec.enabled === false || !Array.isArray(sec.products) || sec.products.length === 0) return null;
+        const isGrid = sec.display_type === 'grid';
+
+        return (
+          <div key={sec.id || sec.section_key} className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-sm">{sec.title}</h3>
+                {sec.subtitle && <p className="text-[10.5px] text-slate-500 font-medium">{sec.subtitle}</p>}
+              </div>
+              <button
+                onClick={() => navigate(sec.view_all_link || '/shop')}
+                className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer"
+              >
+                {sec.view_all_text || 'View All →'}
+              </button>
+            </div>
+
+            {isGrid ? (
+              <div className="grid grid-cols-2 gap-2.5">
+                {sec.products.map((prod, idx) => {
+                  const isWish = isInWishlist(prod.id);
+                  return (
+                    <div
+                      key={prod.id || idx}
+                      onClick={() => navigate(`/product/${prod.id}`)}
+                      className="bg-white border border-slate-200/80 rounded-xl p-2 flex flex-col justify-between cursor-pointer group"
+                    >
+                      <div className="relative w-full aspect-square bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center mb-1.5">
+                        <img
+                          src={resolveImageUrl(prod.image || prod.imageUrl || (Array.isArray(prod.images) ? prod.images[0] : ''), prod.id)}
+                          alt={prod.name}
+                          onError={(e) => handleImageError(e, prod.id)}
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                          loading="lazy"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleWishlist(prod.id);
+                          }}
+                          className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center border shadow-2xs ${
+                            isWish ? 'bg-[#B71C1C] text-white border-[#B71C1C]' : 'bg-white text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          <Heart className={`w-3 h-3 ${isWish ? 'fill-current' : ''}`} />
+                        </button>
+                      </div>
+                      <h4 className="text-[11px] font-bold text-slate-900 line-clamp-1">{prod.name}</h4>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className="font-extrabold text-xs text-[#B71C1C]">₹{prod.price}</span>
+                        {prod.old_price && prod.old_price > prod.price && (
+                          <span className="text-[9px] text-slate-400 line-through">₹{prod.old_price}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap">
+                {sec.products.map((prod, idx) => {
+                  const isWish = isInWishlist(prod.id);
+                  return (
+                    <div
+                      key={prod.id || idx}
+                      onClick={() => navigate(`/product/${prod.id}`)}
+                      className="w-[140px] shrink-0 bg-white border border-slate-200/80 rounded-xl p-2 flex flex-col justify-between cursor-pointer group"
+                    >
+                      <div className="relative w-full aspect-square bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center mb-1.5">
+                        <img
+                          src={resolveImageUrl(prod.image || prod.imageUrl || (Array.isArray(prod.images) ? prod.images[0] : ''), prod.id)}
+                          alt={prod.name}
+                          onError={(e) => handleImageError(e, prod.id)}
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                          loading="lazy"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleWishlist(prod.id);
+                          }}
+                          className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center border shadow-2xs ${
+                            isWish ? 'bg-[#B71C1C] text-white border-[#B71C1C]' : 'bg-white text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          <Heart className={`w-3 h-3 ${isWish ? 'fill-current' : ''}`} />
+                        </button>
+                      </div>
+                      <h4 className="text-[11px] font-bold text-slate-900 line-clamp-1">{prod.name}</h4>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className="font-extrabold text-xs text-[#B71C1C]">₹{prod.price}</span>
+                        {prod.old_price && prod.old_price > prod.price && (
+                          <span className="text-[9px] text-slate-400 line-through">₹{prod.old_price}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       {/* 12. FIXED BOTTOM NAVIGATION BAR */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 px-2 py-1.5 flex items-center justify-around shadow-lg">

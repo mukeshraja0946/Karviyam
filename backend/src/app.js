@@ -34,6 +34,7 @@ const excelRoutes = require('./routes/excelRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const emailMarketingRoutes = require('./routes/emailMarketingRoutes');
+const homepageSectionRoutes = require('./routes/homepageSectionRoutes');
 const settingController = require('./controllers/settingController');
 const contactController = require('./controllers/contactController');
 
@@ -218,6 +219,9 @@ app.use('/api/admin/audit-logs', auditLogRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/admin/email-marketing', emailMarketingRoutes);
 app.use('/api/admin/subscriptions', subscriptionRoutes);
+
+app.use('/api/homepage-sections', homepageSectionRoutes);
+app.use('/api/admin/homepage-sections', homepageSectionRoutes);
 
 app.use('/api/admin', adminRoutes);
 

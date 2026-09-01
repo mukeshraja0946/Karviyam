@@ -53,6 +53,19 @@ export default function DesktopCenterContent() {
   const [categories, setCategories] = useState(CATEGORIES_DATA);
   const [productsRow1, setProductsRow1] = useState([]);
   const [productsRow2, setProductsRow2] = useState([]);
+  const [homepageSections, setHomepageSections] = useState([]);
+
+  const fetchHomepageSections = async () => {
+    try {
+      const res = await api.get('/homepage-sections').catch(() => null);
+      const data = res?.data?.data || res?.data;
+      if (Array.isArray(data)) {
+        setHomepageSections(data);
+      }
+    } catch (e) {
+      console.error('Error fetching homepage sections in DesktopCenterContent:', e);
+    }
+  };
 
   // Category carousel ref & state
   const categoryScrollRef = useRef(null);
@@ -189,22 +202,26 @@ export default function DesktopCenterContent() {
   useEffect(() => {
     fetchProductsAndCategories();
     fetchBanners();
+    fetchHomepageSections();
 
     const handleFocusOrVisible = () => {
       if (document.visibilityState === 'visible') {
         fetchBanners();
         fetchProductsAndCategories();
+        fetchHomepageSections();
       }
     };
 
     const handleStorage = () => {
       fetchBanners();
       fetchProductsAndCategories();
+      fetchHomepageSections();
     };
 
     window.addEventListener('karviyam_products_updated', fetchProductsAndCategories);
     window.addEventListener('karviyam_categories_updated', fetchProductsAndCategories);
     window.addEventListener('karviyam_parent_categories_updated', fetchProductsAndCategories);
+    window.addEventListener('karviyam_homepage_sections_updated', fetchHomepageSections);
     window.addEventListener('karviyam_banners_updated', fetchBanners);
     window.addEventListener('focus', handleFocusOrVisible);
     window.addEventListener('visibilitychange', handleFocusOrVisible);
@@ -213,6 +230,7 @@ export default function DesktopCenterContent() {
       window.removeEventListener('karviyam_products_updated', fetchProductsAndCategories);
       window.removeEventListener('karviyam_categories_updated', fetchProductsAndCategories);
       window.removeEventListener('karviyam_parent_categories_updated', fetchProductsAndCategories);
+      window.removeEventListener('karviyam_homepage_sections_updated', fetchHomepageSections);
       window.removeEventListener('karviyam_banners_updated', fetchBanners);
       window.removeEventListener('focus', handleFocusOrVisible);
       window.removeEventListener('visibilitychange', handleFocusOrVisible);
@@ -720,6 +738,47 @@ export default function DesktopCenterContent() {
         </div>
 
       </div>
+
+      {/* 5. DYNAMIC ADMIN-CONTROLLED HOMEPAGE SECTIONS (Trending, Most-Loved Fashion for You, Starting @ ₹199) */}
+      {homepageSections.map((sec) => {
+        if (!sec || sec.enabled === false || !Array.isArray(sec.products) || sec.products.length === 0) return null;
+        const isGrid = sec.display_type === 'grid';
+
+        return (
+          <div key={sec.id || sec.section_key} className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-4 relative">
+            {/* Section Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
+                  {sec.title}
+                </h2>
+                {sec.subtitle && (
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    {sec.subtitle}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => navigate(sec.view_all_link || '/shop')}
+                className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5"
+              >
+                {sec.view_all_text || 'View All →'}
+              </button>
+            </div>
+
+            {/* Products Layout (Grid vs Horizontal Scroll) */}
+            {isGrid ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {sec.products.map((prod, idx) => renderProductCard(prod, idx))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5 xl:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap">
+                {sec.products.map((prod, idx) => renderProductCard(prod, idx))}
+              </div>
+            )}
+          </div>
+        );
+      })}
 
     </main>
   );

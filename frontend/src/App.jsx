@@ -60,6 +60,7 @@ import SubscriptionCheckoutPage from './pages/SubscriptionCheckoutPage';
 import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
 import AdminSubscriptionsPage from './pages/AdminSubscriptionsPage';
 import AdminEmailMarketingPage from './pages/AdminEmailMarketingPage';
+import AdminHomepageSectionsPage from './pages/AdminHomepageSectionsPage';
 
 export default function App() {
   return (
@@ -111,6 +112,7 @@ export default function App() {
                     <Route path="/admin/customers" element={<AdminCustomersPage />} />
                     <Route path="/admin/coupons" element={<AdminCouponsPage />} />
                     <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
+                    <Route path="/admin/homepage-sections" element={<AdminHomepageSectionsPage />} />
                     <Route path="/admin/email-marketing" element={<AdminEmailMarketingPage />} />
                     <Route path="/admin/mail" element={<AdminEmailMarketingPage />} />
                     <Route path="/admin/banners" element={<AdminBannersPage />} />
