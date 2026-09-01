@@ -184,12 +184,14 @@ async function initDb() {
     `);
 
     try {
+      await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS category_name_str VARCHAR(100)`);
       await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes VARCHAR(255)`);
       await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_bestseller BOOLEAN DEFAULT FALSE`);
       await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS seo_title VARCHAR(255)`);
       await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS meta_keywords VARCHAR(255)`);
       await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS meta_description TEXT`);
     } catch (e) {
+      try { await pool.query(`ALTER TABLE products ADD COLUMN category_name_str VARCHAR(100)`); } catch (e2) {}
       try { await pool.query(`ALTER TABLE products ADD COLUMN sizes VARCHAR(255)`); } catch (e2) {}
       try { await pool.query(`ALTER TABLE products ADD COLUMN seo_title VARCHAR(255)`); } catch (e2) {}
     }
@@ -812,9 +814,13 @@ async function initDb() {
     }
 
     // Seed Products if empty
-    const [prodCount] = await pool.query(`SELECT COUNT(*) as count FROM products`);
-    if (prodCount[0].count === 0) {
-      await seedSampleProducts();
+    try {
+      const [prodCount] = await pool.query(`SELECT COUNT(*) as count FROM products`);
+      if (prodCount && prodCount[0] && prodCount[0].count === 0) {
+        await seedSampleProducts();
+      }
+    } catch (errProdCount) {
+      console.warn('⚠️ Product seed count warning:', errProdCount.message);
     }
 
     console.log('[DB Init] Database schema & default seed data synchronized successfully.');
@@ -828,58 +834,66 @@ async function initDb() {
 }
 
 async function seedSampleProducts() {
-  const [categories] = await pool.query(`SELECT * FROM categories WHERE parent_id IS NOT NULL`);
-  if (categories.length === 0) return;
+  try {
+    const [categories] = await pool.query(`SELECT * FROM categories WHERE parent_id IS NOT NULL`);
+    if (categories.length === 0) return;
 
-  const [parents] = await pool.query(`SELECT * FROM categories WHERE parent_id IS NULL`);
-  const parentMap = {};
-  parents.forEach(p => parentMap[p.id] = p);
+    const [parents] = await pool.query(`SELECT * FROM categories WHERE parent_id IS NULL`);
+    const parentMap = {};
+    parents.forEach(p => parentMap[p.id] = p);
 
-  let pIndex = 1;
-  for (const cat of categories) {
-    const parentCat = parentMap[cat.parent_id] || cat;
-    const rootName = parentCat.name.toUpperCase();
-    const poolList = IMAGE_POOLS[rootName] || IMAGE_POOLS.WOMEN;
+    let pIndex = 1;
+    for (const cat of categories) {
+      const parentCat = parentMap[cat.parent_id] || cat;
+      const rootName = parentCat.name.toUpperCase();
+      const poolList = IMAGE_POOLS[rootName] || IMAGE_POOLS.WOMEN;
 
-    for (let i = 1; i <= 3; i++) {
-      const name = `${cat.name} Edition ${i}`;
-      const sku = `KV-${cat.name.substring(0, 3).toUpperCase()}-${String(100 + pIndex)}`;
-      const price = 899 + (pIndex * 150) % 3000;
-      const oldPrice = Math.round(price * 1.3);
-      const discount = Math.round(((oldPrice - price) / oldPrice) * 100);
-      const primaryImage = poolList[pIndex % poolList.length];
-      const color = COLORS[pIndex % COLORS.length];
-      const brand = BRANDS[pIndex % BRANDS.length];
-      const gender = rootName === 'WOMEN' ? 'Women' : rootName === 'MEN' ? 'Men' : rootName === 'KIDS & BABY' ? 'Kids' : 'Unisex';
+      for (let i = 1; i <= 3; i++) {
+        const name = `${cat.name} Edition ${i}`;
+        const sku = `KV-${cat.name.substring(0, 3).toUpperCase()}-${String(100 + pIndex)}`;
+        const price = 899 + (pIndex * 150) % 3000;
+        const oldPrice = Math.round(price * 1.3);
+        const discount = Math.round(((oldPrice - price) / oldPrice) * 100);
+        const primaryImage = poolList[pIndex % poolList.length];
+        const color = COLORS[pIndex % COLORS.length];
+        const brand = BRANDS[pIndex % BRANDS.length];
+        const gender = rootName === 'WOMEN' ? 'Women' : rootName === 'MEN' ? 'Men' : rootName === 'KIDS & BABY' ? 'Kids' : 'Unisex';
 
-      const [prodRes] = await pool.query(`
-        INSERT INTO products (
-          category_id, subcategory_id, category_name_str, brand, name, sku, barcode, description, price, old_price, discount_percentage,
-          stock_quantity, image_url, type, gender, rating, is_featured, is_trending, is_best_seller, is_new_arrival, is_active,
-          size, color, material, fabric, tags
-        ) VALUES (
-          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 4.5, ?, ?, ?, ?, true, 'M, L, XL', ?, 'Organic Cotton & Blends', 'Silk Blends', ?
-        )
-      `, [
-        parentCat.id, cat.id, parentCat.name, brand, name, sku, `89000${100000 + pIndex}`,
-        `Premium handcrafted ${name} made with exquisite fabric and traditional artistry.`,
-        price, oldPrice, discount, 45, primaryImage, rootName, gender,
-        pIndex % 2 === 0, pIndex % 3 === 0, pIndex % 4 === 0, pIndex % 2 === 1,
-        color, `${cat.name.toLowerCase()}, ${rootName.toLowerCase()}, ethnic, designer`
-      ]);
+        try {
+          const [prodRes] = await pool.query(`
+            INSERT INTO products (
+              category_id, subcategory_id, category_name_str, brand, name, sku, barcode, description, price, old_price, discount_percentage,
+              stock_quantity, image_url, type, gender, rating, is_featured, is_trending, is_best_seller, is_new_arrival, is_active,
+              size, color, material, fabric, tags
+            ) VALUES (
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 4.5, ?, ?, ?, ?, true, 'M, L, XL', ?, 'Organic Cotton & Blends', 'Silk Blends', ?
+            )
+          `, [
+            parentCat.id, cat.id, parentCat.name, brand, name, sku, `89000${100000 + pIndex}`,
+            `Premium handcrafted ${name} made with exquisite fabric and traditional artistry.`,
+            price, oldPrice, discount, 45, primaryImage, rootName, gender,
+            pIndex % 2 === 0, pIndex % 3 === 0, pIndex % 4 === 0, pIndex % 2 === 1,
+            color, `${cat.name.toLowerCase()}, ${rootName.toLowerCase()}, ethnic, designer`
+          ]);
 
-      const productId = prodRes.insertId;
+          const productId = prodRes.insertId;
 
-      for (let imgIdx = 0; imgIdx < 3; imgIdx++) {
-        const detailImg = poolList[(pIndex + imgIdx) % poolList.length];
-        await pool.query(
-          `INSERT INTO product_images (product_id, image_url, is_main, sort_order) VALUES (?, ?, ?, ?)`,
-          [productId, detailImg, imgIdx === 0, imgIdx]
-        );
+          for (let imgIdx = 0; imgIdx < 3; imgIdx++) {
+            const detailImg = poolList[(pIndex + imgIdx) % poolList.length];
+            await pool.query(
+              `INSERT INTO product_images (product_id, image_url, is_main, sort_order) VALUES (?, ?, ?, ?)`,
+              [productId, detailImg, imgIdx === 0, imgIdx]
+            );
+          }
+        } catch (errSingleProd) {
+          console.warn(`⚠️ Sample product ${name} seed warning:`, errSingleProd.message);
+        }
+
+        pIndex++;
       }
-
-      pIndex++;
     }
+  } catch (errSeed) {
+    console.warn('⚠️ seedSampleProducts warning:', errSeed.message);
   }
 }
 
