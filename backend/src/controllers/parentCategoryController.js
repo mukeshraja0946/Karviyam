@@ -32,49 +32,62 @@ const ensureTableExists = async () => {
       );
     `);
 
-    const [existing] = await pool.query('SELECT COUNT(*) as count FROM parent_categories');
-    if (!existing || existing[0].count === 0) {
-      const defaultParentCats = [
-        { name: 'T-SHIRTS', image_url: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400', display_order: 1, link: '/shop?category=T-Shirts' },
-        { name: 'SNEAKERS', image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400', display_order: 2, link: '/shop?category=Sneakers' },
-        { name: 'KURTA SETS', image_url: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400', display_order: 3, link: '/shop?category=Kurta-Sets' },
-        { name: 'WOMEN', image_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400', display_order: 4, link: '/shop?category=Women' },
-        { name: 'MEN', image_url: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400', display_order: 5, link: '/shop?category=Men' },
-        { name: 'KIDS & BABY', image_url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400', display_order: 6, link: '/shop?category=Kids' },
-        { name: 'UNISEX', image_url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400', display_order: 7, link: '/shop?category=Unisex' }
-      ];
-      for (const cat of defaultParentCats) {
+    const defaultParentCats = [
+      { name: 'T-SHIRTS', image_url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400', display_order: 1, link: '/shop?category=T-Shirts' },
+      { name: 'SNEAKERS', image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400', display_order: 2, link: '/shop?category=Sneakers' },
+      { name: 'KURTA SETS', image_url: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400', display_order: 3, link: '/shop?category=Kurta-Sets' },
+      { name: 'WOMEN', image_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400', display_order: 4, link: '/shop?category=Women' },
+      { name: 'MEN', image_url: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400', display_order: 5, link: '/shop?category=Men' },
+      { name: 'KIDS & BABY', image_url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400', display_order: 6, link: '/shop?category=Kids' },
+      { name: 'UNISEX', image_url: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400', display_order: 7, link: '/shop?category=Unisex' },
+      { name: 'JEWELS', image_url: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400', display_order: 8, link: '/shop?category=Jewels' },
+      { name: 'ACCESSORIES', image_url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400', display_order: 9, link: '/shop?category=Accessories' },
+      { name: 'KITCHEN & HOME', image_url: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=400', display_order: 10, link: '/shop?category=Kitchen' },
+      { name: 'SCHOOL & OFFICE', image_url: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=400', display_order: 11, link: '/shop?category=School' },
+      { name: 'BEST SELLERS', image_url: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400', display_order: 12, link: '/shop?category=Best-Sellers' },
+      { name: 'TRENDING NOW', image_url: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400', display_order: 13, link: '/shop?category=Trending' },
+      { name: 'FOOTWEAR', image_url: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=400', display_order: 14, link: '/shop?category=Footwear' },
+      { name: 'ETHNIC WEAR', image_url: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400', display_order: 15, link: '/shop?category=Ethnic-Wear' },
+      { name: 'HANDBAGS', image_url: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400', display_order: 16, link: '/shop?category=Handbags' }
+    ];
+
+    for (const cat of defaultParentCats) {
+      const [chk] = await pool.query(
+        `SELECT id FROM parent_categories WHERE UPPER(TRIM(name)) = ?`,
+        [cat.name.trim().toUpperCase()]
+      );
+      if (!chk || chk.length === 0) {
         await pool.query(
           `INSERT INTO parent_categories (name, image_url, display_order, is_active, link) VALUES (?, ?, ?, 1, ?)`,
           [cat.name, cat.image_url, cat.display_order, cat.link]
         );
       }
-    } else {
-      // Heal broken/invalid text image URLs stored in MySQL database
-      await pool.query(`
-        UPDATE parent_categories 
-        SET image_url = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400' 
-        WHERE UPPER(TRIM(name)) = 'WOMEN' AND (image_url = 'WOMEN' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
-      `).catch(() => null);
-
-      await pool.query(`
-        UPDATE parent_categories 
-        SET image_url = 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400' 
-        WHERE UPPER(TRIM(name)) = 'MEN' AND (image_url = 'MEN' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
-      `).catch(() => null);
-
-      await pool.query(`
-        UPDATE parent_categories 
-        SET image_url = 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400' 
-        WHERE (UPPER(TRIM(name)) = 'KIDS & BABY' OR UPPER(TRIM(name)) = 'KIDS') AND (image_url LIKE '%KIDS%' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
-      `).catch(() => null);
-
-      await pool.query(`
-        UPDATE parent_categories 
-        SET image_url = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400' 
-        WHERE UPPER(TRIM(name)) = 'UNISEX' AND (image_url = 'UNISEX' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
-      `).catch(() => null);
     }
+
+    // Heal broken/invalid text image URLs stored in MySQL database
+    await pool.query(`
+      UPDATE parent_categories 
+      SET image_url = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400' 
+      WHERE UPPER(TRIM(name)) = 'WOMEN' AND (image_url = 'WOMEN' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
+    `).catch(() => null);
+
+    await pool.query(`
+      UPDATE parent_categories 
+      SET image_url = 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400' 
+      WHERE UPPER(TRIM(name)) = 'MEN' AND (image_url = 'MEN' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
+    `).catch(() => null);
+
+    await pool.query(`
+      UPDATE parent_categories 
+      SET image_url = 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400' 
+      WHERE (UPPER(TRIM(name)) = 'KIDS & BABY' OR UPPER(TRIM(name)) = 'KIDS') AND (image_url LIKE '%KIDS%' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
+    `).catch(() => null);
+
+    await pool.query(`
+      UPDATE parent_categories 
+      SET image_url = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400' 
+      WHERE UPPER(TRIM(name)) = 'UNISEX' AND (image_url = 'UNISEX' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
+    `).catch(() => null);
   } catch (err) {
     console.error('[parentCategoryController] Error ensuring table exists:', err.message);
   }
