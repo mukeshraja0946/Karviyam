@@ -594,38 +594,7 @@ export default function DesktopCenterContent() {
       {/* Find Your Price Section - Placed immediately BELOW main homepage hero banner */}
       <FindYourPrice />
 
-      {/* 2. Offer Strip */}
-      <div className="w-full min-h-[64px] bg-white rounded-xl border border-slate-200/90 shadow-xs px-3 xl:px-5 py-2 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2">
-        <div className="flex-1 flex items-center gap-2.5 border-r border-slate-100 pr-3 xl:pr-5 min-w-[180px]">
-          <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold shrink-0">
-            <IndianRupee className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="font-extrabold text-[11px] text-slate-900 uppercase">UNDER ₹499</h4>
-            <p className="text-[10px] text-slate-500 font-medium">Best Under Budget Finds</p>
-          </div>
-        </div>
 
-        <div className="flex-1 flex items-center gap-2.5 border-r border-slate-100 px-3 xl:px-5 min-w-[180px]">
-          <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-            <Gift className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="font-extrabold text-[11px] text-slate-900 uppercase">DEAL OF THE DAY</h4>
-            <p className="text-[10px] text-slate-500 font-medium">New Deals Everyday</p>
-          </div>
-        </div>
-
-        <div className="flex-1 flex items-center gap-2.5 pl-3 xl:pl-5 min-w-[180px]">
-          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-            <ShoppingBag className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="font-extrabold text-[11px] text-slate-900 uppercase">WHAT'S NEW</h4>
-            <p className="text-[10px] text-slate-500 font-medium">Latest Arrivals</p>
-          </div>
-        </div>
-      </div>
 
       {/* 3. Shop by Category Section */}
       <div className="w-full bg-white rounded-3xl p-4 flex flex-col gap-3 relative">
