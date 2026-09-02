@@ -13,6 +13,7 @@ import { useWishlist } from '../../context/WishlistContext';
 import api from '../../utils/api';
 import { resolveImageUrl, handleImageError } from '../../utils/imageUtils';
 import FindYourPrice from '../FindYourPrice';
+import WhyShopWithKarviyam from '../WhyShopWithKarviyam';
 
 const CATEGORIES_DATA = [
   { id: 't-shirts', name: 'T-SHIRTS', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400', query: 'category=T-Shirts' },
@@ -591,8 +592,15 @@ export default function DesktopCenterContent() {
         </div>
       )}
 
-      {/* Find Your Price Section - Placed immediately BELOW main homepage hero banner */}
-      <FindYourPrice />
+      {/* Side-by-Side Section: FIND YOUR PRICE (Left) | WHY SHOP WITH KARVIYAM? (Right) */}
+      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-3 xl:gap-4 my-1">
+        <div className="lg:col-span-6 xl:col-span-6 flex flex-col">
+          <FindYourPrice />
+        </div>
+        <div className="lg:col-span-6 xl:col-span-6 flex flex-col">
+          <WhyShopWithKarviyam />
+        </div>
+      </div>
 
 
 

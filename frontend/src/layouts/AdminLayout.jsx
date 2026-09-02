@@ -187,6 +187,7 @@ export default function AdminLayout() {
         { name: 'VIP Subscriptions', path: '/admin/subscriptions' },
         { name: 'Homepage Sections', path: '/admin/homepage-sections' },
         { name: 'Find Your Price', path: '/admin/find-your-price' },
+        { name: 'Why Shop With Karviyam?', path: '/admin/why-shop' },
         { name: 'Email Marketing', path: '/admin/email-marketing' },
         { name: 'Hero Banners', path: '/admin/banners' },
         { name: 'Promotional Cards', path: '/admin/promo-cards' },

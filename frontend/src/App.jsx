@@ -62,6 +62,7 @@ import AdminSubscriptionsPage from './pages/AdminSubscriptionsPage';
 import AdminEmailMarketingPage from './pages/AdminEmailMarketingPage';
 import AdminHomepageSectionsPage from './pages/AdminHomepageSectionsPage';
 import AdminFindYourPricePage from './pages/AdminFindYourPricePage';
+import AdminWhyShopPage from './pages/AdminWhyShopPage';
 import AdminBankAccountPage from './pages/AdminBankAccountPage';
 
 export default function App() {
@@ -116,6 +117,7 @@ export default function App() {
                     <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
                     <Route path="/admin/homepage-sections" element={<AdminHomepageSectionsPage />} />
                     <Route path="/admin/find-your-price" element={<AdminFindYourPricePage />} />
+                    <Route path="/admin/why-shop" element={<AdminWhyShopPage />} />
                     <Route path="/admin/email-marketing" element={<AdminEmailMarketingPage />} />
                     <Route path="/admin/mail" element={<AdminEmailMarketingPage />} />
                     <Route path="/admin/banners" element={<AdminBannersPage />} />

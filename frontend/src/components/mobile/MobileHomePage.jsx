@@ -26,6 +26,7 @@ import { useWishlist } from '../../context/WishlistContext';
 import api from '../../utils/api';
 import { resolveImageUrl, handleImageError } from '../../utils/imageUtils';
 import FindYourPrice from '../FindYourPrice';
+import WhyShopWithKarviyam from '../WhyShopWithKarviyam';
 import toast from 'react-hot-toast';
 
 export default function MobileHomePage() {
@@ -675,9 +676,10 @@ export default function MobileHomePage() {
         </div>
       </div>
 
-      {/* 10. "FIND YOUR PRICE" SECTION */}
-      <div className="px-1">
+      {/* 10. "FIND YOUR PRICE" & "WHY SHOP WITH KARVIYAM" SECTIONS */}
+      <div className="px-2 space-y-2 my-1">
         <FindYourPrice />
+        <WhyShopWithKarviyam />
       </div>
 
       {/* 11. "CONTINUE SHOPPING" SECTION */}

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { broadcastSyncEvent } from '../services/api';
 import AdminFindYourPricePage from './AdminFindYourPricePage';
+import AdminWhyShopPage from './AdminWhyShopPage';
 
 export default function AdminHomepageSectionsPage() {
   const [activeTab, setActiveTab] = useState('sections');
@@ -169,10 +170,24 @@ export default function AdminHomepageSectionsPage() {
         >
           Find Your Price Section
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('why_shop')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'why_shop'
+              ? 'bg-[#B71C1C] text-white shadow-xs'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
+          Why Shop With Karviyam?
+        </button>
       </div>
 
       {activeTab === 'find_your_price' ? (
         <AdminFindYourPricePage isEmbedded={true} />
+      ) : activeTab === 'why_shop' ? (
+        <AdminWhyShopPage isEmbedded={true} />
       ) : (
         <>
           {/* Info Banner */}

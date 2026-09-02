@@ -4,23 +4,25 @@ import api from '../utils/api';
 
 const DEFAULT_CONFIG = {
   enabled: true,
-  title: 'Find Your Price',
+  title: 'FIND YOUR PRICE',
   buttons: [
     { id: '1', label: 'Under ₹499', maxPrice: 499, enabled: true },
     { id: '2', label: 'Under ₹999', maxPrice: 999, enabled: true },
     { id: '3', label: 'Under ₹1499', maxPrice: 1499, enabled: true },
     { id: '4', label: 'Under ₹1999', maxPrice: 1999, enabled: true },
-    { id: '5', label: 'Under ₹2999', maxPrice: 2999, enabled: true }
+    { id: '5', label: 'Under ₹2999', maxPrice: 2999, enabled: true },
+    { id: '6', label: 'Under ₹3999', maxPrice: 3999, enabled: true }
   ]
 };
 
-// Curated subtle accent color styles matching KARVIYAM design language
+// Distinct pill colors matching the reference design image
 const BUTTON_ACCENTS = [
-  'border-rose-200 text-rose-950 bg-rose-50/40 hover:bg-rose-100/60 hover:border-rose-300 hover:text-rose-900',
-  'border-amber-200 text-amber-950 bg-amber-50/40 hover:bg-amber-100/60 hover:border-amber-300 hover:text-amber-900',
-  'border-emerald-200 text-emerald-950 bg-emerald-50/40 hover:bg-emerald-100/60 hover:border-emerald-300 hover:text-emerald-900',
-  'border-purple-200 text-purple-950 bg-purple-50/40 hover:bg-purple-100/60 hover:border-purple-300 hover:text-purple-900',
-  'border-blue-200 text-blue-950 bg-blue-50/40 hover:bg-blue-100/60 hover:border-blue-300 hover:text-blue-900'
+  'border-rose-300 text-rose-800 bg-white hover:bg-rose-50 hover:border-rose-400',
+  'border-amber-300 text-amber-800 bg-white hover:bg-amber-50 hover:border-amber-400',
+  'border-emerald-300 text-emerald-800 bg-white hover:bg-emerald-50 hover:border-emerald-400',
+  'border-purple-300 text-purple-800 bg-white hover:bg-purple-50 hover:border-purple-400',
+  'border-blue-300 text-blue-800 bg-white hover:bg-blue-50 hover:border-blue-400',
+  'border-pink-300 text-pink-800 bg-white hover:bg-pink-50 hover:border-pink-400'
 ];
 
 export default function FindYourPrice() {
@@ -85,14 +87,16 @@ export default function FindYourPrice() {
   if (activeButtons.length === 0) return null;
 
   return (
-    <div className="w-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-3.5 sm:p-4 my-2.5 transition-all">
-      <div className="flex items-center justify-between mb-2.5">
-        <h2 className="font-display font-black text-slate-900 text-sm sm:text-base tracking-tight uppercase">
-          {config.title || 'Find Your Price'}
+    <div className="w-full h-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-3.5 xl:p-4 flex flex-col justify-between transition-all">
+      {/* Title */}
+      <div className="mb-2.5">
+        <h2 className="font-display font-black text-slate-900 text-xs xl:text-sm tracking-tight uppercase">
+          {config.title || 'FIND YOUR PRICE'}
         </h2>
       </div>
 
-      <div className="flex items-center gap-2.5 sm:gap-3 overflow-x-auto no-scrollbar py-0.5">
+      {/* STRICT SINGLE HORIZONTAL LINE (NO WRAP) */}
+      <div className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar py-1 whitespace-nowrap flex-nowrap w-full">
         {activeButtons.map((btn, idx) => {
           const accentClass = BUTTON_ACCENTS[idx % BUTTON_ACCENTS.length];
           const maxP = btn.maxPrice !== undefined ? btn.maxPrice : 999;
@@ -103,7 +107,7 @@ export default function FindYourPrice() {
               key={btn.id || idx}
               type="button"
               onClick={() => navigate(`/shop?maxPrice=${maxP}`)}
-              className={`rounded-full px-4 sm:px-5 py-2 text-xs font-extrabold shadow-2xs border cursor-pointer shrink-0 transition-all hover:scale-105 hover:shadow-xs active:scale-95 flex items-center justify-center ${accentClass}`}
+              className={`rounded-full px-3.5 xl:px-4 py-2 text-[11px] xl:text-xs font-extrabold shadow-2xs border cursor-pointer shrink-0 transition-all hover:scale-105 hover:shadow-xs active:scale-95 flex items-center justify-center ${accentClass}`}
             >
               {displayLabel}
             </button>
