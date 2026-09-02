@@ -5,6 +5,8 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 
 router.post('/check-account', authController.checkAccount);
 router.post('/login', authController.login);
+router.post('/send-otp', authController.sendOTP);
+router.post('/verify-otp', authController.verifyOTP);
 router.post('/send-admin-otp', authController.sendAdminOTP);
 router.post('/verify-admin-otp', authController.verifyAdminOTP);
 router.post('/google', authController.googleAuth);

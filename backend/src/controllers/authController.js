@@ -558,10 +558,10 @@ exports.resetPassword = async (req, res, next) => {
   }
 };
 
-const ensureAdminOTPTable = async () => {
+const ensureLoginOTPTable = async () => {
   try {
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS admin_otps (
+      CREATE TABLE IF NOT EXISTS user_otps (
         id INT AUTO_INCREMENT PRIMARY KEY,
         email VARCHAR(255) NOT NULL,
         otp_hash VARCHAR(255) NOT NULL,
@@ -574,15 +574,15 @@ const ensureAdminOTPTable = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
   } catch (err) {
-    console.error('[authController] Table admin_otps init error:', err.message);
+    console.error('[authController] Table user_otps init error:', err.message);
   }
 };
 
-const { sendAdminOTPEmail } = require('../utils/emailService');
+const { sendLoginOTPEmail } = require('../utils/emailService');
 
-exports.sendAdminOTP = async (req, res, next) => {
+exports.sendOTP = async (req, res, next) => {
   try {
-    await ensureAdminOTPTable();
+    await ensureLoginOTPTable();
     await ensureSingleKarviyamAdminAccount();
 
     const { email } = req.body || {};
@@ -592,49 +592,53 @@ exports.sendAdminOTP = async (req, res, next) => {
 
     const cleanEmail = String(email).trim().toLowerCase();
 
-    // 1. Check whether an admin account exists for that email
-    let isAdminFound = false;
+    // 1. Check database for ANY user/admin account matching that email
+    let accountFound = false;
 
     if (cleanEmail === 'vanakkam@karviyam.com' || cleanEmail === 'admin@karviyam.com') {
-      isAdminFound = true;
+      accountFound = true;
     } else {
       try {
         const [users] = await pool.query(
-          "SELECT id, role FROM users WHERE LOWER(email) = ? AND (LOWER(role) = 'admin' OR LOWER(email) IN ('vanakkam@karviyam.com', 'admin@karviyam.com'))",
+          "SELECT id FROM users WHERE LOWER(email) = ?",
           [cleanEmail]
         );
         if (users && users.length > 0) {
-          isAdminFound = true;
+          accountFound = true;
         } else {
           const [admins] = await pool.query(
             "SELECT id FROM admin WHERE LOWER(email) = ?",
             [cleanEmail]
           );
           if (admins && admins.length > 0) {
-            isAdminFound = true;
+            accountFound = true;
           }
         }
       } catch (eDb) {}
     }
 
-    if (!isAdminFound) {
-      return res.status(404).json(ApiResponse.error('No admin account found for this email address.'));
+    // IF ACCOUNT DOES NOT EXIST:
+    // → DO NOT send an email.
+    // → DO NOT generate a usable OTP.
+    // → Return 404 error: "No account found for this email address."
+    if (!accountFound) {
+      return res.status(404).json(ApiResponse.error('No account found for this email address.'));
     }
 
     // Rate limiting: Max 5 requests in last 10 minutes
     try {
       const [rateRows] = await pool.query(
-        "SELECT COUNT(*) AS cnt FROM admin_otps WHERE email = ? AND created_at > NOW() - INTERVAL 10 MINUTE",
+        "SELECT COUNT(*) AS cnt FROM user_otps WHERE email = ? AND created_at > NOW() - INTERVAL 10 MINUTE",
         [cleanEmail]
       );
       if (rateRows && rateRows[0].cnt >= 5) {
-        return res.status(429).json(ApiResponse.error('Too many OTP requests. Please wait a few minutes before trying again.'));
+        return res.status(429).json(ApiResponse.error('Too many OTP attempts. Please request a new OTP later.'));
       }
     } catch (eRate) {}
 
     // Invalidate old unused OTPs for this email
     try {
-      await pool.query("UPDATE admin_otps SET used = 1 WHERE email = ? AND used = 0", [cleanEmail]);
+      await pool.query("UPDATE user_otps SET used = 1 WHERE email = ? AND used = 0", [cleanEmail]);
     } catch (eInval) {}
 
     // Generate secure 6-digit random OTP
@@ -644,23 +648,23 @@ exports.sendAdminOTP = async (req, res, next) => {
 
     // Store in DB
     await pool.query(
-      "INSERT INTO admin_otps (email, otp_hash, expires_at, used) VALUES (?, ?, ?, 0)",
+      "INSERT INTO user_otps (email, otp_hash, expires_at, used) VALUES (?, ?, ?, 0)",
       [cleanEmail, otpHash, expiresAt]
     );
 
     // Send actual OTP email
-    await sendAdminOTPEmail({ toEmail: cleanEmail, otp });
+    await sendLoginOTPEmail({ toEmail: cleanEmail, otp });
 
     return res.status(200).json(ApiResponse.success(null, 'OTP sent successfully to your email.'));
   } catch (err) {
-    console.error('[sendAdminOTP Error]:', err);
-    return res.status(500).json(ApiResponse.error(err.message || 'Failed to send OTP. Please try again.'));
+    console.error('[sendOTP Error]:', err);
+    return res.status(500).json(ApiResponse.error('Unable to send OTP. Please try again.'));
   }
 };
 
-exports.verifyAdminOTP = async (req, res, next) => {
+exports.verifyOTP = async (req, res, next) => {
   try {
-    await ensureAdminOTPTable();
+    await ensureLoginOTPTable();
     await ensureSingleKarviyamAdminAccount();
 
     const { email, otp } = req.body || {};
@@ -676,7 +680,7 @@ exports.verifyAdminOTP = async (req, res, next) => {
 
     // 1. Fetch latest active OTP for this email
     const [rows] = await pool.query(
-      "SELECT * FROM admin_otps WHERE email = ? AND used = 0 ORDER BY id DESC LIMIT 1",
+      "SELECT * FROM user_otps WHERE email = ? AND used = 0 ORDER BY id DESC LIMIT 1",
       [cleanEmail]
     );
 
@@ -688,18 +692,18 @@ exports.verifyAdminOTP = async (req, res, next) => {
 
     // Check if expired
     if (new Date(otpRecord.expires_at) < new Date()) {
-      await pool.query("UPDATE admin_otps SET used = 1 WHERE id = ?", [otpRecord.id]);
+      await pool.query("UPDATE user_otps SET used = 1 WHERE id = ?", [otpRecord.id]);
       return res.status(400).json(ApiResponse.error('OTP expired. Please request a new OTP.'));
     }
 
     // Check rate limit attempts
     if (otpRecord.attempts >= 5) {
-      await pool.query("UPDATE admin_otps SET used = 1 WHERE id = ?", [otpRecord.id]);
-      return res.status(400).json(ApiResponse.error('Too many failed attempts. Please request a new OTP.'));
+      await pool.query("UPDATE user_otps SET used = 1 WHERE id = ?", [otpRecord.id]);
+      return res.status(400).json(ApiResponse.error('Too many OTP attempts. Please request a new OTP later.'));
     }
 
     // Update attempt counter
-    await pool.query("UPDATE admin_otps SET attempts = attempts + 1 WHERE id = ?", [otpRecord.id]);
+    await pool.query("UPDATE user_otps SET attempts = attempts + 1 WHERE id = ?", [otpRecord.id]);
 
     // Verify OTP using bcrypt.compare
     const isMatch = await bcrypt.compare(cleanOtp, otpRecord.otp_hash);
@@ -709,28 +713,45 @@ exports.verifyAdminOTP = async (req, res, next) => {
     }
 
     // Mark OTP as used immediately so it cannot be reused
-    await pool.query("UPDATE admin_otps SET used = 1 WHERE id = ?", [otpRecord.id]);
+    await pool.query("UPDATE user_otps SET used = 1 WHERE id = ?", [otpRecord.id]);
 
-    // Authenticate Admin User
+    // ACCOUNT TYPE DETECTION:
+    // Backend inspects the database to determine whether email belongs to Customer or Admin
     let user = null;
     try {
-      const [users] = await pool.query(
-        "SELECT * FROM users WHERE LOWER(email) = ?",
-        [cleanEmail]
-      );
-      if (users && users.length > 0) {
-        user = users[0];
-      }
+      const [users] = await pool.query("SELECT * FROM users WHERE LOWER(email) = ?", [cleanEmail]);
+      if (users && users.length > 0) user = users[0];
     } catch (eUser) {}
 
-    const adminEmail = user?.email || cleanEmail;
-    const adminId = user?.id || 999999;
-    const roles = ['ROLE_ADMIN', 'ROLE_USER'];
+    let roles = [];
+    if (user && user.id) {
+      try {
+        const [roleRows] = await pool.query(
+          "SELECT r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ?",
+          [user.id]
+        );
+        roles = roleRows.map(r => r.name);
+      } catch (eRole) {}
+    }
+
+    const dbRole = (user?.role || '').toLowerCase();
+    const isAdminUser = dbRole === 'admin' || roles.includes('ROLE_ADMIN') || cleanEmail === 'vanakkam@karviyam.com' || cleanEmail === 'admin@karviyam.com';
+
+    if (isAdminUser) {
+      if (!roles.includes('ROLE_ADMIN')) roles.push('ROLE_ADMIN');
+      if (!roles.includes('ROLE_USER')) roles.push('ROLE_USER');
+    } else {
+      if (roles.length === 0) roles.push('ROLE_USER');
+    }
+
+    const assignedRole = isAdminUser ? 'admin' : 'customer';
+    const userId = user?.id || (isAdminUser ? 999999 : 1);
+    const fullName = isAdminUser ? 'Karviyam Admin' : (user?.full_name || user?.name || cleanEmail.split('@')[0]);
 
     const tokenPayload = {
-      id: adminId,
-      email: adminEmail,
-      role: 'admin',
+      id: userId,
+      email: cleanEmail,
+      role: assignedRole,
       roles: roles
     };
 
@@ -743,23 +764,27 @@ exports.verifyAdminOTP = async (req, res, next) => {
     const jwtResponse = {
       token,
       type: 'Bearer',
-      id: adminId,
-      email: adminEmail,
-      fullName: 'Karviyam Admin',
-      role: 'admin',
+      id: userId,
+      email: cleanEmail,
+      fullName: fullName,
+      role: assignedRole,
       roles: roles,
       user: {
-        id: adminId,
-        email: adminEmail,
-        fullName: 'Karviyam Admin',
-        role: 'admin',
+        id: userId,
+        email: cleanEmail,
+        fullName: fullName,
+        role: assignedRole,
         roles: roles
       }
     };
 
-    return res.status(200).json(ApiResponse.success(jwtResponse, 'Admin authenticated successfully!'));
+    return res.status(200).json(ApiResponse.success(jwtResponse, 'Login successful!'));
   } catch (err) {
-    console.error('[verifyAdminOTP Error]:', err);
+    console.error('[verifyOTP Error]:', err);
     return res.status(500).json(ApiResponse.error(err.message || 'OTP verification failed. Please try again.'));
   }
 };
+
+// Aliases for admin specific handlers
+exports.sendAdminOTP = exports.sendOTP;
+exports.verifyAdminOTP = exports.verifyOTP;

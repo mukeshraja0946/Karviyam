@@ -713,7 +713,7 @@ const sendTestEmail = async (toEmail) => {
   throw new Error(lastErr?.message || 'Failed to send test email');
 };
 
-const sendAdminOTPEmail = async ({ toEmail, otp }) => {
+const sendLoginOTPEmail = async ({ toEmail, otp }) => {
   const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
   const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
 
@@ -725,7 +725,7 @@ const sendAdminOTPEmail = async ({ toEmail, otp }) => {
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #F8FAFC; margin: 0; padding: 24px; color: #0F172A; }
     .card { max-width: 480px; margin: 0 auto; background: #FFFFFF; border-radius: 24px; border: 1px solid #E2E8F0; padding: 32px; text-align: center; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
-    .otp-box { background: #FEF2F2; border: 2px dashed #EF4444; border-radius: 16px; padding: 18px; font-size: 32px; font-weight: 900; letter-spacing: 10px; color: #B71C1C; margin: 24px 0; font-family: monospace; }
+    .otp-box { background: #FEF2F2; border: 2px dashed #EF4444; border-radius: 16px; padding: 18px; font-size: 32px; font-weight: 900; letter-spacing: 10px; color: #B71C1C; margin: 20px 0; font-family: monospace; }
     .badge { display: inline-block; padding: 6px 14px; background: #FEF3D6; color: #9A5B00; font-size: 11px; font-weight: 800; text-transform: uppercase; border-radius: 999px; letter-spacing: 1px; }
     .footer { font-size: 12px; color: #64748B; margin-top: 24px; border-top: 1px solid #F1F5F9; padding-top: 16px; }
   </style>
@@ -733,13 +733,15 @@ const sendAdminOTPEmail = async ({ toEmail, otp }) => {
 <body>
   <div class="card">
     ${logoHeaderHtml || '<h2 style="color:#B71C1C;margin:0 0 16px;">🌸 KARVIYAM</h2>'}
-    <span class="badge">ADMIN AUTHENTICATION</span>
-    <h2 style="font-size: 20px; font-weight: 800; color: #0F172A; margin-top: 16px; margin-bottom: 8px;">One-Time Password (OTP)</h2>
-    <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">Use the following 6-digit OTP code to log in to the Karviyam Admin Panel. This code is valid for <strong>5 minutes</strong>.</p>
+    <span class="badge">SECURITY VERIFICATION</span>
+    <h2 style="font-size: 20px; font-weight: 800; color: #0F172A; margin-top: 16px; margin-bottom: 8px;">Karviyam Login OTP</h2>
+    <p style="font-size: 14px; color: #334155; margin: 16px 0 8px;">Your Karviyam login OTP is: <strong style="color: #B71C1C; font-size: 18px;">${otp}</strong></p>
     
     <div class="otp-box">${otp}</div>
     
-    <p style="font-size: 12px; color: #94A3B8; margin: 0;">If you did not request this OTP code, please ignore this email or contact security.</p>
+    <p style="font-size: 13px; color: #475569; margin: 8px 0; font-weight: 600;">OTP expires in 5 minutes.</p>
+    <p style="font-size: 12px; color: #94A3B8; margin-top: 10px;">Do not share this OTP with anyone.</p>
+    
     <div class="footer">
       &copy; ${new Date().getFullYear()} Karviyam. All rights reserved.
     </div>
@@ -751,7 +753,7 @@ const sendAdminOTPEmail = async ({ toEmail, otp }) => {
   const mailOptions = {
     from: `"Karviyam Security" <${fromUser}>`,
     to: toEmail,
-    subject: `🔐 ${otp} is your Karviyam Admin Login OTP`,
+    subject: "Karviyam Login OTP",
     html,
     attachments
   };
@@ -767,8 +769,10 @@ const sendAdminOTPEmail = async ({ toEmail, otp }) => {
       lastErr = err;
     }
   }
-  throw new Error(lastErr?.message || 'Failed to send OTP email via configured SMTP.');
+  throw new Error(lastErr?.message || 'Unable to send OTP. Please try again.');
 };
+
+const sendAdminOTPEmail = sendLoginOTPEmail;
 
 module.exports = {
   sendContactEmail,
@@ -776,7 +780,9 @@ module.exports = {
   sendSubscriptionSuccessEmail,
   sendCampaignEmail,
   sendTestEmail,
-  sendAdminOTPEmail
+  sendAdminOTPEmail,
+  sendLoginOTPEmail
 };
+
 
 

@@ -191,20 +191,20 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out successfully');
   };
 
-  const sendAdminOTP = async (email) => {
+  const sendOTP = async (email) => {
     setLoading(true);
     try {
-      const res = await api.post('/auth/send-admin-otp', { email });
+      const res = await api.post('/auth/send-otp', { email });
       const payload = res.data;
       if (payload && payload.success) {
         toast.success(payload.message || 'OTP sent successfully to your email.');
         return { success: true };
       } else {
-        toast.error(payload?.message || 'Failed to send OTP.');
+        toast.error(payload?.message || 'Unable to send OTP. Please try again.');
         return { success: false, message: payload?.message };
       }
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Failed to send OTP.';
+      const msg = err.response?.data?.message || err.message || 'Unable to send OTP. Please try again.';
       toast.error(msg);
       return { success: false, message: msg };
     } finally {
@@ -212,10 +212,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const verifyAdminOTP = async (email, otp) => {
+  const verifyOTP = async (email, otp) => {
     setLoading(true);
     try {
-      const res = await api.post('/auth/verify-admin-otp', { email, otp });
+      const res = await api.post('/auth/verify-otp', { email, otp });
       const payload = res.data;
 
       if (payload && payload.success) {
@@ -225,8 +225,10 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('karviyam_token', token);
         localStorage.setItem('karviyam_user', JSON.stringify(userData));
 
-        toast.success('Admin authenticated successfully! 🎉');
-        return { success: true, isAdmin: true, user: userData };
+        const userIsAdmin = userData?.roles?.includes('ROLE_ADMIN') || userData?.role === 'admin' || userData?.email === 'vanakkam@karviyam.com';
+
+        toast.success(`Welcome back, ${userData.fullName || 'User'}! 🎉`, { id: 'auth-login-success' });
+        return { success: true, isAdmin: userIsAdmin, user: userData };
       } else {
         toast.error(payload?.message || 'OTP verification failed.');
         return { success: false, message: payload?.message };
@@ -250,8 +252,10 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     googleLogin,
-    sendAdminOTP,
-    verifyAdminOTP,
+    sendOTP,
+    verifyOTP,
+    sendAdminOTP: sendOTP,
+    verifyAdminOTP: verifyOTP,
     logout
   };
 

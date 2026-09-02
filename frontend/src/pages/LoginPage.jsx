@@ -15,8 +15,9 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [otpExpirySeconds, setOtpExpirySeconds] = useState(300); // 5 minutes (300 seconds)
 
-  const { login, sendAdminOTP, verifyAdminOTP, loading, isAuthenticated, isAdmin } = useAuth();
+  const { login, sendOTP, verifyOTP, loading, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -66,6 +67,24 @@ export default function LoginPage() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
+  // 5-minute Expiry Countdown for OTP Step
+  useEffect(() => {
+    let timer;
+    if (otpStep === 'verify' && otpExpirySeconds > 0) {
+      timer = setInterval(() => {
+        setOtpExpirySeconds((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [otpStep, otpExpirySeconds]);
+
+  // Format seconds to MM:SS
+  const formatTimer = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
   // Password Login Submit
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
@@ -106,10 +125,11 @@ export default function LoginPage() {
     }
     setIsSubmitting(true);
     try {
-      const res = await sendAdminOTP(email.trim());
+      const res = await sendOTP(email.trim());
       if (res && res.success) {
         setOtpStep('verify');
         setCooldown(30);
+        setOtpExpirySeconds(300); // 5 mins
       }
     } catch (err) {
       console.error('Send OTP error:', err);
@@ -125,11 +145,21 @@ export default function LoginPage() {
       toast.error('Please enter the 6-digit OTP code');
       return;
     }
+    if (otpExpirySeconds <= 0) {
+      toast.error('OTP expired. Please request a new OTP.');
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const res = await verifyAdminOTP(email.trim(), otp.trim());
+      const res = await verifyOTP(email.trim(), otp.trim());
       if (res && res.success) {
-        window.location.href = '/admin';
+        if (res.isAdmin) {
+          window.location.href = '/admin';
+        } else if (redirectTarget) {
+          window.location.href = redirectTarget;
+        } else {
+          window.location.href = '/';
+        }
       }
     } catch (err) {
       console.error('Verify OTP error:', err);
@@ -165,11 +195,11 @@ export default function LoginPage() {
           </div>
 
           <h2 className={`font-display font-black text-slate-900 tracking-tight ${isMaintenanceMode ? 'text-3xl' : 'text-2xl'}`}>
-            {isMaintenanceMode ? 'Admin Authentication' : 'Welcome Back'}
+            {isMaintenanceMode ? 'Authentication Portal' : 'Welcome Back'}
           </h2>
           <p className="text-xs text-slate-500 mt-1 font-medium">
             {isMaintenanceMode 
-              ? 'Platform is under maintenance. Sign in with admin credentials.' 
+              ? 'Store is in maintenance mode. Sign in to continue.' 
               : 'Sign in to access your orders, bag & wishlist'
             }
           </p>
@@ -181,7 +211,7 @@ export default function LoginPage() {
             <Lock className="w-4 h-4 text-amber-700 shrink-0" />
             <div className="text-left">
               <span className="block font-black text-[#B71C1C]">MAINTENANCE MODE ACTIVE</span>
-              <span className="text-[11px] text-amber-800 font-semibold block mt-0.5">Only administrator accounts can sign in right now.</span>
+              <span className="text-[11px] text-amber-800 font-semibold block mt-0.5">Admin authentication is active.</span>
             </div>
           </div>
         )}
@@ -228,7 +258,7 @@ export default function LoginPage() {
                   data-lpignore="true"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter admin email address"
+                  placeholder="Enter email address"
                   className={`w-full bg-[#F5F5F5] text-slate-900 text-xs pl-11 pr-4 rounded-xl border border-[#E5E7EB] focus:border-[#B71C1C] focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium ${
                     isMaintenanceMode ? 'py-3.5 rounded-2xl text-sm' : 'py-3'
                   }`}
@@ -278,7 +308,7 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  <span>{isMaintenanceMode ? 'ADMIN SIGN IN' : 'SIGN IN'}</span>
+                  <span>SIGN IN</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -296,7 +326,7 @@ export default function LoginPage() {
               <form onSubmit={handleSendOTP} className="space-y-4" autoComplete="off">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-slate-700">
-                    Admin Email Address
+                    EMAIL ADDRESS
                   </label>
                   <div className="relative flex items-center">
                     <Mail className="absolute left-4 w-4 h-4 text-slate-400" />
@@ -307,7 +337,7 @@ export default function LoginPage() {
                       data-lpignore="true"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter registered admin email"
+                      placeholder="Enter registered email address"
                       className={`w-full bg-[#F5F5F5] text-slate-900 text-xs pl-11 pr-4 rounded-xl border border-[#E5E7EB] focus:border-[#B71C1C] focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium ${
                         isMaintenanceMode ? 'py-3.5 rounded-2xl text-sm' : 'py-3'
                       }`}
@@ -340,17 +370,21 @@ export default function LoginPage() {
             {/* STEP 2: Enter and Verify OTP */}
             {otpStep === 'verify' && (
               <form onSubmit={handleVerifyOTP} className="space-y-4" autoComplete="off">
-                <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 text-center space-y-1">
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Verifying Admin Email</span>
-                  <span className="text-xs font-black text-slate-900 block truncate">{email}</span>
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 text-center space-y-1">
+                  <span className="text-[11px] font-black text-emerald-800 uppercase tracking-wider block">
+                    OTP sent successfully to your email.
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 block truncate">{email}</span>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Enter 6-Digit OTP
+                      Enter 6-digit OTP
                     </label>
-                    <span className="text-[11px] text-slate-400 font-medium">Valid for 5 mins</span>
+                    <span className={`text-[11px] font-bold ${otpExpirySeconds < 60 ? 'text-red-600 animate-pulse' : 'text-slate-500'}`}>
+                      OTP expires in {formatTimer(otpExpirySeconds)}
+                    </span>
                   </div>
                   <div className="relative flex items-center">
                     <KeyRound className="absolute left-4 w-4 h-4 text-slate-400" />
@@ -368,7 +402,7 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={loading || isSubmitting || otp.length < 6}
+                  disabled={loading || isSubmitting || otp.length < 6 || otpExpirySeconds <= 0}
                   className={`w-full flex items-center justify-center gap-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-xs uppercase tracking-wider transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed mt-4 cursor-pointer ${
                     isMaintenanceMode ? 'py-4 rounded-2xl' : 'py-3.5 rounded-xl'
                   }`}
