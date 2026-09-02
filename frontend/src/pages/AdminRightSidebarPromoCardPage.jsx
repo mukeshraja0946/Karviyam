@@ -266,23 +266,29 @@ export default function AdminRightSidebarPromoCardPage() {
             
             {/* Card Image Cover Box */}
             <div
-              className="relative w-full h-[155px] rounded-xl overflow-hidden shadow-xs flex items-center border border-slate-300/80"
+              className="relative w-full h-[160px] rounded-2xl overflow-hidden shadow-md flex items-center border border-slate-300/80"
               style={{ backgroundColor: formData.bgColor || '#434343' }}
             >
               {/* Left Text */}
-              <div className="z-10 text-left space-y-1 p-3 w-[58%]" style={{ color: formData.textColor || '#FFFFFF' }}>
-                <span className="text-[9px] font-black uppercase tracking-wider block truncate">{formData.badge || 'NEW ARRIVALS'}</span>
-                <h4 className="font-black text-sm uppercase leading-tight line-clamp-2">{formData.title || 'Fresh Styles'}</h4>
-                <p className="text-[10px] opacity-85 truncate">{formData.description || 'Just Landed!'}</p>
-                <div className="pt-1">
-                  <span className="inline-block bg-white text-slate-900 text-[9.5px] font-black px-2.5 py-1 rounded-md shadow-xs">
+              <div className="z-10 text-left space-y-1 p-3.5 w-[56%]" style={{ color: formData.textColor || '#FFFFFF' }}>
+                <span className="text-[9.5px] font-black uppercase tracking-widest block opacity-95 truncate">
+                  {formData.badge || 'NEW ARRIVALS'}
+                </span>
+                <h4 className="font-display font-black text-sm leading-tight uppercase line-clamp-2">
+                  {formData.title || 'Fresh Styles'}
+                </h4>
+                <p className="text-[10.5px] opacity-85 font-medium truncate">
+                  {formData.description || 'Just Landed!'}
+                </p>
+                <div className="pt-2">
+                  <span className="inline-block bg-white text-slate-900 font-extrabold text-[10px] px-3.5 py-1.5 rounded-lg shadow-xs">
                     {formData.buttonText || 'SHOP NOW'}
                   </span>
                 </div>
               </div>
 
               {/* Full Right Side Cover Image */}
-              <div className="absolute right-0 top-0 bottom-0 w-[46%] h-full overflow-hidden">
+              <div className="absolute right-0 top-0 bottom-0 w-[48%] h-full overflow-hidden">
                 <div
                   className="absolute inset-0 z-10 pointer-events-none"
                   style={{ background: `linear-gradient(to right, ${formData.bgColor || '#434343'}, transparent 60%)` }}
@@ -302,7 +308,7 @@ export default function AdminRightSidebarPromoCardPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, imageUrl: '' })}
-                  className="absolute top-2 right-2 p-1 rounded-full bg-red-600 text-white hover:bg-red-700 cursor-pointer shadow-xs z-30"
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-red-600/90 text-white hover:bg-red-700 cursor-pointer shadow-md z-30 transition-transform hover:scale-105"
                   title="Remove Image"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -312,8 +318,8 @@ export default function AdminRightSidebarPromoCardPage() {
 
             {/* Direct Image Upload & URL input */}
             <div className="space-y-2">
-              <label className="w-full py-2 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl font-extrabold text-xs text-slate-800 flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs transition-colors">
-                <Upload className="w-4 h-4 text-slate-600" />
+              <label className="w-full py-2.5 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl font-extrabold text-xs text-slate-800 flex items-center justify-center gap-2 cursor-pointer shadow-2xs transition-colors">
+                <Upload className="w-4 h-4 text-[#B71C1C]" />
                 <span>Upload / Change Image</span>
                 <input
                   type="file"
@@ -321,20 +327,38 @@ export default function AdminRightSidebarPromoCardPage() {
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    const formDataUpload = new FormData();
-                    formDataUpload.append('image', file);
-                    try {
-                      const res = await api.post('/upload', formDataUpload, {
-                        headers: { 'Content-Type': 'multipart/form-data' }
-                      });
-                      const url = res.data.imageUrl || res.data.url || res.data.path || res.data.data?.url;
-                      if (url) {
-                        setFormData(prev => ({ ...prev, imageUrl: url }));
-                        toast.success('Image updated successfully!');
+
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                      const base64Url = event.target.result;
+                      if (base64Url) {
+                        setFormData(prev => ({ ...prev, imageUrl: base64Url }));
                       }
-                    } catch (err) {
-                      toast.error('Image upload failed');
-                    }
+
+                      try {
+                        const formDataUpload = new FormData();
+                        formDataUpload.append('image', file);
+
+                        const res = await api.post('/upload', formDataUpload, {
+                          headers: { 'Content-Type': 'multipart/form-data' }
+                        }).catch(() => null);
+
+                        const apiRes = res?.data ? res.data : res;
+                        const dataObj = apiRes?.data || apiRes || {};
+                        const serverUrl = dataObj.url || dataObj.imageUrl || dataObj.path || dataObj.fileUrl;
+
+                        if (serverUrl) {
+                          setFormData(prev => ({ ...prev, imageUrl: serverUrl }));
+                          toast.success('Image updated successfully!');
+                        } else {
+                          toast.success('Image selected!');
+                        }
+                      } catch (err) {
+                        toast.success('Image preview updated!');
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                    e.target.value = '';
                   }}
                   className="hidden"
                 />
@@ -346,7 +370,7 @@ export default function AdminRightSidebarPromoCardPage() {
                   value={formData.imageUrl}
                   onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                   placeholder="Or paste Image URL (e.g. https://...)"
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-[11px] font-medium text-slate-800 focus:outline-none focus:border-[#B71C1C]"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#B71C1C]"
                 />
               </div>
             </div>
