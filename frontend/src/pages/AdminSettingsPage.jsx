@@ -1291,114 +1291,71 @@ export default function AdminSettingsPage() {
 
               {/* BLOCK 3: MOBILE HOMEPAGE SECTIONS & LAYOUT EDITOR */}
               <div className="border border-red-200 bg-red-50/20 rounded-2xl p-5 space-y-4 shadow-2xs">
-                <div className="flex items-center justify-between border-b border-red-100 pb-3">
-                  <div>
-                    <h4 className="font-extrabold text-[#B71C1C] text-sm uppercase tracking-wider flex items-center gap-2">
-                      <Sliders className="w-4 h-4 text-[#B71C1C]" />
-                      <span>MOBILE HOMEPAGE SECTIONS & LAYOUT EDITOR (&lt;1024px)</span>
-                    </h4>
-                    <p className="text-[11px] text-slate-600 mt-0.5 font-medium">
-                      Enable, disable, rename, reorder, and set scroll layout (Horizontal Swipe vs Vertical Grid) for every mobile homepage section independently. Desktop view remains 100% untouched.
-                    </p>
-                  </div>
+                <div className="border-b border-red-100 pb-3">
+                  <h4 className="font-extrabold text-[#B71C1C] text-sm uppercase tracking-wider flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-[#B71C1C]" />
+                    <span>MOBILE HOMEPAGE SECTIONS & LAYOUT EDITOR (&lt;1024px)</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-600 mt-0.5 font-medium">
+                    Enable, disable, and set scroll layout (Horizontal Carousel / Swipe vs Vertical 2-Col Grid) for every mobile homepage section independently. Desktop view remains 100% untouched.
+                  </p>
                 </div>
 
-                <div className="space-y-3">
-                  {mobileSections.map((sec, idx) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {mobileSections.map((sec) => (
                     <div
                       key={sec.id}
-                      className={`p-4 rounded-xl border transition-all ${
-                        sec.enabled ? 'bg-white border-slate-200 shadow-2xs' : 'bg-slate-100 border-slate-200 opacity-60'
+                      className={`p-3.5 bg-slate-50 rounded-xl border space-y-2.5 transition-all flex flex-col justify-between ${
+                        sec.enabled !== false ? 'border-slate-200 shadow-2xs' : 'border-slate-200/60 opacity-60'
                       }`}
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        
-                        {/* Left: Position & Section Info */}
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {/* Reorder Buttons */}
-                          <div className="flex flex-col items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleMoveSection(idx, -1)}
-                              disabled={idx === 0}
-                              className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                              title="Move Up"
-                            >
-                              ▲
-                            </button>
-                            <span className="text-[10px] font-black text-slate-500">#{idx + 1}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleMoveSection(idx, 1)}
-                              disabled={idx === mobileSections.length - 1}
-                              className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                              title="Move Down"
-                            >
-                              ▼
-                            </button>
-                          </div>
+                      {/* Card Header: Section Title on left, ON/OFF Toggle Switch on Top-Right */}
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 pb-2">
+                        <label className="font-extrabold text-slate-900 text-xs truncate" title={sec.title || sec.name}>
+                          {sec.title || sec.name}
+                        </label>
 
-                          {/* Editable Title & Subtitle */}
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                value={sec.title || ''}
-                                onChange={(e) => handleChangeSectionTitle(sec.id, e.target.value)}
-                                className="font-extrabold text-xs text-slate-900 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 focus:outline-none focus:border-[#B71C1C] flex-1 min-w-0"
-                                placeholder="Section Title"
-                              />
-                            </div>
-                            <input
-                              type="text"
-                              value={sec.subtitle || ''}
-                              onChange={(e) => handleChangeSectionSubtitle(sec.id, e.target.value)}
-                              className="text-[11px] text-slate-500 bg-slate-50/60 px-2.5 py-0.5 rounded-md border border-slate-200/80 focus:outline-none focus:border-[#B71C1C] w-full"
-                              placeholder="Subtitle (optional)"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Right: Layout Switch & Visibility Toggle */}
-                        <div className="flex items-center gap-3 shrink-0">
-                          {/* Layout Options - Desktop Control UI Style */}
-                          <div className="flex items-center gap-4 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
-                            <label className="flex items-center gap-2 cursor-pointer text-xs">
-                              <input
-                                type="radio"
-                                name={`sec_layout_${sec.id}`}
-                                value="horizontal"
-                                checked={sec.layout === 'horizontal'}
-                                onChange={() => handleChangeSectionLayout(sec.id, 'horizontal')}
-                                className="text-[#B71C1C]"
-                              />
-                              <span className="font-bold text-slate-700">Horizontal Swipe / Carousel</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer text-xs">
-                              <input
-                                type="radio"
-                                name={`sec_layout_${sec.id}`}
-                                value="vertical"
-                                checked={sec.layout === 'vertical'}
-                                onChange={() => handleChangeSectionLayout(sec.id, 'vertical')}
-                                className="text-[#B71C1C]"
-                              />
-                              <span className="font-bold text-slate-700">Vertical 2-Col Grid</span>
-                            </label>
-                          </div>
-
-                          {/* Enable/Disable Switch */}
+                        {/* ON / OFF Toggle Switch */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={`text-[9.5px] font-black uppercase tracking-wider ${sec.enabled !== false ? 'text-[#B71C1C]' : 'text-slate-400'}`}>
+                            {sec.enabled !== false ? 'ON' : 'OFF'}
+                          </span>
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input
                               type="checkbox"
-                              checked={sec.enabled}
+                              checked={sec.enabled !== false}
                               onChange={() => handleToggleSection(sec.id)}
                               className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#B71C1C]" />
+                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#B71C1C]" />
                           </label>
                         </div>
+                      </div>
 
+                      {/* Layout Radio Options (Matching Mobile Product Layout & Scroll Controls) */}
+                      <div className="space-y-1.5 pt-0.5">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs">
+                          <input
+                            type="radio"
+                            name={`mob_sec_layout_${sec.id}`}
+                            value="horizontal"
+                            checked={(sec.layout || 'horizontal') === 'horizontal' || sec.layout === 'carousel'}
+                            onChange={() => handleChangeSectionLayout(sec.id, 'horizontal')}
+                            className="text-[#B71C1C]"
+                          />
+                          <span className="font-bold text-slate-700">Horizontal Carousel / Swipe</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer text-xs">
+                          <input
+                            type="radio"
+                            name={`mob_sec_layout_${sec.id}`}
+                            value="vertical"
+                            checked={sec.layout === 'vertical' || sec.layout === 'grid'}
+                            onChange={() => handleChangeSectionLayout(sec.id, 'vertical')}
+                            className="text-[#B71C1C]"
+                          />
+                          <span className="font-bold text-slate-700">Vertical 2-Col Grid</span>
+                        </label>
                       </div>
                     </div>
                   ))}
