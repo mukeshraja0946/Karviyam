@@ -67,7 +67,49 @@ export default function DesktopSidebarLeft() {
   return (
     <aside className="w-[210px] xl:w-[230px] flex-shrink-0 flex flex-col gap-3">
       
-      {/* 1. Large Promotional AD Card (Moved to TOP) */}
+      {/* 1. Sidebar Menu Card */}
+      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+        {MENU_ITEMS.map((item, idx) => {
+          const IconComponent = item.icon;
+          return (
+            <div
+              key={item.id}
+              onClick={() => navigate(item.link)}
+              className={`h-[44px] xl:h-[46px] px-3 flex items-center justify-between cursor-pointer transition-colors hover:bg-red-50/60 hover:text-[#B71C1C] text-slate-700 ${
+                idx !== MENU_ITEMS.length - 1 ? 'border-b border-slate-100' : ''
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-600 group-hover:text-[#B71C1C]">
+                  <IconComponent className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-[11px] xl:text-xs font-extrabold tracking-tight">{item.label}</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 2. Extra Offer Banner */}
+      <div 
+        onClick={() => navigate('/shop?filter=offers')}
+        className="w-full h-[72px] bg-[#FFF0F2] border border-red-200/90 rounded-xl p-3 flex items-center justify-between shadow-xs overflow-hidden relative cursor-pointer hover:border-[#B71C1C] transition-colors group"
+      >
+        <div className="flex flex-col justify-center">
+          <span className="font-display font-black text-xs xl:text-sm text-[#B71C1C] uppercase tracking-wide group-hover:underline">
+            EXTRA 5% OFF
+          </span>
+          <span className="text-[10px] text-slate-600 font-bold mt-0.5">
+            On Prepaid Orders
+          </span>
+        </div>
+        <div className="w-9 h-9 rounded-xl bg-red-100/80 border border-red-200 text-[#B71C1C] flex items-center justify-center font-black text-sm shadow-2xs group-hover:scale-105 transition-transform">
+          %
+        </div>
+      </div>
+
+      {/* 3. Dynamic Admin-Managed Promotional Cards */}
       {promoCards.length > 0 ? (
         promoCards.map((card) => (
           <div
@@ -114,48 +156,6 @@ export default function DesktopSidebarLeft() {
           </div>
         </div>
       )}
-
-      {/* 2. Extra 5% OFF Offer Card (Directly below AD Card) */}
-      <div 
-        onClick={() => navigate('/shop?filter=offers')}
-        className="w-full h-[72px] bg-[#FFF0F2] border border-red-200/90 rounded-xl p-3 flex items-center justify-between shadow-xs overflow-hidden relative cursor-pointer hover:border-[#B71C1C] transition-colors group"
-      >
-        <div className="flex flex-col justify-center">
-          <span className="font-display font-black text-xs xl:text-sm text-[#B71C1C] uppercase tracking-wide group-hover:underline">
-            EXTRA 5% OFF
-          </span>
-          <span className="text-[10px] text-slate-600 font-bold mt-0.5">
-            On Prepaid Orders
-          </span>
-        </div>
-        <div className="w-9 h-9 rounded-xl bg-red-100/80 border border-red-200 text-[#B71C1C] flex items-center justify-center font-black text-sm shadow-2xs group-hover:scale-105 transition-transform">
-          %
-        </div>
-      </div>
-
-      {/* 3. Navigation Menu Card (Below Promotional Cards) */}
-      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
-        {MENU_ITEMS.map((item, idx) => {
-          const IconComponent = item.icon;
-          return (
-            <div
-              key={item.id}
-              onClick={() => navigate(item.link)}
-              className={`h-[44px] xl:h-[46px] px-3 flex items-center justify-between cursor-pointer transition-colors hover:bg-red-50/60 hover:text-[#B71C1C] text-slate-700 ${
-                idx !== MENU_ITEMS.length - 1 ? 'border-b border-slate-100' : ''
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-600 group-hover:text-[#B71C1C]">
-                  <IconComponent className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[11px] xl:text-xs font-extrabold tracking-tight">{item.label}</span>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-            </div>
-          );
-        })}
-      </div>
 
     </aside>
   );
