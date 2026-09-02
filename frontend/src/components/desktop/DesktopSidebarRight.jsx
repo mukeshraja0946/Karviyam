@@ -60,6 +60,17 @@ export default function DesktopSidebarRight() {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [sidebarBanners, setSidebarBanners] = useState([]);
+  const [promoCardConfig, setPromoCardConfig] = useState({
+    enabled: true,
+    badge: 'NEW ARRIVALS',
+    title: 'Fresh Styles',
+    description: 'Just Landed!',
+    buttonText: 'SHOP NOW',
+    link: '/new-arrivals',
+    imageUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600',
+    bgColor: '#434343',
+    textColor: '#FFFFFF'
+  });
 
   const [benefits, setBenefits] = useState(() => {
     try {
@@ -67,7 +78,7 @@ export default function DesktopSidebarRight() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed.benefits) && parsed.benefits.length > 0) {
-          return parsed.benefits.filter(b => b && b.enabled !== false).slice(0, 4);
+          return parsed.benefits.filter(b => b && b.enabled !== false).slice(0, 5);
         }
       }
     } catch (e) {}
@@ -83,7 +94,7 @@ export default function DesktopSidebarRight() {
       if (rawCfg) {
         const parsed = typeof rawCfg === 'string' ? JSON.parse(rawCfg) : rawCfg;
         if (parsed && Array.isArray(parsed.benefits)) {
-          const active = parsed.benefits.filter(b => b && b.enabled !== false).slice(0, 4);
+          const active = parsed.benefits.filter(b => b && b.enabled !== false).slice(0, 5);
           if (active.length > 0) {
             setBenefits(active);
             try {
@@ -112,9 +123,37 @@ export default function DesktopSidebarRight() {
     } catch (e) {}
   };
 
+  const fetchRightSidebarPromoCard = async () => {
+    try {
+      const res = await api.get('/right-sidebar-promo-card').catch(() => null);
+      const apiData = res?.data ? res.data : res;
+      const data = apiData?.data || apiData;
+      if (data && typeof data === 'object') {
+        setPromoCardConfig({
+          enabled: data.enabled !== false,
+          badge: data.badge || 'NEW ARRIVALS',
+          title: data.title || 'Fresh Styles',
+          description: data.description || 'Just Landed!',
+          buttonText: data.buttonText || 'SHOP NOW',
+          link: data.link || '/new-arrivals',
+          imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600',
+          bgColor: data.bgColor || '#434343',
+          textColor: data.textColor || '#FFFFFF'
+        });
+      } else {
+        const saved = localStorage.getItem('karviyam_right_sidebar_promo_card');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') setPromoCardConfig(parsed);
+        }
+      }
+    } catch (e) {}
+  };
+
   useEffect(() => {
     fetchConfig();
     fetchRightSidebarBanners();
+    fetchRightSidebarPromoCard();
 
     const handleUpdate = () => {
       try {
@@ -122,7 +161,7 @@ export default function DesktopSidebarRight() {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed.benefits)) {
-            const active = parsed.benefits.filter(b => b && b.enabled !== false).slice(0, 4);
+            const active = parsed.benefits.filter(b => b && b.enabled !== false).slice(0, 5);
             if (active.length > 0) setBenefits(active);
           }
         }
@@ -130,16 +169,19 @@ export default function DesktopSidebarRight() {
         fetchConfig();
       }
       fetchRightSidebarBanners();
+      fetchRightSidebarPromoCard();
     };
 
     window.addEventListener('karviyam_why_shop_updated', handleUpdate);
     window.addEventListener('karviyam_homepage_sections_updated', handleUpdate);
     window.addEventListener('karviyam_right_sidebar_banners_updated', handleUpdate);
+    window.addEventListener('karviyam_right_sidebar_promo_card_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       window.removeEventListener('karviyam_why_shop_updated', handleUpdate);
       window.removeEventListener('karviyam_homepage_sections_updated', handleUpdate);
       window.removeEventListener('karviyam_right_sidebar_banners_updated', handleUpdate);
+      window.removeEventListener('karviyam_right_sidebar_promo_card_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
@@ -153,72 +195,67 @@ export default function DesktopSidebarRight() {
   return (
     <aside className="w-[230px] xl:w-[260px] flex-shrink-0 flex flex-col gap-3">
       
-      {/* 1. Coupon Card */}
-      <div className="w-full h-[135px] bg-[#FFF0F2] border border-red-200/90 rounded-xl p-3 flex flex-col justify-between shadow-xs relative overflow-hidden">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="font-display font-black text-xl text-[#B71C1C] leading-none">
-              Get 25% Off
+      {/* 1. Benefits List Card */}
+      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-xs p-3 flex flex-col justify-between gap-3">
+        {benefits.map((item, idx) => (
+          <div key={item.id || idx} className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-700 shrink-0">
+              {renderIcon(item.icon)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h5 className="font-bold text-[11px] text-slate-900 leading-tight truncate" title={item.title}>
+                {item.title}
+              </h5>
+              <p className="text-[9.5px] text-slate-500 font-medium truncate" title={item.subtitle}>
+                {item.subtitle}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 2. NEW RIGHT SIDEBAR PROMOTIONAL CARD (Admin Configurable) */}
+      {promoCardConfig.enabled !== false && (
+        <div
+          onClick={() => navigate(promoCardConfig.link || '/shop')}
+          className="w-full h-[155px] xl:h-[165px] rounded-2xl p-4 flex items-center justify-between relative overflow-hidden shadow-md group cursor-pointer border border-slate-200/40 transition-transform hover:scale-[1.01]"
+          style={{ backgroundColor: promoCardConfig.bgColor || '#434343' }}
+        >
+          {/* Left Text Content */}
+          <div className="z-10 text-left space-y-1 flex-1 pr-2 min-w-0" style={{ color: promoCardConfig.textColor || '#FFFFFF' }}>
+            <span className="text-[9.5px] font-black uppercase tracking-widest block opacity-90 truncate">
+              {promoCardConfig.badge || 'NEW ARRIVALS'}
+            </span>
+            <h3 className="font-display font-black text-sm xl:text-base leading-tight uppercase truncate" title={promoCardConfig.title}>
+              {promoCardConfig.title || 'Fresh Styles'}
             </h3>
-            <p className="font-bold text-[11px] text-slate-800 mt-0.5">
-              Up To ₹200 Off*
+            <p className="text-[10.5px] opacity-85 font-medium truncate" title={promoCardConfig.description}>
+              {promoCardConfig.description || 'Just Landed!'}
             </p>
+
+            <div className="pt-2">
+              <span className="inline-block bg-white text-slate-900 font-extrabold text-[11px] px-3.5 py-1.5 rounded-lg shadow-sm group-hover:bg-slate-100 transition-colors">
+                {promoCardConfig.buttonText || 'SHOP NOW'}
+              </span>
+            </div>
           </div>
-          
-          <div className="w-10 h-10 rounded-xl bg-red-100/90 border border-red-200 text-[#B71C1C] flex items-center justify-center font-black text-xl shadow-2xs">
-            %
+
+          {/* Right Model Image Overlay */}
+          <div className="w-[110px] xl:w-[125px] h-full absolute right-0 bottom-0 top-0 overflow-hidden pointer-events-none">
+            <img
+              src={resolveImageUrl(promoCardConfig.imageUrl)}
+              alt={promoCardConfig.title}
+              className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600';
+              }}
+            />
           </div>
         </div>
+      )}
 
-        {/* Coupon Code Strip */}
-        <div className="bg-white border border-dashed border-red-300 rounded-lg px-2.5 py-1 flex items-center justify-between text-[11px] font-bold text-slate-800">
-          <div className="flex items-center gap-1">
-            <span className="text-[9px] text-slate-400 font-semibold uppercase">CODE:</span>
-            <span className="font-black text-[#B71C1C] text-[11px]">KARVIYAM25</span>
-          </div>
-          <button
-            onClick={handleCopyCode}
-            className="text-[10px] text-[#B71C1C] hover:underline flex items-center gap-1 cursor-pointer font-bold"
-          >
-            {copied ? (
-              <>
-                <Check className="w-3 h-3 text-emerald-600" />
-                <span className="text-emerald-600">Copied!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3 h-3" />
-                <span>Copy</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Free Delivery Banner */}
-      <div className="w-full min-h-[58px] bg-white rounded-xl border border-slate-200/90 shadow-xs px-3 py-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-rose-50 border border-rose-100 text-[#B71C1C] flex items-center justify-center shrink-0">
-            <Truck className="w-3.5 h-3.5" />
-          </div>
-          <div>
-            <h4 className="font-bold text-[11px] text-slate-900 leading-tight">Free Delivery</h4>
-            <p className="text-[9.5px] text-slate-500 font-medium">Above ₹499</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-rose-50 border border-rose-100 text-[#B71C1C] flex items-center justify-center shrink-0">
-            <RotateCcw className="w-3.5 h-3.5" />
-          </div>
-          <div>
-            <h4 className="font-bold text-[11px] text-slate-900 leading-tight">Easy Returns</h4>
-            <p className="text-[9.5px] text-slate-500 font-medium">14 days policy</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Dynamic Right Sidebar Banners (Connected to Admin Panel) */}
+      {/* 3. Premium Collection / Dynamic Banners (Placed below Promotional Card) */}
       {sidebarBanners.length > 0 ? (
         sidebarBanners.map((banner) => (
           <div
@@ -262,7 +299,7 @@ export default function DesktopSidebarRight() {
           </div>
         ))
       ) : (
-        /* Fallback Promo Banner */
+        /* Fallback Premium Collection Banner */
         <div 
           onClick={() => navigate('/shop')}
           className="w-full h-[155px] xl:h-[165px] bg-white rounded-xl border border-slate-200/90 shadow-xs p-3 flex items-center justify-between relative overflow-hidden group cursor-pointer"
@@ -298,25 +335,6 @@ export default function DesktopSidebarRight() {
           </div>
         </div>
       )}
-
-      {/* 4. Dynamic Benefits List Card (Connected to Admin Panel) */}
-      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-xs p-3 flex flex-col justify-between gap-3">
-        {benefits.map((item, idx) => (
-          <div key={item.id || idx} className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-              {renderIcon(item.icon)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <h5 className="font-bold text-[11px] text-slate-900 leading-tight truncate" title={item.title}>
-                {item.title}
-              </h5>
-              <p className="text-[9.5px] text-slate-500 font-medium truncate" title={item.subtitle}>
-                {item.subtitle}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
 
     </aside>
   );
