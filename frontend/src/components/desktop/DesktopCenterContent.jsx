@@ -593,11 +593,11 @@ export default function DesktopCenterContent() {
       )}
 
       {/* Side-by-Side Section: FIND YOUR PRICE (Left) | WHY SHOP WITH KARVIYAM? (Right) */}
-      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-3 xl:gap-4 items-stretch">
-        <div className="lg:col-span-6 xl:col-span-6 flex flex-col justify-center">
+      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-3 xl:gap-4 items-stretch my-1">
+        <div className="lg:col-span-6 xl:col-span-6 flex flex-col h-full">
           <FindYourPrice />
         </div>
-        <div className="lg:col-span-6 xl:col-span-6 flex flex-col justify-center">
+        <div className="lg:col-span-6 xl:col-span-6 flex flex-col h-full">
           <WhyShopWithKarviyam />
         </div>
       </div>
