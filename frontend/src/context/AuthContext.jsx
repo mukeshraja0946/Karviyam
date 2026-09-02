@@ -191,6 +191,55 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out successfully');
   };
 
+  const sendAdminOTP = async (email) => {
+    setLoading(true);
+    try {
+      const res = await api.post('/auth/send-admin-otp', { email });
+      const payload = res.data;
+      if (payload && payload.success) {
+        toast.success(payload.message || 'OTP sent successfully to your email.');
+        return { success: true };
+      } else {
+        toast.error(payload?.message || 'Failed to send OTP.');
+        return { success: false, message: payload?.message };
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Failed to send OTP.';
+      toast.error(msg);
+      return { success: false, message: msg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyAdminOTP = async (email, otp) => {
+    setLoading(true);
+    try {
+      const res = await api.post('/auth/verify-admin-otp', { email, otp });
+      const payload = res.data;
+
+      if (payload && payload.success) {
+        const { token, ...userData } = payload.data;
+        setToken(token);
+        setUser(userData);
+        localStorage.setItem('karviyam_token', token);
+        localStorage.setItem('karviyam_user', JSON.stringify(userData));
+
+        toast.success('Admin authenticated successfully! 🎉');
+        return { success: true, isAdmin: true, user: userData };
+      } else {
+        toast.error(payload?.message || 'OTP verification failed.');
+        return { success: false, message: payload?.message };
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'OTP verification failed.';
+      toast.error(msg);
+      return { success: false, message: msg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     user,
     token,
@@ -201,6 +250,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     googleLogin,
+    sendAdminOTP,
+    verifyAdminOTP,
     logout
   };
 

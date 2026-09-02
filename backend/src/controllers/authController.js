@@ -557,3 +557,209 @@ exports.resetPassword = async (req, res, next) => {
     next(err);
   }
 };
+
+const ensureAdminOTPTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin_otps (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        otp_hash VARCHAR(255) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        used TINYINT(1) DEFAULT 0,
+        attempts INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_email (email),
+        INDEX idx_expires (expires_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+  } catch (err) {
+    console.error('[authController] Table admin_otps init error:', err.message);
+  }
+};
+
+const { sendAdminOTPEmail } = require('../utils/emailService');
+
+exports.sendAdminOTP = async (req, res, next) => {
+  try {
+    await ensureAdminOTPTable();
+    await ensureSingleKarviyamAdminAccount();
+
+    const { email } = req.body || {};
+    if (!email || !String(email).trim()) {
+      return res.status(400).json(ApiResponse.error('Email address is required.'));
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+
+    // 1. Check whether an admin account exists for that email
+    let isAdminFound = false;
+
+    if (cleanEmail === 'vanakkam@karviyam.com' || cleanEmail === 'admin@karviyam.com') {
+      isAdminFound = true;
+    } else {
+      try {
+        const [users] = await pool.query(
+          "SELECT id, role FROM users WHERE LOWER(email) = ? AND (LOWER(role) = 'admin' OR LOWER(email) IN ('vanakkam@karviyam.com', 'admin@karviyam.com'))",
+          [cleanEmail]
+        );
+        if (users && users.length > 0) {
+          isAdminFound = true;
+        } else {
+          const [admins] = await pool.query(
+            "SELECT id FROM admin WHERE LOWER(email) = ?",
+            [cleanEmail]
+          );
+          if (admins && admins.length > 0) {
+            isAdminFound = true;
+          }
+        }
+      } catch (eDb) {}
+    }
+
+    if (!isAdminFound) {
+      return res.status(404).json(ApiResponse.error('No admin account found for this email address.'));
+    }
+
+    // Rate limiting: Max 5 requests in last 10 minutes
+    try {
+      const [rateRows] = await pool.query(
+        "SELECT COUNT(*) AS cnt FROM admin_otps WHERE email = ? AND created_at > NOW() - INTERVAL 10 MINUTE",
+        [cleanEmail]
+      );
+      if (rateRows && rateRows[0].cnt >= 5) {
+        return res.status(429).json(ApiResponse.error('Too many OTP requests. Please wait a few minutes before trying again.'));
+      }
+    } catch (eRate) {}
+
+    // Invalidate old unused OTPs for this email
+    try {
+      await pool.query("UPDATE admin_otps SET used = 1 WHERE email = ? AND used = 0", [cleanEmail]);
+    } catch (eInval) {}
+
+    // Generate secure 6-digit random OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = await bcrypt.hash(otp, 10);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // Store in DB
+    await pool.query(
+      "INSERT INTO admin_otps (email, otp_hash, expires_at, used) VALUES (?, ?, ?, 0)",
+      [cleanEmail, otpHash, expiresAt]
+    );
+
+    // Send actual OTP email
+    await sendAdminOTPEmail({ toEmail: cleanEmail, otp });
+
+    return res.status(200).json(ApiResponse.success(null, 'OTP sent successfully to your email.'));
+  } catch (err) {
+    console.error('[sendAdminOTP Error]:', err);
+    return res.status(500).json(ApiResponse.error(err.message || 'Failed to send OTP. Please try again.'));
+  }
+};
+
+exports.verifyAdminOTP = async (req, res, next) => {
+  try {
+    await ensureAdminOTPTable();
+    await ensureSingleKarviyamAdminAccount();
+
+    const { email, otp } = req.body || {};
+    if (!email || !String(email).trim()) {
+      return res.status(400).json(ApiResponse.error('Email address is required.'));
+    }
+    if (!otp || !String(otp).trim()) {
+      return res.status(400).json(ApiResponse.error('OTP code is required.'));
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanOtp = String(otp).trim();
+
+    // 1. Fetch latest active OTP for this email
+    const [rows] = await pool.query(
+      "SELECT * FROM admin_otps WHERE email = ? AND used = 0 ORDER BY id DESC LIMIT 1",
+      [cleanEmail]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(400).json(ApiResponse.error('OTP expired. Please request a new OTP.'));
+    }
+
+    const otpRecord = rows[0];
+
+    // Check if expired
+    if (new Date(otpRecord.expires_at) < new Date()) {
+      await pool.query("UPDATE admin_otps SET used = 1 WHERE id = ?", [otpRecord.id]);
+      return res.status(400).json(ApiResponse.error('OTP expired. Please request a new OTP.'));
+    }
+
+    // Check rate limit attempts
+    if (otpRecord.attempts >= 5) {
+      await pool.query("UPDATE admin_otps SET used = 1 WHERE id = ?", [otpRecord.id]);
+      return res.status(400).json(ApiResponse.error('Too many failed attempts. Please request a new OTP.'));
+    }
+
+    // Update attempt counter
+    await pool.query("UPDATE admin_otps SET attempts = attempts + 1 WHERE id = ?", [otpRecord.id]);
+
+    // Verify OTP using bcrypt.compare
+    const isMatch = await bcrypt.compare(cleanOtp, otpRecord.otp_hash);
+
+    if (!isMatch) {
+      return res.status(400).json(ApiResponse.error('Incorrect OTP. Please enter the correct OTP.'));
+    }
+
+    // Mark OTP as used immediately so it cannot be reused
+    await pool.query("UPDATE admin_otps SET used = 1 WHERE id = ?", [otpRecord.id]);
+
+    // Authenticate Admin User
+    let user = null;
+    try {
+      const [users] = await pool.query(
+        "SELECT * FROM users WHERE LOWER(email) = ?",
+        [cleanEmail]
+      );
+      if (users && users.length > 0) {
+        user = users[0];
+      }
+    } catch (eUser) {}
+
+    const adminEmail = user?.email || cleanEmail;
+    const adminId = user?.id || 999999;
+    const roles = ['ROLE_ADMIN', 'ROLE_USER'];
+
+    const tokenPayload = {
+      id: adminId,
+      email: adminEmail,
+      role: 'admin',
+      roles: roles
+    };
+
+    const secretKey = (jwtConfig && jwtConfig.secret && String(jwtConfig.secret).trim().length > 0)
+      ? jwtConfig.secret
+      : 'karviyam_super_secret_jwt_key_2026_prod';
+
+    const token = jwt.sign(tokenPayload, secretKey, { expiresIn: '7d' });
+
+    const jwtResponse = {
+      token,
+      type: 'Bearer',
+      id: adminId,
+      email: adminEmail,
+      fullName: 'Karviyam Admin',
+      role: 'admin',
+      roles: roles,
+      user: {
+        id: adminId,
+        email: adminEmail,
+        fullName: 'Karviyam Admin',
+        role: 'admin',
+        roles: roles
+      }
+    };
+
+    return res.status(200).json(ApiResponse.success(jwtResponse, 'Admin authenticated successfully!'));
+  } catch (err) {
+    console.error('[verifyAdminOTP Error]:', err);
+    return res.status(500).json(ApiResponse.error(err.message || 'OTP verification failed. Please try again.'));
+  }
+};
