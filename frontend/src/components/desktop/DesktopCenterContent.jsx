@@ -460,12 +460,12 @@ export default function DesktopCenterContent() {
         className="h-[195px] xl:h-[205px] w-[150px] sm:w-[165px] xl:w-[175px] bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-1.5 flex flex-col overflow-hidden cursor-pointer shrink-0 group gap-1"
       >
         {/* Product Image Box */}
-        <div className="relative w-full h-[120px] xl:h-[130px] bg-white rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+        <div className="relative w-full h-[120px] xl:h-[130px] bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
           <img
             src={resolveImageUrl(prod.image || prod.imageUrl, prod.id)}
             alt={prod.name}
             onError={(e) => handleImageError(e, prod.id)}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
 
@@ -523,7 +523,7 @@ export default function DesktopCenterContent() {
   };
 
   return (
-    <main className="flex-1 min-w-0 flex flex-col gap-4">
+    <main className="flex-1 min-w-0 flex flex-col gap-2.5">
       
       {/* 1. Hero Carousel */}
       {heroSlides.length > 0 && slide && (
@@ -682,15 +682,15 @@ export default function DesktopCenterContent() {
       </div>
 
       {/* 4. SINGLE RECOMMENDED FOR YOU CONTAINER WITH TWO INDEPENDENT HORIZONTAL PRODUCT CAROUSEL ROWS */}
-      <div className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-4 relative">
+      <div className="w-full bg-white rounded-2xl px-3.5 py-2.5 xl:px-4 xl:py-3 border border-slate-200/80 shadow-xs flex flex-col gap-2.5 relative">
         
         {/* Single Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
+            <h2 className="font-display font-black text-xs xl:text-sm text-slate-900 tracking-tight">
               Recommended For You
             </h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
+            <p className="text-[10.5px] text-slate-500 font-medium">
               Handpicked selections based on your style
             </p>
           </div>
@@ -707,7 +707,7 @@ export default function DesktopCenterContent() {
           <div
             ref={row1ScrollRef}
             onScroll={checkRow1ScrollBoundary}
-            className="flex items-center gap-2.5 xl:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap"
+            className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap"
           >
             {productsRow1.map((prod, idx) => renderProductCard(prod, idx))}
           </div>
@@ -718,7 +718,7 @@ export default function DesktopCenterContent() {
           <div
             ref={row2ScrollRef}
             onScroll={checkRow2ScrollBoundary}
-            className="flex items-center gap-2.5 xl:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap"
+            className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap"
           >
             {productsRow2.map((prod, idx) => renderProductCard(prod, idx))}
           </div>
@@ -732,15 +732,15 @@ export default function DesktopCenterContent() {
         const isGrid = sec.display_type === 'grid';
 
         return (
-          <div key={sec.id || sec.section_key} className="w-full bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col gap-4 relative">
+          <div key={sec.id || sec.section_key} className="w-full bg-white rounded-2xl px-3.5 py-2.5 xl:px-4 xl:py-3 border border-slate-200/80 shadow-xs flex flex-col gap-2.5 relative">
             {/* Section Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
+                <h2 className="font-display font-black text-xs xl:text-sm text-slate-900 tracking-tight">
                   {sec.title}
                 </h2>
                 {sec.subtitle && (
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  <p className="text-[10.5px] text-slate-500 font-medium">
                     {sec.subtitle}
                   </p>
                 )}
@@ -755,11 +755,11 @@ export default function DesktopCenterContent() {
 
             {/* Products Layout (Grid vs Horizontal Scroll) */}
             {isGrid ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 xl:gap-2.5">
                 {sec.products.map((prod, idx) => renderProductCard(prod, idx))}
               </div>
             ) : (
-              <div className="flex items-center gap-2.5 xl:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap">
+              <div className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap">
                 {sec.products.map((prod, idx) => renderProductCard(prod, idx))}
               </div>
             )}
