@@ -53,6 +53,12 @@ const ensureTableExists = async () => {
       // Heal broken/invalid text image URLs stored in MySQL database
       await pool.query(`
         UPDATE parent_categories 
+        SET image_url = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400' 
+        WHERE UPPER(TRIM(name)) = 'WOMEN' AND (image_url = 'WOMEN' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
+      `).catch(() => null);
+
+      await pool.query(`
+        UPDATE parent_categories 
         SET image_url = 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400' 
         WHERE UPPER(TRIM(name)) = 'MEN' AND (image_url = 'MEN' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE 'http%' AND image_url NOT LIKE '/%'))
       `).catch(() => null);

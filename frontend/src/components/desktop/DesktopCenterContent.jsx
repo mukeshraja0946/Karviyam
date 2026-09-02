@@ -415,27 +415,34 @@ export default function DesktopCenterContent() {
 
       if (parentList && parentList.length > 0) {
         const formattedCats = parentList.map(c => {
-          const rawImg = c.imageUrl || c.image_url || c.imagePath || c.image || '';
+          let rawImg = c.imageUrl || c.image_url || c.imagePath || c.image || '';
+          const nameUpper = String(c.name || '').toUpperCase().trim();
+          
+          // If rawImg is empty, missing, or equals category name, lookup default image map
+          if (!rawImg || rawImg === nameUpper || (!rawImg.startsWith('http') && !rawImg.startsWith('/'))) {
+            const defMatch = CATEGORIES_DATA.find(dc => dc.name.toUpperCase() === nameUpper);
+            if (defMatch) rawImg = defMatch.image;
+          }
+
           const resolvedImg = resolveImageUrl(rawImg, c.id);
           const linkStr = c.link || `/shop?category=${encodeURIComponent(c.name)}`;
           const queryStr = linkStr.includes('?') ? linkStr.split('?')[1] : `category=${encodeURIComponent(c.name)}`;
           return {
             id: c.id,
-            name: String(c.name || '').toUpperCase(),
+            name: nameUpper,
             image: resolvedImg,
             query: queryStr,
             link: linkStr
           };
         });
 
-        if (formattedCats.length < 10) {
-          const existingNames = new Set(formattedCats.map(fc => fc.name));
-          for (const defCat of CATEGORIES_DATA) {
-            if (formattedCats.length >= 10) break;
-            if (!existingNames.has(defCat.name)) {
-              formattedCats.push(defCat);
-              existingNames.add(defCat.name);
-            }
+        // Combine admin parent categories with default categories up to 16
+        const existingNames = new Set(formattedCats.map(fc => fc.name));
+        for (const defCat of CATEGORIES_DATA) {
+          if (formattedCats.length >= 16) break;
+          if (!existingNames.has(defCat.name)) {
+            formattedCats.push(defCat);
+            existingNames.add(defCat.name);
           }
         }
         setCategories(formattedCats);
@@ -457,10 +464,10 @@ export default function DesktopCenterContent() {
       <div
         key={prod.id || idx}
         onClick={() => navigate(`/product/${prod.id}`)}
-        className="h-[195px] xl:h-[205px] w-[150px] sm:w-[165px] xl:w-[175px] bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-1.5 flex flex-col overflow-hidden cursor-pointer shrink-0 group gap-1"
+        className="h-[225px] xl:h-[240px] w-[145px] sm:w-[160px] xl:w-[170px] bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all p-1.5 flex flex-col overflow-hidden cursor-pointer shrink-0 group gap-1"
       >
-        {/* Product Image Box */}
-        <div className="relative w-full h-[120px] xl:h-[130px] bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+        {/* Product Image Box - Portrait Rectangle */}
+        <div className="relative w-full h-[150px] xl:h-[162px] bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
           <img
             src={resolveImageUrl(prod.image || prod.imageUrl, prod.id)}
             alt={prod.name}
