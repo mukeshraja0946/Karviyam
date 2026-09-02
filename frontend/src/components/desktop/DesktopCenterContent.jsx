@@ -25,7 +25,13 @@ const CATEGORIES_DATA = [
   { id: 'unisex', name: 'UNISEX', image: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400', query: 'category=Unisex' },
   { id: 'jewels', name: 'JEWELS', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400', query: 'category=Jewels' },
   { id: 'accessories', name: 'ACCESSORIES', image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400', query: 'category=Accessories' },
-  { id: 'kitchen', name: 'KITCHEN & HOME', image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=400', query: 'category=Kitchen' }
+  { id: 'kitchen', name: 'KITCHEN & HOME', image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=400', query: 'category=Kitchen' },
+  { id: 'school', name: 'SCHOOL & OFFICE', image: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=400', query: 'category=School' },
+  { id: 'best-sellers', name: 'BEST SELLERS', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400', query: 'category=Best-Sellers' },
+  { id: 'trending', name: 'TRENDING NOW', image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400', query: 'category=Trending' },
+  { id: 'footwear', name: 'FOOTWEAR', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=400', query: 'category=Footwear' },
+  { id: 'ethnic', name: 'ETHNIC WEAR', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400', query: 'category=Ethnic+Wear' },
+  { id: 'handbags', name: 'HANDBAGS', image: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400', query: 'category=Handbags' }
 ];
 
 const DEFAULT_RECOMMENDED = [
