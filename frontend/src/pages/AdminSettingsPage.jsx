@@ -1361,26 +1361,30 @@ export default function AdminSettingsPage() {
 
                         {/* Right: Layout Switch & Visibility Toggle */}
                         <div className="flex items-center gap-3 shrink-0">
-                          {/* Layout Options */}
-                          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                            <button
-                              type="button"
-                              onClick={() => handleChangeSectionLayout(sec.id, 'horizontal')}
-                              className={`px-3 py-1 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
-                                sec.layout === 'horizontal' ? 'bg-[#B71C1C] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                              }`}
-                            >
-                              Horizontal Swipe
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleChangeSectionLayout(sec.id, 'vertical')}
-                              className={`px-3 py-1 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
-                                sec.layout === 'vertical' ? 'bg-[#B71C1C] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                              }`}
-                            >
-                              Vertical 2-Col Grid
-                            </button>
+                          {/* Layout Options - Desktop Control UI Style */}
+                          <div className="flex items-center gap-4 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
+                            <label className="flex items-center gap-2 cursor-pointer text-xs">
+                              <input
+                                type="radio"
+                                name={`sec_layout_${sec.id}`}
+                                value="horizontal"
+                                checked={sec.layout === 'horizontal'}
+                                onChange={() => handleChangeSectionLayout(sec.id, 'horizontal')}
+                                className="text-[#B71C1C]"
+                              />
+                              <span className="font-bold text-slate-700">Horizontal Swipe / Carousel</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer text-xs">
+                              <input
+                                type="radio"
+                                name={`sec_layout_${sec.id}`}
+                                value="vertical"
+                                checked={sec.layout === 'vertical'}
+                                onChange={() => handleChangeSectionLayout(sec.id, 'vertical')}
+                                className="text-[#B71C1C]"
+                              />
+                              <span className="font-bold text-slate-700">Vertical 2-Col Grid</span>
+                            </label>
                           </div>
 
                           {/* Enable/Disable Switch */}
