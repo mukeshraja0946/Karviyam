@@ -91,6 +91,7 @@ export default function App() {
                   <Route path="/order-success" element={<OrderSuccessPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/login" element={<LoginPage />} />
+                  <Route path="/admin/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/offers" element={<OffersPage />} />

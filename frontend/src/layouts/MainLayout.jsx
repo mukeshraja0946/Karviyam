@@ -49,10 +49,13 @@ export default function MainLayout() {
     }
   };
 
+  const currentPath = (location.pathname || '').toLowerCase().replace(/\/$/, '');
+  const isLoginRoute = currentPath === '/login' || currentPath.startsWith('/login') || currentPath.includes('login');
+
   // When Maintenance Mode is ON for non-admin visitors OR explicit /maintenance route:
-  if ((maintenanceMode && !isAdmin) || location.pathname === '/maintenance' || location.pathname === '/maintenance.php') {
-    // If on /login, display ONLY the login box without Navbar or Footer!
-    if (location.pathname === '/login') {
+  if ((maintenanceMode && !isAdmin) || currentPath === '/maintenance' || currentPath === '/maintenance.php') {
+    // If accessing login route, display ONLY the login box without Navbar or Footer!
+    if (isLoginRoute) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] px-4 py-12">
           <Outlet />
