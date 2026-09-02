@@ -1187,7 +1187,109 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
 
-              {/* BLOCK 2: MOBILE PRODUCT LAYOUT & HOMEPAGE CONFIGURATION */}
+              {/* BLOCK 2: MOBILE PRODUCT LAYOUT & SCROLL CONTROLS */}
+              <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4 shadow-2xs">
+                <div className="border-b border-slate-100 pb-3">
+                  <h4 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-[#B71C1C]" />
+                    <span>MOBILE PRODUCT LAYOUT & SCROLL CONTROLS (&lt;1024px)</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Configure product section layouts for mobile storefront view. Mobile settings mirror desktop controls independently.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Mobile Recommended */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <label className="font-extrabold text-slate-800 block text-xs">Recommended For You (Mobile)</label>
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="mobileRecommended"
+                          value="carousel"
+                          checked={(settings.mobileRecommendedMode || 'carousel') === 'carousel'}
+                          onChange={() => setSettings({ ...settings, mobileRecommendedMode: 'carousel' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Horizontal Carousel / Swipe</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="mobileRecommended"
+                          value="grid"
+                          checked={settings.mobileRecommendedMode === 'grid'}
+                          onChange={() => setSettings({ ...settings, mobileRecommendedMode: 'grid' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Vertical 2-Col Grid</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Mobile New Arrivals */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <label className="font-extrabold text-slate-800 block text-xs">New Arrivals (Mobile)</label>
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="mobileNewArrivals"
+                          value="carousel"
+                          checked={(settings.mobileNewArrivalsMode || 'carousel') === 'carousel'}
+                          onChange={() => setSettings({ ...settings, mobileNewArrivalsMode: 'carousel' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Horizontal Carousel / Swipe</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="mobileNewArrivals"
+                          value="grid"
+                          checked={settings.mobileNewArrivalsMode === 'grid'}
+                          onChange={() => setSettings({ ...settings, mobileNewArrivalsMode: 'grid' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Vertical 2-Col Grid</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Mobile Featured */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <label className="font-extrabold text-slate-800 block text-xs">Featured Products (Mobile)</label>
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="mobileFeatured"
+                          value="carousel"
+                          checked={(settings.mobileFeaturedMode || 'carousel') === 'carousel'}
+                          onChange={() => setSettings({ ...settings, mobileFeaturedMode: 'carousel' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Horizontal Carousel / Swipe</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="mobileFeatured"
+                          value="grid"
+                          checked={settings.mobileFeaturedMode === 'grid'}
+                          onChange={() => setSettings({ ...settings, mobileFeaturedMode: 'grid' })}
+                          className="text-[#B71C1C]"
+                        />
+                        <span className="font-bold text-slate-700">Vertical 2-Col Grid</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOCK 3: MOBILE HOMEPAGE SECTIONS & LAYOUT EDITOR */}
               <div className="border border-red-200 bg-red-50/20 rounded-2xl p-5 space-y-4 shadow-2xs">
                 <div className="flex items-center justify-between border-b border-red-100 pb-3">
                   <div>
