@@ -338,18 +338,18 @@ export default function AdminPromoCardsPage() {
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto">
       
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-slate-700/60">
+      {/* Header Banner (Light Theme) */}
+      <div className="bg-white rounded-3xl p-6 text-slate-900 shadow-xs border border-slate-200/90 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-[#B71C1C] flex items-center justify-center text-white shadow-md">
+            <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 text-[#B71C1C] flex items-center justify-center shadow-2xs">
               <Gift className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black font-display tracking-tight text-white">
+              <h1 className="text-xl sm:text-2xl font-black font-display tracking-tight text-slate-900">
                 Promotional Cards & Sidebar Banners
               </h1>
-              <p className="text-xs text-slate-300 font-medium">
+              <p className="text-xs text-slate-500 font-medium">
                 Upload & manage promotional creatives displayed on Customer Homepage sidebar & mobile offer sections
               </p>
             </div>
