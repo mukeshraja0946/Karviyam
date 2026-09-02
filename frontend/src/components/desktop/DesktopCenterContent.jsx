@@ -688,10 +688,10 @@ export default function DesktopCenterContent() {
         </div>
       </div>
 
-      {/* 4. SINGLE RECOMMENDED FOR YOU CONTAINER WITH TWO INDEPENDENT HORIZONTAL PRODUCT CAROUSEL ROWS */}
+      {/* 4. RECOMMENDED FOR YOU CONTAINER WITH SINGLE HORIZONTAL PRODUCT CAROUSEL */}
       <div className="w-full bg-white rounded-2xl px-3.5 py-2.5 xl:px-4 xl:py-3 border border-slate-200/80 shadow-xs flex flex-col gap-2.5 relative">
         
-        {/* Single Header */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display font-black text-xs xl:text-sm text-slate-900 tracking-tight">
@@ -709,7 +709,7 @@ export default function DesktopCenterContent() {
           </button>
         </div>
 
-        {/* ROW 1 CAROUSEL */}
+        {/* HORIZONTAL CAROUSEL */}
         <div className="relative group">
           <div
             ref={row1ScrollRef}
@@ -717,17 +717,6 @@ export default function DesktopCenterContent() {
             className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap"
           >
             {productsRow1.map((prod, idx) => renderProductCard(prod, idx))}
-          </div>
-        </div>
-
-        {/* ROW 2 CAROUSEL */}
-        <div className="relative group">
-          <div
-            ref={row2ScrollRef}
-            onScroll={checkRow2ScrollBoundary}
-            className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap"
-          >
-            {productsRow2.map((prod, idx) => renderProductCard(prod, idx))}
           </div>
         </div>
 
