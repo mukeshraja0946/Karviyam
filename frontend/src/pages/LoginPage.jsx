@@ -106,12 +106,26 @@ export default function LoginPage() {
           </div>
 
           <h2 className={`font-display font-black text-slate-900 tracking-tight ${isMaintenanceMode ? 'text-3xl' : 'text-2xl'}`}>
-            Welcome Back
+            {isMaintenanceMode ? 'Admin Authentication' : 'Welcome Back'}
           </h2>
           <p className="text-xs text-slate-500 mt-1 font-medium">
-            Sign in to access your orders, bag & wishlist
+            {isMaintenanceMode 
+              ? 'Platform is under maintenance. Sign in with admin credentials.' 
+              : 'Sign in to access your orders, bag & wishlist'
+            }
           </p>
         </div>
+
+        {/* Maintenance Mode Alert Banner */}
+        {isMaintenanceMode && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-3.5 text-xs font-extrabold flex items-center gap-2.5 shadow-2xs">
+            <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+            <div className="text-left">
+              <span className="block font-black text-[#B71C1C]">MAINTENANCE MODE ACTIVE</span>
+              <span className="text-[11px] text-amber-800 font-semibold block mt-0.5">Only administrator accounts can sign in right now.</span>
+            </div>
+          </div>
+        )}
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
@@ -128,7 +142,7 @@ export default function LoginPage() {
                 data-lpignore="true"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
+                placeholder="Enter admin email address"
                 className={`w-full bg-[#F5F5F5] text-slate-900 text-xs pl-11 pr-4 rounded-xl border border-[#E5E7EB] focus:border-[#B71C1C] focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium ${
                   isMaintenanceMode ? 'py-3.5 rounded-2xl text-sm' : 'py-3'
                 }`}
@@ -149,7 +163,7 @@ export default function LoginPage() {
                 data-lpignore="true"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder="Enter password"
                 className={`w-full bg-[#F5F5F5] text-slate-900 text-xs pl-11 pr-11 rounded-xl border border-[#E5E7EB] focus:border-[#B71C1C] focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium ${
                   isMaintenanceMode ? 'py-3.5 rounded-2xl text-sm' : 'py-3'
                 }`}
@@ -178,22 +192,24 @@ export default function LoginPage() {
               </>
             ) : (
               <>
-                <span>SIGN IN</span>
+                <span>{isMaintenanceMode ? 'ADMIN SIGN IN' : 'SIGN IN'}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
 
-          <GoogleSignInButton isMaintenanceMode={isMaintenanceMode} />
+          {!isMaintenanceMode && <GoogleSignInButton isMaintenanceMode={isMaintenanceMode} />}
         </form>
 
         {/* Footer Link */}
-        <div className="text-center mt-6 pt-4 border-t border-slate-100 text-xs text-slate-500 font-medium">
-          Don't have an account?{' '}
-          <Link to="/register" className="font-bold text-[#B71C1C] hover:underline transition-colors ml-1">
-            Create Account
-          </Link>
-        </div>
+        {!isMaintenanceMode && (
+          <div className="text-center mt-6 pt-4 border-t border-slate-100 text-xs text-slate-500 font-medium">
+            Don't have an account?{' '}
+            <Link to="/register" className="font-bold text-[#B71C1C] hover:underline transition-colors ml-1">
+              Create Account
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

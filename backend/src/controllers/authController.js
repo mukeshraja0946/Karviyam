@@ -176,6 +176,27 @@ exports.login = async (req, res, next) => {
 
     const assignedRole = isAdminUser ? 'admin' : 'customer';
 
+    // Maintenance Mode Restriction: Only Admin Users can log in during Maintenance Mode
+    let isMaintenanceActive = false;
+    try {
+      const [maintRows] = await pool.query(
+        "SELECT setting_value FROM settings WHERE setting_key IN ('karviyam_maintenance_mode', 'maintenanceMode', 'maintenance_mode')"
+      );
+      if (maintRows && maintRows.length > 0) {
+        for (const row of maintRows) {
+          const val = String(row.setting_value).toLowerCase().trim();
+          if (val === 'true' || val === '1' || val === 'yes') {
+            isMaintenanceActive = true;
+            break;
+          }
+        }
+      }
+    } catch (maintErr) {}
+
+    if (isMaintenanceActive && !isAdminUser) {
+      return res.status(403).json(ApiResponse.error('System is currently under maintenance. Only administrators can log in at this time.'));
+    }
+
     // 6. Generate JWT token
     const tokenPayload = {
       id: user.id || 999999,

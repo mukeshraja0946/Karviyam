@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Clock, Lock } from 'lucide-react';
 import api from '../utils/api';
 import { resolveImageUrl } from '../utils/imageUtils';
 
@@ -138,6 +139,17 @@ export default function MaintenancePage() {
             </span>
             <span className="whitespace-nowrap">Store will be back online shortly. Please check again soon.</span>
           </div>
+        </div>
+
+        {/* Admin Login Shortcut */}
+        <div className="pt-2">
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-[#B71C1C] transition-colors cursor-pointer"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>Admin Sign In</span>
+          </Link>
         </div>
 
       </div>
