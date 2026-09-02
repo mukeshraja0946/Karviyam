@@ -434,7 +434,7 @@ export default function HomePage() {
       {/* STRICT DESKTOP ISOLATION - 100% UNTOUCHED                    */}
       {/* ========================================================= */}
       <div className="hidden lg:block py-3 bg-[#FAFAFA] min-h-screen">
-        <div className="max-w-[1560px] w-full mx-auto px-3 sm:px-4 flex justify-center items-start gap-3 xl:gap-4">
+        <div className="max-w-[1560px] w-full mx-auto px-2 sm:px-3 flex justify-center items-start gap-2 xl:gap-2.5">
           {/* Column 1: Left Sidebar */}
           <DesktopSidebarLeft />
 
