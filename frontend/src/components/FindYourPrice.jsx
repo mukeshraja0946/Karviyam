@@ -87,16 +87,16 @@ export default function FindYourPrice() {
   if (activeButtons.length === 0) return null;
 
   return (
-    <div className="w-full h-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-3.5 xl:p-4 flex flex-col justify-between transition-all">
+    <div className="w-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs px-3.5 py-2.5 xl:px-4 xl:py-3 transition-all">
       {/* Title */}
-      <div className="mb-2.5">
-        <h2 className="font-display font-black text-slate-900 text-xs xl:text-sm tracking-tight uppercase">
+      <div className="mb-1.5">
+        <h2 className="font-display font-black text-slate-900 text-xs xl:text-xs tracking-tight uppercase">
           {config.title || 'FIND YOUR PRICE'}
         </h2>
       </div>
 
       {/* STRICT SINGLE HORIZONTAL LINE (NO WRAP) */}
-      <div className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar py-1 whitespace-nowrap flex-nowrap w-full">
+      <div className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap flex-nowrap w-full">
         {activeButtons.map((btn, idx) => {
           const accentClass = BUTTON_ACCENTS[idx % BUTTON_ACCENTS.length];
           const maxP = btn.maxPrice !== undefined ? btn.maxPrice : 999;
@@ -107,7 +107,7 @@ export default function FindYourPrice() {
               key={btn.id || idx}
               type="button"
               onClick={() => navigate(`/shop?maxPrice=${maxP}`)}
-              className={`rounded-full px-3.5 xl:px-4 py-2 text-[11px] xl:text-xs font-extrabold shadow-2xs border cursor-pointer shrink-0 transition-all hover:scale-105 hover:shadow-xs active:scale-95 flex items-center justify-center ${accentClass}`}
+              className={`rounded-full px-3.5 xl:px-4 py-1.5 text-[11px] xl:text-xs font-extrabold shadow-2xs border cursor-pointer shrink-0 transition-all hover:scale-105 hover:shadow-xs active:scale-95 flex items-center justify-center ${accentClass}`}
             >
               {displayLabel}
             </button>

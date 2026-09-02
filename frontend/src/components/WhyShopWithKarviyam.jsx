@@ -111,34 +111,34 @@ export default function WhyShopWithKarviyam() {
   if (activeBenefits.length === 0) return null;
 
   return (
-    <div className="w-full h-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-3.5 xl:p-4 flex flex-col justify-between transition-all">
+    <div className="w-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs px-3.5 py-2.5 xl:px-4 xl:py-3 transition-all">
       {/* Title */}
-      <div className="mb-2.5">
-        <h2 className="font-display font-black text-slate-900 text-xs xl:text-sm tracking-tight uppercase">
+      <div className="mb-1.5">
+        <h2 className="font-display font-black text-slate-900 text-xs xl:text-xs tracking-tight uppercase">
           {config.title || 'WHY SHOP WITH KARVIYAM?'}
         </h2>
       </div>
 
       {/* Grid of Benefit Cards */}
-      <div className="flex items-center justify-between gap-1.5 xl:gap-2 overflow-x-auto no-scrollbar py-1 w-full">
+      <div className="flex items-center justify-between gap-1.5 xl:gap-2 overflow-x-auto no-scrollbar py-0.5 w-full">
         {activeBenefits.map((item, idx) => (
           <div
             key={item.id || idx}
-            className="flex-1 min-w-[75px] sm:min-w-[85px] flex flex-col items-center text-center group shrink-0"
+            className="flex-1 min-w-[70px] sm:min-w-[80px] flex flex-col items-center text-center group shrink-0"
           >
             {/* Icon Bubble */}
-            <div className="w-9 h-9 xl:w-10 xl:h-10 rounded-full bg-rose-50 text-[#B71C1C] flex items-center justify-center mb-1.5 shadow-2xs group-hover:scale-110 transition-transform">
-              {renderBenefitIcon(item.icon)}
+            <div className="w-7.5 h-7.5 xl:w-8 xl:h-8 rounded-full bg-rose-50 text-[#B71C1C] flex items-center justify-center mb-1 shadow-2xs group-hover:scale-110 transition-transform">
+              {renderBenefitIcon(item.icon, "w-3.5 h-3.5 xl:w-4 xl:h-4")}
             </div>
 
             {/* Benefit Title */}
-            <h3 className="font-bold text-[10.5px] xl:text-[11px] text-slate-900 leading-tight truncate w-full" title={item.title}>
+            <h3 className="font-bold text-[10px] xl:text-[10.5px] text-slate-900 leading-tight truncate w-full" title={item.title}>
               {item.title}
             </h3>
 
             {/* Subtitle / Description */}
             {item.subtitle && (
-              <p className="text-[9px] xl:text-[9.5px] font-medium text-slate-500 truncate w-full mt-0.5" title={item.subtitle}>
+              <p className="text-[8.5px] xl:text-[9px] font-medium text-slate-500 truncate w-full mt-0.5" title={item.subtitle}>
                 {item.subtitle}
               </p>
             )}
