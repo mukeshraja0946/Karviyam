@@ -67,34 +67,34 @@ export default function DesktopSidebarLeft() {
   return (
     <aside className="w-[210px] xl:w-[230px] flex-shrink-0 flex flex-col gap-3">
       
-      {/* 1. Sidebar Menu Card */}
-      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+      {/* 1. Sidebar Navigation Menu Card */}
+      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
         {MENU_ITEMS.map((item, idx) => {
           const IconComponent = item.icon;
           return (
             <div
               key={item.id}
               onClick={() => navigate(item.link)}
-              className={`h-[44px] xl:h-[46px] px-3 flex items-center justify-between cursor-pointer transition-colors hover:bg-red-50/60 hover:text-[#B71C1C] text-slate-700 ${
-                idx !== MENU_ITEMS.length - 1 ? 'border-b border-slate-100' : ''
+              className={`h-[42px] xl:h-[44px] px-3 flex items-center justify-between cursor-pointer transition-colors hover:bg-slate-50 text-slate-800 group ${
+                idx !== MENU_ITEMS.length - 1 ? 'border-b border-slate-100/90' : ''
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-600 group-hover:text-[#B71C1C]">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-xl bg-slate-50 border border-slate-100/80 flex items-center justify-center text-slate-700 shrink-0 group-hover:bg-red-50 group-hover:text-[#B71C1C] transition-colors">
                   <IconComponent className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-[11px] xl:text-xs font-extrabold tracking-tight">{item.label}</span>
+                <span className="text-[11px] xl:text-xs font-black tracking-tight truncate">{item.label}</span>
               </div>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#B71C1C] transition-colors shrink-0" />
             </div>
           );
         })}
       </div>
 
-      {/* 2. Extra Offer Banner */}
+      {/* 2. Extra 5% OFF Banner */}
       <div 
         onClick={() => navigate('/shop?filter=offers')}
-        className="w-full h-[72px] bg-[#FFF0F2] border border-red-200/90 rounded-xl p-3 flex items-center justify-between shadow-xs overflow-hidden relative cursor-pointer hover:border-[#B71C1C] transition-colors group"
+        className="w-full h-[72px] bg-[#FFF0F2] border border-red-200/90 rounded-xl p-3 flex items-center justify-between shadow-2xs overflow-hidden relative cursor-pointer hover:border-[#B71C1C] transition-colors group"
       >
         <div className="flex flex-col justify-center">
           <span className="font-display font-black text-xs xl:text-sm text-[#B71C1C] uppercase tracking-wide group-hover:underline">
@@ -104,18 +104,18 @@ export default function DesktopSidebarLeft() {
             On Prepaid Orders
           </span>
         </div>
-        <div className="w-9 h-9 rounded-xl bg-red-100/80 border border-red-200 text-[#B71C1C] flex items-center justify-center font-black text-sm shadow-2xs group-hover:scale-105 transition-transform">
+        <div className="w-9 h-9 rounded-xl bg-red-100/90 border border-red-200 text-[#B71C1C] flex items-center justify-center font-black text-sm shadow-2xs group-hover:scale-105 transition-transform">
           %
         </div>
       </div>
 
-      {/* 3. Dynamic Admin-Managed Promotional Cards */}
+      {/* 3. Festive Special / Admin-Managed Promo Banner */}
       {promoCards.length > 0 ? (
         promoCards.map((card) => (
           <div
             key={card.id}
             onClick={() => navigate(card.link || '/shop')}
-            className="w-full h-[330px] xl:h-[350px] rounded-xl overflow-hidden relative shadow-sm cursor-pointer border border-slate-200 group bg-slate-950 flex items-center justify-center"
+            className="w-full h-[340px] xl:h-[360px] rounded-2xl overflow-hidden relative shadow-sm cursor-pointer border border-slate-200 group bg-slate-950 flex items-center justify-center"
           >
             <img
               src={resolveImageUrl(card.imageUrl)}
@@ -125,31 +125,44 @@ export default function DesktopSidebarLeft() {
           </div>
         ))
       ) : (
-        /* Fallback Festive Banner */
-        <div className="w-full h-[330px] xl:h-[350px] rounded-xl overflow-hidden relative shadow-sm text-white p-4 xl:p-5 flex flex-col justify-between bg-gradient-to-b from-[#6D0000] via-[#8E0000] to-[#3D0000]">
+        /* Fallback Festive Banner matching reference screenshot */
+        <div 
+          onClick={() => navigate('/shop')}
+          className="w-full h-[340px] xl:h-[360px] rounded-2xl overflow-hidden relative shadow-md text-white p-4 xl:p-5 flex flex-col justify-between bg-gradient-to-b from-[#7A0000] via-[#A30000] to-[#450000] group cursor-pointer border border-red-900/60"
+        >
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-overlay"
+            className="absolute inset-0 bg-cover bg-center opacity-45 mix-blend-overlay group-hover:scale-105 transition-transform duration-700"
             style={{
               backgroundImage: `url('https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600')`
             }}
           />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
+
           <div className="relative z-10">
-            <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-400/20 px-2 py-0.5 rounded border border-amber-400/30">
+            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-amber-300 bg-black/40 border border-amber-400/60 px-2.5 py-1 rounded-md backdrop-blur-xs">
               <Sparkles className="w-3 h-3 text-amber-300" /> FESTIVE SPECIAL
             </span>
-            <h3 className="font-display font-black text-2xl xl:text-3xl leading-none text-white tracking-tight mt-3.5 drop-shadow-md">
-              UP TO<br />
-              <span className="text-amber-300 text-3xl xl:text-4xl">60%</span><br />
-              OFF
-            </h3>
-            <p className="text-[11px] xl:text-xs text-amber-100/90 font-semibold mt-2">
-              On Bestsellers
-            </p>
+            <div className="mt-4">
+              <span className="font-display font-black text-xl xl:text-2xl text-white block uppercase tracking-tight drop-shadow-md">
+                UP TO
+              </span>
+              <span className="font-display font-black text-3xl xl:text-4xl text-amber-400 block leading-none tracking-tight drop-shadow-md mt-0.5">
+                60% OFF
+              </span>
+              <span className="text-xs text-slate-100 font-bold block mt-1.5 drop-shadow-xs">
+                On Bestsellers
+              </span>
+            </div>
           </div>
-          <div className="relative z-10">
+
+          <div className="relative z-10 w-full">
             <button
-              onClick={() => navigate('/shop')}
-              className="w-full bg-white text-slate-900 font-extrabold text-[11px] xl:text-xs uppercase tracking-wider py-2.5 xl:py-3 rounded-full hover:bg-amber-300 transition-colors shadow-md cursor-pointer"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/shop');
+              }}
+              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-black text-xs uppercase tracking-wider py-2.5 rounded-full shadow-lg transition-transform group-hover:scale-102 cursor-pointer text-center"
             >
               SHOP NOW
             </button>
