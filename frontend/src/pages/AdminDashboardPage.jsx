@@ -111,19 +111,19 @@ export default function AdminDashboardPage() {
   const maxChartSales = Math.max(...chartItems.map(c => c.sales), 1000);
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-3.5 pb-6">
       
       {/* Dashboard Title Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E7EB] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5E7EB] pb-3">
         <div>
-          <h1 className="font-display font-black text-2xl text-[#1F2937] tracking-tight flex items-center gap-2">
+          <h1 className="font-display font-black text-xl sm:text-2xl text-[#1F2937] tracking-tight flex items-center gap-2">
             <span>Enterprise Control Center</span>
             {loading && <RefreshCw className="w-4 h-4 animate-spin text-red-600" />}
           </h1>
           <p className="text-xs text-slate-500 font-medium">Real-time marketplace analytics, database orders & catalog metrics</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={fetchDashboardStats}
             className="flex items-center gap-2 bg-[#F5F5F5] hover:bg-slate-200 text-[#1F2937] px-3.5 py-2 rounded-xl text-xs font-bold transition-colors border border-[#E5E7EB] cursor-pointer"
@@ -142,19 +142,19 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* 10 TOP STATISTICS CARDS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3">
         {kpiCards.map((c, i) => (
           <div
             key={i}
-            className="bg-white p-4 rounded-xl border border-[#E5E7EB] shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+            className="bg-white p-3 rounded-xl border border-[#E5E7EB] shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
           >
-            <span className="text-[11px] font-semibold uppercase text-slate-500 tracking-wider">
+            <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
               {c.title}
             </span>
-            <div className="font-display font-extrabold text-2xl text-[#1F2937] my-1 truncate">
+            <div className="font-display font-black text-xl xl:text-2xl text-[#1F2937] my-0.5 truncate">
               {c.value}
             </div>
-            <div className="flex items-center gap-1.5 text-[11px]">
+            <div className="flex items-center gap-1.5 text-[10px]">
               <span className={`font-bold ${c.isPos ? 'text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md' : 'text-red-700 bg-red-50 px-1.5 py-0.5 rounded-md'}`}>
                 {c.change}
               </span>
@@ -165,7 +165,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* INTERACTIVE ANALYTICS CHARTS SECTION */}
-      <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-xs space-y-4">
+      <div className="bg-white p-4 rounded-xl border border-[#E5E7EB] shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="font-display font-bold text-base text-[#1F2937]">Sales & Revenue Analytics</h2>

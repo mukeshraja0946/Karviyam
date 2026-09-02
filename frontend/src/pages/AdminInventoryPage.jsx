@@ -173,7 +173,7 @@ export default function AdminInventoryPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3.5">
       <ClearAllModal
         isOpen={clearAllModalOpen}
         onClose={() => setClearAllModalOpen(false)}
@@ -184,10 +184,10 @@ export default function AdminInventoryPage() {
       />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display font-bold text-2xl text-slate-900">Inventory & Warehouse Management</h1>
-          <p className="text-xs text-slate-500">Monitor product stock levels, SKU tracking & reorder alerts</p>
+          <h1 className="font-display font-black text-xl sm:text-2xl text-slate-900 tracking-tight">Inventory & Warehouse Management</h1>
+          <p className="text-xs text-slate-500 font-medium">Monitor product stock levels, SKU tracking & reorder alerts</p>
         </div>
         <div className="flex items-center gap-2">
           <ExportDropdown

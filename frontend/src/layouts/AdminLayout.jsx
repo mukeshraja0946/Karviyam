@@ -512,8 +512,8 @@ export default function AdminLayout() {
         </aside>
 
         {/* MAIN WORKSPACE CONTENT */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 bg-[#F8FAFC]">
+          <div className="max-w-[1650px] mx-auto">
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>

@@ -351,7 +351,7 @@ export default function AdminParentCategoriesPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto">
+    <div className="space-y-3.5 max-w-[1650px] mx-auto">
       
       {/* Header Banner (Light Theme) */}
       <div className="bg-white rounded-3xl p-6 text-slate-900 shadow-xs border border-slate-200/90 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

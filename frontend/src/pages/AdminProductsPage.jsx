@@ -886,13 +886,13 @@ export default function AdminProductsPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3.5">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display font-bold text-2xl text-slate-900">Product Catalog Management</h1>
-          <p className="text-xs text-slate-500">Manage products, variants, brands, stock, prices, and catalog status</p>
+          <h1 className="font-display font-black text-xl sm:text-2xl text-slate-900 tracking-tight">Product Catalog Management</h1>
+          <p className="text-xs text-slate-500 font-medium">Manage products, variants, brands, stock, prices, and catalog status</p>
         </div>
 
         <div className="flex items-center gap-2">

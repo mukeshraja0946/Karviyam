@@ -542,13 +542,13 @@ export default function AdminCategoriesPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3.5">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display font-bold text-2xl text-slate-900">Categories Management</h1>
-          <p className="text-xs text-slate-500">Manage product categories, visibility, sorting and category details.</p>
+          <h1 className="font-display font-black text-xl sm:text-2xl text-slate-900 tracking-tight">Categories Management</h1>
+          <p className="text-xs text-slate-500 font-medium">Manage product categories, visibility, sorting and category details.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
