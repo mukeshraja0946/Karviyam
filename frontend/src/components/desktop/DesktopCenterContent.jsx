@@ -605,37 +605,37 @@ export default function DesktopCenterContent() {
 
 
       {/* 3. Shop by Category Section */}
-      <div className="w-full bg-white rounded-3xl p-4 flex flex-col gap-3 relative">
+      <div className="w-full bg-white rounded-2xl px-3.5 py-2.5 xl:px-4 xl:py-3 flex flex-col gap-2 relative my-1">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-display font-black text-base xl:text-lg text-slate-900 tracking-tight">
+            <h2 className="font-display font-black text-xs xl:text-sm text-slate-900 tracking-tight">
               Shop by Category
             </h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
+            <p className="text-[10.5px] text-slate-500 font-medium">
               Explore top categories and find your favorites
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {canCategoryScrollLeft && (
               <button
                 type="button"
                 onClick={handleCategoryScrollLeft}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                 title="Previous Categories"
                 aria-label="Previous Categories"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
             )}
             {canCategoryScrollRight && (
               <button
                 type="button"
                 onClick={handleCategoryScrollRight}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                 title="Next Categories"
                 aria-label="Next Categories"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             )}
             <button
@@ -651,23 +651,23 @@ export default function DesktopCenterContent() {
         <div
           ref={categoryScrollRef}
           onScroll={checkCategoryScrollBoundary}
-          className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-1 pt-0.5 w-full flex-nowrap"
+          className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap"
         >
           {categories.map((cat) => (
             <div
               key={cat.id || cat.name}
               onClick={() => navigate(`/shop?${cat.query}`)}
-              className="flex flex-col items-center shrink-0 w-[84px] sm:w-[90px] xl:w-[96px] cursor-pointer group"
+              className="flex flex-col items-center shrink-0 w-[66px] sm:w-[72px] xl:w-[76px] cursor-pointer group"
             >
-              <div className="w-full aspect-square bg-slate-100 rounded-2xl overflow-hidden shadow-2xs group-hover:shadow-md transition-all duration-300">
+              <div className="w-full aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-2xs group-hover:shadow-md transition-all duration-300">
                 <img
                   src={resolveImageUrl(cat.image, cat.id)}
                   alt={cat.name}
                   onError={(e) => handleImageError(e, cat.id)}
-                  className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <span className="font-bold text-[11px] text-slate-800 text-center truncate w-full mt-1.5 group-hover:text-[#B71C1C] transition-colors">
+              <span className="font-bold text-[10px] xl:text-[10.5px] text-slate-800 text-center truncate w-full mt-1 group-hover:text-[#B71C1C] transition-colors">
                 {cat.name}
               </span>
             </div>
