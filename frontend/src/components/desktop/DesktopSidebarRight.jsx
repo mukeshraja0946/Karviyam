@@ -218,15 +218,15 @@ export default function DesktopSidebarRight() {
       {promoCardConfig.enabled !== false && (
         <div
           onClick={() => navigate(promoCardConfig.link || '/shop')}
-          className="w-full h-[155px] xl:h-[165px] rounded-2xl p-4 flex items-center justify-between relative overflow-hidden shadow-md group cursor-pointer border border-slate-200/40 transition-transform hover:scale-[1.01]"
+          className="w-full h-[160px] xl:h-[175px] rounded-2xl flex items-center relative overflow-hidden shadow-md group cursor-pointer border border-slate-200/40 transition-transform hover:scale-[1.01]"
           style={{ backgroundColor: promoCardConfig.bgColor || '#434343' }}
         >
           {/* Left Text Content */}
-          <div className="z-10 text-left space-y-1 flex-1 pr-2 min-w-0" style={{ color: promoCardConfig.textColor || '#FFFFFF' }}>
+          <div className="z-10 text-left space-y-1 p-4 w-[58%] xl:w-[56%]" style={{ color: promoCardConfig.textColor || '#FFFFFF' }}>
             <span className="text-[9.5px] font-black uppercase tracking-widest block opacity-90 truncate">
               {promoCardConfig.badge || 'NEW ARRIVALS'}
             </span>
-            <h3 className="font-display font-black text-sm xl:text-base leading-tight uppercase truncate" title={promoCardConfig.title}>
+            <h3 className="font-display font-black text-sm xl:text-base leading-tight uppercase line-clamp-2" title={promoCardConfig.title}>
               {promoCardConfig.title || 'Fresh Styles'}
             </h3>
             <p className="text-[10.5px] opacity-85 font-medium truncate" title={promoCardConfig.description}>
@@ -240,12 +240,16 @@ export default function DesktopSidebarRight() {
             </div>
           </div>
 
-          {/* Right Model Image Overlay */}
-          <div className="w-[110px] xl:w-[125px] h-full absolute right-0 bottom-0 top-0 overflow-hidden pointer-events-none">
+          {/* Full Right Side Cover Image */}
+          <div className="absolute right-0 top-0 bottom-0 w-[46%] xl:w-[48%] h-full overflow-hidden">
+            <div
+              className="absolute inset-0 z-10 pointer-events-none"
+              style={{ background: `linear-gradient(to right, ${promoCardConfig.bgColor || '#434343'}, transparent 60%)` }}
+            />
             <img
               src={resolveImageUrl(promoCardConfig.imageUrl)}
               alt={promoCardConfig.title}
-              className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600';
