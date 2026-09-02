@@ -266,42 +266,43 @@ export default function AdminRightSidebarPromoCardPage() {
             
             {/* Card Image Cover Box */}
             <div
-              className="relative w-full h-[160px] rounded-2xl overflow-hidden shadow-md flex items-center border border-slate-300/80"
-              style={{ backgroundColor: formData.bgColor || '#434343' }}
+              className="relative w-full h-[165px] rounded-2xl overflow-hidden shadow-md flex items-center border border-slate-300/80 bg-slate-900"
             >
+              {/* 100% Full Background Cover Image */}
+              <img
+                src={resolveImageUrl(formData.imageUrl)}
+                alt="Card Model"
+                className="absolute inset-0 w-full h-full object-cover object-center"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600';
+                }}
+              />
+
+              {/* Gradient overlay for left text readability */}
+              <div
+                className="absolute inset-0 z-10 pointer-events-none"
+                style={{
+                  background: `linear-gradient(to right, ${formData.bgColor || '#000000'}F2 0%, ${formData.bgColor || '#000000'}A6 50%, transparent 100%)`
+                }}
+              />
+
               {/* Left Text */}
-              <div className="z-10 text-left space-y-1 p-3.5 w-[56%]" style={{ color: formData.textColor || '#FFFFFF' }}>
-                <span className="text-[9.5px] font-black uppercase tracking-widest block opacity-95 truncate">
+              <div className="z-20 text-left space-y-1 p-3.5 w-[65%]" style={{ color: formData.textColor || '#FFFFFF' }}>
+                <span className="text-[9.5px] font-black uppercase tracking-widest block opacity-95 drop-shadow-sm truncate">
                   {formData.badge || 'NEW ARRIVALS'}
                 </span>
-                <h4 className="font-display font-black text-sm leading-tight uppercase line-clamp-2">
+                <h4 className="font-display font-black text-sm leading-tight uppercase line-clamp-2 drop-shadow-sm">
                   {formData.title || 'Fresh Styles'}
                 </h4>
-                <p className="text-[10.5px] opacity-85 font-medium truncate">
+                <p className="text-[10.5px] opacity-90 font-medium truncate drop-shadow-sm">
                   {formData.description || 'Just Landed!'}
                 </p>
                 <div className="pt-2">
-                  <span className="inline-block bg-white text-slate-900 font-extrabold text-[10px] px-3.5 py-1.5 rounded-lg shadow-xs">
+                  <span className="inline-block bg-white text-slate-900 font-extrabold text-[10px] px-3.5 py-1.5 rounded-lg shadow-sm">
                     {formData.buttonText || 'SHOP NOW'}
                   </span>
                 </div>
-              </div>
-
-              {/* Full Right Side Cover Image */}
-              <div className="absolute right-0 top-0 bottom-0 w-[48%] h-full overflow-hidden">
-                <div
-                  className="absolute inset-0 z-10 pointer-events-none"
-                  style={{ background: `linear-gradient(to right, ${formData.bgColor || '#434343'}, transparent 60%)` }}
-                />
-                <img
-                  src={resolveImageUrl(formData.imageUrl)}
-                  alt="Card Model"
-                  className="w-full h-full object-cover object-center"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600';
-                  }}
-                />
               </div>
 
               {formData.imageUrl && (
@@ -428,44 +429,46 @@ export default function AdminRightSidebarPromoCardPage() {
           {/* Front-end Card Mockup Preview */}
           <div className="space-y-3">
             <div
-              className={`w-full min-h-[160px] rounded-2xl flex items-center relative overflow-hidden shadow-md transition-all ${
+              className={`w-full h-[165px] rounded-2xl flex items-center relative overflow-hidden shadow-md transition-all bg-slate-900 ${
                 formData.enabled ? 'opacity-100' : 'opacity-40 grayscale'
               }`}
-              style={{ backgroundColor: formData.bgColor || '#434343' }}
             >
-              <div className="z-10 text-left space-y-1 p-4 w-[58%]" style={{ color: formData.textColor || '#FFFFFF' }}>
-                <span className="text-[10px] font-black uppercase tracking-widest block opacity-95 truncate">
+              {/* 100% Full Background Cover Image */}
+              <img
+                src={resolveImageUrl(formData.imageUrl)}
+                alt="Model Preview"
+                className="absolute inset-0 w-full h-full object-cover object-center"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600';
+                }}
+              />
+
+              {/* Gradient overlay for text readability */}
+              <div
+                className="absolute inset-0 z-10 pointer-events-none"
+                style={{
+                  background: `linear-gradient(to right, ${formData.bgColor || '#000000'}F2 0%, ${formData.bgColor || '#000000'}A6 50%, transparent 100%)`
+                }}
+              />
+
+              {/* Text Content */}
+              <div className="z-20 text-left space-y-1 p-4 w-[65%]" style={{ color: formData.textColor || '#FFFFFF' }}>
+                <span className="text-[10px] font-black uppercase tracking-widest block opacity-95 drop-shadow-sm truncate">
                   {formData.badge || 'NEW ARRIVALS'}
                 </span>
-                <h3 className="font-display font-black text-base leading-tight uppercase line-clamp-2">
+                <h3 className="font-display font-black text-base leading-tight uppercase line-clamp-2 drop-shadow-sm">
                   {formData.title || 'Fresh Styles'}
                 </h3>
-                <p className="text-[11px] opacity-85 font-medium truncate">
+                <p className="text-[11px] opacity-90 font-medium truncate drop-shadow-sm">
                   {formData.description || 'Just Landed!'}
                 </p>
 
                 <div className="pt-2">
-                  <span className="inline-block bg-white text-slate-900 font-extrabold text-xs px-3.5 py-1.5 rounded-lg shadow-xs">
+                  <span className="inline-block bg-white text-slate-900 font-extrabold text-xs px-3.5 py-1.5 rounded-lg shadow-sm">
                     {formData.buttonText || 'SHOP NOW'}
                   </span>
                 </div>
-              </div>
-
-              {/* Full Right Cover Image */}
-              <div className="absolute right-0 top-0 bottom-0 w-[46%] h-full overflow-hidden">
-                <div
-                  className="absolute inset-0 z-10 pointer-events-none"
-                  style={{ background: `linear-gradient(to right, ${formData.bgColor || '#434343'}, transparent 60%)` }}
-                />
-                <img
-                  src={resolveImageUrl(formData.imageUrl)}
-                  alt="Model Preview"
-                  className="w-full h-full object-cover object-center"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600';
-                  }}
-                />
               </div>
             </div>
 

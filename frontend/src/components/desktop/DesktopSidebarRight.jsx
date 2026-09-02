@@ -218,18 +218,36 @@ export default function DesktopSidebarRight() {
       {promoCardConfig.enabled !== false && (
         <div
           onClick={() => navigate(promoCardConfig.link || '/shop')}
-          className="w-full h-[160px] xl:h-[175px] rounded-2xl flex items-center relative overflow-hidden shadow-md group cursor-pointer border border-slate-200/40 transition-transform hover:scale-[1.01]"
-          style={{ backgroundColor: promoCardConfig.bgColor || '#434343' }}
+          className="w-full h-[165px] xl:h-[180px] rounded-2xl flex items-center relative overflow-hidden shadow-md group cursor-pointer border border-slate-200/40 transition-transform hover:scale-[1.01] bg-slate-900"
         >
+          {/* 100% Full Background Cover Image */}
+          <img
+            src={resolveImageUrl(promoCardConfig.imageUrl)}
+            alt={promoCardConfig.title}
+            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600';
+            }}
+          />
+
+          {/* Gradient Overlay for Left Text Readability */}
+          <div
+            className="absolute inset-0 z-10 pointer-events-none"
+            style={{
+              background: `linear-gradient(to right, ${promoCardConfig.bgColor || '#000000'}F2 0%, ${promoCardConfig.bgColor || '#000000'}A6 50%, transparent 100%)`
+            }}
+          />
+
           {/* Left Text Content */}
-          <div className="z-10 text-left space-y-1 p-4 w-[58%] xl:w-[56%]" style={{ color: promoCardConfig.textColor || '#FFFFFF' }}>
-            <span className="text-[9.5px] font-black uppercase tracking-widest block opacity-90 truncate">
+          <div className="z-20 text-left space-y-1 p-4 w-[65%] xl:w-[62%]" style={{ color: promoCardConfig.textColor || '#FFFFFF' }}>
+            <span className="text-[9.5px] font-black uppercase tracking-widest block opacity-95 drop-shadow-sm truncate">
               {promoCardConfig.badge || 'NEW ARRIVALS'}
             </span>
-            <h3 className="font-display font-black text-sm xl:text-base leading-tight uppercase line-clamp-2" title={promoCardConfig.title}>
+            <h3 className="font-display font-black text-sm xl:text-base leading-tight uppercase line-clamp-2 drop-shadow-sm" title={promoCardConfig.title}>
               {promoCardConfig.title || 'Fresh Styles'}
             </h3>
-            <p className="text-[10.5px] opacity-85 font-medium truncate" title={promoCardConfig.description}>
+            <p className="text-[10.5px] opacity-90 font-medium truncate drop-shadow-sm" title={promoCardConfig.description}>
               {promoCardConfig.description || 'Just Landed!'}
             </p>
 
@@ -238,23 +256,6 @@ export default function DesktopSidebarRight() {
                 {promoCardConfig.buttonText || 'SHOP NOW'}
               </span>
             </div>
-          </div>
-
-          {/* Full Right Side Cover Image */}
-          <div className="absolute right-0 top-0 bottom-0 w-[46%] xl:w-[48%] h-full overflow-hidden">
-            <div
-              className="absolute inset-0 z-10 pointer-events-none"
-              style={{ background: `linear-gradient(to right, ${promoCardConfig.bgColor || '#434343'}, transparent 60%)` }}
-            />
-            <img
-              src={resolveImageUrl(promoCardConfig.imageUrl)}
-              alt={promoCardConfig.title}
-              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600';
-              }}
-            />
           </div>
         </div>
       )}
