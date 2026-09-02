@@ -191,6 +191,7 @@ export default function AdminLayout() {
         { name: 'Email Marketing', path: '/admin/email-marketing' },
         { name: 'Hero Banners', path: '/admin/banners' },
         { name: 'Promotional Cards', path: '/admin/promo-cards' },
+        { name: 'Right Sidebar Banners', path: '/admin/right-sidebar-banners' },
         { name: 'Coupons', path: '/admin/coupons' },
         { name: 'Offers & Discounts', path: '/admin/offers' },
       ],

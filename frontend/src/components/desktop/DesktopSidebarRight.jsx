@@ -22,6 +22,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import api from '../../utils/api';
+import { resolveImageUrl } from '../../utils/imageUtils';
 
 const DEFAULT_BENEFITS = [
   { id: '1', title: 'Best Quality', subtitle: '100% Original Products', icon: 'Award' },
@@ -58,6 +59,7 @@ const renderIcon = (iconName) => {
 export default function DesktopSidebarRight() {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [sidebarBanners, setSidebarBanners] = useState([]);
 
   const [benefits, setBenefits] = useState(() => {
     try {
@@ -93,8 +95,27 @@ export default function DesktopSidebarRight() {
     } catch (e) {}
   };
 
+  const fetchRightSidebarBanners = async () => {
+    try {
+      const res = await api.get('/right-sidebar-banners').catch(() => null);
+      const apiData = res?.data ? res.data : res;
+      let list = Array.isArray(apiData?.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+      if (list && list.length > 0) {
+        setSidebarBanners(list);
+      } else {
+        const saved = localStorage.getItem('karviyam_admin_right_sidebar_banners');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setSidebarBanners(parsed.filter(b => b.isActive !== false));
+        }
+      }
+    } catch (e) {}
+  };
+
   useEffect(() => {
     fetchConfig();
+    fetchRightSidebarBanners();
+
     const handleUpdate = () => {
       try {
         const saved = localStorage.getItem('karviyam_why_shop_config');
@@ -108,13 +129,17 @@ export default function DesktopSidebarRight() {
       } catch (e) {
         fetchConfig();
       }
+      fetchRightSidebarBanners();
     };
+
     window.addEventListener('karviyam_why_shop_updated', handleUpdate);
     window.addEventListener('karviyam_homepage_sections_updated', handleUpdate);
+    window.addEventListener('karviyam_right_sidebar_banners_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       window.removeEventListener('karviyam_why_shop_updated', handleUpdate);
       window.removeEventListener('karviyam_homepage_sections_updated', handleUpdate);
+      window.removeEventListener('karviyam_right_sidebar_banners_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
@@ -193,38 +218,86 @@ export default function DesktopSidebarRight() {
         </div>
       </div>
 
-      {/* 3. Promo Banner */}
-      <div className="w-full h-[155px] xl:h-[165px] bg-white rounded-xl border border-slate-200/90 shadow-xs p-3 flex items-center justify-between relative overflow-hidden group">
-        <div className="flex-1 z-10 flex flex-col justify-between h-full py-1">
-          <div>
-            <span className="text-[9px] font-black uppercase text-[#B71C1C] tracking-wider">
-              KARVIYAM
-            </span>
-            <h4 className="font-display font-black text-sm xl:text-base text-slate-900 leading-tight uppercase mt-0.5">
-              PREMIUM COLLECTION
-            </h4>
-            <p className="text-[10px] text-slate-500 font-medium mt-1">
-              Timeless styles for every occasion.
-            </p>
+      {/* 3. Dynamic Right Sidebar Banners (Connected to Admin Panel) */}
+      {sidebarBanners.length > 0 ? (
+        sidebarBanners.map((banner) => (
+          <div
+            key={banner.id}
+            onClick={() => navigate(banner.link || '/shop')}
+            className="w-full min-h-[155px] bg-white rounded-xl border border-slate-200/90 shadow-xs p-3 flex items-center justify-between gap-2.5 relative overflow-hidden group cursor-pointer hover:border-[#B71C1C] transition-colors"
+          >
+            <div className="flex-1 z-10 flex flex-col justify-between h-full py-0.5 min-w-0">
+              <div>
+                <span className="text-[9px] font-black uppercase text-[#B71C1C] tracking-wider block truncate">
+                  {banner.badgeText || 'KARVIYAM'}
+                </span>
+                <h4 className="font-display font-black text-sm xl:text-base text-slate-900 leading-tight uppercase mt-0.5 truncate" title={banner.title}>
+                  {banner.title}
+                </h4>
+                <p className="text-[10px] text-slate-500 font-medium mt-1 line-clamp-2" title={banner.description}>
+                  {banner.description || 'Timeless styles for every occasion.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="flex items-center gap-1 text-[11px] font-black text-[#B71C1C] uppercase tracking-wide hover:underline cursor-pointer mt-2"
+              >
+                <span>{banner.buttonText || 'EXPLORE NOW'}</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            <div className="w-[85px] xl:w-[95px] h-[140px] xl:h-[148px] shrink-0 rounded-lg overflow-hidden shadow-2xs relative bg-slate-50 flex items-center justify-center border border-slate-100">
+              <img
+                src={resolveImageUrl(banner.imageUrl || banner.imagePath)}
+                alt={banner.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600';
+                }}
+              />
+            </div>
+          </div>
+        ))
+      ) : (
+        /* Fallback Promo Banner */
+        <div 
+          onClick={() => navigate('/shop')}
+          className="w-full h-[155px] xl:h-[165px] bg-white rounded-xl border border-slate-200/90 shadow-xs p-3 flex items-center justify-between relative overflow-hidden group cursor-pointer"
+        >
+          <div className="flex-1 z-10 flex flex-col justify-between h-full py-1 min-w-0">
+            <div>
+              <span className="text-[9px] font-black uppercase text-[#B71C1C] tracking-wider">
+                KARVIYAM
+              </span>
+              <h4 className="font-display font-black text-sm xl:text-base text-slate-900 leading-tight uppercase mt-0.5">
+                PREMIUM COLLECTION
+              </h4>
+              <p className="text-[10px] text-slate-500 font-medium mt-1">
+                Timeless styles for every occasion.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="flex items-center gap-1 text-[11px] font-black text-[#B71C1C] uppercase tracking-wide hover:underline cursor-pointer"
+            >
+              <span>EXPLORE NOW</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
           </div>
 
-          <button
-            onClick={() => navigate('/shop')}
-            className="flex items-center gap-1 text-[11px] font-black text-[#B71C1C] uppercase tracking-wide hover:underline cursor-pointer"
-          >
-            <span>EXPLORE NOW</span>
-            <ArrowRight className="w-3 h-3" />
-          </button>
+          <div className="w-[85px] xl:w-[95px] h-[140px] xl:h-[148px] shrink-0 rounded-lg overflow-hidden shadow-2xs bg-slate-50">
+            <img
+              src="https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600"
+              alt="Premium Collection"
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
-
-        <div className="w-[85px] xl:w-[95px] h-[140px] xl:h-[148px] shrink-0 rounded-lg overflow-hidden shadow-2xs">
-          <img
-            src="https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600"
-            alt="Premium Collection"
-            className="w-full h-full object-cover"
-          />
-        </div>
-      </div>
+      )}
 
       {/* 4. Dynamic Benefits List Card (Connected to Admin Panel) */}
       <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-xs p-3 flex flex-col justify-between gap-3">

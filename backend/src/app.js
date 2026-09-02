@@ -23,6 +23,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
 const bannerRoutes = require('./routes/bannerRoutes');
 const promoCardRoutes = require('./routes/promoCardRoutes');
+const rightSidebarBannerRoutes = require('./routes/rightSidebarBannerRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const couponRoutes = require('./routes/couponRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
@@ -214,6 +215,7 @@ app.use('/api/wishlist', wishlistRoutes);
 
 app.use('/api/banners', bannerRoutes);
 app.use('/api/promo-cards', promoCardRoutes);
+app.use('/api/right-sidebar-banners', rightSidebarBannerRoutes);
 
 app.use('/api/contact', contactRoutes);
 
