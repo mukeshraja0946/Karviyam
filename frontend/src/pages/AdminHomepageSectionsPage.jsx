@@ -3,8 +3,10 @@ import { LayoutGrid, Eye, Power, Save, ArrowUp, ArrowDown, Sliders, CheckCircle2
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { broadcastSyncEvent } from '../services/api';
+import AdminFindYourPricePage from './AdminFindYourPricePage';
 
 export default function AdminHomepageSectionsPage() {
+  const [activeTab, setActiveTab] = useState('sections');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sections, setSections] = useState([]);
@@ -142,16 +144,47 @@ export default function AdminHomepageSectionsPage() {
         </div>
       </div>
 
-      {/* Info Banner */}
-      <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 p-4 rounded-2xl flex items-start gap-3 text-red-950">
-        <Sparkles className="w-5 h-5 text-[#B71C1C] shrink-0 mt-0.5" />
-        <div className="text-xs space-y-1">
-          <p className="font-bold text-slate-900">Single Source of Truth Configuration</p>
-          <p className="text-slate-600 font-medium">
-            Changes made here (Title, Visibility, Display Type: Horizontal Scroll vs Grid, and Order) automatically update both Desktop and Mobile homepages in real-time.
-          </p>
-        </div>
+      {/* Tab Selector */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('sections')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'sections'
+              ? 'bg-[#B71C1C] text-white shadow-xs'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
+          Featured Product Sections
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('find_your_price')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'find_your_price'
+              ? 'bg-[#B71C1C] text-white shadow-xs'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
+          Find Your Price Section
+        </button>
       </div>
+
+      {activeTab === 'find_your_price' ? (
+        <AdminFindYourPricePage isEmbedded={true} />
+      ) : (
+        <>
+          {/* Info Banner */}
+          <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 p-4 rounded-2xl flex items-start gap-3 text-red-950">
+            <Sparkles className="w-5 h-5 text-[#B71C1C] shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <p className="font-bold text-slate-900">Single Source of Truth Configuration</p>
+              <p className="text-slate-600 font-medium">
+                Changes made here (Title, Visibility, Display Type: Horizontal Scroll vs Grid, and Order) automatically update both Desktop and Mobile homepages in real-time.
+              </p>
+            </div>
+          </div>
 
       {/* Section List Cards */}
       <div className="space-y-5">
@@ -395,6 +428,8 @@ export default function AdminHomepageSectionsPage() {
           <span>Save All Homepage Section Configurations</span>
         </button>
       </div>
+        </>
+      )}
 
     </div>
   );

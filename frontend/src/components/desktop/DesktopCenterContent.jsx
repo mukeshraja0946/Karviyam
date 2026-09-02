@@ -12,6 +12,7 @@ import {
 import { useWishlist } from '../../context/WishlistContext';
 import api from '../../utils/api';
 import { resolveImageUrl, handleImageError } from '../../utils/imageUtils';
+import FindYourPrice from '../FindYourPrice';
 
 const CATEGORIES_DATA = [
   { id: 't-shirts', name: 'T-SHIRTS', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400', query: 'category=T-Shirts' },
@@ -589,6 +590,9 @@ export default function DesktopCenterContent() {
           )}
         </div>
       )}
+
+      {/* Find Your Price Section - Placed immediately BELOW main homepage hero banner */}
+      <FindYourPrice />
 
       {/* 2. Offer Strip */}
       <div className="w-full min-h-[64px] bg-white rounded-xl border border-slate-200/90 shadow-xs px-3 xl:px-5 py-2 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2">

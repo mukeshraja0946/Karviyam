@@ -25,6 +25,7 @@ import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import api from '../../utils/api';
 import { resolveImageUrl, handleImageError } from '../../utils/imageUtils';
+import FindYourPrice from '../FindYourPrice';
 import toast from 'react-hot-toast';
 
 export default function MobileHomePage() {
@@ -675,24 +676,8 @@ export default function MobileHomePage() {
       </div>
 
       {/* 10. "FIND YOUR PRICE" SECTION */}
-      <div className="px-3 py-3 my-1 bg-white border-y border-slate-100">
-        <h3 className="font-display font-black text-base text-slate-900 tracking-tight mb-2.5">
-          Find Your Price
-        </h3>
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-          {priceChips.map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              onClick={() => navigate(chip.link || `/shop?maxPrice=${chip.maxPrice || 999}`)}
-              className={`px-4 py-2 rounded-full text-xs font-black tracking-wide shrink-0 border cursor-pointer active:scale-95 transition-all shadow-2xs bg-white ${
-                chip.bgClass ? chip.bgClass.replace(/bg-[^\s]+/, '') : 'text-rose-900 border-rose-200'
-              }`}
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
+      <div className="px-1">
+        <FindYourPrice />
       </div>
 
       {/* 11. "CONTINUE SHOPPING" SECTION */}
