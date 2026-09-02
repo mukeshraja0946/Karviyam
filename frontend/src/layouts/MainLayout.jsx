@@ -54,15 +54,6 @@ export default function MainLayout() {
 
   // When Maintenance Mode is ON for non-admin visitors OR explicit /maintenance route:
   if ((maintenanceMode && !isAdmin) || currentPath === '/maintenance' || currentPath === '/maintenance.php') {
-    // If accessing login route, display ONLY the login box without Navbar or Footer!
-    if (isLoginRoute) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] px-4 py-12">
-          <Outlet />
-        </div>
-      );
-    }
-    // Otherwise show the Maintenance Page
     return <MaintenancePage />;
   }
 

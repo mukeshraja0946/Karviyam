@@ -78,11 +78,16 @@ export default function App() {
               <Toaster position="top-right" />
               <Routes>
                 
+                {/* Standalone Maintenance & Auth Routes (Always accessible regardless of layout state) */}
+                <Route path="/maintenance" element={<MaintenancePage />} />
+                <Route path="/maintenance.php" element={<Navigate to="/maintenance" replace />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/admin/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+
                 {/* Main Customer App Routes */}
                 <Route element={<MainLayout />}>
                   <Route path="/" element={<HomePage />} />
-                  <Route path="/maintenance" element={<MaintenancePage />} />
-                  <Route path="/maintenance.php" element={<Navigate to="/maintenance" replace />} />
                   <Route path="/shop" element={<ShopPage />} />
                   <Route path="/category/:slug" element={<ShopPage />} />
                   <Route path="/product/:id" element={<ProductDetailPage />} />
@@ -90,9 +95,6 @@ export default function App() {
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/order-success" element={<OrderSuccessPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/admin/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/offers" element={<OffersPage />} />
                   <Route path="/subscribe/payment" element={<SubscriptionCheckoutPage />} />
