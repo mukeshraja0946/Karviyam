@@ -415,11 +415,11 @@ export default function AdminLayout() {
           {/* Admin User Profile Header */}
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-bold text-xs flex items-center justify-center shadow-xs">
-              {user?.fullName ? user.fullName[0].toUpperCase() : 'A'}
+              K
             </div>
             <div className="hidden sm:block text-left">
               <div className="text-xs font-bold text-slate-900 leading-tight">
-                {user?.fullName || 'Administrator'}
+                Karviyam Admin
               </div>
               <div className="text-[10px] font-semibold text-[#B71C1C]">
                 Super Admin

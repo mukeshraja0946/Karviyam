@@ -5,6 +5,35 @@ const pool = require('../config/db');
 const jwtConfig = require('../config/jwt');
 const ApiResponse = require('../utils/apiResponse');
 
+const ensureSingleKarviyamAdminAccount = async () => {
+  try {
+    // 1. Force name of all admin accounts to 'Karviyam Admin'
+    await pool.query(
+      "UPDATE users SET full_name = 'Karviyam Admin' WHERE LOWER(role) = 'admin' OR LOWER(email) IN ('vanakkam@karviyam.com', 'admin@karviyam.com')"
+    );
+
+    // 2. Demote any non-primary secondary accounts assigned as admin to 'customer'
+    await pool.query(
+      "UPDATE users SET role = 'customer' WHERE LOWER(role) = 'admin' AND LOWER(email) NOT IN ('vanakkam@karviyam.com', 'admin@karviyam.com')"
+    );
+
+    // 3. Ensure primary admin account exists in `users` table
+    const [existing] = await pool.query("SELECT * FROM users WHERE LOWER(email) = 'vanakkam@karviyam.com'");
+    if (!existing || existing.length === 0) {
+      const defaultHash = await bcrypt.hash('Karviyam@2026', 10);
+      await pool.query(
+        "INSERT INTO users (full_name, email, password, role) VALUES ('Karviyam Admin', 'vanakkam@karviyam.com', ?, 'admin')",
+        [defaultHash]
+      );
+    }
+  } catch (err) {
+    console.error('[authController] ensureSingleKarviyamAdminAccount error:', err.message);
+  }
+};
+
+// Run auto-cleanup on module load
+ensureSingleKarviyamAdminAccount();
+
 exports.checkAccount = async (req, res, next) => {
   try {
     const { identifier } = req.body || req.query || {};
@@ -26,7 +55,7 @@ exports.checkAccount = async (req, res, next) => {
         exists: true,
         email: u.email,
         phone: u.phone,
-        fullName: u.full_name
+        fullName: u.role === 'admin' || u.email === 'vanakkam@karviyam.com' ? 'Karviyam Admin' : u.full_name
       }, 'Account found'));
     }
 
@@ -38,6 +67,7 @@ exports.checkAccount = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
   try {
+    await ensureSingleKarviyamAdminAccount();
     const { email, identifier, password } = req.body || {};
     const inputId = email || identifier;
     if (!inputId || !password || !String(inputId).trim() || !String(password).trim()) {
