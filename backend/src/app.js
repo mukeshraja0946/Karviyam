@@ -38,6 +38,7 @@ const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const emailMarketingRoutes = require('./routes/emailMarketingRoutes');
 const homepageSectionRoutes = require('./routes/homepageSectionRoutes');
 const bankAccountRoutes = require('./routes/bankAccountRoutes');
+const shopFilterRoutes = require('./routes/shopFilterRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
 const settingController = require('./controllers/settingController');
@@ -230,6 +231,9 @@ app.post('/api/customer/contact', contactController.submitContact);
 app.use('/api/coupons', couponRoutes);
 
 app.use('/api/notifications', notificationRoutes);
+
+app.use('/api/shop', shopFilterRoutes);
+app.use('/api/admin/shop-filters', shopFilterRoutes);
 
 const sidebarController = require('./controllers/sidebarController');
 const { optionalToken } = require('./middleware/authMiddleware');

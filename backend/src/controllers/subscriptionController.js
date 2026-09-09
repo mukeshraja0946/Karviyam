@@ -277,102 +277,19 @@ exports.getSubscriptionById = async (req, res, next) => {
   }
 };
 
+const paymentController = require('./paymentController');
+
 // 4. Create Direct UPI Payment Request
 exports.createSubscriptionPayment = async (req, res, next) => {
-  try {
-    const { subscriptionId, upiId } = req.body;
-    if (!subscriptionId) {
-      return res.status(400).json(ApiResponse.error('Subscription ID is required.'));
-    }
-
-    const [rows] = await pool.query('SELECT * FROM subscriptions WHERE id = ? LIMIT 1', [subscriptionId]);
-    if (rows.length === 0) {
-      return res.status(404).json(ApiResponse.error('Subscription record not found.'));
-    }
-
-    const sub = rows[0];
-    const settings = await getSubscriptionSettingsFromDb();
-    const bank = await getAdminBankAccountFromDb();
-
-    if (!settings.enabled) {
-      return res.status(403).json(ApiResponse.error('Subscription system is currently disabled by Admin.'));
-    }
-
-    const cleanUpi = upiId ? String(upiId).trim() : sub.upi_vpa;
-    if (!cleanUpi || !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(cleanUpi)) {
-      return res.status(400).json(ApiResponse.error('Invalid VPA / UPI ID format. Example: user@upi or mobile@ybl'));
-    }
-
-    const txnRef = sub.transaction_reference || `TXN-SUB-${sub.id}-${Math.floor(100000 + Math.random() * 900000)}`;
-    const upiUri = `upi://pay?pa=${encodeURIComponent(bank.upiId)}&pn=${encodeURIComponent(bank.accountHolder)}&am=${settings.price}&cu=INR&tn=${encodeURIComponent('KARVIYAM VIP Sub #' + sub.id + ' Ref:' + txnRef)}&tr=${txnRef}`;
-
-    await pool.query(
-      `UPDATE subscriptions 
-       SET payment_method = 'UPI', 
-           upi_vpa = ?, 
-           transaction_reference = ?, 
-           amount = ?, 
-           payment_status = 'PENDING', 
-           status = 'PENDING', 
-           verification_status = 'PENDING_VERIFICATION',
-           updated_at = NOW() 
-       WHERE id = ?`,
-      [cleanUpi, txnRef, settings.price, sub.id]
-    );
-
-    return res.status(200).json(ApiResponse.success({
-      subscriptionId: sub.id,
-      email: sub.email,
-      amount: settings.price,
-      currency: settings.currency || 'INR',
-      paymentMethod: 'UPI',
-      upiVpa: cleanUpi,
-      transactionReference: txnRef,
-      receivingUpiId: bank.upiId,
-      receivingAccountHolder: bank.accountHolder,
-      receivingBankName: bank.bankName,
-      upiUri: upiUri
-    }, 'UPI Collect Payment Request sent. Please approve in your UPI app.'));
-  } catch (err) {
-    next(err);
-  }
+  req.body.type = 'SUBSCRIPTION';
+  req.body.id = req.body.subscriptionId || req.body.id;
+  return paymentController.createUpiPaymentRequest(req, res, next);
 };
 
 // 5. Get Live Subscription Payment Status (For Frontend Polling)
 exports.getPaymentStatus = async (req, res, next) => {
-  try {
-    await ensureSubscriptionTables();
-    const { id } = req.params;
-    const settings = await getSubscriptionSettingsFromDb();
-
-    const [rows] = await pool.query('SELECT * FROM subscriptions WHERE id = ? LIMIT 1', [id]);
-    if (rows.length === 0) {
-      return res.status(404).json(ApiResponse.error('Subscription not found.'));
-    }
-
-    const sub = rows[0];
-    const isPaid = sub.status === 'ACTIVE' && sub.payment_status === 'SUCCESS';
-
-    return res.status(200).json(ApiResponse.success({
-      id: sub.id,
-      email: sub.email,
-      status: sub.status,
-      paymentStatus: sub.payment_status,
-      verificationStatus: sub.verification_status || 'UNVERIFIED',
-      amount: parseFloat(sub.amount || settings.price),
-      currency: sub.currency || settings.currency,
-      paymentMethod: 'UPI',
-      upiVpa: sub.upi_vpa || '',
-      transactionReference: sub.transaction_reference || '',
-      offerCouponCode: isPaid ? (sub.offer_coupon_code || settings.offerCouponCode) : '',
-      offerTitle: isPaid ? (sub.offer_title || settings.offerTitle) : '',
-      hasActiveOffer: isPaid && Boolean(sub.offer_coupon_code || settings.offerCouponCode),
-      paidAt: sub.paid_at,
-      verifiedAt: sub.verified_at
-    }, 'Subscription payment status fetched.'));
-  } catch (err) {
-    next(err);
-  }
+  req.query.subscriptionId = req.params.id || req.query.id || req.params.subscriptionId;
+  return paymentController.getPaymentStatus(req, res, next);
 };
 
 // 6. Server-Side Verify UPI Payment & Activate Subscription (Idempotent Webhook / API)

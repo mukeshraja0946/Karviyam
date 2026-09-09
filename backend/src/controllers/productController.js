@@ -234,112 +234,351 @@ const mapProductRowToDTO = async (p) => {
   };
 };
 
+const buildProductFilterConditions = (queryParams) => {
+  const {
+    keyword,
+    category,
+    categories,
+    categoryId,
+    brand,
+    brands,
+    brandId,
+    minPrice,
+    maxPrice,
+    priceRange,
+    priceRanges,
+    sizes,
+    size,
+    colors,
+    color,
+    colour,
+    inStock,
+    availability,
+    gender,
+    type,
+    isFeatured,
+    isTrending,
+    isBestSeller,
+    isNewArrival,
+    rating
+  } = queryParams;
+
+  let conditions = ['(p.is_active = 1 OR p.is_active IS NULL)'];
+  let params = [];
+
+  // Keyword search
+  if (keyword && keyword.trim()) {
+    const term = `%${keyword.trim()}%`;
+    conditions.push('(p.name LIKE ? OR p.description LIKE ? OR p.brand LIKE ? OR p.sku LIKE ? OR c.name LIKE ?)');
+    params.push(term, term, term, term, term);
+  }
+
+  // 1. CATEGORY FILTER (OR logic within categories group)
+  const rawCatList = categories || category || categoryId;
+  if (rawCatList && rawCatList !== 'ALL' && rawCatList !== 'all') {
+    const catArray = (Array.isArray(rawCatList) ? rawCatList : String(rawCatList).split(','))
+      .map(c => c.trim())
+      .filter(Boolean);
+
+    if (catArray.length > 0) {
+      const catSubClauses = [];
+      catArray.forEach(cat => {
+        if (!isNaN(cat)) {
+          catSubClauses.push('(p.category_id = ? OR p.subcategory_id = ?)');
+          params.push(cat, cat);
+        } else {
+          const catLower = cat.toLowerCase();
+          if (catLower === 'men') {
+            catSubClauses.push("(LOWER(p.gender) = 'men' OR LOWER(c.name) LIKE '%men%' OR LOWER(p.type) LIKE '%men%' OR LOWER(p.name) LIKE '%shirt%' OR LOWER(p.name) LIKE '%polo%' OR LOWER(p.name) LIKE '%kurta%') AND LOWER(p.name) NOT LIKE '%saree%' AND LOWER(p.name) NOT LIKE '%women%'");
+          } else if (catLower === 'women') {
+            catSubClauses.push("(LOWER(p.gender) = 'women' OR LOWER(c.name) LIKE '%women%' OR LOWER(p.type) LIKE '%women%' OR LOWER(p.name) LIKE '%saree%' OR LOWER(p.name) LIKE '%lehenga%' OR LOWER(p.name) LIKE '%dress%')");
+          } else {
+            const term = `%${cat}%`;
+            catSubClauses.push('(LOWER(c.name) LIKE LOWER(?) OR LOWER(p.type) LIKE LOWER(?) OR LOWER(p.category) LIKE LOWER(?) OR LOWER(p.name) LIKE LOWER(?))');
+            params.push(term, term, term, term);
+          }
+        }
+      });
+      if (catSubClauses.length > 0) {
+        conditions.push(`(${catSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  // 2. BRAND FILTER (OR logic within brands group)
+  const rawBrandList = brands || brand || brandId;
+  if (rawBrandList && rawBrandList !== 'ALL' && rawBrandList !== 'all') {
+    const brandArray = (Array.isArray(rawBrandList) ? rawBrandList : String(rawBrandList).split(','))
+      .map(b => b.trim())
+      .filter(Boolean);
+
+    if (brandArray.length > 0) {
+      const brandSubClauses = [];
+      brandArray.forEach(brd => {
+        if (!isNaN(brd)) {
+          brandSubClauses.push('p.brand_id = ?');
+          params.push(brd);
+        } else {
+          const term = `%${brd}%`;
+          brandSubClauses.push('(LOWER(b.name) LIKE LOWER(?) OR LOWER(p.brand) LIKE LOWER(?))');
+          params.push(term, term);
+        }
+      });
+      if (brandSubClauses.length > 0) {
+        conditions.push(`(${brandSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  // 3. PRICE RANGE FILTER (OR logic within price ranges)
+  const rawPriceRanges = priceRanges || priceRange;
+  if (rawPriceRanges) {
+    const rangeArray = (Array.isArray(rawPriceRanges) ? rawPriceRanges : String(rawPriceRanges).split(','))
+      .map(r => r.trim())
+      .filter(Boolean);
+
+    if (rangeArray.length > 0) {
+      const priceSubClauses = [];
+      rangeArray.forEach(rKey => {
+        if (rKey === 'under_499' || rKey === 'under-499' || rKey === '0-499') {
+          priceSubClauses.push('p.price < 499');
+        } else if (rKey === '500_999' || rKey === '500-999') {
+          priceSubClauses.push('(p.price >= 500 AND p.price <= 999)');
+        } else if (rKey === '1000_1999' || rKey === '1000-1999') {
+          priceSubClauses.push('(p.price >= 1000 AND p.price <= 1999)');
+        } else if (rKey === '2000_2999' || rKey === '2000-2999') {
+          priceSubClauses.push('(p.price >= 2000 AND p.price <= 2999)');
+        } else if (rKey === 'above_3000' || rKey === 'above-3000' || rKey === '3000+') {
+          priceSubClauses.push('p.price > 3000');
+        }
+      });
+      if (priceSubClauses.length > 0) {
+        conditions.push(`(${priceSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  if (minPrice && !isNaN(minPrice)) {
+    conditions.push('p.price >= ?');
+    params.push(parseFloat(minPrice));
+  }
+  if (maxPrice && !isNaN(maxPrice)) {
+    conditions.push('p.price <= ?');
+    params.push(parseFloat(maxPrice));
+  }
+
+  // 4. SIZE FILTER (OR logic within sizes group)
+  const rawSizes = sizes || size;
+  if (rawSizes) {
+    const sizeArray = (Array.isArray(rawSizes) ? rawSizes : String(rawSizes).split(','))
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    if (sizeArray.length > 0) {
+      const sizeSubClauses = [];
+      sizeArray.forEach(sz => {
+        const term = `%${sz}%`;
+        sizeSubClauses.push(`(
+          EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id AND LOWER(pv.size) = LOWER(?))
+          OR LOWER(p.size) LIKE LOWER(?)
+          OR LOWER(p.sizes) LIKE LOWER(?)
+        )`);
+        params.push(sz, term, term);
+      });
+      if (sizeSubClauses.length > 0) {
+        conditions.push(`(${sizeSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  // 5. COLOUR FILTER (OR logic within colors group)
+  const rawColors = colors || color || colour;
+  if (rawColors) {
+    const colorArray = (Array.isArray(rawColors) ? rawColors : String(rawColors).split(','))
+      .map(c => c.trim())
+      .filter(Boolean);
+
+    if (colorArray.length > 0) {
+      const colorSubClauses = [];
+      colorArray.forEach(col => {
+        const term = `%${col}%`;
+        colorSubClauses.push(`(
+          EXISTS (SELECT 1 FROM product_colors pc WHERE pc.product_id = p.id AND LOWER(pc.color_name) LIKE LOWER(?))
+          OR EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id AND LOWER(pv.color) LIKE LOWER(?))
+          OR LOWER(p.color) LIKE LOWER(?)
+          OR LOWER(p.color_variant_images) LIKE LOWER(?)
+        )`);
+        params.push(term, term, term, term);
+      });
+      if (colorSubClauses.length > 0) {
+        conditions.push(`(${colorSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  // 6. AVAILABILITY FILTER (In Stock)
+  if (inStock === 'true' || inStock === '1' || availability === 'in_stock' || availability === 'true') {
+    conditions.push(`(
+      (p.stock_quantity IS NOT NULL AND p.stock_quantity > 0)
+      OR (p.stock IS NOT NULL AND p.stock > 0)
+      OR EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id AND pv.stock > 0)
+    )`);
+  }
+
+  // Gender & Type
+  if (gender && gender !== 'All' && gender !== 'ALL') {
+    conditions.push('LOWER(p.gender) = LOWER(?)');
+    params.push(gender);
+  }
+  if (type && type !== 'All' && type !== 'ALL') {
+    conditions.push('LOWER(p.type) = LOWER(?)');
+    params.push(type);
+  }
+  if (rating && !isNaN(rating)) {
+    conditions.push('p.rating >= ?');
+    params.push(parseFloat(rating));
+  }
+
+  if (isFeatured === 'true' || isFeatured === '1') conditions.push('p.is_featured = 1');
+  if (isTrending === 'true' || isTrending === '1') conditions.push('p.is_trending = 1');
+  if (isBestSeller === 'true' || isBestSeller === '1') conditions.push('p.is_best_seller = 1');
+  if (isNewArrival === 'true' || isNewArrival === '1') conditions.push('p.is_new_arrival = 1');
+
+  return { conditions, params };
+};
+
 exports.getProducts = async (req, res, next) => {
   try {
     const {
-      keyword, categoryId, category, subcategoryId, brandId, gender, type,
-      minPrice, maxPrice, rating, isFeatured, isTrending, isBestSeller, isNewArrival,
-      sortBy = 'id', sortDir = 'desc', page = 0, size = 50
+      sortBy,
+      sort,
+      sortDir = 'desc',
+      page = 0,
+      size = 250,
+      limit: reqLimit
     } = req.query;
 
-    const targetCategory = categoryId || category;
+    const { conditions, params } = buildProductFilterConditions(req.query);
 
-    let conditions = ['1=1'];
-    let params = [];
-
-    if (keyword && keyword.trim()) {
-      conditions.push('(p.name LIKE ? OR p.description LIKE ? OR p.brand LIKE ? OR p.sku LIKE ?)');
-      const term = `%${keyword.trim()}%`;
-      params.push(term, term, term, term);
+    // Dynamic sorting
+    const activeSort = sortBy || sort || 'featured';
+    let orderClause = 'ORDER BY p.is_featured DESC, p.id DESC';
+    if (activeSort === 'price_asc' || activeSort === 'price_low_high') {
+      orderClause = 'ORDER BY p.price ASC, p.id DESC';
+    } else if (activeSort === 'price_desc' || activeSort === 'price_high_low') {
+      orderClause = 'ORDER BY p.price DESC, p.id DESC';
+    } else if (activeSort === 'rating') {
+      orderClause = 'ORDER BY p.rating DESC, p.id DESC';
+    } else if (activeSort === 'newest') {
+      orderClause = 'ORDER BY p.id DESC';
+    } else if (activeSort === 'best_selling') {
+      orderClause = 'ORDER BY p.is_best_seller DESC, p.id DESC';
     }
 
-    if (targetCategory && targetCategory !== 'ALL' && targetCategory !== 'all') {
-      if (!isNaN(targetCategory)) {
-        conditions.push('(p.category_id = ? OR p.subcategory_id = ?)');
-        params.push(targetCategory, targetCategory);
-      } else {
-        const catLower = targetCategory.toLowerCase();
-        if (catLower === 'men') {
-          conditions.push("(LOWER(p.gender) = 'men' OR LOWER(c.name) LIKE '%men%' OR LOWER(p.type) LIKE '%men%' OR LOWER(p.name) LIKE '%shirt%' OR LOWER(p.name) LIKE '%polo%' OR LOWER(p.name) LIKE '%kurta%') AND LOWER(p.name) NOT LIKE '%saree%' AND LOWER(p.name) NOT LIKE '%women%'");
-        } else if (catLower === 'women') {
-          conditions.push("(LOWER(p.gender) = 'women' OR LOWER(c.name) LIKE '%women%' OR LOWER(p.type) LIKE '%women%' OR LOWER(p.name) LIKE '%saree%' OR LOWER(p.name) LIKE '%lehenga%' OR LOWER(p.name) LIKE '%dress%')");
-        } else {
-          const catTerm = `%${targetCategory}%`;
-          conditions.push('(c.name LIKE ? OR p.type LIKE ? OR p.gender LIKE ? OR p.name LIKE ?)');
-          params.push(catTerm, catTerm, catTerm, catTerm);
-        }
-      }
-    }
+    const pageSize = parseInt(reqLimit || size, 10) > 0 ? parseInt(reqLimit || size, 10) : 250;
+    const pageNum = parseInt(page, 10) > 0 ? parseInt(page, 10) : 0;
+    const offset = pageNum * pageSize;
 
-    if (subcategoryId) {
-      conditions.push('p.subcategory_id = ?');
-      params.push(subcategoryId);
-    }
+    // 1. Get Count
+    const countSql = `
+      SELECT COUNT(DISTINCT p.id) as totalCount
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE ${conditions.join(' AND ')}
+    `;
+    const [countRows] = await pool.query(countSql, params);
+    const totalCount = countRows[0]?.totalCount || 0;
 
-    if (brandId) {
-      conditions.push('p.brand_id = ?');
-      params.push(brandId);
-    }
-
-    if (gender && gender !== 'All' && gender !== 'ALL') {
-      conditions.push('p.gender = ?');
-      params.push(gender);
-    }
-
-    if (type && type !== 'All' && type !== 'ALL') {
-      conditions.push('p.type = ?');
-      params.push(type);
-    }
-
-    if (minPrice) {
-      conditions.push('p.price >= ?');
-      params.push(parseFloat(minPrice));
-    }
-
-    if (maxPrice) {
-      conditions.push('p.price <= ?');
-      params.push(parseFloat(maxPrice));
-    }
-
-    if (rating) {
-      conditions.push('p.rating >= ?');
-      params.push(parseFloat(rating));
-    }
-
-    if (isFeatured === 'true' || isFeatured === '1') {
-      conditions.push('p.is_featured = 1');
-    }
-    if (isTrending === 'true' || isTrending === '1') {
-      conditions.push('p.is_trending = 1');
-    }
-    if (isBestSeller === 'true' || isBestSeller === '1') {
-      conditions.push('p.is_best_seller = 1');
-    }
-    if (isNewArrival === 'true' || isNewArrival === '1') {
-      conditions.push('p.is_new_arrival = 1');
-    }
-
-    const sortColumn = ['price', 'rating', 'name', 'id'].includes(sortBy) ? `p.${sortBy}` : 'p.id';
-    const sortDirection = sortDir.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-
-    const limit = parseInt(size) > 0 ? parseInt(size) : 50;
-    const offset = parseInt(page) > 0 ? parseInt(page) * limit : 0;
-
+    // 2. Fetch Products
     const sql = `
       SELECT p.*, c.name as category_name, b.name as brand_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN brands b ON p.brand_id = b.id
       WHERE ${conditions.join(' AND ')}
-      ORDER BY ${sortColumn} ${sortDirection}
-      LIMIT ${limit} OFFSET ${offset}
+      ${orderClause}
+      LIMIT ${pageSize} OFFSET ${offset}
     `;
 
     const [rows] = await pool.query(sql, params);
-
     const productDTOs = await Promise.all(rows.map(mapProductRowToDTO));
 
-    return res.status(200).json(ApiResponse.success(productDTOs, 'Products retrieved successfully'));
+    return res.status(200).json(ApiResponse.success({
+      products: productDTOs,
+      content: productDTOs,
+      data: productDTOs,
+      totalCount,
+      totalElements: totalCount,
+      page: pageNum,
+      pageSize
+    }, 'Products retrieved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getFilterOptions = async (req, res, next) => {
+  try {
+    // 1. Dynamic Categories from DB
+    const [catRows] = await pool.query(`
+      SELECT DISTINCT c.id, c.name, COUNT(p.id) as count
+      FROM categories c
+      JOIN products p ON (p.category_id = c.id OR p.subcategory_id = c.id)
+      WHERE p.is_active = 1 OR p.is_active IS NULL
+      GROUP BY c.id, c.name
+      ORDER BY count DESC, c.name ASC
+    `);
+
+    // 2. Dynamic Brands from DB
+    const [brandRowsFromTable] = await pool.query(`
+      SELECT DISTINCT b.id, b.name, COUNT(p.id) as count
+      FROM brands b
+      JOIN products p ON p.brand_id = b.id
+      WHERE p.is_active = 1 OR p.is_active IS NULL
+      GROUP BY b.id, b.name
+      ORDER BY count DESC, b.name ASC
+    `);
+
+    const [brandRowsFromProductString] = await pool.query(`
+      SELECT DISTINCT brand as name, COUNT(id) as count
+      FROM products
+      WHERE brand IS NOT NULL AND brand != '' AND (is_active = 1 OR is_active IS NULL)
+      GROUP BY brand
+      ORDER BY count DESC, brand ASC
+    `);
+
+    const brandMap = new Map();
+    brandRowsFromTable.forEach(b => brandMap.set(b.name.toUpperCase(), { id: b.id, name: b.name, count: b.count }));
+    brandRowsFromProductString.forEach(b => {
+      const key = b.name.toUpperCase();
+      if (!brandMap.has(key)) {
+        brandMap.set(key, { id: b.name, name: b.name, count: b.count });
+      }
+    });
+    const brandList = Array.from(brandMap.values());
+
+    return res.status(200).json(ApiResponse.success({
+      categories: catRows,
+      brands: brandList,
+      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+      colors: [
+        { id: 'black', name: 'Black', hex: '#000000' },
+        { id: 'red', name: 'Red', hex: '#B71C1C' },
+        { id: 'blue', name: 'Blue', hex: '#1D4ED8' },
+        { id: 'green', name: 'Green', hex: '#15803D' },
+        { id: 'beige', name: 'Beige', hex: '#F5F5DC' },
+        { id: 'brown', name: 'Brown', hex: '#78350F' },
+        { id: 'white', name: 'White', hex: '#FFFFFF' }
+      ],
+      priceRanges: [
+        { id: 'under_499', label: 'Under ₹499', min: 0, max: 499 },
+        { id: '500_999', label: '₹500 – ₹999', min: 500, max: 999 },
+        { id: '1000_1999', label: '₹1,000 – ₹1,999', min: 1000, max: 1999 },
+        { id: '2000_2999', label: '₹2,000 – ₹2,999', min: 2000, max: 2999 },
+        { id: 'above_3000', label: 'Above ₹3,000', min: 3000, max: 999999 }
+      ]
+    }, 'Filter options fetched successfully'));
   } catch (err) {
     next(err);
   }

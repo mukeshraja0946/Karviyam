@@ -56,66 +56,55 @@ export default function Navbar() {
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
 
   // Customer Notifications System
-  const defaultCustomerNotifs = [
-    {
-      id: 1,
-      title: "Order Confirmed! 🛍️",
-      description: "Your order #ORD-9821 has been placed successfully. Track your shipment live.",
-      time: "10m ago",
-      read: false,
-      link: "/cart",
-      type: "order"
-    },
-    {
-      id: 2,
-      title: "Festive Sale Live! 🎉",
-      description: "Up to 60% OFF on High-Street Wear & Fine Jewellery. Use code KARVIYAM25.",
-      time: "2h ago",
-      read: false,
-      link: "/shop",
-      type: "offer"
-    },
-    {
-      id: 3,
-      title: "Customer Support Reply 🎧",
-      description: "Karviyam Support Team has replied to your inquiry.",
-      time: "1d ago",
-      read: false,
-      link: "/contact",
-      type: "support"
-    }
-  ];
-
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState(() => {
-    try {
-      const saved = localStorage.getItem('karviyam_customer_notifications');
-      return saved ? JSON.parse(saved) : defaultCustomerNotifs;
-    } catch (e) {
-      return defaultCustomerNotifs;
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!user) {
+      setNotifications([]);
+      setUnreadNotifCount(0);
+      return;
     }
-  });
+    try {
+      const res = await api.get('/notifications');
+      const data = res.data?.data || res.data || {};
+      const list = Array.isArray(data.notifications) ? data.notifications : (Array.isArray(data) ? data : []);
+      const unread = data.unreadCount !== undefined ? data.unreadCount : list.filter(n => !n.isRead).length;
 
-  const safeNotifs = Array.isArray(notifications) ? notifications : [];
-  const unreadNotifCount = safeNotifs.filter(n => !n.read).length;
+      setNotifications(list);
+      setUnreadNotifCount(unread);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  }, [user]);
 
-  const markAllNotifsRead = () => {
-    const updated = notifications.map(n => ({ ...n, read: true }));
-    setNotifications(updated);
-    localStorage.setItem('karviyam_customer_notifications', JSON.stringify(updated));
+  useEffect(() => {
+    fetchNotifications();
+    window.addEventListener('karviyam_notifications_updated', fetchNotifications);
+    return () => window.removeEventListener('karviyam_notifications_updated', fetchNotifications);
+  }, [fetchNotifications]);
+
+  const markAllNotifsRead = async () => {
+    if (!user) return;
+    try {
+      await api.patch('/notifications/read-all').catch(() => api.put('/notifications/read-all'));
+      fetchNotifications();
+    } catch (err) {
+      console.error('Error marking all read:', err);
+    }
   };
 
-  const markNotifRead = (id, link) => {
-    const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
-    setNotifications(updated);
-    localStorage.setItem('karviyam_customer_notifications', JSON.stringify(updated));
-    setNotifOpen(false);
-    if (link) navigate(link);
-  };
-
-  const clearAllNotifs = () => {
-    setNotifications([]);
-    localStorage.setItem('karviyam_customer_notifications', JSON.stringify([]));
+  const markNotifRead = async (id, link) => {
+    if (!user) return;
+    try {
+      await api.patch(`/notifications/${id}/read`).catch(() => api.put(`/notifications/${id}/read`));
+      fetchNotifications();
+      setNotifOpen(false);
+      if (link) navigate(link);
+    } catch (err) {
+      console.error('Error marking notification read:', err);
+    }
   };
 
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
@@ -575,20 +564,22 @@ export default function Navbar() {
                             key={n.id}
                             onClick={() => markNotifRead(n.id, n.link)}
                             className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
-                              n.read ? 'bg-slate-50/60 border-slate-100 opacity-75' : 'bg-rose-50/40 border-rose-100 shadow-2xs'
+                              n.isRead ? 'bg-slate-50/60 border-slate-100 opacity-75' : 'bg-rose-50/40 border-rose-100 shadow-2xs'
                             }`}
                           >
                             <div className="w-8 h-8 rounded-full bg-red-100 text-[#B71C1C] flex items-center justify-center shrink-0 text-sm font-bold mt-0.5">
-                              {n.type === 'order' ? '🛍️' : n.type === 'offer' ? '🎉' : '🎧'}
+                              {n.type === 'PROMOTION' ? '🎉' : n.type === 'ORDER' ? '🛍️' : '🔔'}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <h5 className="text-xs font-bold text-slate-900 truncate">{n.title}</h5>
-                                <span className="text-[9.5px] text-slate-400 font-medium shrink-0 ml-2">{n.time}</span>
+                                <span className="text-[9.5px] text-slate-400 font-medium shrink-0 ml-2">
+                                  {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : ''}
+                                </span>
                               </div>
-                              <p className="text-[11px] text-slate-600 leading-snug mt-0.5">{n.description}</p>
+                              <p className="text-[11px] text-slate-600 leading-snug mt-0.5">{n.message || n.description}</p>
                             </div>
-                            {!n.read && (
+                            {!n.isRead && (
                               <span className="w-2 h-2 rounded-full bg-[#B71C1C] shrink-0 mt-2" />
                             )}
                           </div>

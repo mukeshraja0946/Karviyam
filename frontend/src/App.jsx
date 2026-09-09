@@ -67,6 +67,8 @@ import AdminFindYourPricePage from './pages/AdminFindYourPricePage';
 import AdminWhyShopPage from './pages/AdminWhyShopPage';
 import AdminBankAccountPage from './pages/AdminBankAccountPage';
 import AdminSidebarPage from './pages/AdminSidebarPage';
+import AdminShopFiltersPage from './pages/AdminShopFiltersPage';
+import AdminNotificationsPage from './pages/AdminNotificationsPage';
 
 export default function App() {
   return (
@@ -128,6 +130,8 @@ export default function App() {
                     <Route path="/admin/mail" element={<AdminEmailMarketingPage />} />
                     <Route path="/admin/banners" element={<AdminBannersPage />} />
                     <Route path="/admin/sidebar" element={<AdminSidebarPage />} />
+                    <Route path="/admin/shop-filters" element={<AdminShopFiltersPage />} />
+                    <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
                     <Route path="/admin/promo-cards" element={<AdminPromoCardsPage />} />
                     <Route path="/admin/right-sidebar-banners" element={<AdminRightSidebarBannersPage />} />
                     <Route path="/admin/right-sidebar-promo-card" element={<AdminRightSidebarPromoCardPage />} />

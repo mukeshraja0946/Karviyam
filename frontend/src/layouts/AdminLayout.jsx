@@ -184,6 +184,8 @@ export default function AdminLayout() {
       title: 'Marketing & Homepage',
       icon: Megaphone,
       subItems: [
+        { name: 'Shop Filters Management', path: '/admin/shop-filters' },
+        { name: 'Customer Notifications', path: '/admin/notifications' },
         { name: 'VIP Subscriptions', path: '/admin/subscriptions' },
         { name: 'Storefront Sidebar Management', path: '/admin/sidebar' },
         { name: 'Homepage Sections', path: '/admin/homepage-sections' },

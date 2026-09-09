@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, ShoppingBag, ArrowRight, FileText, AlertTriangle, RefreshCw, Loader2, Clock, CheckCircle } from 'lucide-react';
+import { CheckCircle2, ShoppingBag, ArrowRight, FileText, AlertTriangle, RefreshCw, Loader2, Clock, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import InvoiceModal from '../components/InvoiceModal';
@@ -14,21 +14,17 @@ export default function OrderSuccessPage() {
 
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState(passedOrder || null);
+  const [paymentRecordStatus, setPaymentRecordStatus] = useState(null);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
-  
-  const [utrNumber, setUtrNumber] = useState('');
-  const [verifying, setVerifying] = useState(false);
+  const pollingRef = useRef(null);
 
-  useEffect(() => {
-    if (orderIdFromUrl) {
-      fetchOrderDetails(orderIdFromUrl);
-    } else {
+  const fetchOrderDetails = useCallback(async (idToFetch, isSilent = false) => {
+    if (!idToFetch) {
       setLoading(false);
+      return;
     }
-  }, [orderIdFromUrl]);
+    if (!isSilent) setLoading(true);
 
-  const fetchOrderDetails = async (idToFetch) => {
-    setLoading(true);
     try {
       const cleanId = String(idToFetch).replace(/\D/g, '') || idToFetch;
       const res = await api.get(`/orders/${cleanId}`).catch(() => null);
@@ -37,60 +33,30 @@ export default function OrderSuccessPage() {
       if (data && data.id) {
         setOrder(data);
       }
+
+      // Also check payment status endpoint
+      const pmtRes = await api.get(`/payments/status?orderId=${cleanId}`).catch(() => null);
+      const pmtData = pmtRes?.data?.data || pmtRes?.data;
+      if (pmtData && pmtData.status) {
+        setPaymentRecordStatus(pmtData.status);
+      }
     } catch (e) {
       console.error('Failed to load order details:', e);
     } finally {
+      if (!isSilent) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (orderIdFromUrl) {
+      fetchOrderDetails(orderIdFromUrl);
+    } else {
       setLoading(false);
     }
-  };
+  }, [orderIdFromUrl, fetchOrderDetails]);
 
-  const handleVerifyUpiPayment = async () => {
-    if (!order || verifying) return;
-
-    if (!utrNumber.trim()) {
-      toast.error('Please enter your 12-digit UPI UTR / Reference number from your payment app.');
-      return;
-    }
-
-    setVerifying(true);
-    toast.loading('Verifying payment with backend...', { id: 'order-verify-toast' });
-
-    try {
-      const res = await api.post('/orders/verify-payment', {
-        orderId: order.id,
-        utrNumber: utrNumber.trim(),
-        paidAmount: order.totalAmount
-      });
-
-      const resData = res?.data ? res.data : res;
-
-      if (resData?.success) {
-        toast.success('UPI Payment verified successfully! Order Confirmed! 🎉', { id: 'order-verify-toast' });
-        await fetchOrderDetails(order.id);
-      } else {
-        toast.error(resData?.message || 'Payment verification pending. Complete transfer in your UPI app.', { id: 'order-verify-toast' });
-      }
-    } catch (err) {
-      const errMsg = err.response?.data?.message || err.message || 'Error verifying UPI payment.';
-      toast.error(errMsg, { id: 'order-verify-toast' });
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center font-sans">
-        <Loader2 className="w-10 h-10 text-[#B71C1C] animate-spin mb-3" />
-        <h3 className="font-bold text-slate-800 text-sm">Verifying Order Payment Status...</h3>
-      </div>
-    );
-  }
-
-  // ----------------------------------------------------
-  // VERIFICATION LOGIC: Must be verified by backend database!
-  // ----------------------------------------------------
-  const pStatus = (order?.paymentStatus || '').toUpperCase();
+  // Derive verification statuses
+  const pStatus = (paymentRecordStatus || order?.paymentStatus || '').toUpperCase();
   const oStatus = (order?.status || '').toUpperCase();
   const isCod = (order?.paymentMethod || '').toUpperCase() === 'COD';
 
@@ -100,14 +66,47 @@ export default function OrderSuccessPage() {
     (isCod && oStatus !== 'CANCELLED')
   );
 
-  const isFailed = order && (pStatus === 'FAILED' || pStatus === 'CANCELLED' || oStatus === 'CANCELLED');
+  const isFailed = order && !isConfirmed && (pStatus === 'FAILED' || oStatus === 'FAILED');
+  const isCancelled = order && !isConfirmed && (pStatus === 'CANCELLED' || oStatus === 'CANCELLED');
+  const isExpired = order && !isConfirmed && (pStatus === 'EXPIRED' || oStatus === 'EXPIRED');
+
+  // Automated Polling while status is PENDING
+  useEffect(() => {
+    const isTerminal = isConfirmed || isFailed || isCancelled || isExpired;
+    const targetId = order?.id || orderIdFromUrl;
+
+    if (targetId && !isTerminal) {
+      pollingRef.current = setInterval(() => {
+        fetchOrderDetails(targetId, true);
+      }, 3500);
+    } else if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [order?.id, orderIdFromUrl, isConfirmed, isFailed, isCancelled, isExpired, fetchOrderDetails]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6 text-center font-sans">
+        <Loader2 className="w-10 h-10 text-[#B71C1C] animate-spin mb-3" />
+        <h3 className="font-bold text-slate-800 text-sm">Loading Order & Payment Details...</h3>
+      </div>
+    );
+  }
 
   // ----------------------------------------------------
-  // 1. UNPAID / PENDING UPI VERIFICATION STATE
+  // 1. PENDING UPI PAYMENT STATE
   // ----------------------------------------------------
-  if (!order || (!isConfirmed && !isFailed)) {
+  if (!order || (!isConfirmed && !isFailed && !isCancelled && !isExpired)) {
     return (
-      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12 font-sans">
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4 py-12 font-sans">
         <div className="bg-white max-w-lg w-full p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-2xl text-center space-y-6">
           
           <div className="w-20 h-20 bg-amber-100 border-4 border-amber-200 text-amber-600 rounded-full flex items-center justify-center mx-auto shadow-md">
@@ -116,14 +115,14 @@ export default function OrderSuccessPage() {
 
           <div>
             <div className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest mb-2 border border-amber-200">
-              <span>PAYMENT PENDING VERIFICATION</span>
+              <span>PAYMENT PENDING</span>
             </div>
 
             <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 tracking-tight">
               We are waiting for your UPI payment
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1">
-              Your order has been recorded, but payment has not been confirmed by backend yet.
+              Your order has been recorded, but payment has not been confirmed yet.
             </p>
           </div>
 
@@ -136,7 +135,7 @@ export default function OrderSuccessPage() {
 
               <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
                 <span className="font-bold text-slate-500">Payment Status</span>
-                <span className="font-bold text-amber-700 uppercase">🟡 {order.paymentStatus || 'PENDING'}</span>
+                <span className="font-bold text-amber-700 uppercase">🟡 PENDING</span>
               </div>
 
               <div className="flex items-center justify-between pt-1">
@@ -146,30 +145,9 @@ export default function OrderSuccessPage() {
             </div>
           )}
 
-          {/* UTR Input Form */}
-          {order && (
-            <div className="bg-red-50/50 border border-red-200 p-4 rounded-2xl text-left space-y-2.5">
-              <label className="block text-[11px] font-bold text-slate-800">
-                Already paid in your UPI App? Enter UTR / Ref Number:
-              </label>
-              <input
-                type="text"
-                value={utrNumber}
-                onChange={(e) => setUtrNumber(e.target.value)}
-                placeholder="e.g. 12-digit UTR from GPay / PhonePe / Paytm"
-                className="w-full bg-white border border-slate-300 text-xs px-3.5 py-2.5 rounded-xl outline-none focus:border-[#B71C1C] font-mono shadow-2xs"
-              />
-              <button
-                type="button"
-                disabled={verifying}
-                onClick={handleVerifyUpiPayment}
-                className="w-full bg-[#B71C1C] hover:bg-[#900C0C] disabled:bg-slate-400 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                <span>Verify Payment Status</span>
-              </button>
-            </div>
-          )}
+          <div className="bg-amber-50/60 border border-amber-200/80 p-3.5 rounded-2xl text-xs font-semibold text-amber-900 text-center">
+            Complete the payment in your UPI app. Status will update automatically upon server verification.
+          </div>
 
           <div className="flex gap-3 pt-2">
             <button
@@ -195,28 +173,48 @@ export default function OrderSuccessPage() {
   }
 
   // ----------------------------------------------------
-  // 2. FAILED / CANCELLED PAYMENT STATE
+  // 2. TERMINAL FAILED / CANCELLED / EXPIRED STATES
   // ----------------------------------------------------
-  if (isFailed) {
+  if (isFailed || isCancelled || isExpired) {
+    const statusTitle = isCancelled ? 'Payment Cancelled' : isExpired ? 'Payment Request Expired' : 'Payment Failed';
+    const statusDesc = isCancelled 
+      ? 'The payment request was cancelled in your UPI app.'
+      : isExpired 
+      ? 'The payment request timed out before completion.'
+      : 'Your transaction was declined by the bank or payment provider.';
+
     return (
-      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12 font-sans">
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4 py-12 font-sans">
         <div className="bg-white max-w-lg w-full p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-2xl text-center space-y-6">
           <div className="w-20 h-20 bg-red-100 border-4 border-red-200 text-red-600 rounded-full flex items-center justify-center mx-auto shadow-md">
-            <AlertTriangle className="w-10 h-10" />
+            <XCircle className="w-10 h-10" />
           </div>
 
           <div>
             <div className="inline-flex items-center gap-1.5 bg-red-50 text-red-800 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest mb-2 border border-red-200">
-              <span>PAYMENT UNSUCCESSFUL</span>
+              <span>{statusTitle.toUpperCase()}</span>
             </div>
 
             <h1 className="font-display font-black text-2xl text-slate-900">
-              Order Payment Failed or Cancelled
+              {statusTitle}
             </h1>
             <p className="text-xs text-slate-600 font-medium mt-1">
-              Your transaction was declined or cancelled by your payment app.
+              {statusDesc}
             </p>
           </div>
+
+          {order && (
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-left space-y-2 text-xs">
+              <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                <span className="font-bold text-slate-500">Order ID</span>
+                <span className="font-mono font-bold text-slate-800">#ORD-{order.id}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-500">Total Amount</span>
+                <span className="font-black text-slate-900">₹{order.totalAmount}</span>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-3 pt-2">
             <Link
@@ -235,17 +233,17 @@ export default function OrderSuccessPage() {
   // 3. VERIFIED SUCCESSFUL STATE
   // ----------------------------------------------------
   return (
-    <div className="min-h-[75vh] flex items-center justify-center px-4 py-12 font-sans">
+    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4 py-12 font-sans">
       <div className="bg-white max-w-lg w-full p-8 sm:p-10 rounded-3xl border border-slate-200 shadow-2xl text-center space-y-6">
         
-        {/* Animated Check Icon Badge */}
+        {/* Verified Success Badge */}
         <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
           <CheckCircle2 className="w-10 h-10" />
         </div>
 
         <div>
           <span className="text-xs font-extrabold uppercase tracking-wider text-[#B71C1C] block mb-1">
-            Order Placed Successfully
+            ✓ ORDER PLACED SUCCESSFULLY
           </span>
           <h1 className="font-display font-black text-2xl text-slate-900">
             Thank You for Your Order!
@@ -258,7 +256,7 @@ export default function OrderSuccessPage() {
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-left text-xs space-y-2">
           <div className="flex justify-between text-slate-600">
             <span>Payment Status:</span>
-            <span className="font-bold text-emerald-700">🟢 Payment Completed ({isCod ? 'COD' : 'Verified UPI'})</span>
+            <span className="font-bold text-emerald-700">🟢 CONFIRMED / PAID ({isCod ? 'COD' : 'UPI'})</span>
           </div>
           <div className="flex justify-between text-slate-600">
             <span>Estimated Delivery:</span>
@@ -270,7 +268,7 @@ export default function OrderSuccessPage() {
           </div>
         </div>
 
-        {/* Download Invoice Button */}
+        {/* View & Download Tax Invoice */}
         <button
           onClick={() => setInvoiceModalOpen(true)}
           className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-[#B71C1C] text-white font-bold text-xs uppercase tracking-wider py-3.5 rounded-2xl transition-all shadow-md cursor-pointer"

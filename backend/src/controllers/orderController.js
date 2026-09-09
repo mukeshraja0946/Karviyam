@@ -238,11 +238,10 @@ exports.verifyOrderPayment = async (req, res, next) => {
       `UPDATE payments 
        SET payment_status = 'SUCCESS', 
            transaction_id = ?, 
-           utr_number = ?, 
-           verified_at = NOW(), 
+           amount_received = ?, 
            updated_at = NOW() 
        WHERE order_id = ?`,
-      [txnRef, cleanUtr, order.id]
+      [txnRef, amountPaid, order.id]
     );
 
     // Send order confirmation email ONLY after verified SUCCESS
@@ -285,6 +284,12 @@ exports.getOrderById = async (req, res, next) => {
     }
 
     const order = orders[0];
+
+    // Authorization Check: If authenticated user, ensure user owns the order or is Admin
+    if (req.user && req.user.id && req.user.role !== 'Admin' && String(req.user.id) !== String(order.user_id)) {
+      return res.status(403).json(ApiResponse.error('Unauthorized access to order details.'));
+    }
+
     const dto = await mapOrderRowToDTO(order);
     return res.status(200).json(ApiResponse.success(dto, 'Order details fetched successfully'));
   } catch (err) {

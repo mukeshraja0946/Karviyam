@@ -7,6 +7,7 @@ const adminController = require('../controllers/adminController');
 const { requireAdmin } = require('../middleware/adminMiddleware');
 
 router.get('/', optionalToken, productController.getProducts);
+router.get('/filter-options', productController.getFilterOptions);
 router.get('/featured', productController.getFeaturedProducts);
 router.get('/search', productController.searchProducts);
 router.get('/:id', optionalToken, productController.getProductById);

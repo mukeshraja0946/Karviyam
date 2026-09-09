@@ -4,6 +4,8 @@ const wishlistController = require('../controllers/wishlistController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
 router.get('/', authenticateToken, wishlistController.getWishlist);
+router.post('/', authenticateToken, wishlistController.addToWishlist);
+router.post('/:productId', authenticateToken, wishlistController.addToWishlist);
 router.post('/add/:productId', authenticateToken, wishlistController.addToWishlist);
 router.post('/toggle/:productId', authenticateToken, wishlistController.toggleWishlist);
 router.delete('/remove/:productId', authenticateToken, wishlistController.removeFromWishlist);

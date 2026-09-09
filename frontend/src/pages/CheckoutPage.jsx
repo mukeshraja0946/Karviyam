@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
-import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, Lock, CreditCard, Smartphone, Banknote, Building, X, RefreshCw, Trash2, MapPin, Plus } from 'lucide-react';
+import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, Lock, CreditCard, Smartphone, Banknote, Building, X, RefreshCw, Trash2, MapPin, Plus, Loader2 } from 'lucide-react';
 import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 
 export default function CheckoutPage() {
@@ -22,6 +22,15 @@ export default function CheckoutPage() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('COD');
   const [submitting, setSubmitting] = useState(false);
+
+  // UPI Payment Specific States
+  const [customerUpi, setCustomerUpi] = useState('');
+  const [upiError, setUpiError] = useState('');
+  const [upiWaitingModalOpen, setUpiWaitingModalOpen] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState(null);
+  const [pendingTxn, setPendingTxn] = useState(null);
+  const [checkingUpiStatus, setCheckingUpiStatus] = useState(false);
+  const pollOrderIntervalRef = useRef(null);
 
   // Dynamic Authenticated User Address Management
   const [userAddresses, setUserAddresses] = useState([]);
@@ -431,8 +440,72 @@ export default function CheckoutPage() {
     setPaymentModalOpen(true);
   };
 
+  const validateUpiFormat = (vpa) => {
+    return /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(String(vpa || '').trim());
+  };
+
+  const handleOrderPaymentVerified = (ordId, targetOrder) => {
+    if (pollOrderIntervalRef.current) clearInterval(pollOrderIntervalRef.current);
+    try { confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } }); } catch (e) {}
+    clearCart();
+    setUpiWaitingModalOpen(false);
+    toast.success('Payment verified by server! Order Placed! 🎉');
+    navigate(`/order-success?id=${ordId}`, { state: { order: targetOrder || pendingOrder } });
+  };
+
+  const startOrderPolling = (ordId, targetOrder) => {
+    if (pollOrderIntervalRef.current) clearInterval(pollOrderIntervalRef.current);
+
+    pollOrderIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await api.get(`/payments/status?orderId=${ordId}`).catch(() => null);
+        const data = res?.data?.data || res?.data;
+
+        if (data && (data.status === 'SUCCESS' || data.paymentStatus === 'SUCCESS')) {
+          clearInterval(pollOrderIntervalRef.current);
+          handleOrderPaymentVerified(ordId, targetOrder);
+        }
+      } catch (e) {}
+    }, 3500);
+  };
+
+  const handleManualCheckOrderStatus = async () => {
+    if (!pendingOrder || checkingUpiStatus) return;
+    setCheckingUpiStatus(true);
+    toast.loading('Checking payment status with backend server...', { id: 'order-status-check' });
+
+    try {
+      const res = await api.get(`/payments/status?orderId=${pendingOrder.id}`).catch(() => null);
+      const data = res?.data?.data || res?.data;
+
+      if (data && (data.status === 'SUCCESS' || data.paymentStatus === 'SUCCESS')) {
+        toast.success('Payment verified by server! Order Placed! 🎉', { id: 'order-status-check' });
+        handleOrderPaymentVerified(pendingOrder.id, pendingOrder);
+      } else {
+        toast.error('Payment request is still pending. Please approve in your UPI app.', { id: 'order-status-check' });
+      }
+    } catch (e) {
+      toast.error('Error checking payment status.', { id: 'order-status-check' });
+    } finally {
+      setCheckingUpiStatus(false);
+    }
+  };
+
   // Execute Final Order Placement
   const handleConfirmAndPlaceOrder = async () => {
+    if (selectedPaymentMethod === 'UPI') {
+      const cleanUpi = customerUpi.trim();
+      if (!cleanUpi) {
+        setUpiError('Please enter your VPA / UPI ID (e.g. user@upi or mobile@ybl)');
+        return;
+      }
+      if (!validateUpiFormat(cleanUpi)) {
+        setUpiError('Invalid UPI ID format. Example: user@upi or mobile@ybl');
+        return;
+      }
+      setUpiError('');
+    }
+
     setSubmitting(true);
     try {
       const payload = {
@@ -459,8 +532,8 @@ export default function CheckoutPage() {
           email: formData.email || 'arunkumar@example.com',
           phone: formData.phone || '9876543210',
           shippingAddress: formData,
-          status: selectedPaymentMethod === 'COD' ? 'Pending' : 'PAYMENT_PENDING',
-          paymentStatus: 'PENDING',
+          status: selectedPaymentMethod === 'COD' ? 'Pending' : 'Payment Pending',
+          paymentStatus: selectedPaymentMethod === 'COD' ? 'Pending' : 'PENDING',
           paymentMethod: selectedPaymentMethod,
           totalAmount: orderTotal,
           items: itemsList,
@@ -474,23 +547,43 @@ export default function CheckoutPage() {
         } catch (e) {}
       }
 
-      try {
-        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-      } catch (e) {}
-
-      clearCart();
-      setPaymentModalOpen(false);
-      
+      // If Cash on Delivery -> Immediately finish order
       if (selectedPaymentMethod === 'COD') {
+        try { confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } }); } catch (e) {}
+        clearCart();
+        setPaymentModalOpen(false);
         toast.success('COD Order placed successfully! 🎉');
-      } else {
-        toast.success('Order created! Please complete UPI payment verification.', { duration: 4000 });
+        navigate(`/order-success?id=${createdOrder.id}`, { state: { order: createdOrder } });
+        return;
       }
 
-      navigate(`/order-success?id=${createdOrder.id}`, { state: { order: createdOrder } });
+      // If UPI Payment -> Create Backend Payment Request
+      setPendingOrder(createdOrder);
+      toast.loading('Initiating real UPI payment request...', { id: 'order-upi-toast' });
+
+      const reqRes = await api.post('/payments/create-upi-request', {
+        type: 'ORDER',
+        id: createdOrder.id,
+        upiId: customerUpi.trim()
+      }).catch(() => null);
+
+      const txnData = reqRes?.data?.data || reqRes?.data;
+      setPendingTxn(txnData);
+
+      setPaymentModalOpen(false);
+      setUpiWaitingModalOpen(true);
+      toast.success('UPI Payment Request sent! Check your UPI app to approve.', { id: 'order-upi-toast', duration: 4000 });
+
+      // Trigger mobile intent link if on mobile
+      if (txnData?.upiUri && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.location.href = txnData.upiUri;
+      }
+
+      // Start automatic status polling every 3.5 seconds
+      startOrderPolling(createdOrder.id, createdOrder);
     } catch (err) {
       console.error(err);
-      toast.error('Failed to place order. Please try again.');
+      toast.error('Failed to initiate UPI payment request. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -1235,6 +1328,29 @@ export default function CheckoutPage() {
                 )}
               </div>
 
+              {/* UPI VPA INPUT FIELD WHEN UPI IS SELECTED */}
+              {selectedPaymentMethod === 'UPI' && (
+                <div className="bg-red-50/50 border border-red-200 p-3.5 rounded-2xl space-y-2 text-left">
+                  <label className="block text-[11px] font-bold text-slate-800">
+                    Enter your VPA / UPI ID <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={customerUpi}
+                    onChange={(e) => {
+                      setCustomerUpi(e.target.value);
+                      setUpiError('');
+                    }}
+                    placeholder="e.g. user@upi, mobile@ybl, name@okhdfcbank"
+                    className="w-full bg-white border border-slate-300 text-xs px-3 py-2.5 rounded-xl outline-none focus:border-[#B71C1C] font-mono shadow-2xs"
+                  />
+                  {upiError && <p className="text-[11px] text-red-600 font-bold">{upiError}</p>}
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    We will send a real UPI payment request to your app.
+                  </p>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="pt-3 space-y-2">
                 <button
@@ -1262,6 +1378,77 @@ export default function CheckoutPage() {
                 </button>
               </div>
 
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 5. UPI PAYMENT REQUEST SENT WAITING CARD MODAL            */}
+      {/* ========================================================= */}
+      {upiWaitingModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto font-sans">
+          <div className="bg-white w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl overflow-hidden p-6 sm:p-8 text-center space-y-5 animate-in zoom-in-95 duration-200">
+            
+            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto shadow-sm">
+              <RefreshCw className="w-8 h-8 animate-spin" />
+            </div>
+
+            <div>
+              <div className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider mb-2 border border-amber-300">
+                <span>PAYMENT PENDING</span>
+              </div>
+              <h3 className="font-display font-black text-xl text-slate-900">
+                UPI PAYMENT REQUEST SENT
+              </h3>
+              <p className="text-xs text-slate-600 font-medium mt-1">
+                Open your UPI app (Google Pay, PhonePe, Paytm, BHIM) and approve the payment request.
+              </p>
+            </div>
+
+            {/* Transaction Info Box */}
+            <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl text-left text-xs space-y-2">
+              <div className="flex justify-between border-b pb-2">
+                <span className="font-bold text-slate-500">Payment request sent to:</span>
+                <span className="font-mono font-bold text-slate-900">{customerUpi}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="font-bold text-slate-500">Total Order Amount:</span>
+                <span className="font-black text-slate-900 text-sm">₹{orderTotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between pt-0.5">
+                <span className="font-bold text-slate-500">Payment Reference:</span>
+                <span className="font-mono text-slate-700">{pendingTxn?.transactionReference || `TXN-ORD-${pendingOrder?.id}`}</span>
+              </div>
+            </div>
+
+            <div className="text-[11.5px] text-amber-800 font-bold flex items-center justify-center gap-1.5 pt-1">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-700" />
+              <span>⏳ Waiting for payment confirmation from backend...</span>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                disabled={checkingUpiStatus}
+                onClick={handleManualCheckOrderStatus}
+                className="w-full bg-[#B71C1C] hover:bg-[#900C0C] disabled:bg-slate-400 text-white font-extrabold py-3.5 rounded-2xl shadow-md text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                {checkingUpiStatus ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
+                <span>CHECK PAYMENT STATUS</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (pollOrderIntervalRef.current) clearInterval(pollOrderIntervalRef.current);
+                  setUpiWaitingModalOpen(false);
+                }}
+                className="w-full text-xs font-bold text-slate-500 hover:text-slate-900 py-2 cursor-pointer text-center"
+              >
+                Do not close this page. Cancel
+              </button>
             </div>
 
           </div>

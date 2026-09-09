@@ -841,6 +841,9 @@ async function initDb() {
       console.warn('⚠️ Product seed count warning:', errProdCount.message);
     }
 
+    // Initialize Shop Filters, Wishlist Uniqueness, and Notification Schema
+    await initShopFiltersAndNotificationsSchema();
+
     console.log('[DB Init] Database schema & default seed data synchronized successfully.');
   } catch (error) {
     if (error && (error.code === 'ECONNREFUSED' || error.message.includes('ECONNREFUSED'))) {
@@ -848,6 +851,149 @@ async function initDb() {
     } else {
       console.error('[DB Init Error]', error);
     }
+  }
+}
+
+async function initShopFiltersAndNotificationsSchema() {
+  try {
+    // 1. Shop Filter Sections Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS shop_filter_sections (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        section_key VARCHAR(50) NOT NULL UNIQUE,
+        title VARCHAR(100) NOT NULL,
+        is_enabled TINYINT(1) DEFAULT 1,
+        display_order INT DEFAULT 0,
+        display_limit INT DEFAULT 5,
+        enable_show_more TINYINT(1) DEFAULT 1,
+        show_more_limit INT DEFAULT 10,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 2. Shop Filter Options Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS shop_filter_options (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        section_key VARCHAR(50) NOT NULL,
+        option_key VARCHAR(100) NOT NULL,
+        label VARCHAR(100) NOT NULL,
+        min_price DECIMAL(10,2) NULL,
+        max_price DECIMAL(10,2) NULL,
+        color_hex VARCHAR(50) NULL,
+        is_enabled TINYINT(1) DEFAULT 1,
+        display_order INT DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed default sections if empty
+    const [secRows] = await pool.query('SELECT COUNT(*) as count FROM shop_filter_sections');
+    if (secRows && secRows[0] && secRows[0].count === 0) {
+      const defaultSections = [
+        ['category', 'Category', 1, 1, 5, 1, 10],
+        ['brand', 'Brand', 1, 2, 5, 1, 10],
+        ['price', 'Price Range', 1, 3, 5, 0, 10],
+        ['size', 'Size', 1, 4, 5, 0, 10],
+        ['colour', 'Colour', 1, 5, 7, 0, 10],
+        ['availability', 'Availability', 1, 6, 5, 0, 10]
+      ];
+      for (const s of defaultSections) {
+        await pool.query(
+          `INSERT INTO shop_filter_sections (section_key, title, is_enabled, display_order, display_limit, enable_show_more, show_more_limit)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          s
+        );
+      }
+    }
+
+    // Seed default options if empty
+    const [optRows] = await pool.query('SELECT COUNT(*) as count FROM shop_filter_options');
+    if (optRows && optRows[0] && optRows[0].count === 0) {
+      // Price Ranges
+      const priceOptions = [
+        ['price', 'under_499', 'Under ₹499', 0, 499, null, 1, 1],
+        ['price', '500_999', '₹500 – ₹999', 500, 999, null, 1, 2],
+        ['price', '1000_1999', '₹1,000 – ₹1,999', 1000, 1999, null, 1, 3],
+        ['price', '2000_2999', '₹2,000 – ₹2,999', 2000, 2999, null, 1, 4],
+        ['price', 'above_3000', 'Above ₹3,000', 3000, 999999, null, 1, 5]
+      ];
+      for (const p of priceOptions) {
+        await pool.query(
+          `INSERT INTO shop_filter_options (section_key, option_key, label, min_price, max_price, color_hex, is_enabled, display_order)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          p
+        );
+      }
+
+      // Sizes
+      const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
+      let szOrder = 1;
+      for (const sz of sizes) {
+        await pool.query(
+          `INSERT INTO shop_filter_options (section_key, option_key, label, is_enabled, display_order)
+           VALUES ('size', ?, ?, 1, ?)`,
+          [sz.toLowerCase(), sz, szOrder++]
+        );
+      }
+
+      // Colors
+      const colors = [
+        ['black', 'Black', '#000000'],
+        ['white', 'White', '#FFFFFF'],
+        ['red', 'Red', '#B71C1C'],
+        ['blue', 'Blue', '#1D4ED8'],
+        ['green', 'Green', '#15803D'],
+        ['beige', 'Beige', '#F5F5DC'],
+        ['brown', 'Brown', '#78350F']
+      ];
+      let colOrder = 1;
+      for (const c of colors) {
+        await pool.query(
+          `INSERT INTO shop_filter_options (section_key, option_key, label, color_hex, is_enabled, display_order)
+           VALUES ('colour', ?, ?, ?, 1, ?)`,
+          [c[0], c[1], c[2], colOrder++]
+        );
+      }
+
+      // Availability
+      await pool.query(
+        `INSERT INTO shop_filter_options (section_key, option_key, label, is_enabled, display_order)
+         VALUES ('availability', 'in_stock', 'In Stock', 1, 1)`
+      );
+    }
+
+    // 3. Wishlist Unique Constraint (user_id, product_id)
+    try {
+      await pool.query(`
+        ALTER TABLE wishlist ADD CONSTRAINT uk_wishlist_user_product UNIQUE (user_id, product_id)
+      `);
+    } catch (eW) {}
+
+    // 4. Notifications Table Enhancements
+    try { await pool.query(`ALTER TABLE notifications ADD COLUMN type VARCHAR(50) DEFAULT 'GENERAL'`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE notifications ADD COLUMN related_order_id BIGINT NULL`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE notifications ADD COLUMN related_product_id BIGINT NULL`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE notifications ADD COLUMN read_at TIMESTAMP NULL`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE notifications ADD COLUMN expires_at TIMESTAMP NULL`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE notifications ADD COLUMN is_active TINYINT(1) DEFAULT 1`); } catch (e) {}
+
+    // 5. Admin Promotional Notifications Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin_promotional_notifications (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        image_url TEXT NULL,
+        target_audience VARCHAR(50) DEFAULT 'ALL',
+        start_date TIMESTAMP NULL,
+        end_date TIMESTAMP NULL,
+        is_enabled TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  } catch (errSchema) {
+    console.warn('⚠️ initShopFiltersAndNotificationsSchema warning:', errSchema.message);
   }
 }
 
