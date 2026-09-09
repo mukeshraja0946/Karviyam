@@ -28,4 +28,10 @@ router.get('/company', settingController.getCompanySettings);
 router.post('/company', optionalToken, requireAdmin, settingController.updateCompanySettings);
 router.put('/company', optionalToken, requireAdmin, settingController.updateCompanySettings);
 
+// Sidebar management settings
+const sidebarController = require('../controllers/sidebarController');
+router.get('/sidebar-config', sidebarController.getSidebarConfig);
+router.post('/sidebar-config', optionalToken, requireAdmin, sidebarController.updateSidebarConfig);
+router.put('/sidebar-config', optionalToken, requireAdmin, sidebarController.updateSidebarConfig);
+
 module.exports = router;

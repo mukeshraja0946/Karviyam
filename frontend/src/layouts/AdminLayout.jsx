@@ -185,6 +185,7 @@ export default function AdminLayout() {
       icon: Megaphone,
       subItems: [
         { name: 'VIP Subscriptions', path: '/admin/subscriptions' },
+        { name: 'Storefront Sidebar Management', path: '/admin/sidebar' },
         { name: 'Homepage Sections', path: '/admin/homepage-sections' },
         { name: 'Find Your Price', path: '/admin/find-your-price' },
         { name: 'Why Shop With Karviyam?', path: '/admin/why-shop' },

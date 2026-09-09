@@ -231,7 +231,16 @@ app.use('/api/coupons', couponRoutes);
 
 app.use('/api/notifications', notificationRoutes);
 
+const sidebarController = require('./controllers/sidebarController');
+const { optionalToken } = require('./middleware/authMiddleware');
+const { requireAdmin } = require('./middleware/adminMiddleware');
+
 app.use('/api/settings', settingRoutes);
+
+app.get('/api/sidebar-config', sidebarController.getSidebarConfig);
+app.get('/api/admin/sidebar-config', sidebarController.getSidebarConfig);
+app.post('/api/admin/sidebar-config', optionalToken, requireAdmin, sidebarController.updateSidebarConfig);
+app.put('/api/admin/sidebar-config', optionalToken, requireAdmin, sidebarController.updateSidebarConfig);
 
 app.get('/api/footer-settings', settingController.getFooterSettings);
 
