@@ -260,10 +260,16 @@ const buildProductFilterConditions = (queryParams) => {
     isTrending,
     isBestSeller,
     isNewArrival,
-    rating
+    rating,
+    includeInactive
   } = queryParams;
 
-  let conditions = ['(p.is_active = 1 OR p.is_active IS NULL)'];
+  let conditions = [];
+  if (includeInactive === 'true' || includeInactive === '1' || includeInactive === true) {
+    conditions.push('1=1');
+  } else {
+    conditions.push('(p.is_active = 1 OR p.is_active IS NULL)');
+  }
   let params = [];
 
   // Keyword search
@@ -368,7 +374,7 @@ const buildProductFilterConditions = (queryParams) => {
   }
 
   // 4. SIZE FILTER (OR logic within sizes group)
-  const rawSizes = sizes || size;
+  const rawSizes = sizes || (size && isNaN(size) ? size : null);
   if (rawSizes) {
     const sizeArray = (Array.isArray(rawSizes) ? rawSizes : String(rawSizes).split(','))
       .map(s => s.trim())
