@@ -265,6 +265,9 @@ app.use('/api/admin/bank-account', bankAccountRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/home', recommendationRoutes);
 
+app.use('/api/excel', excelRoutes);
+app.use('/api/admin/excel', excelRoutes);
+
 app.use('/api/admin', adminRoutes);
 
 // Explicit Help & Support Alias Routes
