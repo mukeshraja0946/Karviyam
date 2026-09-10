@@ -1125,3 +1125,66 @@ exports.deleteProduct = (req, res, next) => {
   const productController = require('./productController');
   return productController.deleteProduct(req, res, next);
 };
+
+exports.globalAdminSearch = async (req, res, next) => {
+  try {
+    const q = req.query.q || req.query.query || req.query.keyword || '';
+    if (!q.trim()) {
+      return res.status(200).json(ApiResponse.success({
+        products: [],
+        orders: [],
+        customers: [],
+        categories: []
+      }, 'Search query empty'));
+    }
+
+    const term = `%${q.trim()}%`;
+    const exactTerm = q.trim();
+
+    // 1. Search Products (name, sku, brand)
+    const [products] = await pool.query(
+      `SELECT p.id, p.name, p.sku, p.price, p.stock_quantity, p.image_url, c.name as category_name
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
+       WHERE LOWER(p.name) LIKE LOWER(?) OR LOWER(p.sku) LIKE LOWER(?) OR LOWER(p.brand) LIKE LOWER(?) OR LOWER(c.name) LIKE LOWER(?)
+       ORDER BY p.id DESC LIMIT 10`,
+      [term, term, term, term]
+    );
+
+    // 2. Search Orders (id, order_number, full_name, email, phone, status)
+    const [orders] = await pool.query(
+      `SELECT id, user_id, total_amount, status, payment_status, payment_method, full_name, email, phone, created_at as date_val
+       FROM orders
+       WHERE id = ? OR LOWER(full_name) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?) OR LOWER(phone) LIKE LOWER(?) OR LOWER(status) LIKE LOWER(?) OR LOWER(payment_method) LIKE LOWER(?)
+       ORDER BY id DESC LIMIT 10`,
+      [isNaN(exactTerm) ? -1 : parseInt(exactTerm, 10), term, term, term, term, term]
+    );
+
+    // 3. Search Customers (id, name, email, phone)
+    const [customers] = await pool.query(
+      `SELECT id, name, email, phone, role, created_at
+       FROM users
+       WHERE (LOWER(role) = 'customer' OR role IS NULL) AND (id = ? OR LOWER(name) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?) OR LOWER(phone) LIKE LOWER(?))
+       ORDER BY id DESC LIMIT 10`,
+      [isNaN(exactTerm) ? -1 : parseInt(exactTerm, 10), term, term, term]
+    );
+
+    // 4. Search Categories (id, name)
+    const [categories] = await pool.query(
+      `SELECT id, name, description, is_active
+       FROM categories
+       WHERE id = ? OR LOWER(name) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?)
+       ORDER BY id DESC LIMIT 10`,
+      [isNaN(exactTerm) ? -1 : parseInt(exactTerm, 10), term, term]
+    );
+
+    return res.status(200).json(ApiResponse.success({
+      products,
+      orders,
+      customers,
+      categories
+    }, 'Global search results retrieved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};

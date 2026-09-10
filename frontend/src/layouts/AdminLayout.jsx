@@ -196,6 +196,7 @@ export default function AdminLayout() {
         { name: 'Promotional Cards', path: '/admin/promo-cards' },
         { name: 'Right Sidebar Banners', path: '/admin/right-sidebar-banners' },
         { name: 'Right Sidebar Promotional Card', path: '/admin/right-sidebar-promo-card' },
+        { name: 'Storefront Footer Management', path: '/admin/footer' },
         { name: 'Coupons', path: '/admin/coupons' },
         { name: 'Offers & Discounts', path: '/admin/offers' },
       ],
@@ -206,6 +207,7 @@ export default function AdminLayout() {
       icon: CreditCard,
       subItems: [
         { name: 'Payment History', path: '/admin/payments' },
+        { name: 'Refund & Returns', path: '/admin/returns' },
         { name: 'Bank Account Details', path: '/admin/bank-account' },
         { name: 'Invoices & GST', path: '/admin/orders' },
       ],

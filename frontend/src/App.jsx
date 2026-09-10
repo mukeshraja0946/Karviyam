@@ -69,6 +69,8 @@ import AdminBankAccountPage from './pages/AdminBankAccountPage';
 import AdminSidebarPage from './pages/AdminSidebarPage';
 import AdminShopFiltersPage from './pages/AdminShopFiltersPage';
 import AdminNotificationsPage from './pages/AdminNotificationsPage';
+import AdminReturnsPage from './pages/AdminReturnsPage';
+import AdminFooterPage from './pages/AdminFooterPage';
 
 export default function App() {
   return (
@@ -140,6 +142,8 @@ export default function App() {
                     <Route path="/admin/users" element={<AdminUsersPage />} />
                     <Route path="/admin/reviews" element={<AdminReviewsPage />} />
                     <Route path="/admin/payments" element={<AdminOrdersPage />} />
+                    <Route path="/admin/returns" element={<AdminReturnsPage />} />
+                    <Route path="/admin/footer" element={<AdminFooterPage />} />
                     <Route path="/admin/bank-account" element={<AdminBankAccountPage />} />
                     <Route path="/admin/reports" element={<AdminReportsPage />} />
                     <Route path="/admin/settings" element={<AdminSettingsPage />} />

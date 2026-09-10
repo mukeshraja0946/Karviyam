@@ -992,6 +992,40 @@ async function initShopFiltersAndNotificationsSchema() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // 6. Return & Refund Requests Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS return_requests (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        order_id BIGINT NOT NULL,
+        order_item_id BIGINT DEFAULT NULL,
+        user_id BIGINT NOT NULL,
+        type VARCHAR(50) DEFAULT 'RETURN',
+        reason VARCHAR(255) NOT NULL,
+        description TEXT,
+        images TEXT,
+        status VARCHAR(50) DEFAULT 'RETURN/REFUND REQUESTED',
+        refund_amount DECIMAL(10,2) DEFAULT 0.00,
+        refund_reference VARCHAR(255) DEFAULT NULL,
+        admin_notes TEXT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 7. Footer Settings Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS footer_settings (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        section_key VARCHAR(100) NOT NULL UNIQUE,
+        title VARCHAR(255),
+        content_json TEXT,
+        is_enabled TINYINT(1) DEFAULT 1,
+        display_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
   } catch (errSchema) {
     console.warn('⚠️ initShopFiltersAndNotificationsSchema warning:', errSchema.message);
   }

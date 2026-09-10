@@ -13,8 +13,9 @@ const { requireAdmin } = require('../middleware/adminMiddleware');
 // All admin routes use auth guard
 router.use(optionalToken, requireAdmin);
 
-// Dashboard
+// Dashboard & Global Search
 router.get('/dashboard/stats', adminController.getDashboardStats);
+router.get('/search', adminController.globalAdminSearch);
 
 // Orders
 router.get('/orders', adminController.getAllOrders);

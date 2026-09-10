@@ -608,19 +608,31 @@ exports.getFeaturedProducts = async (req, res, next) => {
 
 exports.searchProducts = async (req, res, next) => {
   try {
-    const query = req.query.query || req.query.keyword || '';
+    const query = req.query.query || req.query.keyword || req.query.q || req.query.search || '';
     if (!query.trim()) {
       return res.status(200).json(ApiResponse.success([], 'Search query empty'));
     }
-    const term = `%${query.trim()}%`;
+    const cleanQuery = query.trim();
+    const term = `%${cleanQuery}%`;
     const [rows] = await pool.query(
       `SELECT p.*, c.name as category_name 
        FROM products p 
        LEFT JOIN categories c ON p.category_id = c.id 
-       WHERE (p.name LIKE ? OR p.description LIKE ? OR p.brand LIKE ? OR p.tags LIKE ?) 
+       WHERE (
+         LOWER(p.name) LIKE LOWER(?) 
+         OR LOWER(p.sku) LIKE LOWER(?)
+         OR LOWER(p.brand) LIKE LOWER(?) 
+         OR LOWER(c.name) LIKE LOWER(?)
+         OR LOWER(p.category) LIKE LOWER(?)
+         OR LOWER(p.type) LIKE LOWER(?)
+         OR LOWER(p.material) LIKE LOWER(?)
+         OR LOWER(p.fabric) LIKE LOWER(?)
+         OR LOWER(p.description) LIKE LOWER(?) 
+         OR LOWER(p.tags) LIKE LOWER(?)
+       ) 
        AND (p.is_active = 1 OR p.is_active IS NULL)
-       ORDER BY p.id DESC LIMIT 30`,
-      [term, term, term, term]
+       ORDER BY p.id DESC LIMIT 40`,
+      [term, term, term, term, term, term, term, term, term, term]
     );
     const productDTOs = await Promise.all(rows.map(mapProductRowToDTO));
     return res.status(200).json(ApiResponse.success(productDTOs, 'Search results fetched successfully'));

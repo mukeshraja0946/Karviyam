@@ -41,6 +41,7 @@ const bankAccountRoutes = require('./routes/bankAccountRoutes');
 const shopFilterRoutes = require('./routes/shopFilterRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
+const returnRoutes = require('./routes/returnRoutes');
 const settingController = require('./controllers/settingController');
 const contactController = require('./controllers/contactController');
 
@@ -267,6 +268,8 @@ app.use('/api/home', recommendationRoutes);
 
 app.use('/api/excel', excelRoutes);
 app.use('/api/admin/excel', excelRoutes);
+
+app.use('/api/returns', returnRoutes);
 
 app.use('/api/admin', adminRoutes);
 

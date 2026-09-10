@@ -186,6 +186,8 @@ export default function ShopPage() {
     setLoading(true);
     try {
       const queryParts = [];
+      const urlSearch = searchParams.get('search') || searchParams.get('q') || searchParams.get('keyword') || '';
+      if (urlSearch) queryParts.push(`keyword=${encodeURIComponent(urlSearch)}`);
       if (selectedCategories.length > 0) queryParts.push(`categories=${encodeURIComponent(selectedCategories.join(','))}`);
       if (selectedBrands.length > 0) queryParts.push(`brands=${encodeURIComponent(selectedBrands.join(','))}`);
       if (selectedPriceRanges.length > 0) queryParts.push(`priceRanges=${encodeURIComponent(selectedPriceRanges.join(','))}`);

@@ -3,13 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
-import { Package, User, MapPin, Clock, RefreshCw, LogOut } from 'lucide-react';
+import { Package, User, MapPin, Clock, RefreshCw, LogOut, RotateCcw, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function UserProfilePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
+  const [returnRequests, setReturnRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Return Modal State
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [returnType, setReturnType] = useState('RETURN');
+  const [returnReason, setReturnReason] = useState('Damaged or Defective Item');
+  const [returnDesc, setReturnDesc] = useState('');
+  const [returnImage, setReturnImage] = useState('');
+  const [submittingReturn, setSubmittingReturn] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -18,55 +28,28 @@ export default function UserProfilePage() {
   };
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrdersAndReturns();
   }, [user]);
 
-  const fetchOrders = async () => {
+  const fetchOrdersAndReturns = async () => {
     setLoading(true);
     let allOrders = [];
 
-    // 1. Try fetching from Backend MySQL REST API
+    // Fetch Orders & My Return Requests
     try {
-      const res = await api.get('/orders');
-      const apiData = res.data ? res.data : res;
-      const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
-      
-      if (list.length > 0) {
-        allOrders = list.map(o => ({
-          id: o.id,
-          orderCode: o.orderCode || o.trackingNumber || `#ORD${o.id}`,
-          trackingNumber: o.trackingNumber || o.orderCode || `KV-TRK-${o.id}`,
-          status: o.status || 'PENDING',
-          items: Array.isArray(o.items) ? o.items.map(i => ({
-            id: i.id || Date.now(),
-            productName: i.productName || (i.product ? i.product.name : 'Item'),
-            productImage: i.productImage || (i.product ? i.product.imageUrl : ''),
-            priceAtTime: i.priceAtTime != null ? i.priceAtTime : (i.price != null ? i.price : (i.product ? i.product.price : 0)),
-            quantity: i.quantity || 1
-          })) : [],
-          totalAmount: o.totalAmount != null ? o.totalAmount : o.amount || 0,
-          createdAt: o.createdAt || o.date || new Date().toISOString()
-        }));
-      }
-    } catch (e) {
-      console.error('Failed to load API orders:', e);
-    }
+      const [ordRes, retRes] = await Promise.all([
+        api.get('/orders').catch(() => null),
+        api.get('/returns/my-requests').catch(() => null)
+      ]);
 
-    // 2. Load Local Storage Placed Orders
-    try {
-      const saved = localStorage.getItem('karviyam_admin_orders');
-      if (saved) {
-        const localList = JSON.parse(saved);
-        if (Array.isArray(localList) && localList.length > 0) {
-          const userEmail = (user?.email || '').toLowerCase().trim();
-          
-          const userLocalOrders = localList.filter(o => {
-            if (!userEmail) return true;
-            const oEmail = (o.email || o.shippingAddress?.email || '').toLowerCase().trim();
-            return !oEmail || oEmail === userEmail || o.customer === user?.fullName;
-          }).map(o => ({
+      if (ordRes) {
+        const apiData = ordRes.data ? ordRes.data : ordRes;
+        const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
+        
+        if (list.length > 0) {
+          allOrders = list.map(o => ({
             id: o.id,
-            orderCode: o.orderCode || `#ORD${o.id}`,
+            orderCode: o.orderCode || o.trackingNumber || `#ORD${o.id}`,
             trackingNumber: o.trackingNumber || o.orderCode || `KV-TRK-${o.id}`,
             status: o.status || 'PENDING',
             items: Array.isArray(o.items) ? o.items.map(i => ({
@@ -76,73 +59,114 @@ export default function UserProfilePage() {
               priceAtTime: i.priceAtTime != null ? i.priceAtTime : (i.price != null ? i.price : (i.product ? i.product.price : 0)),
               quantity: i.quantity || 1
             })) : [],
-            totalAmount: o.totalAmount != null ? o.totalAmount : o.amount || 899,
-            createdAt: o.createdAt || o.date || new Date().toISOString()
+            totalAmount: o.totalAmount != null ? o.totalAmount : o.total_amount || 0,
+            createdAt: o.createdAt || o.created_at || o.orderDate || Date.now()
           }));
-
-          // Merge without duplicate IDs
-          const existingIds = new Set(allOrders.map(o => String(o.id)));
-          userLocalOrders.forEach(lo => {
-            if (!existingIds.has(String(lo.id))) {
-              allOrders.push(lo);
-            }
-          });
         }
       }
+
+      if (retRes) {
+        const retData = retRes.data?.data || retRes.data || [];
+        setReturnRequests(Array.isArray(retData) ? retData : []);
+      }
     } catch (e) {
-      console.error('Failed to load local orders:', e);
+      console.error('Failed to load orders:', e);
+    } finally {
+      setOrders(allOrders);
+      setLoading(false);
+    }
+  };
+
+  const handleOpenReturnModal = (ord) => {
+    setSelectedOrder(ord);
+    setReturnType('RETURN');
+    setReturnReason('Damaged or Defective Item');
+    setReturnDesc('');
+    setReturnImage('');
+    setReturnModalOpen(true);
+  };
+
+  const handleSubmitReturnRequest = async (e) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
+    if (!returnReason) {
+      toast.error('Please select a return reason');
+      return;
     }
 
-    // Sort newest first
-    allOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    setOrders(allOrders);
-    setLoading(false);
+    setSubmittingReturn(true);
+    try {
+      const res = await api.post('/returns', {
+        orderId: selectedOrder.id,
+        type: returnType,
+        reason: returnReason,
+        description: returnDesc,
+        images: returnImage ? [returnImage] : []
+      });
+
+      if (res.data?.success || res.status === 201 || res.status === 200) {
+        toast.success('Return/Refund request submitted successfully!');
+        setReturnModalOpen(false);
+        fetchOrdersAndReturns();
+      } else {
+        toast.error(res.data?.message || 'Failed to submit return request');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Unable to submit return request');
+    } finally {
+      setSubmittingReturn(false);
+    }
   };
 
   return (
-    <div className="w-full px-4 sm:px-8 lg:px-12 py-10 max-w-7xl mx-auto space-y-8">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-8">
+      <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* User Card */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs h-fit text-center">
-          <div className="w-20 h-20 bg-[#B71C1C] text-white font-black text-2xl rounded-full flex items-center justify-center mx-auto mb-4 shadow-md shadow-[#B71C1C]/30">
-            {user?.fullName ? user.fullName[0].toUpperCase() : 'M'}
-          </div>
-          <h2 className="font-display font-extrabold text-lg text-slate-900">{user?.fullName || 'Madhan'}</h2>
-          <p className="text-xs text-slate-500 mb-4">{user?.email || 'madhan@gmail.com'}</p>
-          <div className="text-left text-xs space-y-2.5 border-t border-slate-100 pt-4">
-            <p className="flex items-center gap-2 text-slate-600 font-medium">
-              <User className="w-4 h-4 text-[#B71C1C] shrink-0" />
-              <span>{user?.phone || '+91 98765 43210'}</span>
-            </p>
-            <p className="flex items-center gap-2 text-slate-600 font-medium">
-              <MapPin className="w-4 h-4 text-[#B71C1C] shrink-0" />
-              <span>{user?.address || '123 Karviyam Street, Chennai 600001'}</span>
-            </p>
+        {/* Top Header Card */}
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white flex items-center justify-center font-display font-black text-2xl shadow-md">
+              {user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'U'}
+            </div>
+            <div>
+              <h1 className="font-display font-bold text-xl sm:text-2xl text-slate-900">
+                {user?.fullName || user?.name || 'Customer Account'}
+              </h1>
+              <p className="text-xs text-slate-500 font-medium">{user?.email}</p>
+            </div>
           </div>
 
-          {/* Logout Button */}
-          <div className="mt-6 border-t border-slate-100 pt-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/settings')}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+            >
+              Account Settings
+            </button>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-rose-50 hover:bg-rose-100 text-[#B71C1C] border border-rose-200 rounded-2xl text-xs font-black transition-all shadow-2xs cursor-pointer active:scale-95"
+              className="px-4 py-2 bg-red-50 hover:bg-red-100 text-[#B71C1C] text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
             >
-              <LogOut className="w-4 h-4" />
-              <span>LOGOUT ACCOUNT</span>
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
             </button>
           </div>
         </div>
 
-        {/* Order History */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* Orders Section */}
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-display font-black text-2xl text-slate-900">Order History</h2>
+            <h2 className="font-display font-bold text-lg text-slate-900 flex items-center gap-2">
+              <Package className="w-5 h-5 text-[#B71C1C]" />
+              <span>Order History & Returns</span>
+            </h2>
             <button
-              onClick={fetchOrders}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              onClick={fetchOrdersAndReturns}
+              className="text-xs text-slate-500 hover:text-[#B71C1C] flex items-center gap-1 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+              <span>Refresh</span>
             </button>
           </div>
 
@@ -158,47 +182,182 @@ export default function UserProfilePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {orders.map((ord) => (
-                <div key={ord.id} className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
-                  <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-3.5 text-xs gap-2">
-                    <div>
-                      <span className="font-extrabold text-slate-900">{ord.orderCode}</span>
-                      <span className="text-slate-400 ml-2 font-mono text-[11px]">({ord.trackingNumber})</span>
-                    </div>
-                    <span className={`font-extrabold px-3 py-1 rounded-full uppercase text-[10px] ${
-                      ord.status === 'DELIVERED' ? 'bg-emerald-100 text-emerald-800' :
-                      ord.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                      'bg-amber-100 text-amber-800'
-                    }`}>
-                      {ord.status}
-                    </span>
-                  </div>
+              {orders.map((ord) => {
+                const activeReturn = returnRequests.find(r => String(r.order_id) === String(ord.id));
+                const isCancelled = String(ord.status).toUpperCase() === 'CANCELLED';
 
-                  <div className="space-y-3">
-                    {ord.items.map((item, idx) => (
-                      <div key={item.id || idx} className="flex items-center gap-3 text-xs bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
-                        <img src={item.productImage} alt="" className="w-12 h-12 object-cover rounded-xl border border-slate-200 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-slate-900 truncate">{item.productName}</p>
-                          <p className="text-[11px] text-slate-500 font-medium mt-0.5">Qty: {item.quantity} × ₹{item.priceAtTime}</p>
-                        </div>
+                return (
+                  <div key={ord.id} className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+                    <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-3.5 text-xs gap-2">
+                      <div>
+                        <span className="font-extrabold text-slate-900">{ord.orderCode}</span>
+                        <span className="text-slate-400 ml-2 font-mono text-[11px]">({ord.trackingNumber})</span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-extrabold px-3 py-1 rounded-full uppercase text-[10px] ${
+                          ord.status === 'DELIVERED' ? 'bg-emerald-100 text-emerald-800' :
+                          ord.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                          'bg-amber-100 text-amber-800'
+                        }`}>
+                          {ord.status}
+                        </span>
 
-                  <div className="flex items-center justify-between text-xs pt-3 border-t border-slate-100">
-                    <span className="text-slate-500 font-medium">
-                      Placed on {new Date(ord.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <span className="font-display font-black text-base text-[#B71C1C]">Total Amount: ₹{ord.totalAmount}</span>
+                        {activeReturn && (
+                          <span className="font-bold px-3 py-1 rounded-full uppercase text-[10px] bg-purple-100 text-purple-800 border border-purple-200">
+                            {activeReturn.type}: {activeReturn.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {ord.items.map((item, idx) => (
+                        <div key={item.id || idx} className="flex items-center gap-3 text-xs bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
+                          <img src={item.productImage} alt="" className="w-12 h-12 object-cover rounded-xl border border-slate-200 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-slate-900 truncate">{item.productName}</p>
+                            <p className="text-[11px] text-slate-500 font-medium mt-0.5">Qty: {item.quantity} × ₹{item.priceAtTime}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs pt-3 border-t border-slate-100 gap-3">
+                      <span className="text-slate-500 font-medium">
+                        Placed on {new Date(ord.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      
+                      <div className="flex items-center gap-3">
+                        <span className="font-display font-black text-base text-[#B71C1C]">Total: ₹{ord.totalAmount}</span>
+                        
+                        {!isCancelled && !activeReturn && (
+                          <button
+                            onClick={() => handleOpenReturnModal(ord)}
+                            className="px-3.5 py-1.5 bg-slate-900 hover:bg-[#B71C1C] text-white font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Return & Refund</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
       </div>
+
+      {/* Return & Refund Request Modal */}
+      {returnModalOpen && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+            <div className="bg-slate-900 px-6 py-4 text-white flex items-center justify-between">
+              <div>
+                <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                  <RotateCcw className="w-5 h-5 text-red-400" />
+                  <span>Request Return & Refund</span>
+                </h3>
+                <p className="text-[11px] text-slate-400">Order {selectedOrder.orderCode}</p>
+              </div>
+              <button
+                onClick={() => setReturnModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center hover:bg-slate-700 text-slate-300"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReturnRequest} className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Request Type</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setReturnType('RETURN')}
+                    className={`py-2.5 px-4 font-bold rounded-xl border text-center transition-all ${
+                      returnType === 'RETURN'
+                        ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
+                        : 'bg-slate-50 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    Return Product
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReturnType('REFUND')}
+                    className={`py-2.5 px-4 font-bold rounded-xl border text-center transition-all ${
+                      returnType === 'REFUND'
+                        ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
+                        : 'bg-slate-50 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    Refund Only
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Reason for Return / Refund</label>
+                <select
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  className="w-full bg-slate-50 text-slate-900 border border-slate-200 rounded-xl p-3 font-semibold outline-none focus:border-[#B71C1C]"
+                >
+                  <option value="Damaged or Defective Item">Damaged or Defective Item</option>
+                  <option value="Wrong Item Delivered">Wrong Item Delivered</option>
+                  <option value="Size or Fitting Issue">Size or Fitting Issue</option>
+                  <option value="Product Not as Described">Product Not as Described</option>
+                  <option value="Changed My Mind">Changed My Mind</option>
+                  <option value="Quality Not Satisfactory">Quality Not Satisfactory</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Additional Details / Explanation</label>
+                <textarea
+                  rows={3}
+                  value={returnDesc}
+                  onChange={(e) => setReturnDesc(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-[#B71C1C]"
+                  placeholder="Describe the issue with your item..."
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Supporting Photo / Image URL (Optional)</label>
+                <input
+                  type="text"
+                  value={returnImage}
+                  onChange={(e) => setReturnImage(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-[#B71C1C]"
+                  placeholder="e.g. https://domain.com/photo.jpg or image URL"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setReturnModalOpen(false)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReturn}
+                  className="px-6 py-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-2"
+                >
+                  {submittingReturn && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Submit Request</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
