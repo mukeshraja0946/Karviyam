@@ -24,6 +24,7 @@ import MegaMenu from './MegaMenu';
 import VoiceSearchModal from './VoiceSearchModal';
 import DeliveryLocationModal from './DeliveryLocationModal';
 import api from '../utils/api';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
