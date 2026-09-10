@@ -3,6 +3,7 @@ const pool = require('../config/db');
 const razorpayConfig = require('../config/razorpay');
 const ApiResponse = require('../utils/apiResponse');
 const { sendSubscriptionSuccessEmail } = require('../utils/emailService');
+const { logPaymentError } = require('../utils/paymentLogger');
 
 // Helper: Get Receiving Bank/UPI Account details from DB
 const getAdminBankAccountFromDb = async () => {
@@ -146,7 +147,22 @@ exports.createUpiPaymentRequest = async (req, res, next) => {
           razorpayOrderId = rzpOrder.id;
         }
       } catch (eRzp) {
-        console.warn('[Razorpay Order Creation Warning]:', eRzp.message);
+        const rzpErrObj = eRzp?.error || eRzp || {};
+        logPaymentError({
+          provider: 'Razorpay',
+          orderId: dbOrderId,
+          subscriptionId: dbSubId,
+          transactionReference: txnRef,
+          amount: expectedAmount,
+          amountInPaise,
+          vpa: cleanUpi,
+          httpStatus: eRzp?.statusCode || eRzp?.status || 400,
+          errorCode: rzpErrObj.code || eRzp?.code || 'RAZORPAY_ORDER_CREATE_ERROR',
+          errorDescription: rzpErrObj.description || eRzp?.message || 'Razorpay order creation API failed',
+          errorSource: rzpErrObj.source || null,
+          errorReason: rzpErrObj.reason || null,
+          rawError: eRzp
+        });
       }
     }
 
@@ -209,6 +225,13 @@ exports.createUpiPaymentRequest = async (req, res, next) => {
       message: 'UPI payment request created. Please approve in your UPI app.'
     }, 'UPI payment request initiated successfully'));
   } catch (err) {
+    logPaymentError({
+      provider: 'Razorpay',
+      httpStatus: 500,
+      errorCode: 'UNHANDLED_BACKEND_PAYMENT_EXCEPTION',
+      errorDescription: err.message || 'Internal payment processing exception',
+      rawError: { stack: err.stack, message: err.message }
+    });
     next(err);
   }
 };
