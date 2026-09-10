@@ -226,6 +226,7 @@ exports.createUpiPaymentRequest = async (req, res, next) => {
       paymentId,
       transactionReference: txnRef,
       razorpayOrderId,
+      razorpayKeyId: razorpayConfig.keyId,
       targetType,
       targetId: targetId,
       upiId: cleanUpi,

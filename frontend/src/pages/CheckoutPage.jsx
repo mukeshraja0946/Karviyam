@@ -601,7 +601,7 @@ export default function CheckoutPage() {
         if (scriptLoaded && window.Razorpay) {
           try {
             const rzp = new window.Razorpay({
-              key: paymentSettings.razorpayKeyId || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_key_id',
+              key: txnData?.razorpayKeyId || paymentSettings.razorpayKeyId || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TaNfvxvMh6QlPF',
               amount: Math.round(orderTotal * 100),
               currency: 'INR',
               name: 'Karviyam',

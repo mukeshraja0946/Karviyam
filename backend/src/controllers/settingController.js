@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
+const razorpayConfig = require('../config/razorpay');
 
 const ensureSettingsTable = async () => {
   try {
@@ -206,6 +207,8 @@ exports.getPaymentSettings = async (req, res, next) => {
       qrDisplayName,
       qrInstructions,
       verificationMode,
+      razorpayKeyId: razorpayConfig.keyId,
+      razorpay_key_id: razorpayConfig.keyId,
 
       // Compatibility fields
       cod_enabled: cod,
