@@ -62,11 +62,24 @@ const getSubscriptionActiveOffer = async () => {
   };
 };
 
+// Helper: Ensure payments table columns exist in DB
+const ensurePaymentColumnsExist = async () => {
+  try { await pool.query(`ALTER TABLE payments MODIFY COLUMN order_id BIGINT NULL`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE payments ADD COLUMN subscription_id BIGINT DEFAULT NULL`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE payments ADD COLUMN razorpay_order_id VARCHAR(100) DEFAULT NULL`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE payments ADD COLUMN razorpay_payment_id VARCHAR(100) DEFAULT NULL`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE payments ADD COLUMN razorpay_signature VARCHAR(255) DEFAULT NULL`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE payments ADD COLUMN upi_vpa VARCHAR(255) DEFAULT NULL`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE payments ADD COLUMN amount_received DECIMAL(10,2) DEFAULT 0.00`); } catch (e) {}
+  try { await pool.query(`ALTER TABLE payments ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`); } catch (e) {}
+};
+
 // --------------------------------------------------
 // 1. CREATE GENUINE UPI PAYMENT REQUEST
 // --------------------------------------------------
 exports.createUpiPaymentRequest = async (req, res, next) => {
   try {
+    await ensurePaymentColumnsExist();
     const { type, id, orderId, subscriptionId, upiId } = req.body;
     const targetType = (type || (subscriptionId ? 'SUBSCRIPTION' : 'ORDER')).toUpperCase();
     const targetId = id || orderId || subscriptionId;
