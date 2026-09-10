@@ -576,9 +576,10 @@ export default function CheckoutPage() {
         upiId: customerUpi.trim()
       }).catch(() => null);
 
+      const isSuccess = Boolean(reqRes?.data?.success || reqRes?.success);
       const txnData = reqRes?.data?.data || reqRes?.data;
-      if (!reqRes?.data?.success || !txnData?.transactionReference) {
-        toast.error(reqRes?.data?.message || 'Unable to create UPI payment request. Please try again.', { id: 'order-upi-toast' });
+      if (!isSuccess || !txnData?.transactionReference) {
+        toast.error(reqRes?.data?.message || reqRes?.message || 'Unable to create UPI payment request. Please try again.', { id: 'order-upi-toast' });
         return;
       }
       setPendingTxn(txnData);
@@ -1448,6 +1449,19 @@ export default function CheckoutPage() {
                 <span className="font-mono text-slate-700">{pendingTxn?.transactionReference || `TXN-ORD-${pendingOrder?.id}`}</span>
               </div>
             </div>
+
+            {/* Dynamic UPI QR Code for Desktop Scanning */}
+            {pendingTxn?.upiUri && (
+              <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl flex flex-col items-center gap-2">
+                <p className="text-[11px] font-bold text-slate-700">Or Scan QR with any UPI App (GPay / PhonePe / Paytm / BHIM):</p>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(pendingTxn.upiUri)}`}
+                  alt="UPI Payment QR Code"
+                  className="w-36 h-36 rounded-xl border border-slate-300 shadow-2xs"
+                />
+                <span className="text-[10px] text-slate-500 font-medium">Scan to pay exact amount: ₹{Number(pendingTxn?.amount || orderTotal || 0).toFixed(2)}</span>
+              </div>
+            )}
 
             <div className="text-[11.5px] text-amber-800 font-bold flex items-center justify-center gap-1.5 pt-1">
               <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-700" />
