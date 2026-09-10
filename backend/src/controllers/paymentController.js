@@ -93,6 +93,15 @@ exports.createUpiPaymentRequest = async (req, res, next) => {
       const order = orders[0];
       dbOrderId = order.id;
       expectedAmount = parseFloat(order.total_amount || 0);
+      if (expectedAmount <= 0) {
+        const [items] = await pool.query('SELECT price_at_time, quantity FROM order_items WHERE order_id = ?', [order.id]);
+        if (items.length > 0) {
+          const itemSum = items.reduce((acc, it) => acc + (parseFloat(it.price_at_time || 0) * (parseInt(it.quantity) || 1)), 0);
+          const shipCost = parseFloat(order.shipping_cost || 0);
+          const disc = parseFloat(order.discount_amount || 0);
+          expectedAmount = Math.max(0, itemSum + shipCost - disc);
+        }
+      }
       noteText = `KARVIYAM Order #${order.id}`;
     } else if (targetType === 'SUBSCRIPTION') {
       const [subs] = await pool.query('SELECT * FROM subscriptions WHERE id = ? LIMIT 1', [targetId]);
@@ -108,7 +117,7 @@ exports.createUpiPaymentRequest = async (req, res, next) => {
     }
 
     if (expectedAmount <= 0) {
-      return res.status(400).json(ApiResponse.error('Invalid payment amount.'));
+      return res.status(400).json(ApiResponse.error('Invalid payment amount. Total order amount must be greater than ₹0.00.'));
     }
 
     const amountInPaise = Math.round(expectedAmount * 100);

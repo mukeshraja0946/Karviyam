@@ -487,9 +487,11 @@ export default function Navbar() {
               <Link to="/cart" className="flex flex-col items-center group relative cursor-pointer">
                 <div className="relative">
                   <ShoppingBag className="w-5 h-5 text-slate-700 group-hover:text-[#B71C1C] transition-colors" />
-                  <span className="absolute -top-1.5 -right-2 bg-[#B71C1C] text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">
-                    {itemCount || 2}
-                  </span>
+                  {itemCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 bg-[#B71C1C] text-white text-[9px] font-black rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center">
+                      {itemCount > 99 ? '99+' : itemCount}
+                    </span>
+                  )}
                 </div>
                 <span className="text-[10px] font-bold text-slate-600 group-hover:text-[#B71C1C] mt-0.5">
                   Bag

@@ -375,20 +375,8 @@ export default function CheckoutPage() {
       }
     } catch (e) {}
 
-    // 4. Default Sample Checkout Item Fallback
-    return [
-      {
-        id: 101,
-        productId: 1,
-        productName: 'Karviyam Cyberpunk Oversized Tee',
-        price: 899,
-        imageUrl: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
-        productImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
-        quantity: 1,
-        selectedSize: 'L',
-        selectedColor: 'Neon Black'
-      }
-    ];
+    // 4. Return empty array if no items exist
+    return [];
   };
 
   const rawItemsList = getInitialCheckoutItems();
@@ -568,11 +556,15 @@ export default function CheckoutPage() {
       }).catch(() => null);
 
       const txnData = reqRes?.data?.data || reqRes?.data;
+      if (!reqRes?.data?.success || !txnData?.transactionReference) {
+        toast.error(reqRes?.data?.message || 'Unable to create UPI payment request. Please try again.', { id: 'order-upi-toast' });
+        return;
+      }
       setPendingTxn(txnData);
 
       setPaymentModalOpen(false);
       setUpiWaitingModalOpen(true);
-      toast.success('UPI Payment Request sent! Check your UPI app to approve.', { id: 'order-upi-toast', duration: 4000 });
+      toast.success('UPI Payment Request created! Approve the payment in your UPI app.', { id: 'order-upi-toast', duration: 4000 });
 
       // Trigger mobile intent link if on mobile
       if (txnData?.upiUri && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
@@ -583,7 +575,7 @@ export default function CheckoutPage() {
       startOrderPolling(createdOrder.id, createdOrder);
     } catch (err) {
       console.error(err);
-      toast.error('Failed to initiate UPI payment request. Please try again.');
+      toast.error('Unable to create UPI payment request. Please try again.', { id: 'order-upi-toast' });
     } finally {
       setSubmitting(false);
     }
@@ -1415,7 +1407,9 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between border-b pb-2">
                 <span className="font-bold text-slate-500">Total Order Amount:</span>
-                <span className="font-black text-slate-900 text-sm">₹{orderTotal.toFixed(2)}</span>
+                <span className="font-black text-slate-900 text-sm">
+                  ₹{Number(pendingTxn?.amount || pendingOrder?.totalAmount || pendingOrder?.total_amount || orderTotal || 0).toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between pt-0.5">
                 <span className="font-bold text-slate-500">Payment Reference:</span>

@@ -5,24 +5,7 @@ import toast from 'react-hot-toast';
 
 const CartContext = createContext();
 
-const DEFAULT_SAMPLE_ITEMS = [
-  {
-    id: 101,
-    productId: 1,
-    product: {
-      id: 1,
-      name: 'Karviyam Cyberpunk Oversized Tee',
-      price: 899,
-      imageUrl: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800'
-    },
-    productName: 'Karviyam Cyberpunk Oversized Tee',
-    productImage: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
-    price: 899,
-    quantity: 1,
-    selectedSize: 'L',
-    selectedColor: 'Neon Black'
-  }
-];
+const DEFAULT_SAMPLE_ITEMS = [];
 
 const DEFAULT_PRODUCT_PLACEHOLDER = 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800';
 
@@ -62,7 +45,7 @@ export const CartProvider = ({ children }) => {
       const saved = localStorage.getItem('karviyam_cart_items');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           const norm = parsed.map(normalizeCartItem).filter(Boolean);
           return { items: norm };
         }
@@ -70,7 +53,7 @@ export const CartProvider = ({ children }) => {
     } catch (e) {
       console.error(e);
     }
-    return { items: DEFAULT_SAMPLE_ITEMS.map(normalizeCartItem).filter(Boolean) };
+    return { items: [] };
   });
 
   useEffect(() => {
@@ -89,7 +72,7 @@ export const CartProvider = ({ children }) => {
       const apiData = res?.data ? res.data : res;
       const cartData = apiData?.data !== undefined ? apiData.data : apiData;
 
-      if (cartData && Array.isArray(cartData.items) && cartData.items.length > 0) {
+      if (cartData && Array.isArray(cartData.items)) {
         const normalized = cartData.items.map(normalizeCartItem).filter(Boolean);
         setCart({ ...cartData, items: normalized });
         localStorage.setItem('karviyam_cart_items', JSON.stringify(normalized));
