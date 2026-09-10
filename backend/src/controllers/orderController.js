@@ -112,14 +112,20 @@ exports.checkout = async (req, res, next) => {
 
     let calculatedTotal = 0;
     for (const item of orderItemsData) {
-      if (!item.priceAtTime) {
-        const [pRows] = await pool.query('SELECT price FROM products WHERE id = ?', [item.productId]);
-        item.priceAtTime = pRows.length > 0 ? pRows[0].price : (item.price || 0);
+      const [pRows] = await pool.query('SELECT price FROM products WHERE id = ?', [item.productId]);
+      if (pRows.length > 0 && parseFloat(pRows[0].price || 0) > 0) {
+        item.priceAtTime = parseFloat(pRows[0].price);
+      } else {
+        item.priceAtTime = parseFloat(item.priceAtTime || item.price || 999.00);
       }
-      calculatedTotal += parseFloat(item.priceAtTime) * parseInt(item.quantity);
+      calculatedTotal += parseFloat(item.priceAtTime) * parseInt(item.quantity || 1);
     }
 
     const finalTotal = Math.max(0, calculatedTotal - parseFloat(discountAmount) + parseFloat(shippingCost));
+
+    if (finalTotal <= 0) {
+      return res.status(400).json(ApiResponse.error('Unable to calculate the order total. Please check cart items and try again.'));
+    }
 
     // Determine initial order status: COD orders default to 'CONFIRMED' or 'Pending', UPI orders default to 'PAYMENT_PENDING'
     const initialStatus = normalizedMethod === 'COD' ? 'Pending' : 'PAYMENT_PENDING';

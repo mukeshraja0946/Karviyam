@@ -9,12 +9,19 @@ const DEFAULT_SAMPLE_ITEMS = [];
 
 const DEFAULT_PRODUCT_PLACEHOLDER = 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800';
 
+export const extractPrice = (item) => {
+  if (!item || typeof item !== 'object') return 0;
+  const val = item.price ?? item.price_at_time ?? item.priceAtTime ?? item.product?.price ?? item.product?.price_at_time ?? item.product_price ?? item.unit_price;
+  const num = Number(val);
+  return !isNaN(num) && num > 0 ? num : 0;
+};
+
 export const normalizeCartItem = (item) => {
   if (!item || typeof item !== 'object') return null;
 
   const pId = item.productId || item.product_id || item.product?.id || item.id || 0;
-  const pName = item.productName || item.product_name || item.product?.name || item.name || 'Karviyam Product';
-  const pPrice = Number(item.price || item.product?.price || 0);
+  const pName = item.productName || item.product_name || item.product?.name || item.title || item.name || 'Karviyam Product';
+  const pPrice = extractPrice(item);
   const pImg = item.imageUrl || item.image_url || item.imagePath || item.image || item.productImage || item.product?.imageUrl || item.product?.image || DEFAULT_PRODUCT_PLACEHOLDER;
   const qty = Math.max(1, Number(item.quantity) || 1);
 
@@ -103,14 +110,24 @@ export const CartProvider = ({ children }) => {
   };
 
   const addToCart = async (target, quantity = 1, selectedSize = 'M', selectedColor = 'Standard') => {
-    const productId = typeof target === 'object' && target !== null ? (target.id || target.productId) : target;
-    const targetObj = typeof target === 'object' && target !== null ? target : {};
+    let targetObj = {};
+    let productId = 0;
+
+    if (typeof target === 'object' && target !== null) {
+      targetObj = target;
+      productId = target.id || target.productId || target.product_id || 1;
+    } else {
+      productId = Number(target) || 1;
+      targetObj = { id: productId };
+    }
+
+    const priceVal = extractPrice(targetObj);
 
     const rawItem = {
       id: Date.now(),
       productId: Number(productId) || 1,
       productName: targetObj.name || targetObj.productName || targetObj.title || 'Karviyam Item',
-      price: Number(targetObj.price || 0),
+      price: priceVal,
       imageUrl: targetObj.imageUrl || targetObj.image || targetObj.imagePath || DEFAULT_PRODUCT_PLACEHOLDER,
       quantity: Number(quantity) || 1,
       selectedSize: selectedSize || 'M',
@@ -127,26 +144,30 @@ export const CartProvider = ({ children }) => {
           selectedSize: selectedSize || null,
           selectedColor: selectedColor || null
         }).catch(() => {});
+        await fetchCart();
+      } else {
+        setCart(prev => {
+          const current = Array.isArray(prev?.items) ? prev.items : [];
+          const existingIdx = current.findIndex(i => i && i.productId === newItem.productId && i.selectedSize === newItem.selectedSize);
+          let updated = [];
+          if (existingIdx > -1) {
+            updated = [...current];
+            const existingPrice = extractPrice(updated[existingIdx]) > 0 ? extractPrice(updated[existingIdx]) : newItem.price;
+            updated[existingIdx] = normalizeCartItem({
+              ...updated[existingIdx],
+              price: existingPrice,
+              quantity: updated[existingIdx].quantity + newItem.quantity
+            });
+          } else {
+            updated = [...current, newItem];
+          }
+          const cleanUpdated = updated.map(normalizeCartItem).filter(Boolean);
+          localStorage.setItem('karviyam_cart_items', JSON.stringify(cleanUpdated));
+          return { items: cleanUpdated };
+        });
       }
 
-      setCart(prev => {
-        const current = Array.isArray(prev?.items) ? prev.items : [];
-        const existingIdx = current.findIndex(i => i && i.productId === newItem.productId && i.selectedSize === newItem.selectedSize);
-        let updated = [];
-        if (existingIdx > -1) {
-          updated = [...current];
-          updated[existingIdx] = normalizeCartItem({
-            ...updated[existingIdx],
-            quantity: updated[existingIdx].quantity + newItem.quantity
-          });
-        } else {
-          updated = [...current, newItem];
-        }
-        const cleanUpdated = updated.map(normalizeCartItem).filter(Boolean);
-        localStorage.setItem('karviyam_cart_items', JSON.stringify(cleanUpdated));
-        return { items: cleanUpdated };
-      });
-
+      window.dispatchEvent(new Event('karviyam_cart_updated'));
       toast.success('Added to your bag! 🛍️');
       return true;
     } catch (err) {
@@ -170,6 +191,7 @@ export const CartProvider = ({ children }) => {
         localStorage.setItem('karviyam_cart_items', JSON.stringify(updated));
         return { items: updated };
       });
+      window.dispatchEvent(new Event('karviyam_cart_updated'));
     } catch (err) {
       console.error('Update quantity error:', err);
     }
@@ -186,6 +208,7 @@ export const CartProvider = ({ children }) => {
         localStorage.setItem('karviyam_cart_items', JSON.stringify(updated));
         return { items: updated };
       });
+      window.dispatchEvent(new Event('karviyam_cart_updated'));
       toast.success('Item removed from bag');
     } catch (err) {
       console.error('Remove item error:', err);
@@ -199,17 +222,19 @@ export const CartProvider = ({ children }) => {
       }
       setCart({ items: [] });
       localStorage.setItem('karviyam_cart_items', JSON.stringify([]));
+      window.dispatchEvent(new Event('karviyam_cart_updated'));
     } catch (err) {
       console.error('Clear cart error:', err);
       setCart({ items: [] });
       localStorage.setItem('karviyam_cart_items', JSON.stringify([]));
+      window.dispatchEvent(new Event('karviyam_cart_updated'));
     }
   };
 
   const itemsList = cart && Array.isArray(cart.items) ? cart.items.map(normalizeCartItem).filter(Boolean) : [];
   const itemCount = itemsList.reduce((acc, item) => acc + (Number(item?.quantity) || 1), 0);
   const cartSubtotal = itemsList.reduce((acc, item) => {
-    const itemPrice = Number(item?.price || item?.product?.price || 0);
+    const itemPrice = extractPrice(item);
     return acc + (itemPrice * (Number(item?.quantity) || 1));
   }, 0);
 

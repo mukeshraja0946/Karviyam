@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
+import { useCart, extractPrice } from '../context/CartContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
@@ -392,7 +392,11 @@ export default function CheckoutPage() {
     toast.success('Product removed from order items');
   };
 
-  const rawItemTotal = itemsList.reduce((acc, item) => acc + ((item.price || item.product?.price || 899) * (item.quantity || 1)), 0);
+  const rawItemTotal = itemsList.reduce((acc, item) => {
+    const price = extractPrice(item);
+    const qty = Math.max(1, Number(item?.quantity) || 1);
+    return acc + (price * qty);
+  }, 0);
   const shippingCharge = deliveryOption === 'express' ? 69 : 0;
   const activeDiscount = couponApplied ? couponDiscount : 0;
   const orderTotal = Math.max(0, rawItemTotal + shippingCharge - activeDiscount);
@@ -401,6 +405,11 @@ export default function CheckoutPage() {
   const handleProceedToPayment = () => {
     if (!itemsList || itemsList.length === 0) {
       toast.error('Your Bag is empty! Please add products before checking out.');
+      return;
+    }
+
+    if (orderTotal <= 0) {
+      toast.error('Unable to calculate the order total. Please refresh your cart and try again.');
       return;
     }
 
@@ -481,6 +490,11 @@ export default function CheckoutPage() {
 
   // Execute Final Order Placement
   const handleConfirmAndPlaceOrder = async () => {
+    if (orderTotal <= 0) {
+      toast.error('Unable to calculate the order total. Please refresh your cart and try again.');
+      return;
+    }
+
     if (selectedPaymentMethod === 'UPI') {
       const cleanUpi = customerUpi.trim();
       if (!cleanUpi) {
@@ -1348,16 +1362,18 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={handleConfirmAndPlaceOrder}
-                  disabled={submitting || availablePaymentMethods.length === 0}
+                  disabled={submitting || availablePaymentMethods.length === 0 || orderTotal <= 0}
                   className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] disabled:opacity-50 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Placing Your Order...</span>
+                      <span>Processing Payment...</span>
                     </>
+                  ) : orderTotal <= 0 ? (
+                    <span>Calculating Total...</span>
                   ) : (
-                    <span>CONFIRM & PLACE ORDER (₹{orderTotal.toFixed(2)})</span>
+                    <span>CONFIRM & PAY (₹{orderTotal.toFixed(2)})</span>
                   )}
                 </button>
 

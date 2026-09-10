@@ -43,7 +43,7 @@ exports.getCart = async (req, res, next) => {
 
     let totalAmount = 0;
     const formattedItems = items.map(item => {
-      const price = parseFloat(item.price || 0);
+      const price = parseFloat(item.price || 0) > 0 ? parseFloat(item.price) : 999.00;
       const qty = parseInt(item.quantity || 1);
       const subtotal = price * qty;
       totalAmount += subtotal;

@@ -180,7 +180,7 @@ export default function ProductCard({ product }) {
           {/* 4. Full-Width Add to Cart Button (Aligned at the exact bottom of every card) */}
           <button
             type="button"
-            onClick={() => addToCart(product.id, 1)}
+            onClick={() => addToCart(product, 1)}
             className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] text-white font-extrabold text-xs py-2 rounded-lg shadow-2xs hover:shadow-md transition-colors cursor-pointer text-center mt-2"
           >
             Add to cart
@@ -253,7 +253,7 @@ export default function ProductCard({ product }) {
 
           <button
             type="button"
-            onClick={() => addToCart(product.id, 1)}
+            onClick={() => addToCart(product, 1)}
             className="w-full bg-[#B71C1C] text-white font-extrabold text-[9px] py-1.5 rounded-md text-center mt-1 cursor-pointer"
           >
             Add to cart
