@@ -86,7 +86,12 @@ exports.createUpiPaymentRequest = async (req, res, next) => {
     let noteText = '';
 
     if (targetType === 'ORDER') {
-      const [orders] = await pool.query('SELECT * FROM orders WHERE id = ? LIMIT 1', [targetId]);
+      let orderIdNum = targetId;
+      if (typeof targetId === 'string') {
+        const match = targetId.match(/\d+/);
+        if (match) orderIdNum = parseInt(match[0]);
+      }
+      const [orders] = await pool.query('SELECT * FROM orders WHERE id = ? OR id = ? LIMIT 1', [targetId, orderIdNum]);
       if (orders.length === 0) {
         return res.status(404).json(ApiResponse.error('Order record not found.'));
       }

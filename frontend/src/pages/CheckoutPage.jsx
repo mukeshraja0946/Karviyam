@@ -510,10 +510,30 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     try {
+      let activeAddr = { ...formData };
+      if (selectedAddressId && userAddresses.length > 0) {
+        const foundAddr = userAddresses.find(a => a.id === selectedAddressId);
+        if (foundAddr) {
+          activeAddr = {
+            fullName: foundAddr.fullName || user?.fullName || formData.fullName,
+            phone: foundAddr.phone || user?.phone || formData.phone,
+            email: user?.email || formData.email,
+            houseFlatNo: foundAddr.houseFlatNo || '',
+            streetAddress: foundAddr.streetAddress || '',
+            city: foundAddr.city || formData.city || 'Chennai',
+            state: foundAddr.state || formData.state || 'Tamil Nadu',
+            pincode: foundAddr.pincode || formData.pincode || '600001',
+            address: `${foundAddr.houseFlatNo ? foundAddr.houseFlatNo + ', ' : ''}${foundAddr.streetAddress || ''}`
+          };
+        }
+      }
+
       const payload = {
-        ...formData,
+        ...activeAddr,
         paymentMethod: selectedPaymentMethod,
         couponCode: couponApplied ? couponCode : '',
+        discountAmount: activeDiscount,
+        shippingCost: shippingCharge,
         items: itemsList,
         totalAmount: orderTotal
       };
@@ -523,30 +543,17 @@ export default function CheckoutPage() {
         const res = await api.post('/orders/checkout', payload);
         const apiData = res.data ? res.data : res;
         createdOrder = apiData.data || apiData;
-      } catch (e) {}
+      } catch (eErr) {
+        console.error('[Checkout Error]:', eErr);
+        toast.error(eErr.response?.data?.message || 'Failed to process checkout. Please check delivery address.');
+        setSubmitting(false);
+        return;
+      }
 
       if (!createdOrder || !createdOrder.id) {
-        const newId = Date.now();
-        createdOrder = {
-          id: `KV-ORD-${String(newId).slice(-6)}`,
-          orderCode: `KV-ORD-${String(newId).slice(-6)}`,
-          customer: formData.fullName || 'Arun Kumar',
-          email: formData.email || 'arunkumar@example.com',
-          phone: formData.phone || '9876543210',
-          shippingAddress: formData,
-          status: selectedPaymentMethod === 'COD' ? 'Pending' : 'Payment Pending',
-          paymentStatus: selectedPaymentMethod === 'COD' ? 'Pending' : 'PENDING',
-          paymentMethod: selectedPaymentMethod,
-          totalAmount: orderTotal,
-          items: itemsList,
-          createdAt: new Date().toISOString()
-        };
-
-        try {
-          const savedOrders = JSON.parse(localStorage.getItem('karviyam_admin_orders') || '[]');
-          savedOrders.unshift(createdOrder);
-          localStorage.setItem('karviyam_admin_orders', JSON.stringify(savedOrders));
-        } catch (e) {}
+        toast.error('Failed to create order record. Please try again.');
+        setSubmitting(false);
+        return;
       }
 
       // If Cash on Delivery -> Immediately finish order
