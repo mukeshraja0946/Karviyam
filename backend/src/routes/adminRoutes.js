@@ -9,6 +9,7 @@ const contactController = require('../controllers/contactController');
 const orderController = require('../controllers/orderController');
 const { optionalToken } = require('../middleware/authMiddleware');
 const { requireAdmin } = require('../middleware/adminMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 
 // All admin routes use auth guard
 router.use(optionalToken, requireAdmin);
@@ -115,5 +116,12 @@ router.put('/company-settings', settingController.updateCompanySettings);
 router.get('/settings', settingController.getSettings);
 router.post('/settings', settingController.updateSettings);
 router.put('/settings', settingController.updateSettings);
+
+// Payment Settings Routes
+router.get('/payment-settings', settingController.getPaymentSettings);
+router.post('/payment-settings', settingController.updatePaymentSettings);
+router.put('/payment-settings', settingController.updatePaymentSettings);
+router.post('/payment-settings/qr', upload.single('file'), settingController.uploadQrImage);
+router.delete('/payment-settings/qr', settingController.deleteQrImage);
 
 module.exports = router;

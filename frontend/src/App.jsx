@@ -71,6 +71,7 @@ import AdminShopFiltersPage from './pages/AdminShopFiltersPage';
 import AdminNotificationsPage from './pages/AdminNotificationsPage';
 import AdminReturnsPage from './pages/AdminReturnsPage';
 import AdminFooterPage from './pages/AdminFooterPage';
+import AdminPaymentSettingsPage from './pages/AdminPaymentSettingsPage';
 
 export default function App() {
   return (
@@ -146,6 +147,7 @@ export default function App() {
                     <Route path="/admin/footer" element={<AdminFooterPage />} />
                     <Route path="/admin/bank-account" element={<AdminBankAccountPage />} />
                     <Route path="/admin/reports" element={<AdminReportsPage />} />
+                    <Route path="/admin/payment-settings" element={<AdminPaymentSettingsPage />} />
                     <Route path="/admin/settings" element={<AdminSettingsPage />} />
                     <Route path="/admin/website-settings" element={<AdminSettingsPage />} />
                     <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />

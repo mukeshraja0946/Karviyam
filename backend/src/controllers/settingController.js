@@ -113,9 +113,54 @@ exports.getSettings = async (req, res, next) => {
   }
 };
 
+const ensurePaymentSettingsColumns = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payment_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        razorpay_key_id VARCHAR(255),
+        razorpay_secret_key VARCHAR(255),
+        bank_name VARCHAR(255),
+        account_number VARCHAR(255),
+        ifsc_code VARCHAR(100),
+        upi_id VARCHAR(255) DEFAULT 'karviyam@hdfcbank',
+        enable_cod TINYINT(1) DEFAULT 1,
+        enable_upi TINYINT(1) DEFAULT 1,
+        enable_nb TINYINT(1) DEFAULT 1,
+        enable_razorpay TINYINT(1) DEFAULT 1,
+        enable_upi_qr TINYINT(1) DEFAULT 1,
+        qr_image_url VARCHAR(500) DEFAULT '',
+        qr_display_name VARCHAR(255) DEFAULT 'Karviyam',
+        qr_instructions TEXT,
+        verification_mode VARCHAR(50) DEFAULT 'Razorpay',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+    const alters = [
+      "ALTER TABLE payment_settings ADD COLUMN enable_razorpay TINYINT(1) DEFAULT 1",
+      "ALTER TABLE payment_settings ADD COLUMN enable_upi_qr TINYINT(1) DEFAULT 1",
+      "ALTER TABLE payment_settings ADD COLUMN qr_image_url VARCHAR(500) DEFAULT ''",
+      "ALTER TABLE payment_settings ADD COLUMN qr_display_name VARCHAR(255) DEFAULT 'Karviyam'",
+      "ALTER TABLE payment_settings ADD COLUMN qr_instructions TEXT",
+      "ALTER TABLE payment_settings ADD COLUMN verification_mode VARCHAR(50) DEFAULT 'Razorpay'"
+    ];
+    for (const q of alters) {
+      try { await pool.query(q); } catch (e) {}
+    }
+  } catch (e) {}
+};
+
 exports.getPaymentSettings = async (req, res, next) => {
   try {
     await ensureSettingsTable();
+    await ensurePaymentSettingsColumns();
+
+    let dbPayRow = {};
+    try {
+      const [pRows] = await pool.query('SELECT * FROM payment_settings ORDER BY id ASC LIMIT 1');
+      if (pRows.length > 0) dbPayRow = pRows[0];
+    } catch (e) {}
+
     let rows = [];
     try {
       const [r] = await pool.query('SELECT setting_key, setting_value FROM settings');
@@ -123,7 +168,6 @@ exports.getPaymentSettings = async (req, res, next) => {
     } catch (eDb) {}
 
     const settingsObj = {};
-
     rows.forEach(r => {
       let val = r.setting_value;
       if (val === 'true') val = true;
@@ -143,40 +187,52 @@ exports.getPaymentSettings = async (req, res, next) => {
       return defaultVal;
     };
 
-    const cod = checkB(settingsObj.codEnabled, true);
-    const online = checkB(settingsObj.onlinePaymentEnabled, true);
-    const rzp = checkB(settingsObj.razorpayEnabled, true);
-    const stp = checkB(settingsObj.stripeEnabled, true);
-    const def = settingsObj.defaultPaymentMethod || 'COD';
+    const cod = checkB(dbPayRow.enable_cod !== undefined ? dbPayRow.enable_cod : settingsObj.codEnabled, true);
+    const rzp = checkB(dbPayRow.enable_razorpay !== undefined ? dbPayRow.enable_razorpay : (settingsObj.razorpayEnabled !== undefined ? settingsObj.razorpayEnabled : settingsObj.onlinePaymentEnabled), true);
+    const upiQr = checkB(dbPayRow.enable_upi_qr !== undefined ? dbPayRow.enable_upi_qr : settingsObj.upiQrEnabled, true);
+
+    const upiId = dbPayRow.upi_id || settingsObj.upiId || 'karviyam@hdfcbank';
+    const qrImageUrl = dbPayRow.qr_image_url || settingsObj.qrImageUrl || '';
+    const qrDisplayName = dbPayRow.qr_display_name || settingsObj.qrDisplayName || 'Karviyam';
+    const qrInstructions = dbPayRow.qr_instructions || settingsObj.qrInstructions || 'Scan this QR using GPay, PhonePe, Paytm or any supported UPI app';
+    const verificationMode = dbPayRow.verification_mode || settingsObj.verificationMode || 'Razorpay';
 
     const data = {
-      cod_enabled: cod,
-      online_payment_enabled: online,
-      razorpay_enabled: rzp,
-      stripe_enabled: stp,
-      default_payment_method: def,
-
       codEnabled: cod,
-      onlinePaymentEnabled: online,
       razorpayEnabled: rzp,
-      stripeEnabled: stp,
-      defaultPaymentMethod: def
+      upiQrEnabled: upiQr,
+      upiId,
+      qrImageUrl,
+      qrDisplayName,
+      qrInstructions,
+      verificationMode,
+
+      // Compatibility fields
+      cod_enabled: cod,
+      razorpay_enabled: rzp,
+      upi_qr_enabled: upiQr,
+      upi_id: upiId,
+      qr_image_url: qrImageUrl,
+      qr_display_name: qrDisplayName,
+      qr_instructions: qrInstructions,
+      verification_mode: verificationMode,
+      onlinePaymentEnabled: rzp,
+      online_payment_enabled: rzp,
+      defaultPaymentMethod: cod ? 'COD' : (rzp ? 'UPI' : 'UPI_QR')
     };
 
     return res.status(200).json(ApiResponse.success(data, 'Payment settings retrieved successfully'));
   } catch (err) {
-    console.error('[getPaymentSettings Fallback Catch]:', err);
+    console.error('[getPaymentSettings Error]:', err);
     return res.status(200).json(ApiResponse.success({
-      cod_enabled: true,
-      online_payment_enabled: true,
-      razorpay_enabled: true,
-      stripe_enabled: true,
-      default_payment_method: 'COD',
       codEnabled: true,
-      onlinePaymentEnabled: true,
       razorpayEnabled: true,
-      stripeEnabled: true,
-      defaultPaymentMethod: 'COD'
+      upiQrEnabled: true,
+      upiId: 'karviyam@hdfcbank',
+      qrImageUrl: '',
+      qrDisplayName: 'Karviyam',
+      qrInstructions: 'Scan this QR using GPay, PhonePe, Paytm or any supported UPI app',
+      verificationMode: 'Razorpay'
     }, 'Payment settings fallback retrieved'));
   }
 };
@@ -184,30 +240,100 @@ exports.getPaymentSettings = async (req, res, next) => {
 exports.updatePaymentSettings = async (req, res, next) => {
   try {
     await ensureSettingsTable();
+    await ensurePaymentSettingsColumns();
+
     const body = req.body || {};
 
     const codVal = body.codEnabled !== undefined ? body.codEnabled : body.cod_enabled;
-    const onlineVal = body.onlinePaymentEnabled !== undefined ? body.onlinePaymentEnabled : body.online_payment_enabled;
     const rzpVal = body.razorpayEnabled !== undefined ? body.razorpayEnabled : body.razorpay_enabled;
-    const stpVal = body.stripeEnabled !== undefined ? body.stripeEnabled : body.stripe_enabled;
-    const defVal = body.defaultPaymentMethod !== undefined ? body.defaultPaymentMethod : body.default_payment_method;
+    const qrVal = body.upiQrEnabled !== undefined ? body.upiQrEnabled : body.upi_qr_enabled;
 
-    const updates = {};
-    if (codVal !== undefined) updates['codEnabled'] = String(codVal);
-    if (onlineVal !== undefined) updates['onlinePaymentEnabled'] = String(onlineVal);
-    if (rzpVal !== undefined) updates['razorpayEnabled'] = String(rzpVal);
-    if (stpVal !== undefined) updates['stripeEnabled'] = String(stpVal);
-    if (defVal !== undefined) updates['defaultPaymentMethod'] = String(defVal);
+    const upiId = body.upiId !== undefined ? body.upiId : body.upi_id;
+    const qrImageUrl = body.qrImageUrl !== undefined ? body.qrImageUrl : body.qr_image_url;
+    const qrDisplayName = body.qrDisplayName !== undefined ? body.qrDisplayName : body.qr_display_name;
+    const qrInstructions = body.qrInstructions !== undefined ? body.qrInstructions : body.qr_instructions;
+    const verificationMode = body.verificationMode !== undefined ? body.verificationMode : body.verification_mode;
 
-    for (const [key, value] of Object.entries(updates)) {
+    const checkBNum = (v, defaultVal = 1) => {
+      if (v === undefined || v === null) return defaultVal;
+      if (typeof v === 'boolean') return v ? 1 : 0;
+      if (typeof v === 'string') return (v === 'true' || v === '1') ? 1 : 0;
+      return v ? 1 : 0;
+    };
+
+    const codBool = checkBNum(codVal, 1);
+    const rzpBool = checkBNum(rzpVal, 1);
+    const qrBool = checkBNum(qrVal, 1);
+
+    const [existing] = await pool.query('SELECT id FROM payment_settings ORDER BY id ASC LIMIT 1');
+    if (existing.length > 0) {
       await pool.query(
-        `INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)
-         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
-        [key, value]
+        `UPDATE payment_settings 
+         SET enable_cod = ?, enable_razorpay = ?, enable_upi_qr = ?, 
+             upi_id = ?, qr_image_url = ?, qr_display_name = ?, qr_instructions = ?, verification_mode = ?, updated_at = NOW()
+         WHERE id = ?`,
+        [codBool, rzpBool, qrBool, upiId || 'karviyam@hdfcbank', qrImageUrl || '', qrDisplayName || 'Karviyam', qrInstructions || '', verificationMode || 'Razorpay', existing[0].id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO payment_settings (enable_cod, enable_razorpay, enable_upi_qr, upi_id, qr_image_url, qr_display_name, qr_instructions, verification_mode, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [codBool, rzpBool, qrBool, upiId || 'karviyam@hdfcbank', qrImageUrl || '', qrDisplayName || 'Karviyam', qrInstructions || '', verificationMode || 'Razorpay']
       );
     }
 
+    // Key-value dual persistence
+    const updates = {
+      codEnabled: String(Boolean(codBool)),
+      razorpayEnabled: String(Boolean(rzpBool)),
+      upiQrEnabled: String(Boolean(qrBool)),
+      onlinePaymentEnabled: String(Boolean(rzpBool)),
+      upiId: upiId || 'karviyam@hdfcbank',
+      qrImageUrl: qrImageUrl || '',
+      qrDisplayName: qrDisplayName || 'Karviyam',
+      qrInstructions: qrInstructions || '',
+      verificationMode: verificationMode || 'Razorpay'
+    };
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) {
+        await pool.query(
+          `INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)
+           ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
+          [key, value]
+        );
+      }
+    }
+
     return exports.getPaymentSettings(req, res, next);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.uploadQrImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json(ApiResponse.error('No QR image file provided'));
+    }
+    const fileUrl = `/uploads/${req.file.filename}`;
+    
+    // Update DB
+    await exports.updatePaymentSettings({ body: { qrImageUrl: fileUrl } }, { status: () => ({ json: () => {} }) }, () => {});
+
+    return res.status(200).json(ApiResponse.success({
+      url: fileUrl,
+      filename: req.file.filename
+    }, 'QR Code image uploaded successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteQrImage = async (req, res, next) => {
+  try {
+    await exports.updatePaymentSettings({ body: { qrImageUrl: '' } }, { status: () => ({ json: () => {} }) }, () => {});
+    return res.status(200).json(ApiResponse.success(null, 'QR Code image removed successfully'));
   } catch (err) {
     next(err);
   }

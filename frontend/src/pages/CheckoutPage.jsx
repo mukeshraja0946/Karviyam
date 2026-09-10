@@ -5,7 +5,7 @@ import { useCart, extractPrice } from '../context/CartContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
-import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, Lock, CreditCard, Smartphone, Banknote, Building, X, RefreshCw, Trash2, MapPin, Plus, Loader2 } from 'lucide-react';
+import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, Lock, CreditCard, Smartphone, Banknote, Building, X, RefreshCw, Trash2, MapPin, Plus, Loader2, QrCode } from 'lucide-react';
 import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 
 export default function CheckoutPage() {
@@ -230,20 +230,21 @@ export default function CheckoutPage() {
   // Dynamic Payment Method Settings (Controlled by Admin → Database)
   const [paymentSettings, setPaymentSettings] = useState({
     codEnabled: true,
-    onlinePaymentEnabled: false,
-    razorpayEnabled: false,
-    stripeEnabled: false,
+    razorpayEnabled: true,
+    upiQrEnabled: true,
+    upiId: 'karviyam@hdfcbank',
+    qrImageUrl: '',
+    qrDisplayName: 'Karviyam',
+    qrInstructions: 'Scan this QR using GPay, PhonePe, Paytm or any supported UPI app',
+    verificationMode: 'Razorpay',
     defaultPaymentMethod: 'COD'
   });
 
   const fetchPaymentSettings = async () => {
     try {
-      const payRes = await api.get('/settings/payment').catch(() => null);
+      const payRes = await api.get('/settings/payment').catch(() => null)
+        || await api.get('/admin/payment-settings').catch(() => null);
       const payData = payRes?.data?.data || payRes?.data || {};
-
-      const res = await api.get('/settings').catch(() => null);
-      const apiData = res?.data ? res.data : (res || {});
-      const dataMap = apiData.data || apiData || {};
 
       let localPay = {};
       try {
@@ -263,18 +264,20 @@ export default function CheckoutPage() {
         return defaultVal;
       };
 
-      const codVal = payData.codEnabled !== undefined ? payData.codEnabled : (dataMap.codEnabled !== undefined ? dataMap.codEnabled : localPay.codEnabled);
-      const onlineVal = payData.onlinePaymentEnabled !== undefined ? payData.onlinePaymentEnabled : (dataMap.onlinePaymentEnabled !== undefined ? dataMap.onlinePaymentEnabled : localPay.onlinePaymentEnabled);
-      const rzpVal = payData.razorpayEnabled !== undefined ? payData.razorpayEnabled : (dataMap.razorpayEnabled !== undefined ? dataMap.razorpayEnabled : localPay.razorpayEnabled);
-      const stpVal = payData.stripeEnabled !== undefined ? payData.stripeEnabled : (dataMap.stripeEnabled !== undefined ? dataMap.stripeEnabled : localPay.stripeEnabled);
-      const defVal = payData.defaultPaymentMethod || dataMap.defaultPaymentMethod || localPay.defaultPaymentMethod || 'COD';
+      const codVal = payData.codEnabled !== undefined ? payData.codEnabled : (payData.cod_enabled !== undefined ? payData.cod_enabled : localPay.codEnabled);
+      const rzpVal = payData.razorpayEnabled !== undefined ? payData.razorpayEnabled : (payData.razorpay_enabled !== undefined ? payData.razorpay_enabled : localPay.razorpayEnabled);
+      const qrVal = payData.upiQrEnabled !== undefined ? payData.upiQrEnabled : (payData.upi_qr_enabled !== undefined ? payData.upi_qr_enabled : localPay.upiQrEnabled);
 
       setPaymentSettings({
         codEnabled: checkB(codVal, true),
-        onlinePaymentEnabled: checkB(onlineVal, false),
-        razorpayEnabled: checkB(rzpVal, false),
-        stripeEnabled: checkB(stpVal, false),
-        defaultPaymentMethod: defVal
+        razorpayEnabled: checkB(rzpVal, true),
+        upiQrEnabled: checkB(qrVal, true),
+        upiId: payData.upiId || payData.upi_id || localPay.upiId || 'karviyam@hdfcbank',
+        qrImageUrl: payData.qrImageUrl || payData.qr_image_url || localPay.qrImageUrl || '',
+        qrDisplayName: payData.qrDisplayName || payData.qr_display_name || localPay.qrDisplayName || 'Karviyam',
+        qrInstructions: payData.qrInstructions || payData.qr_instructions || localPay.qrInstructions || 'Scan this QR using GPay, PhonePe, Paytm or any supported UPI app',
+        verificationMode: payData.verificationMode || payData.verification_mode || localPay.verificationMode || 'Razorpay',
+        defaultPaymentMethod: payData.defaultPaymentMethod || localPay.defaultPaymentMethod || 'COD'
       });
     } catch (e) {
       console.error('Failed to fetch payment settings:', e);
@@ -293,9 +296,8 @@ export default function CheckoutPage() {
 
   // Compute strictly allowed payment methods based on Admin Settings
   const isCodAvailable = paymentSettings.codEnabled === true;
-  const isOnlineMasterEnabled = paymentSettings.onlinePaymentEnabled === true;
-  const isRazorpayAvailable = isOnlineMasterEnabled && paymentSettings.razorpayEnabled === true;
-  const isStripeAvailable = isOnlineMasterEnabled && paymentSettings.stripeEnabled === true;
+  const isRazorpayAvailable = paymentSettings.razorpayEnabled === true;
+  const isUpiQrAvailable = paymentSettings.upiQrEnabled === true;
 
   const availablePaymentMethods = [];
   if (isCodAvailable) {
@@ -312,18 +314,18 @@ export default function CheckoutPage() {
     availablePaymentMethods.push({
       id: 'UPI',
       name: 'UPI / GPay / PhonePe / Razorpay',
-      desc: 'Instant QR & App payment via Razorpay',
+      desc: 'Pay securely using Razorpay',
       iconClass: 'bg-purple-50 text-purple-700',
       IconComponent: Smartphone
     });
   }
-  if (isStripeAvailable) {
+  if (isUpiQrAvailable) {
     availablePaymentMethods.push({
-      id: 'CARD',
-      name: 'Credit / Debit Card (Stripe)',
-      desc: 'Visa, Mastercard, RuPay via Stripe',
-      iconClass: 'bg-blue-50 text-blue-700',
-      IconComponent: CreditCard
+      id: 'UPI_QR',
+      name: 'UPI QR Code',
+      desc: 'Scan QR using GPay, PhonePe, Paytm or any supported UPI application',
+      iconClass: 'bg-red-50 text-[#B71C1C]',
+      IconComponent: QrCode
     });
   }
 
@@ -497,11 +499,7 @@ export default function CheckoutPage() {
 
     if (selectedPaymentMethod === 'UPI') {
       const cleanUpi = customerUpi.trim();
-      if (!cleanUpi) {
-        setUpiError('Please enter your VPA / UPI ID (e.g. user@upi or mobile@ybl)');
-        return;
-      }
-      if (!validateUpiFormat(cleanUpi)) {
+      if (cleanUpi && !validateUpiFormat(cleanUpi)) {
         setUpiError('Invalid UPI ID format. Example: user@upi or mobile@ybl');
         return;
       }
@@ -566,14 +564,16 @@ export default function CheckoutPage() {
         return;
       }
 
-      // If UPI Payment -> Create Backend Payment Request
+      // If UPI or UPI_QR -> Create Backend Payment Request
       setPendingOrder(createdOrder);
-      toast.loading('Initiating real UPI payment request...', { id: 'order-upi-toast' });
+      toast.loading(selectedPaymentMethod === 'UPI_QR' ? 'Initiating UPI QR payment...' : 'Initiating real UPI payment request...', { id: 'order-upi-toast' });
+
+      const targetUpi = (selectedPaymentMethod === 'UPI_QR' ? (paymentSettings.upiId || 'karviyam@hdfcbank') : (customerUpi.trim() || paymentSettings.upiId || 'karviyam@hdfcbank'));
 
       const reqRes = await api.post('/payments/create-upi-request', {
         type: 'ORDER',
         id: createdOrder.id,
-        upiId: customerUpi.trim()
+        upiId: targetUpi
       }).catch(() => null);
 
       const isSuccess = Boolean(reqRes?.data?.success || reqRes?.success);
@@ -586,7 +586,7 @@ export default function CheckoutPage() {
 
       setPaymentModalOpen(false);
       setUpiWaitingModalOpen(true);
-      toast.success('UPI Payment Request created! Approve the payment in your UPI app.', { id: 'order-upi-toast', duration: 4000 });
+      toast.success(selectedPaymentMethod === 'UPI_QR' ? 'UPI QR Payment initiated! Scan & approve in your UPI app.' : 'UPI Payment Request created! Approve the payment in your UPI app.', { id: 'order-upi-toast', duration: 4000 });
 
       // Trigger mobile intent link if on mobile
       if (txnData?.upiUri && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
@@ -1351,11 +1351,54 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              {/* UPI VPA INPUT FIELD WHEN UPI IS SELECTED */}
+              {/* UPI QR PAYMENT SECTION WHEN UPI_QR IS SELECTED */}
+              {selectedPaymentMethod === 'UPI_QR' && (
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl text-center space-y-3">
+                  <div className="inline-flex items-center gap-1.5 bg-red-50 text-[#B71C1C] text-[10.5px] font-black px-3 py-1 rounded-full uppercase tracking-wider border border-red-200 shadow-2xs">
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>UPI QR PAYMENT</span>
+                  </div>
+
+                  {/* QR Image Box */}
+                  <div className="w-40 h-40 bg-white border border-slate-300 rounded-2xl p-2 mx-auto flex items-center justify-center shadow-xs">
+                    <img
+                      src={paymentSettings.qrImageUrl 
+                        ? resolveImageUrl(paymentSettings.qrImageUrl)
+                        : `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('upi://pay?pa=' + (paymentSettings.upiId || 'karviyam@hdfcbank') + '&pn=' + encodeURIComponent(paymentSettings.qrDisplayName || 'Karviyam') + '&am=' + orderTotal.toFixed(2) + '&cu=INR')}`
+                      }
+                      alt="UPI Payment QR Code"
+                      className="w-full h-full object-contain rounded-xl"
+                    />
+                  </div>
+
+                  <p className="text-[11px] font-bold text-slate-700">
+                    Scan this QR using: <span className="font-black text-slate-900">Google Pay • PhonePe • Paytm • BHIM</span>
+                  </p>
+
+                  <div className="bg-white border border-slate-200 p-2.5 rounded-xl flex items-center justify-between text-xs font-bold text-slate-800">
+                    <span>Payable Amount:</span>
+                    <span className="text-sm font-black text-[#B71C1C]">₹{orderTotal.toFixed(2)}</span>
+                  </div>
+
+                  {paymentSettings.upiId && (
+                    <div className="text-[11px] text-slate-600 font-medium">
+                      UPI ID: <span className="font-mono font-bold text-slate-900">{paymentSettings.upiId}</span>
+                    </div>
+                  )}
+
+                  {paymentSettings.qrInstructions && (
+                    <p className="text-[10px] text-slate-500 font-medium italic leading-relaxed">
+                      {paymentSettings.qrInstructions}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* UPI VPA INPUT FIELD WHEN STANDARD UPI IS SELECTED */}
               {selectedPaymentMethod === 'UPI' && (
                 <div className="bg-red-50/50 border border-red-200 p-3.5 rounded-2xl space-y-2 text-left">
                   <label className="block text-[11px] font-bold text-slate-800">
-                    Enter your VPA / UPI ID <span className="text-red-600">*</span>
+                    Enter your VPA / UPI ID <span className="text-slate-400 font-normal">(Optional)</span>
                   </label>
                   <input
                     type="text"
@@ -1369,7 +1412,7 @@ export default function CheckoutPage() {
                   />
                   {upiError && <p className="text-[11px] text-red-600 font-bold">{upiError}</p>}
                   <p className="text-[10px] text-slate-500 font-medium">
-                    We will send a real UPI payment request to your app.
+                    Pay securely using Razorpay standard checkout & UPI intent.
                   </p>
                 </div>
               )}

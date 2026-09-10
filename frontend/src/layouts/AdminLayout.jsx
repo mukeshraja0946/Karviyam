@@ -206,6 +206,7 @@ export default function AdminLayout() {
       title: 'Finance & Payments',
       icon: CreditCard,
       subItems: [
+        { name: 'Payment Methods & Settings', path: '/admin/payment-settings' },
         { name: 'Payment History', path: '/admin/payments' },
         { name: 'Refund & Returns', path: '/admin/returns' },
         { name: 'Bank Account Details', path: '/admin/bank-account' },
