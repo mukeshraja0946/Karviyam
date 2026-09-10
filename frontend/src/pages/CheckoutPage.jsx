@@ -574,15 +574,61 @@ export default function CheckoutPage() {
         type: 'ORDER',
         id: createdOrder.id,
         upiId: targetUpi
-      }).catch(() => null);
+      }).catch((e) => e.response || null);
 
       const isSuccess = Boolean(reqRes?.data?.success || reqRes?.success);
       const txnData = reqRes?.data?.data || reqRes?.data;
       if (!isSuccess || !txnData?.transactionReference) {
-        toast.error(reqRes?.data?.message || reqRes?.message || 'Unable to create UPI payment request. Please try again.', { id: 'order-upi-toast' });
+        const errorMsg = reqRes?.data?.message || reqRes?.message || 'Unable to create UPI payment request. Please check API keys or payment settings.';
+        toast.error(errorMsg, { id: 'order-upi-toast' });
+        setSubmitting(false);
         return;
       }
       setPendingTxn(txnData);
+
+      // If Razorpay Order ID was created, attempt to open Razorpay Standard Checkout SDK
+      if (selectedPaymentMethod === 'UPI' && txnData?.razorpayOrderId) {
+        const loadRzpScript = () => new Promise((res) => {
+          if (window.Razorpay) return res(true);
+          const s = document.createElement('script');
+          s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          s.onload = () => res(true);
+          s.onerror = () => res(false);
+          document.body.appendChild(s);
+        });
+
+        const scriptLoaded = await loadRzpScript();
+        if (scriptLoaded && window.Razorpay) {
+          try {
+            const rzp = new window.Razorpay({
+              key: paymentSettings.razorpayKeyId || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_key_id',
+              amount: Math.round(orderTotal * 100),
+              currency: 'INR',
+              name: 'Karviyam',
+              description: `Order #${createdOrder.id}`,
+              order_id: txnData.razorpayOrderId,
+              prefill: {
+                name: activeAddr.fullName || '',
+                email: user?.email || '',
+                contact: activeAddr.phone || '',
+                vpa: customerUpi.trim()
+              },
+              handler: function (response) {
+                toast.success('Payment completed via Razorpay! 🎉', { id: 'order-upi-toast' });
+                handleOrderPaymentVerified(createdOrder.id, createdOrder);
+              },
+              modal: {
+                ondismiss: function () {
+                  toast.error('Payment modal closed. You can complete payment using UPI QR or retry.', { id: 'order-upi-toast' });
+                }
+              }
+            });
+            rzp.open();
+          } catch (eRzpOpen) {
+            console.warn('[Razorpay Modal Open Exception]:', eRzpOpen);
+          }
+        }
+      }
 
       setPaymentModalOpen(false);
       setUpiWaitingModalOpen(true);
