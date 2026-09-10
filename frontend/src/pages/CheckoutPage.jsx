@@ -15,9 +15,9 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
 
   const [deliveryOption, setDeliveryOption] = useState('standard'); // 'standard' or 'express'
-  const [couponCode, setCouponCode] = useState(location.state?.couponCode || 'KARVIYAM25');
-  const [couponApplied, setCouponApplied] = useState(true);
-  const [couponDiscount, setCouponDiscount] = useState(85);
+  const [couponCode, setCouponCode] = useState(location.state?.couponCode || '');
+  const [couponApplied, setCouponApplied] = useState(Boolean(location.state?.couponDiscount));
+  const [couponDiscount, setCouponDiscount] = useState(location.state?.couponDiscount || 0);
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('COD');
@@ -398,7 +398,7 @@ export default function CheckoutPage() {
     return acc + (price * qty);
   }, 0);
   const shippingCharge = deliveryOption === 'express' ? 69 : 0;
-  const activeDiscount = couponApplied ? couponDiscount : 0;
+  const activeDiscount = couponApplied ? Math.min(couponDiscount, rawItemTotal) : 0;
   const orderTotal = Math.max(0, rawItemTotal + shippingCharge - activeDiscount);
 
   // Trigger Payment Modal or Redirect to Login when user clicks "Proceed to Payment"
@@ -1140,9 +1140,18 @@ export default function CheckoutPage() {
                   <button
                     type="button"
                     onClick={() => {
+                      if (!couponCode.trim()) {
+                        toast.error('Please enter a coupon code');
+                        return;
+                      }
+                      const disc = Math.min(85, rawItemTotal > 0 ? Math.min(85, rawItemTotal) : 0);
+                      if (disc <= 0) {
+                        toast.error('Coupon cannot be applied to zero item total');
+                        return;
+                      }
+                      setCouponDiscount(disc);
                       setCouponApplied(true);
-                      setCouponDiscount(85);
-                      toast.success('Coupon KARVIYAM25 applied! 🎉');
+                      toast.success(`Coupon ${couponCode.trim()} applied! Saved ₹${disc.toFixed(2)} 🎉`);
                     }}
                     className="bg-[#B71C1C] text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer"
                   >
