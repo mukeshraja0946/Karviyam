@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Award,
@@ -9,17 +9,24 @@ import {
   Heart,
   Headphones,
   Sparkles,
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
   Send,
   CheckCircle2,
   Lock,
-  BadgePercent
+  BadgePercent,
+  Flame,
+  ArrowRight,
+  Gift,
+  Tag,
+  Clock,
+  Layers,
+  Zap,
+  ShoppingBag
 } from 'lucide-react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { resolveImageUrl } from '../../utils/imageUtils';
+import { resolveImageUrl, handleImageError } from '../../utils/imageUtils';
 
 const ICON_MAP = {
   Award,
@@ -31,21 +38,16 @@ const ICON_MAP = {
   Headphones,
   Sparkles,
   BadgePercent,
-  Lock
+  Lock,
+  Flame,
+  Zap,
+  Tag
 };
 
 const renderIcon = (iconName, fallbackIcon = Award) => {
   const IconComp = ICON_MAP[iconName] || fallbackIcon;
   return <IconComp className="w-3.5 h-3.5 text-[#B71C1C]" />;
 };
-
-const DEFAULT_BENEFITS = [
-  { id: '1', title: 'Free Delivery', subtitle: 'On orders above ₹499', icon: 'Truck' },
-  { id: '2', title: 'Easy Returns', subtitle: '30 days return policy', icon: 'RotateCcw' },
-  { id: '3', title: 'Secure Payments', subtitle: '100% secure checkout', icon: 'ShieldCheck' },
-  { id: '4', title: 'Best Price Guarantee', subtitle: 'Unmatched value', icon: 'Heart' },
-  { id: '5', title: '24/7 Support', subtitle: 'Dedicated assistance', icon: 'Headphones' }
-];
 
 const DEFAULT_TODAY_SPECIAL = {
   enabled: true,
@@ -62,6 +64,33 @@ const DEFAULT_TODAY_SPECIAL = {
   endTime: new Date(Date.now() + 8 * 3600 * 1000 + 26 * 60 * 1000 + 45 * 1000).toISOString()
 };
 
+const DEFAULT_QUICK_DEALS = [
+  { id: 'qd1', icon: '🔥', title: 'Sneakers', tag: 'Up to 50% OFF', link: '/shop?category=Sneakers', enabled: true },
+  { id: 'qd2', icon: '👕', title: 'T-Shirts', tag: 'From ₹499', link: '/shop?category=T-Shirts', enabled: true },
+  { id: 'qd3', icon: '👗', title: "Women's Wear", tag: 'Up to 60% OFF', link: '/shop?category=Women', enabled: true },
+  { id: 'qd4', icon: '🎒', title: 'Bags & Accessories', tag: 'Starting ₹399', link: '/shop?category=Accessories', enabled: true }
+];
+
+const DEFAULT_COUPON_SAVINGS = {
+  enabled: true,
+  badge: 'EXTRA SAVINGS',
+  title: 'UNLOCK EXTRA SAVINGS',
+  subtitle: 'Use available coupons and promo codes at checkout.',
+  buttonText: 'VIEW OFFERS →',
+  link: '/shop?filter=offers'
+};
+
+const DEFAULT_SHOP_BY_CATEGORY_RIGHT = [
+  { id: 'rc1', name: 'Men', link: '/shop?category=Men', enabled: true },
+  { id: 'rc2', name: 'Women', link: '/shop?category=Women', enabled: true },
+  { id: 'rc3', name: 'Kids', link: '/shop?category=Kids', enabled: true },
+  { id: 'rc4', name: 'Sneakers', link: '/shop?category=Sneakers', enabled: true },
+  { id: 'rc5', name: 'Jewellery', link: '/shop?category=Jewellery', enabled: true },
+  { id: 'rc6', name: 'Accessories', link: '/shop?category=Accessories', enabled: true },
+  { id: 'rc7', name: 'Kitchen & Home', link: '/shop?category=Kitchen', enabled: true },
+  { id: 'rc8', name: 'School & Office', link: '/shop?category=School', enabled: true }
+];
+
 const DEFAULT_STYLE_INSPIRATION = {
   enabled: true,
   badge: 'STYLE INSPIRATION',
@@ -74,12 +103,28 @@ const DEFAULT_STYLE_INSPIRATION = {
   imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600'
 };
 
+const DEFAULT_FINAL_RIGHT_PROMO = {
+  enabled: true,
+  badge: 'NEW COLLECTION',
+  title: 'DISCOVER YOUR STYLE',
+  subtitle: 'New drops. Fresh looks. Better prices.',
+  buttonText: 'SHOP NOW →',
+  link: '/shop'
+};
+
 export default function DesktopSidebarRight() {
   const navigate = useNavigate();
   const [todaySpecial, setTodaySpecial] = useState(DEFAULT_TODAY_SPECIAL);
+  const [quickDeals, setQuickDeals] = useState(DEFAULT_QUICK_DEALS);
+  const [couponSavings, setCouponSavings] = useState(DEFAULT_COUPON_SAVINGS);
+  const [categoryRight, setCategoryRight] = useState(DEFAULT_SHOP_BY_CATEGORY_RIGHT);
   const [styleInspiration, setStyleInspiration] = useState(DEFAULT_STYLE_INSPIRATION);
-  const [benefits, setBenefits] = useState(DEFAULT_BENEFITS);
+  const [finalRightPromo, setFinalRightPromo] = useState(DEFAULT_FINAL_RIGHT_PROMO);
   
+  // Real Backend Trending Products for Carousel Widget
+  const [trendingProducts, setTrendingProducts] = useState([]);
+  const [currentProductIdx, setCurrentProductIdx] = useState(0);
+
   // Real Reviews State
   const [reviews, setReviews] = useState([]);
   const [currentReviewIdx, setCurrentReviewIdx] = useState(0);
@@ -98,23 +143,23 @@ export default function DesktopSidebarRight() {
 
       if (data) {
         if (data.todaySpecial) setTodaySpecial(data.todaySpecial);
+        if (Array.isArray(data.quickDeals) && data.quickDeals.length > 0) setQuickDeals(data.quickDeals);
+        if (data.couponSavings) setCouponSavings(data.couponSavings);
+        if (Array.isArray(data.shopByCategoryRight) && data.shopByCategoryRight.length > 0) setCategoryRight(data.shopByCategoryRight);
         if (data.styleInspiration) setStyleInspiration(data.styleInspiration);
+        if (data.finalRightPromo) setFinalRightPromo(data.finalRightPromo);
       }
     } catch (e) {
       console.error('Error fetching right sidebar config:', e);
     }
   };
 
-  const fetchWhyShopConfig = async () => {
+  const fetchTrendingProducts = async () => {
     try {
-      const res = await api.get('/settings').catch(() => null);
-      const dataMap = res?.data?.data || res?.data || {};
-      const rawCfg = dataMap.karviyam_why_shop_config || dataMap.whyShopConfig;
-      if (rawCfg) {
-        const parsed = typeof rawCfg === 'string' ? JSON.parse(rawCfg) : rawCfg;
-        if (parsed && Array.isArray(parsed.benefits) && parsed.benefits.length > 0) {
-          setBenefits(parsed.benefits.filter(b => b && b.enabled !== false).slice(0, 5));
-        }
+      const res = await api.get('/products?limit=8').catch(() => null);
+      const list = res?.data?.data?.products || res?.data?.products || res?.data;
+      if (Array.isArray(list) && list.length > 0) {
+        setTrendingProducts(list.slice(0, 8));
       }
     } catch (e) {}
   };
@@ -131,22 +176,20 @@ export default function DesktopSidebarRight() {
 
   useEffect(() => {
     fetchConfig();
-    fetchWhyShopConfig();
+    fetchTrendingProducts();
     fetchReviews();
 
     const handleUpdate = () => {
       fetchConfig();
-      fetchWhyShopConfig();
+      fetchTrendingProducts();
       fetchReviews();
     };
 
     window.addEventListener('karviyam_sidebar_config_updated', handleUpdate);
-    window.addEventListener('karviyam_why_shop_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
 
     return () => {
       window.removeEventListener('karviyam_sidebar_config_updated', handleUpdate);
-      window.removeEventListener('karviyam_why_shop_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
@@ -188,6 +231,9 @@ export default function DesktopSidebarRight() {
   };
 
   const formatNumber = (num) => String(num).padStart(2, '0');
+
+  const activeQuickDeals = quickDeals.filter(d => d.enabled !== false);
+  const activeCategories = categoryRight.filter(c => c.enabled !== false);
 
   return (
     <aside className="w-[200px] xl:w-[220px] shrink-0 flex flex-col gap-3">
@@ -244,10 +290,7 @@ export default function DesktopSidebarRight() {
                 src={resolveImageUrl(todaySpecial.imageUrl)}
                 alt={todaySpecial.productName}
                 className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600';
-                }}
+                onError={handleImageError}
               />
               {todaySpecial.discountText && (
                 <span className="absolute top-1.5 left-1.5 bg-[#B71C1C] text-white text-[8.5px] font-black px-1.5 py-0.5 rounded shadow-2xs">
@@ -285,31 +328,157 @@ export default function DesktopSidebarRight() {
         </div>
       )}
 
-      {/* 2. QUICK BENEFITS WIDGET */}
-      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2.5">
-        <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide border-b border-slate-100 pb-2">
-          WHY SHOP WITH KARVIYAM?
-        </h4>
-        <div className="space-y-2">
-          {benefits.map((item, idx) => (
-            <div key={item.id || idx} className="flex items-start gap-2">
-              <div className="w-5 h-5 rounded-md bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0 mt-0.5">
-                {renderIcon(item.icon, Truck)}
+      {/* 2. QUICK DEALS LIST */}
+      {activeQuickDeals.length > 0 && (
+        <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+            <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1">
+              <span>QUICK DEALS</span>
+              <span className="text-amber-500">⚡</span>
+            </h4>
+          </div>
+          <div className="space-y-1.5">
+            {activeQuickDeals.map((deal) => (
+              <div
+                key={deal.id}
+                onClick={() => navigate(deal.link || '/shop')}
+                className="flex items-center justify-between p-2 rounded-lg bg-slate-50/80 hover:bg-red-50/70 border border-slate-100 hover:border-red-200 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs shrink-0">{deal.icon || '🔥'}</span>
+                  <span className="font-bold text-[11px] text-slate-800 group-hover:text-[#B71C1C] truncate">
+                    {deal.title}
+                  </span>
+                </div>
+                <span className="text-[9px] font-black text-[#B71C1C] bg-red-100/80 px-1.5 py-0.5 rounded shrink-0">
+                  {deal.tag}
+                </span>
               </div>
-              <div className="min-w-0">
-                <h5 className="font-extrabold text-[11px] text-slate-900 leading-tight truncate">
-                  {item.title}
-                </h5>
-                <p className="text-[9.5px] text-slate-500 font-medium truncate">
-                  {item.subtitle}
-                </p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 3. CUSTOMER LOVE (REAL REVIEWS FROM DATABASE) */}
+      {/* 3. MINI PRODUCT CAROUSEL / TRENDING PRODUCTS */}
+      {trendingProducts.length > 0 && (
+        <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2 relative overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+            <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1">
+              <span>POPULAR PICKS</span>
+              <span className="text-red-500">🔥</span>
+            </h4>
+            {trendingProducts.length > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setCurrentProductIdx((prev) => (prev === 0 ? trendingProducts.length - 1 : prev - 1))}
+                  className="w-4 h-4 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer"
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentProductIdx((prev) => (prev + 1) % trendingProducts.length)}
+                  className="w-4 h-4 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer"
+                >
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {(() => {
+            const p = trendingProducts[currentProductIdx];
+            if (!p) return null;
+            const img = resolveImageUrl(p.image_url || p.imageUrl || p.images?.[0]);
+            return (
+              <div
+                onClick={() => navigate(`/product/${p.id || p.slug}`)}
+                className="group cursor-pointer space-y-1.5"
+              >
+                <div className="w-full h-[120px] bg-slate-50 rounded-lg border border-slate-100 overflow-hidden p-1 flex items-center justify-center relative">
+                  <img
+                    src={img}
+                    alt={p.name}
+                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                    onError={handleImageError}
+                  />
+                  {p.discount && (
+                    <span className="absolute top-1 left-1 bg-amber-500 text-white text-[8px] font-black px-1 py-0.5 rounded">
+                      {p.discount}% OFF
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <h5 className="font-extrabold text-[11px] text-slate-900 truncate group-hover:text-[#B71C1C]">
+                    {p.name}
+                  </h5>
+                  <div className="flex items-center justify-between pt-0.5">
+                    <span className="font-black text-xs text-[#B71C1C]">
+                      ₹{p.sale_price || p.price}
+                    </span>
+                    {p.regular_price > (p.sale_price || p.price) && (
+                      <span className="text-[9.5px] text-slate-400 line-through">
+                        ₹{p.regular_price}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* 4. COUPON / SAVINGS CARD */}
+      {couponSavings && couponSavings.enabled !== false && (
+        <div
+          onClick={() => navigate(couponSavings.link || '/shop?filter=offers')}
+          className="w-full bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white rounded-xl shadow-2xs p-3 space-y-1.5 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[8.5px] font-black uppercase tracking-wider bg-black/20 text-amber-100 px-1.5 py-0.5 rounded">
+              {couponSavings.badge || 'EXTRA SAVINGS'}
+            </span>
+            <BadgePercent className="w-4 h-4 text-amber-200" />
+          </div>
+          <h4 className="font-display font-black text-xs uppercase leading-tight pt-1">
+            {couponSavings.title || 'UNLOCK EXTRA SAVINGS'}
+          </h4>
+          <p className="text-[9.5px] text-amber-100 font-medium leading-snug">
+            {couponSavings.subtitle || 'Use available coupons and promo codes at checkout.'}
+          </p>
+          <div className="pt-1 flex items-center gap-1 text-[9.5px] font-black uppercase text-amber-900 bg-white/95 px-2.5 py-1 rounded-lg justify-center shadow-2xs">
+            <span>{couponSavings.buttonText || 'VIEW OFFERS →'}</span>
+          </div>
+        </div>
+      )}
+
+      {/* 5. SHOP BY CATEGORY RIGHT */}
+      {activeCategories.length > 0 && (
+        <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
+          <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide border-b border-slate-100 pb-1.5 flex items-center justify-between">
+            <span>SHOP BY CATEGORY</span>
+            <Layers className="w-3.5 h-3.5 text-slate-400" />
+          </h4>
+          <div className="grid grid-cols-2 gap-1.5">
+            {activeCategories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => navigate(cat.link || `/shop?category=${encodeURIComponent(cat.name)}`)}
+                className="w-full text-left bg-slate-50 hover:bg-red-50 hover:border-red-200 border border-slate-100 rounded-lg p-1.5 transition-colors cursor-pointer group"
+              >
+                <span className="font-bold text-[10px] text-slate-700 group-hover:text-[#B71C1C] block truncate">
+                  {cat.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 6. CUSTOMER LOVE (REAL REVIEWS FROM DATABASE) */}
       {reviews.length > 0 && (
         <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2 relative overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
@@ -358,7 +527,56 @@ export default function DesktopSidebarRight() {
         </div>
       )}
 
-      {/* 4. JOIN OUR COMMUNITY (NEWSLETTER SIGNUP) */}
+      {/* 7. STYLE INSPIRATION CARD */}
+      {styleInspiration && styleInspiration.enabled !== false && (
+        <div
+          onClick={() => navigate(styleInspiration.link || '/shop')}
+          className="w-full h-[240px] xl:h-[260px] rounded-2xl overflow-hidden relative shadow-md text-white p-3.5 flex flex-col justify-between group cursor-pointer border border-slate-800 bg-slate-900"
+        >
+          <img
+            src={resolveImageUrl(styleInspiration.imageUrl)}
+            alt={styleInspiration.title || 'Style Inspiration'}
+            className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
+            onError={handleImageError}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
+
+          <div className="relative z-10 space-y-1">
+            <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-300 bg-black/40 border border-amber-400/60 px-2 py-0.5 rounded backdrop-blur-xs">
+              {styleInspiration.badge || 'STYLE INSPIRATION'}
+            </span>
+            <h4 className="font-display font-black text-sm xl:text-base leading-tight uppercase drop-shadow-md pt-1">
+              {styleInspiration.title || 'Look Good.'}
+              <br />
+              <span className="text-amber-200">{styleInspiration.subtitle || 'Feel Confident.'}</span>
+            </h4>
+          </div>
+
+          <div className="relative z-10 space-y-2">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-wider text-slate-300 block">
+                {styleInspiration.tag || 'CASUAL LOOKS'}
+              </span>
+              <span className="text-[8.5px] text-slate-400 font-bold block">
+                {styleInspiration.tagSub || 'For Everyday'}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(styleInspiration.link || '/shop');
+              }}
+              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-black text-[10px] uppercase tracking-wider py-2 rounded-lg shadow-lg transition-transform group-hover:scale-102 cursor-pointer text-center"
+            >
+              {styleInspiration.buttonText || 'EXPLORE NOW →'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 8. JOIN OUR COMMUNITY (NEWSLETTER SIGNUP) */}
       <div className="w-full bg-slate-900 text-white rounded-xl shadow-2xs p-3 space-y-2 border border-slate-800">
         <h4 className="font-display font-black text-xs uppercase tracking-wide text-amber-300">
           JOIN OUR COMMUNITY
@@ -393,58 +611,31 @@ export default function DesktopSidebarRight() {
         )}
       </div>
 
-      {/* 5. STYLE INSPIRATION CARD */}
-      {styleInspiration && styleInspiration.enabled !== false && (
+      {/* 9. FINAL RIGHT PROMOTION */}
+      {finalRightPromo && finalRightPromo.enabled !== false && (
         <div
-          onClick={() => navigate(styleInspiration.link || '/shop')}
-          className="w-full h-[250px] xl:h-[270px] rounded-2xl overflow-hidden relative shadow-md text-white p-4 flex flex-col justify-between group cursor-pointer border border-slate-800 bg-slate-900"
+          onClick={() => navigate(finalRightPromo.link || '/shop')}
+          className="w-full bg-gradient-to-br from-[#B71C1C] via-[#900000] to-slate-900 text-white rounded-xl shadow-2xs p-3.5 space-y-2 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden"
         >
-          <img
-            src={resolveImageUrl(styleInspiration.imageUrl)}
-            alt={styleInspiration.title || 'Style Inspiration'}
-            className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600';
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
-
-          <div className="relative z-10 space-y-1">
-            <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-300 bg-black/40 border border-amber-400/60 px-2 py-0.5 rounded backdrop-blur-xs">
-              {styleInspiration.badge || 'STYLE INSPIRATION'}
-            </span>
-            <h4 className="font-display font-black text-sm xl:text-base leading-tight uppercase drop-shadow-md">
-              {styleInspiration.title || 'Look Good.'}
-              <br />
-              <span className="text-amber-200">{styleInspiration.subtitle || 'Feel Confident.'}</span>
-            </h4>
-          </div>
-
-          <div className="relative z-10 space-y-2">
-            <div>
-              <span className="text-[9px] font-black uppercase tracking-wider text-slate-300 block">
-                {styleInspiration.tag || 'CASUAL LOOKS'}
-              </span>
-              <span className="text-[8.5px] text-slate-400 font-bold block">
-                {styleInspiration.tagSub || 'For Everyday'}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(styleInspiration.link || '/shop');
-              }}
-              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-black text-[10px] uppercase tracking-wider py-2 rounded-lg shadow-lg transition-transform group-hover:scale-102 cursor-pointer text-center"
-            >
-              {styleInspiration.buttonText || 'EXPLORE NOW →'}
-            </button>
-          </div>
+          <span className="text-[8.5px] font-black uppercase tracking-wider text-amber-300 bg-black/30 border border-amber-400/40 px-1.5 py-0.5 rounded">
+            {finalRightPromo.badge || 'NEW COLLECTION'}
+          </span>
+          <h4 className="font-display font-black text-xs uppercase leading-tight pt-1">
+            {finalRightPromo.title || 'DISCOVER YOUR STYLE'}
+          </h4>
+          <p className="text-[9.5px] text-slate-200 font-medium leading-snug">
+            {finalRightPromo.subtitle || 'New drops. Fresh looks. Better prices.'}
+          </p>
+          <button
+            type="button"
+            className="w-full bg-white text-[#B71C1C] hover:bg-slate-100 font-black text-[10px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-transform hover:scale-102 cursor-pointer text-center"
+          >
+            {finalRightPromo.buttonText || 'SHOP NOW →'}
+          </button>
         </div>
       )}
 
     </aside>
   );
 }
+

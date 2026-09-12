@@ -29,7 +29,10 @@ import {
   Image as ImageIcon,
   Link2,
   Eye,
-  EyeOff
+  EyeOff,
+  Zap,
+  BadgePercent,
+  Smartphone
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -61,26 +64,68 @@ export default function AdminSidebarPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('items');
 
-  // Sidebar Data States
+  // Left Sidebar States
   const [navItems, setNavItems] = useState([]);
   const [offerCard, setOfferCard] = useState({
     enabled: true,
-    heading: 'EXTRA 5% OFF',
+    heading: 'EXTRA 10% OFF',
     subtitle: 'On Prepaid Orders',
-    discountPercent: '5%',
+    couponCode: 'PREPAID10',
+    discountPercent: '%',
     badgeText: 'INSTANT DISCOUNT',
-    link: '/shop?filter=offers',
-    icon: 'Percent'
+    link: '/shop?filter=offers'
   });
   const [promoCard, setPromoCard] = useState({
     enabled: true,
-    badge: 'FESTIVE SPECIAL',
+    badge: '✨ FESTIVE SPECIAL',
     title: 'UP TO 60% OFF',
     subtitle: 'On Bestsellers',
-    description: 'Limited time festive drops & trending styles.',
     buttonText: 'SHOP NOW',
     link: '/shop',
     imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600'
+  });
+
+  // Right Sidebar States
+  const [todaySpecial, setTodaySpecial] = useState({
+    enabled: true,
+    badge: "TODAY'S SPECIAL DEAL",
+    subtitle: 'Limited Time Only',
+    productName: 'Sports Sneakers',
+    description: 'Stylish & Comfortable',
+    price: 1499,
+    originalPrice: 2499,
+    discountText: '40% OFF',
+    buttonText: 'SHOP NOW →',
+    link: '/shop?category=Sneakers',
+    imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600',
+    endTime: new Date(Date.now() + 8 * 3600 * 1000).toISOString()
+  });
+  const [styleInspiration, setStyleInspiration] = useState({
+    enabled: true,
+    badge: 'STYLE INSPIRATION',
+    title: 'Look Good.',
+    subtitle: 'Feel Confident.',
+    tag: 'CASUAL LOOKS',
+    tagSub: 'For Everyday',
+    buttonText: 'EXPLORE NOW →',
+    link: '/shop',
+    imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600'
+  });
+  const [couponSavings, setCouponSavings] = useState({
+    enabled: true,
+    badge: 'EXTRA SAVINGS',
+    title: 'UNLOCK EXTRA SAVINGS',
+    subtitle: 'Use available coupons and promo codes at checkout.',
+    buttonText: 'VIEW OFFERS →',
+    link: '/shop?filter=offers'
+  });
+  const [finalRightPromo, setFinalRightPromo] = useState({
+    enabled: true,
+    badge: 'NEW COLLECTION',
+    title: 'DISCOVER YOUR STYLE',
+    subtitle: 'New drops. Fresh looks. Better prices.',
+    buttonText: 'SHOP NOW →',
+    link: '/shop'
   });
 
   // Modal State for Adding/Editing Item
@@ -100,6 +145,7 @@ export default function AdminSidebarPage() {
 
   // Image Cropper Modal State
   const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperTarget, setCropperTarget] = useState('promo'); // 'promo' | 'todaySpecial' | 'styleInspiration'
   const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
@@ -118,6 +164,10 @@ export default function AdminSidebarPage() {
         }
         if (data.offerCard) setOfferCard(data.offerCard);
         if (data.promoCard) setPromoCard(data.promoCard);
+        if (data.todaySpecial) setTodaySpecial(data.todaySpecial);
+        if (data.styleInspiration) setStyleInspiration(data.styleInspiration);
+        if (data.couponSavings) setCouponSavings(data.couponSavings);
+        if (data.finalRightPromo) setFinalRightPromo(data.finalRightPromo);
       }
     } catch (e) {
       toast.error('Failed to load sidebar configuration.');
@@ -210,15 +260,22 @@ export default function AdminSidebarPage() {
     });
   };
 
-  const handleImageFileSelect = (e) => {
+  const handleImageFileSelect = (e, target) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
+      setCropperTarget(target);
       setCropperOpen(true);
     }
   };
 
   const handleConfirmCropImage = (croppedUrl) => {
-    setPromoCard(prev => ({ ...prev, imageUrl: croppedUrl }));
+    if (cropperTarget === 'promo') {
+      setPromoCard(prev => ({ ...prev, imageUrl: croppedUrl }));
+    } else if (cropperTarget === 'todaySpecial') {
+      setTodaySpecial(prev => ({ ...prev, imageUrl: croppedUrl }));
+    } else if (cropperTarget === 'styleInspiration') {
+      setStyleInspiration(prev => ({ ...prev, imageUrl: croppedUrl }));
+    }
   };
 
   const handleSaveAll = async () => {
@@ -229,7 +286,11 @@ export default function AdminSidebarPage() {
       const payload = {
         navItems,
         offerCard,
-        promoCard
+        promoCard,
+        todaySpecial,
+        styleInspiration,
+        couponSavings,
+        finalRightPromo
       };
 
       const res = await api.put('/admin/sidebar-config', payload);
@@ -266,10 +327,10 @@ export default function AdminSidebarPage() {
         <div>
           <h1 className="font-display font-bold text-2xl text-slate-900 flex items-center gap-2">
             <Layers className="w-6 h-6 text-[#B71C1C]" />
-            <span>Storefront Sidebar Management</span>
+            <span>Storefront Left & Right Sidebar Management</span>
           </h1>
           <p className="text-xs text-slate-500">
-            Single source of truth control center for customer navigation items, discount cards, and promotional banners.
+            Control center for Left & Right Desktop sidebars — manage navigation items, deals, timers, review widgets, and promotional banners.
           </p>
         </div>
 
@@ -294,7 +355,7 @@ export default function AdminSidebarPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
         <button
           type="button"
           onClick={() => setActiveTab('items')}
@@ -304,7 +365,7 @@ export default function AdminSidebarPage() {
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
           }`}
         >
-          Navigation Menu Items ({navItems.length})
+          Left: Nav Links ({navItems.length})
         </button>
 
         <button
@@ -316,7 +377,7 @@ export default function AdminSidebarPage() {
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
           }`}
         >
-          Offer / Discount Card
+          Left: Coupon Card
         </button>
 
         <button
@@ -328,7 +389,31 @@ export default function AdminSidebarPage() {
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
           }`}
         >
-          Promotional Banner Card
+          Left: Festive Banner
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('todaySpecial')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'todaySpecial'
+              ? 'bg-[#B71C1C] text-white shadow-xs'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
+          Right: Today's Special
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('styleInspiration')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'styleInspiration'
+              ? 'bg-[#B71C1C] text-white shadow-xs'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
+          Right: Style Inspiration
         </button>
       </div>
 
@@ -338,7 +423,7 @@ export default function AdminSidebarPage() {
           <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
             <div>
               <h3 className="font-bold text-slate-900 text-sm">Customer Sidebar Navigation Links</h3>
-              <p className="text-slate-500 text-[11px]">Reorder, enable/disable, or add new links to the sidebar menu.</p>
+              <p className="text-slate-500 text-[11px]">Reorder, enable/disable, or add new links to the left sidebar menu.</p>
             </div>
 
             <button
@@ -385,7 +470,6 @@ export default function AdminSidebarPage() {
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
-                      {/* Reorder Buttons */}
                       <div className="flex items-center bg-slate-100 p-1 rounded-xl">
                         <button
                           type="button"
@@ -407,7 +491,6 @@ export default function AdminSidebarPage() {
                         </button>
                       </div>
 
-                      {/* Enable/Disable Toggle */}
                       <button
                         type="button"
                         onClick={() => handleToggleItemStatus(idx)}
@@ -420,7 +503,6 @@ export default function AdminSidebarPage() {
                         {item.enabled !== false ? 'ON' : 'OFF'}
                       </button>
 
-                      {/* Edit Button */}
                       <button
                         type="button"
                         onClick={() => handleOpenEditModal(idx)}
@@ -430,7 +512,6 @@ export default function AdminSidebarPage() {
                         <Edit className="w-3.5 h-3.5" />
                       </button>
 
-                      {/* Delete Button */}
                       <button
                         type="button"
                         onClick={() => handleDeleteItem(idx)}
@@ -453,8 +534,8 @@ export default function AdminSidebarPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4 max-w-2xl">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="font-bold text-slate-900 text-sm">Discount / Prepaid Offer Card</h3>
-              <p className="text-slate-500 text-[11px]">Configure the highlighted offer box in the customer sidebar.</p>
+              <h3 className="font-bold text-slate-900 text-sm">Prepaid Coupon Offer Card</h3>
+              <p className="text-slate-500 text-[11px]">Configure the left sidebar coupon card with copy code functionality.</p>
             </div>
             <label className="flex items-center gap-2 cursor-pointer font-bold text-xs">
               <span>Status:</span>
@@ -477,7 +558,7 @@ export default function AdminSidebarPage() {
                 type="text"
                 value={offerCard.heading || ''}
                 onChange={(e) => setOfferCard({ ...offerCard, heading: e.target.value })}
-                placeholder="EXTRA 5% OFF"
+                placeholder="EXTRA 10% OFF"
                 className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C]"
               />
             </div>
@@ -494,18 +575,18 @@ export default function AdminSidebarPage() {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Discount Badge Text</label>
+              <label className="block font-bold text-slate-700 mb-1">Coupon Code</label>
               <input
                 type="text"
-                value={offerCard.discountPercent || ''}
-                onChange={(e) => setOfferCard({ ...offerCard, discountPercent: e.target.value })}
-                placeholder="5%"
-                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C]"
+                value={offerCard.couponCode || ''}
+                onChange={(e) => setOfferCard({ ...offerCard, couponCode: e.target.value })}
+                placeholder="PREPAID10"
+                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-mono font-bold uppercase outline-none focus:border-[#B71C1C]"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Destination URL / Link</label>
+              <label className="block font-bold text-slate-700 mb-1">Destination Link</label>
               <input
                 type="text"
                 value={offerCard.link || ''}
@@ -513,24 +594,6 @@ export default function AdminSidebarPage() {
                 placeholder="/shop?filter=offers"
                 className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-mono outline-none focus:border-[#B71C1C]"
               />
-            </div>
-          </div>
-
-          {/* Live Preview */}
-          <div className="pt-3">
-            <span className="block font-bold text-slate-700 mb-2 text-xs">Customer Sidebar Live Preview:</span>
-            <div className="w-[220px] h-[72px] bg-[#FFF0F2] border border-red-200 rounded-xl p-3 flex items-center justify-between shadow-2xs">
-              <div className="flex flex-col justify-center">
-                <span className="font-display font-black text-xs text-[#B71C1C] uppercase tracking-wide">
-                  {offerCard.heading || 'EXTRA 5% OFF'}
-                </span>
-                <span className="text-[10px] text-slate-600 font-bold mt-0.5">
-                  {offerCard.subtitle || 'On Prepaid Orders'}
-                </span>
-              </div>
-              <div className="w-9 h-9 rounded-xl bg-red-100 text-[#B71C1C] flex items-center justify-center font-black text-sm border border-red-200">
-                {offerCard.discountPercent || '%'}
-              </div>
             </div>
           </div>
         </div>
@@ -541,8 +604,8 @@ export default function AdminSidebarPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4 max-w-2xl">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="font-bold text-slate-900 text-sm">Promotional Banner Card</h3>
-              <p className="text-slate-500 text-[11px]">Manage the primary festive/seasonal promotional card inside the sidebar.</p>
+              <h3 className="font-bold text-slate-900 text-sm">Festive Banner Card</h3>
+              <p className="text-slate-500 text-[11px]">Manage the festive banner image & text on the left sidebar.</p>
             </div>
             <label className="flex items-center gap-2 cursor-pointer font-bold text-xs">
               <span>Status:</span>
@@ -593,7 +656,7 @@ export default function AdminSidebarPage() {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">CTA Button Text</label>
+              <label className="block font-bold text-slate-700 mb-1">Button Text</label>
               <input
                 type="text"
                 value={promoCard.buttonText || ''}
@@ -604,18 +667,7 @@ export default function AdminSidebarPage() {
             </div>
 
             <div className="col-span-1 sm:col-span-2">
-              <label className="block font-bold text-slate-700 mb-1">Destination URL Link</label>
-              <input
-                type="text"
-                value={promoCard.link || ''}
-                onChange={(e) => setPromoCard({ ...promoCard, link: e.target.value })}
-                placeholder="/shop"
-                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-mono outline-none focus:border-[#B71C1C]"
-              />
-            </div>
-
-            <div className="col-span-1 sm:col-span-2">
-              <label className="block font-bold text-slate-700 mb-1">Promotional Graphic Image</label>
+              <label className="block font-bold text-slate-700 mb-1">Banner Image URL</label>
               <div className="flex items-center gap-3">
                 <input
                   type="text"
@@ -627,40 +679,206 @@ export default function AdminSidebarPage() {
                 <label className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer shrink-0 flex items-center gap-1.5">
                   <ImageIcon className="w-3.5 h-3.5" />
                   <span>Upload & Crop</span>
-                  <input type="file" accept="image/*" onChange={handleImageFileSelect} className="hidden" />
+                  <input type="file" accept="image/*" onChange={(e) => handleImageFileSelect(e, 'promo')} className="hidden" />
                 </label>
               </div>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Live Preview */}
-          <div className="pt-3">
-            <span className="block font-bold text-slate-700 mb-2 text-xs">Customer Sidebar Card Live Preview:</span>
-            <div className="w-[220px] h-[340px] rounded-2xl overflow-hidden relative shadow-md text-white p-4 flex flex-col justify-between bg-gradient-to-b from-[#7A0000] via-[#A30000] to-[#450000] border border-red-900">
-              <img
-                src={resolveImageUrl(promoCard.imageUrl)}
-                alt={promoCard.title}
-                className="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-overlay"
+      {/* TAB 4: TODAY'S SPECIAL DEAL (RIGHT) */}
+      {activeTab === 'todaySpecial' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4 max-w-2xl">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="font-bold text-slate-900 text-sm">Today's Special Deal (Right Sidebar)</h3>
+              <p className="text-slate-500 text-[11px]">Configure product deal, price discount, and live countdown timer.</p>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer font-bold text-xs">
+              <span>Status:</span>
+              <input
+                type="checkbox"
+                checked={todaySpecial.enabled !== false}
+                onChange={(e) => setTodaySpecial({ ...todaySpecial, enabled: e.target.checked })}
+                className="accent-[#B71C1C] w-4 h-4"
               />
-              <div className="relative z-10 space-y-2">
-                <span className="inline-block bg-black/40 border border-amber-400/60 text-amber-300 text-[9px] font-black px-2 py-0.5 rounded uppercase">
-                  {promoCard.badge || 'FESTIVE SPECIAL'}
-                </span>
-                <h4 className="font-display font-black text-xl leading-tight uppercase drop-shadow-md">
-                  {promoCard.title || 'UP TO 60% OFF'}
-                </h4>
-                <p className="text-xs text-slate-100 font-bold drop-shadow-xs">
-                  {promoCard.subtitle || 'On Bestsellers'}
-                </p>
-              </div>
+              <span className={todaySpecial.enabled !== false ? 'text-emerald-700' : 'text-slate-400'}>
+                {todaySpecial.enabled !== false ? 'Active' : 'Disabled'}
+              </span>
+            </label>
+          </div>
 
-              <div className="relative z-10 w-full">
-                <button
-                  type="button"
-                  className="w-full bg-white text-slate-900 font-black text-xs uppercase py-2.5 rounded-full shadow-lg text-center"
-                >
-                  {promoCard.buttonText || 'SHOP NOW'}
-                </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Badge Text</label>
+              <input
+                type="text"
+                value={todaySpecial.badge || ''}
+                onChange={(e) => setTodaySpecial({ ...todaySpecial, badge: e.target.value })}
+                placeholder="TODAY'S SPECIAL DEAL"
+                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold uppercase outline-none focus:border-[#B71C1C]"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Product Name</label>
+              <input
+                type="text"
+                value={todaySpecial.productName || ''}
+                onChange={(e) => setTodaySpecial({ ...todaySpecial, productName: e.target.value })}
+                placeholder="Sports Sneakers"
+                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C]"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Sale Price (₹)</label>
+              <input
+                type="number"
+                value={todaySpecial.price || ''}
+                onChange={(e) => setTodaySpecial({ ...todaySpecial, price: Number(e.target.value) })}
+                placeholder="1499"
+                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C]"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Original Price (₹)</label>
+              <input
+                type="number"
+                value={todaySpecial.originalPrice || ''}
+                onChange={(e) => setTodaySpecial({ ...todaySpecial, originalPrice: Number(e.target.value) })}
+                placeholder="2499"
+                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs outline-none focus:border-[#B71C1C]"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Discount Text</label>
+              <input
+                type="text"
+                value={todaySpecial.discountText || ''}
+                onChange={(e) => setTodaySpecial({ ...todaySpecial, discountText: e.target.value })}
+                placeholder="40% OFF"
+                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C]"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Destination Link</label>
+              <input
+                type="text"
+                value={todaySpecial.link || ''}
+                onChange={(e) => setTodaySpecial({ ...todaySpecial, link: e.target.value })}
+                placeholder="/shop?category=Sneakers"
+                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-mono outline-none focus:border-[#B71C1C]"
+              />
+            </div>
+
+            <div className="col-span-1 sm:col-span-2">
+              <label className="block font-bold text-slate-700 mb-1">Product Image</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={todaySpecial.imageUrl || ''}
+                  onChange={(e) => setTodaySpecial({ ...todaySpecial, imageUrl: e.target.value })}
+                  placeholder="https://images.unsplash.com/..."
+                  className="flex-1 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-mono outline-none focus:border-[#B71C1C]"
+                />
+                <label className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer shrink-0 flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <span>Upload & Crop</span>
+                  <input type="file" accept="image/*" onChange={(e) => handleImageFileSelect(e, 'todaySpecial')} className="hidden" />
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: STYLE INSPIRATION (RIGHT) */}
+      {activeTab === 'styleInspiration' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4 max-w-2xl">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="font-bold text-slate-900 text-sm">Style Inspiration Card (Right Sidebar)</h3>
+              <p className="text-slate-500 text-[11px]">Configure editorial style banner card with full image background.</p>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer font-bold text-xs">
+              <span>Status:</span>
+              <input
+                type="checkbox"
+                checked={styleInspiration.enabled !== false}
+                onChange={(e) => setStyleInspiration({ ...styleInspiration, enabled: e.target.checked })}
+                className="accent-[#B71C1C] w-4 h-4"
+              />
+              <span className={styleInspiration.enabled !== false ? 'text-emerald-700' : 'text-slate-400'}>
+                {styleInspiration.enabled !== false ? 'Active' : 'Disabled'}
+              </span>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Badge Tag</label>
+              <input
+                type="text"
+                value={styleInspiration.badge || ''}
+                onChange={(e) => setStyleInspiration({ ...styleInspiration, badge: e.target.value })}
+                placeholder="STYLE INSPIRATION"
+                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold uppercase outline-none focus:border-[#B71C1C]"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Title Line 1</label>
+              <input
+                type="text"
+                value={styleInspiration.title || ''}
+                onChange={(e) => setStyleInspiration({ ...styleInspiration, title: e.target.value })}
+                placeholder="Look Good."
+                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C]"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Title Line 2</label>
+              <input
+                type="text"
+                value={styleInspiration.subtitle || ''}
+                onChange={(e) => setStyleInspiration({ ...styleInspiration, subtitle: e.target.value })}
+                placeholder="Feel Confident."
+                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs outline-none focus:border-[#B71C1C]"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Button Text</label>
+              <input
+                type="text"
+                value={styleInspiration.buttonText || ''}
+                onChange={(e) => setStyleInspiration({ ...styleInspiration, buttonText: e.target.value })}
+                placeholder="EXPLORE NOW →"
+                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold uppercase outline-none focus:border-[#B71C1C]"
+              />
+            </div>
+
+            <div className="col-span-1 sm:col-span-2">
+              <label className="block font-bold text-slate-700 mb-1">Background Image URL</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={styleInspiration.imageUrl || ''}
+                  onChange={(e) => setStyleInspiration({ ...styleInspiration, imageUrl: e.target.value })}
+                  placeholder="https://images.unsplash.com/..."
+                  className="flex-1 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-mono outline-none focus:border-[#B71C1C]"
+                />
+                <label className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer shrink-0 flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <span>Upload & Crop</span>
+                  <input type="file" accept="image/*" onChange={(e) => handleImageFileSelect(e, 'styleInspiration')} className="hidden" />
+                </label>
               </div>
             </div>
           </div>

@@ -18,10 +18,16 @@ import {
   ChevronRight,
   ShieldCheck,
   RotateCcw,
-  Smartphone
+  Smartphone,
+  Copy,
+  Check,
+  IndianRupee,
+  ArrowRight,
+  Grid
 } from 'lucide-react';
 import api from '../../utils/api';
-import { resolveImageUrl } from '../../utils/imageUtils';
+import toast from 'react-hot-toast';
+import { resolveImageUrl, handleImageError } from '../../utils/imageUtils';
 
 const ICON_MAP = {
   Tag,
@@ -58,6 +64,7 @@ const DEFAULT_OFFER_CARD = {
   enabled: true,
   heading: 'EXTRA 10% OFF',
   subtitle: 'On Prepaid Orders',
+  couponCode: 'PREPAID10',
   discountPercent: '%',
   link: '/shop?filter=offers'
 };
@@ -72,22 +79,25 @@ const DEFAULT_PROMO_CARD = {
   imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600'
 };
 
-const DEFAULT_APP_CARD = {
-  enabled: true,
-  title: 'DOWNLOAD KARVIYAM APP',
-  subtitle: 'Shop Anytime, Anywhere',
-  playStoreUrl: 'https://play.google.com/store',
-  appStoreUrl: 'https://apps.apple.com'
-};
+const DEFAULT_SHOP_BY_PRICE = [
+  { id: 'p1', label: 'Under ₹499', link: '/shop?maxPrice=499', enabled: true },
+  { id: 'p2', label: 'Under ₹999', link: '/shop?maxPrice=999', enabled: true },
+  { id: 'p3', label: 'Under ₹1499', link: '/shop?maxPrice=1499', enabled: true },
+  { id: 'p4', label: 'Under ₹1999', link: '/shop?maxPrice=1999', enabled: true },
+  { id: 'p5', label: 'Under ₹2999', link: '/shop?maxPrice=2999', enabled: true },
+  { id: 'p6', label: 'Under ₹3999', link: '/shop?maxPrice=3999', enabled: true }
+];
 
-const DEFAULT_INDIA_CARD = {
-  enabled: true,
-  badge: 'MADE IN INDIA',
-  title: 'Supporting Local',
-  subtitle: 'Artisans & Brands',
-  buttonText: 'SHOP INDIAN →',
-  link: '/shop?filter=local'
-};
+const DEFAULT_QUICK_CATEGORIES = [
+  { id: 'qc1', name: 'T-Shirts', link: '/shop?category=T-Shirts', enabled: true },
+  { id: 'qc2', name: 'Sneakers', link: '/shop?category=Sneakers', enabled: true },
+  { id: 'qc3', name: 'Kurta Sets', link: '/shop?category=Kurta+Sets', enabled: true },
+  { id: 'qc4', name: 'Men', link: '/shop?category=Men', enabled: true },
+  { id: 'qc5', name: 'Women', link: '/shop?category=Women', enabled: true },
+  { id: 'qc6', name: 'Kids', link: '/shop?category=Kids', enabled: true },
+  { id: 'qc7', name: 'Accessories', link: '/shop?category=Accessories', enabled: true },
+  { id: 'qc8', name: 'Jewellery', link: '/shop?category=Jewellery', enabled: true }
+];
 
 const DEFAULT_WHY_SHOP = [
   { id: '1', title: 'Free Delivery', subtitle: 'On orders above ₹499', icon: 'Truck' },
@@ -97,14 +107,43 @@ const DEFAULT_WHY_SHOP = [
   { id: '5', title: '24/7 Support', subtitle: 'Dedicated assistance', icon: 'Headphones' }
 ];
 
+const DEFAULT_APP_CARD = {
+  enabled: true,
+  title: 'DOWNLOAD KARVIYAM APP',
+  subtitle: 'Shop Anytime, Anywhere',
+  playStoreUrl: 'https://play.google.com',
+  appStoreUrl: 'https://apple.com'
+};
+
+const DEFAULT_BRAND_TRUST = {
+  enabled: true,
+  title: 'WHY KARVIYAM?',
+  subtitle: 'Trusted E-Commerce Experience',
+  points: ['Quality Fashion', 'Trusted Shopping', 'Secure Checkout', 'Easy Returns']
+};
+
+const DEFAULT_FINAL_LEFT_PROMO = {
+  enabled: true,
+  badge: 'EXPLORE STYLES',
+  title: 'SHOP MORE. SAVE MORE.',
+  subtitle: 'Discover everyday fashion styles.',
+  buttonText: 'EXPLORE NOW →',
+  link: '/shop'
+};
+
 export default function DesktopSidebarLeft() {
   const navigate = useNavigate();
   const [navItems, setNavItems] = useState(DEFAULT_NAV_ITEMS);
   const [offerCard, setOfferCard] = useState(DEFAULT_OFFER_CARD);
   const [promoCard, setPromoCard] = useState(DEFAULT_PROMO_CARD);
-  const [appCard, setAppCard] = useState(DEFAULT_APP_CARD);
-  const [indiaCard, setIndiaCard] = useState(DEFAULT_INDIA_CARD);
+  const [shopByPrice, setShopByPrice] = useState(DEFAULT_SHOP_BY_PRICE);
+  const [quickCategories, setQuickCategories] = useState(DEFAULT_QUICK_CATEGORIES);
   const [whyShopItems, setWhyShopItems] = useState(DEFAULT_WHY_SHOP);
+  const [popularProducts, setPopularProducts] = useState([]);
+  const [appCard, setAppCard] = useState(DEFAULT_APP_CARD);
+  const [brandTrust, setBrandTrust] = useState(DEFAULT_BRAND_TRUST);
+  const [finalLeftPromo, setFinalLeftPromo] = useState(DEFAULT_FINAL_LEFT_PROMO);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const fetchConfig = async () => {
     try {
@@ -112,13 +151,14 @@ export default function DesktopSidebarLeft() {
       const data = res?.data?.data || res?.data;
 
       if (data) {
-        if (Array.isArray(data.navItems) && data.navItems.length > 0) {
-          setNavItems(data.navItems.filter(i => i.enabled !== false));
-        }
+        if (Array.isArray(data.navItems) && data.navItems.length > 0) setNavItems(data.navItems.filter(i => i.enabled !== false));
         if (data.offerCard) setOfferCard(data.offerCard);
         if (data.promoCard) setPromoCard(data.promoCard);
+        if (Array.isArray(data.shopByPrice) && data.shopByPrice.length > 0) setShopByPrice(data.shopByPrice.filter(p => p.enabled !== false));
+        if (Array.isArray(data.quickCategories) && data.quickCategories.length > 0) setQuickCategories(data.quickCategories.filter(c => c.enabled !== false));
         if (data.appCard) setAppCard(data.appCard);
-        if (data.indiaCard) setIndiaCard(data.indiaCard);
+        if (data.brandTrust) setBrandTrust(data.brandTrust);
+        if (data.finalLeftPromo) setFinalLeftPromo(data.finalLeftPromo);
       }
     } catch (e) {
       console.error('Error fetching sidebar config:', e);
@@ -139,13 +179,26 @@ export default function DesktopSidebarLeft() {
     } catch (e) {}
   };
 
+  const fetchPopularProducts = async () => {
+    try {
+      const res = await api.get('/products?size=2').catch(() => null);
+      const dataObj = res?.data?.data || res?.data;
+      const list = Array.isArray(dataObj?.content) ? dataObj.content : (Array.isArray(dataObj) ? dataObj : []);
+      if (list && list.length > 0) {
+        setPopularProducts(list.slice(0, 2));
+      }
+    } catch (e) {}
+  };
+
   useEffect(() => {
     fetchConfig();
     fetchWhyShopConfig();
+    fetchPopularProducts();
 
     const handleUpdate = () => {
       fetchConfig();
       fetchWhyShopConfig();
+      fetchPopularProducts();
     };
 
     window.addEventListener('karviyam_sidebar_config_updated', handleUpdate);
@@ -159,13 +212,21 @@ export default function DesktopSidebarLeft() {
     };
   }, []);
 
+  const handleCopyCode = (e, code) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(code || 'PREPAID10');
+    setCopiedCode(true);
+    toast.success(`Coupon code ${code || 'PREPAID10'} copied! 🎉`);
+    setTimeout(() => setCopiedCode(false), 2500);
+  };
+
   const renderIcon = (iconName, fallbackIcon = Tag) => {
     const IconComp = ICON_MAP[iconName] || fallbackIcon;
     return <IconComp className="w-3.5 h-3.5" />;
   };
 
   return (
-    <aside className="w-[200px] xl:w-[220px] shrink-0 flex flex-col gap-3">
+    <aside className="w-[190px] xl:w-[210px] shrink-0 flex flex-col gap-2.5">
       
       {/* 1. QUICK SHOP Navigation Card */}
       {navItems.length > 0 && (
@@ -200,22 +261,41 @@ export default function DesktopSidebarLeft() {
         </div>
       )}
 
-      {/* 2. SMALL OFFER CARD */}
+      {/* 2. SMALL COUPON CARD */}
       {offerCard && offerCard.enabled !== false && (
         <div
           onClick={() => navigate(offerCard.link || '/shop?filter=offers')}
-          className="w-full bg-[#FFF5F5] border border-red-200/90 rounded-xl p-3 flex items-center justify-between shadow-2xs overflow-hidden relative cursor-pointer hover:border-[#B71C1C] transition-colors group"
+          className="w-full bg-[#FFF5F5] border border-red-200/90 rounded-xl p-3 flex flex-col gap-2 shadow-2xs overflow-hidden relative cursor-pointer hover:border-[#B71C1C] transition-colors group"
         >
-          <div className="flex flex-col justify-center min-w-0">
-            <span className="font-display font-black text-xs xl:text-sm text-[#B71C1C] uppercase tracking-wide group-hover:underline truncate">
-              {offerCard.heading || 'EXTRA 10% OFF'}
-            </span>
-            <span className="text-[10px] text-slate-600 font-bold mt-0.5 truncate">
-              {offerCard.subtitle || 'On Prepaid Orders'}
-            </span>
+          <div className="flex items-center justify-between min-w-0">
+            <div>
+              <span className="font-display font-black text-xs xl:text-sm text-[#B71C1C] uppercase tracking-wide group-hover:underline truncate block">
+                {offerCard.heading || 'EXTRA 10% OFF'}
+              </span>
+              <span className="text-[9.5px] text-slate-600 font-bold block truncate">
+                {offerCard.subtitle || 'On Prepaid Orders'}
+              </span>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-red-100 text-[#B71C1C] flex items-center justify-center font-black text-xs shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+              {offerCard.discountPercent || '%'}
+            </div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-red-100 text-[#B71C1C] flex items-center justify-center font-black text-xs shrink-0 shadow-2xs group-hover:scale-110 transition-transform">
-            {offerCard.discountPercent || '%'}
+
+          <div className="flex items-center gap-1.5 pt-1 border-t border-red-200/60">
+            <button
+              type="button"
+              onClick={(e) => handleCopyCode(e, offerCard.couponCode)}
+              className="flex-1 bg-white hover:bg-slate-50 text-[#B71C1C] border border-red-200 font-black text-[9.5px] py-1 rounded-lg flex items-center justify-center gap-1 transition-colors cursor-pointer"
+            >
+              {copiedCode ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+              <span>{copiedCode ? 'COPIED' : 'COPY CODE'}</span>
+            </button>
+            <button
+              type="button"
+              className="bg-[#B71C1C] hover:bg-[#8E0000] text-white font-black text-[9.5px] py-1 px-2 rounded-lg transition-colors cursor-pointer"
+            >
+              SHOP NOW
+            </button>
           </div>
         </div>
       )}
@@ -224,7 +304,7 @@ export default function DesktopSidebarLeft() {
       {promoCard && promoCard.enabled !== false && (
         <div
           onClick={() => navigate(promoCard.link || '/shop')}
-          className="w-full h-[320px] xl:h-[340px] rounded-2xl overflow-hidden relative shadow-md text-white p-4 flex flex-col justify-between bg-gradient-to-b from-[#8B0000] via-[#B71C1C] to-[#5C0000] group cursor-pointer border border-red-900/60"
+          className="w-full h-[310px] xl:h-[330px] rounded-2xl overflow-hidden relative shadow-md text-white p-4 flex flex-col justify-between bg-gradient-to-b from-[#8B0000] via-[#B71C1C] to-[#5C0000] group cursor-pointer border border-red-900/60"
         >
           <img
             src={resolveImageUrl(promoCard.imageUrl)}
@@ -233,7 +313,7 @@ export default function DesktopSidebarLeft() {
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
 
-          <div className="relative z-10 space-y-2.5">
+          <div className="relative z-10 space-y-2">
             <span className="inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-widest text-amber-300 bg-black/40 border border-amber-400/60 px-2 py-0.5 rounded backdrop-blur-xs">
               <Sparkles className="w-3 h-3 text-amber-300" /> {promoCard.badge || '✨ FESTIVE SPECIAL'}
             </span>
@@ -262,9 +342,53 @@ export default function DesktopSidebarLeft() {
         </div>
       )}
 
-      {/* 4. WHY SHOP WITH KARVIYAM */}
-      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2.5">
-        <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide border-b border-slate-100 pb-2">
+      {/* 4. SHOP BY PRICE */}
+      {shopByPrice.length > 0 && (
+        <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
+          <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide border-b border-slate-100 pb-1.5 flex items-center gap-1">
+            <IndianRupee className="w-3.5 h-3.5 text-[#B71C1C]" />
+            <span>SHOP BY PRICE</span>
+          </h4>
+          <div className="grid grid-cols-2 gap-1.5">
+            {shopByPrice.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => navigate(p.link || '/shop')}
+                className="bg-slate-50 hover:bg-red-50 hover:border-red-200 border border-slate-200/80 rounded-lg py-1.5 px-2 text-[10px] font-black text-slate-800 hover:text-[#B71C1C] transition-colors cursor-pointer text-center truncate"
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 5. QUICK CATEGORY LINKS */}
+      {quickCategories.length > 0 && (
+        <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
+          <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide border-b border-slate-100 pb-1.5 flex items-center gap-1">
+            <Grid className="w-3.5 h-3.5 text-[#B71C1C]" />
+            <span>QUICK CATEGORIES</span>
+          </h4>
+          <div className="flex flex-wrap gap-1.5">
+            {quickCategories.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => navigate(c.link || '/shop')}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-[9.5px] py-1 px-2.5 rounded-full transition-colors cursor-pointer"
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 6. WHY SHOP WITH KARVIYAM */}
+      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
+        <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide border-b border-slate-100 pb-1.5">
           WHY SHOP WITH KARVIYAM?
         </h4>
         <div className="space-y-2">
@@ -274,10 +398,10 @@ export default function DesktopSidebarLeft() {
                 {renderIcon(item.icon, Truck)}
               </div>
               <div className="min-w-0">
-                <h5 className="font-extrabold text-[11px] text-slate-900 leading-tight truncate">
+                <h5 className="font-extrabold text-[10.5px] text-slate-900 leading-tight truncate">
                   {item.title}
                 </h5>
-                <p className="text-[9.5px] text-slate-500 font-medium truncate">
+                <p className="text-[9px] text-slate-500 font-medium truncate">
                   {item.subtitle}
                 </p>
               </div>
@@ -286,7 +410,48 @@ export default function DesktopSidebarLeft() {
         </div>
       </div>
 
-      {/* 5. APP DOWNLOAD CARD */}
+      {/* 7. MINI PRODUCT WIDGET (POPULAR PICKS) */}
+      {popularProducts.length > 0 && (
+        <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+            <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide">
+              POPULAR PICKS
+            </h4>
+            <span className="text-[9px] font-extrabold text-[#B71C1C] cursor-pointer hover:underline" onClick={() => navigate('/shop')}>
+              View All
+            </span>
+          </div>
+          <div className="space-y-2">
+            {popularProducts.map((prod) => (
+              <div
+                key={prod.id}
+                onClick={() => navigate(`/product/${prod.id}`)}
+                className="flex items-center gap-2 border border-slate-100 rounded-lg p-1.5 hover:border-slate-300 transition-colors cursor-pointer group"
+              >
+                <div className="w-12 h-12 bg-slate-50 rounded-md overflow-hidden flex items-center justify-center shrink-0 p-0.5">
+                  <img
+                    src={resolveImageUrl(prod.imageUrl || prod.images?.[0])}
+                    alt={prod.name}
+                    onError={(e) => handleImageError(e, prod.id)}
+                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h5 className="font-bold text-[10.5px] text-slate-900 leading-tight truncate group-hover:text-[#B71C1C]">
+                    {prod.name}
+                  </h5>
+                  <div className="flex items-center gap-1 pt-0.5">
+                    <span className="font-black text-[11px] text-slate-900">₹{prod.price}</span>
+                    <span className="text-[8.5px] font-bold text-amber-500 ml-auto">★ {prod.rating || 4.5}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 8. DOWNLOAD KARVIYAM APP */}
       {appCard && appCard.enabled !== false && (
         <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2 text-center">
           <div className="flex items-center justify-center gap-1 text-[#B71C1C]">
@@ -295,16 +460,16 @@ export default function DesktopSidebarLeft() {
               {appCard.title || 'DOWNLOAD KARVIYAM APP'}
             </h4>
           </div>
-          <p className="text-[10px] text-slate-500 font-medium">
+          <p className="text-[9.5px] text-slate-500 font-medium">
             {appCard.subtitle || 'Shop Anytime, Anywhere'}
           </p>
 
-          <div className="flex flex-col gap-1.5 pt-1">
+          <div className="flex flex-col gap-1 pt-0.5">
             <a
               href={appCard.playStoreUrl || 'https://play.google.com'}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
+              className="bg-slate-900 hover:bg-slate-800 text-white text-[9.5px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 transition-colors"
             >
               <span>GET IT ON</span>
               <span className="font-black">Google Play</span>
@@ -313,7 +478,7 @@ export default function DesktopSidebarLeft() {
               href={appCard.appStoreUrl || 'https://apple.com'}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
+              className="bg-slate-900 hover:bg-slate-800 text-white text-[9.5px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 transition-colors"
             >
               <span>Download on the</span>
               <span className="font-black">App Store</span>
@@ -322,33 +487,43 @@ export default function DesktopSidebarLeft() {
         </div>
       )}
 
-      {/* 6. MADE IN INDIA / BRAND CARD */}
-      {indiaCard && indiaCard.enabled !== false && (
+      {/* 9. BRAND / TRUST CARD (WHY KARVIYAM?) */}
+      {brandTrust && brandTrust.enabled !== false && (
+        <div className="w-full bg-slate-900 text-white rounded-xl shadow-2xs p-3 space-y-2 border border-slate-800">
+          <h4 className="font-display font-black text-xs uppercase tracking-wide text-amber-300 border-b border-slate-800 pb-1.5">
+            {brandTrust.title || 'WHY KARVIYAM?'}
+          </h4>
+          <ul className="space-y-1 text-[9.5px] text-slate-300 font-medium">
+            {(brandTrust.points || ['Quality Fashion', 'Trusted Shopping', 'Secure Checkout', 'Easy Returns']).map((pt, i) => (
+              <li key={i} className="flex items-center gap-1.5">
+                <span className="text-emerald-400 font-bold">✓</span>
+                <span>{pt}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 10. FINAL LEFT PROMOTION */}
+      {finalLeftPromo && finalLeftPromo.enabled !== false && (
         <div
-          onClick={() => navigate(indiaCard.link || '/shop?filter=local')}
-          className="w-full bg-gradient-to-br from-amber-50/80 via-orange-50/50 to-amber-100/60 border border-amber-200 rounded-xl p-3 space-y-2 cursor-pointer hover:border-amber-400 transition-colors group relative overflow-hidden shadow-2xs"
+          onClick={() => navigate(finalLeftPromo.link || '/shop')}
+          className="w-full bg-gradient-to-br from-red-500 to-[#B71C1C] text-white rounded-xl p-3 space-y-1.5 cursor-pointer hover:shadow-md transition-shadow group"
         >
-          <div className="flex items-center gap-1.5">
-            <span className="text-base">🇮🇳</span>
-            <span className="text-[9.5px] font-black uppercase text-amber-900 tracking-wider">
-              {indiaCard.badge || 'MADE IN INDIA'}
-            </span>
-          </div>
-
-          <div>
-            <h4 className="font-display font-black text-xs text-slate-900 leading-tight">
-              {indiaCard.title || 'Supporting Local'}
-            </h4>
-            <p className="text-[10px] text-slate-600 font-medium">
-              {indiaCard.subtitle || 'Artisans & Brands'}
-            </p>
-          </div>
-
+          <span className="text-[8.5px] font-black uppercase text-amber-200 tracking-wider block">
+            {finalLeftPromo.badge || 'EXPLORE STYLES'}
+          </span>
+          <h4 className="font-display font-black text-xs leading-tight uppercase">
+            {finalLeftPromo.title || 'SHOP MORE. SAVE MORE.'}
+          </h4>
+          <p className="text-[9.5px] opacity-90 font-medium">
+            {finalLeftPromo.subtitle || 'Discover everyday fashion styles.'}
+          </p>
           <button
             type="button"
-            className="w-full bg-[#B71C1C] hover:bg-[#8E0000] text-white font-black text-[10px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors"
+            className="w-full bg-white text-slate-900 font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors mt-1"
           >
-            {indiaCard.buttonText || 'SHOP INDIAN →'}
+            {finalLeftPromo.buttonText || 'EXPLORE NOW →'}
           </button>
         </div>
       )}
