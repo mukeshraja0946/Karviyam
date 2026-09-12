@@ -187,7 +187,19 @@ export default function ShopPage() {
     try {
       const queryParts = [];
       const urlSearch = searchParams.get('search') || searchParams.get('q') || searchParams.get('keyword') || '';
+      const urlFilter = searchParams.get('filter') || '';
+      const urlTag = searchParams.get('tag') || '';
+      const urlSubCat = searchParams.get('subCategory') || '';
+      const urlIsNew = searchParams.get('isNewArrival');
+      const urlIsBest = searchParams.get('isBestSeller');
+
       if (urlSearch) queryParts.push(`keyword=${encodeURIComponent(urlSearch)}`);
+      if (urlFilter) queryParts.push(`filter=${encodeURIComponent(urlFilter)}`);
+      if (urlTag) queryParts.push(`tag=${encodeURIComponent(urlTag)}`);
+      if (urlSubCat) queryParts.push(`subCategory=${encodeURIComponent(urlSubCat)}`);
+      if (urlIsNew) queryParts.push(`isNewArrival=${encodeURIComponent(urlIsNew)}`);
+      if (urlIsBest) queryParts.push(`isBestSeller=${encodeURIComponent(urlIsBest)}`);
+
       if (selectedCategories.length > 0) queryParts.push(`categories=${encodeURIComponent(selectedCategories.join(','))}`);
       if (selectedBrands.length > 0) queryParts.push(`brands=${encodeURIComponent(selectedBrands.join(','))}`);
       if (selectedPriceRanges.length > 0) queryParts.push(`priceRanges=${encodeURIComponent(selectedPriceRanges.join(','))}`);

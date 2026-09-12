@@ -486,11 +486,11 @@ const DEFAULT_FOOTER_COLUMNS = [
     enabled: true,
     order: 1,
     links: [
-      { id: 'l1', title: 'Oversized T-Shirts', destinationType: 'Category', destination: '/shop?category=Clothing', openNewTab: false, enabled: true, order: 1 },
-      { id: 'l2', title: 'Casual Linen Shirts', destinationType: 'Category', destination: '/shop?category=Clothing', openNewTab: false, enabled: true, order: 2 },
-      { id: 'l3', title: 'Apex Stealth Sneakers', destinationType: 'Category', destination: '/shop?category=Footwear', openNewTab: false, enabled: true, order: 3 },
-      { id: 'l4', title: '925 Silver Jewellery', destinationType: 'Category', destination: '/shop?category=Jewellery', openNewTab: false, enabled: true, order: 4 },
-      { id: 'l5', title: 'Anime Graphic Hoodies', destinationType: 'Category', destination: '/shop?category=Clothing', openNewTab: false, enabled: true, order: 5 }
+      { id: 'l1', title: 'Oversized T-Shirts', destinationType: 'Category', destination: '/shop?category=T-Shirts&search=Oversized', openNewTab: false, enabled: true, order: 1 },
+      { id: 'l2', title: 'Casual Linen Shirts', destinationType: 'Category', destination: '/shop?category=Shirts&search=Linen', openNewTab: false, enabled: true, order: 2 },
+      { id: 'l3', title: 'Apex Stealth Sneakers', destinationType: 'Category', destination: '/shop?category=Sneakers&search=Apex', openNewTab: false, enabled: true, order: 3 },
+      { id: 'l4', title: '925 Silver Jewellery', destinationType: 'Category', destination: '/shop?category=Jewellery&search=Silver', openNewTab: false, enabled: true, order: 4 },
+      { id: 'l5', title: 'Anime Graphic Hoodies', destinationType: 'Category', destination: '/shop?category=Hoodies&search=Anime', openNewTab: false, enabled: true, order: 5 }
     ]
   },
   {
@@ -499,11 +499,11 @@ const DEFAULT_FOOTER_COLUMNS = [
     enabled: true,
     order: 2,
     links: [
-      { id: 'l6', title: 'Track My Order', destinationType: 'Page', destination: '/profile', openNewTab: false, enabled: true, order: 1 },
-      { id: 'l7', title: 'Help Center & FAQ', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 2 },
-      { id: 'l8', title: 'Return Policy', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 3 },
-      { id: 'l9', title: 'Terms of Service', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 4 },
-      { id: 'l10', title: 'Privacy Policy', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 5 }
+      { id: 'l6', title: 'Track My Order', destinationType: 'System Action', destination: '/profile', openNewTab: false, enabled: true, order: 1 },
+      { id: 'l7', title: 'Help Center & FAQ', destinationType: 'Page', destination: '/faq', openNewTab: false, enabled: true, order: 2 },
+      { id: 'l8', title: 'Return Policy', destinationType: 'Popup Modal', destination: 'return_policy', openNewTab: false, enabled: true, order: 3 },
+      { id: 'l9', title: 'Terms of Service', destinationType: 'Popup Modal', destination: 'terms', openNewTab: false, enabled: true, order: 4 },
+      { id: 'l10', title: 'Privacy Policy', destinationType: 'Popup Modal', destination: 'privacy', openNewTab: false, enabled: true, order: 5 }
     ]
   },
   {
@@ -512,10 +512,10 @@ const DEFAULT_FOOTER_COLUMNS = [
     enabled: true,
     order: 3,
     links: [
-      { id: 'l11', title: 'About Us', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 1 },
+      { id: 'l11', title: 'About Us', destinationType: 'Popup Modal', destination: 'about_us', openNewTab: false, enabled: true, order: 1 },
       { id: 'l12', title: 'Shop Catalog', destinationType: 'Page', destination: '/shop', openNewTab: false, enabled: true, order: 2 },
-      { id: 'l13', title: 'New Arrivals', destinationType: 'Page', destination: '/shop?filter=new', openNewTab: false, enabled: true, order: 3 },
-      { id: 'l14', title: 'Best Sellers', destinationType: 'Page', destination: '/shop?filter=bestsellers', openNewTab: false, enabled: true, order: 4 },
+      { id: 'l13', title: 'New Arrivals', destinationType: 'Product Filter', destination: '/shop?filter=new', openNewTab: false, enabled: true, order: 3 },
+      { id: 'l14', title: 'Best Sellers', destinationType: 'Product Filter', destination: '/shop?filter=bestsellers', openNewTab: false, enabled: true, order: 4 },
       { id: 'l15', title: 'Contact Us', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 5 }
     ]
   }

@@ -182,49 +182,60 @@ export default function Footer() {
 
   // Helper to map category/item titles to exact Shop query destination
   const resolveLinkDestination = (link) => {
-    if (link.destination && link.destination !== '#') return link.destination;
-    const title = (link.title || '').toLowerCase();
+    const title = (link.title || '').toLowerCase().trim();
+    const dest = (link.destination || '').trim();
 
-    if (title.includes('t-shirt') || title.includes('oversized')) return '/shop?category=Clothing';
-    if (title.includes('shirt')) return '/shop?category=Clothing';
-    if (title.includes('sneaker') || title.includes('shoes')) return '/shop?category=Footwear';
-    if (title.includes('jewel') || title.includes('silver')) return '/shop?category=Jewellery';
-    if (title.includes('hoodie')) return '/shop?category=Clothing';
+    if (dest && dest !== '#' && !dest.startsWith('return') && !dest.startsWith('terms') && !dest.startsWith('privacy') && !dest.startsWith('about')) {
+      return dest;
+    }
+
+    if (title.includes('oversized')) return '/shop?category=T-Shirts&search=Oversized';
+    if (title.includes('casual linen') || title.includes('linen shirt')) return '/shop?category=Shirts&search=Linen';
+    if (title.includes('apex stealth') || title.includes('sneaker')) return '/shop?category=Sneakers&search=Apex';
+    if (title.includes('925 silver') || title.includes('jewel')) return '/shop?category=Jewellery&search=Silver';
+    if (title.includes('anime graphic') || title.includes('hoodie')) return '/shop?category=Hoodies&search=Anime';
+
     if (title.includes('new arrival')) return '/shop?filter=new';
     if (title.includes('best seller')) return '/shop?filter=bestsellers';
-    if (title.includes('catalogue') || title.includes('shop')) return '/shop';
+    if (title.includes('faq') || title.includes('help center')) return '/faq';
+    if (title.includes('catalogue') || title.includes('catalog') || title.includes('shop catalog')) return '/shop';
     if (title.includes('contact')) return '/contact';
 
     return '/shop';
   };
 
   const handleLinkClick = (e, link) => {
-    const title = (link.title || '').toLowerCase();
+    const title = (link.title || '').toLowerCase().trim();
+    const dest = (link.destination || '').toLowerCase().trim();
 
-    // Check if popup modal triggers
     if (title.includes('track') && title.includes('order')) {
       e.preventDefault();
       setTrackingModalOpen(true);
       return;
     }
-    if (title.includes('return') && title.includes('policy')) {
+    if (title.includes('return') || dest.includes('return')) {
       e.preventDefault();
       handleOpenPolicyPopup('return_policy', link.title);
       return;
     }
-    if (title.includes('terms')) {
+    if (title.includes('terms') || dest.includes('terms')) {
       e.preventDefault();
       handleOpenPolicyPopup('terms', link.title);
       return;
     }
-    if (title.includes('privacy')) {
+    if (title.includes('privacy') || dest.includes('privacy')) {
       e.preventDefault();
       handleOpenPolicyPopup('privacy', link.title);
       return;
     }
-    if (title.includes('about us') || title.includes('about karviyam')) {
+    if (title.includes('about us') || title.includes('about karviyam') || dest.includes('about')) {
       e.preventDefault();
       handleOpenPolicyPopup('about_us', link.title);
+      return;
+    }
+    if (title.includes('faq') || title.includes('help center')) {
+      e.preventDefault();
+      navigate('/faq');
       return;
     }
   };
@@ -239,14 +250,14 @@ export default function Footer() {
     <footer className="bg-white border-t border-slate-200 text-slate-700 font-sans">
       
       {/* Top Value Proposition Trust Badges */}
-      <div className="bg-slate-50 border-b border-slate-200 py-4 sm:py-6 px-4 sm:px-8">
+      <div className="bg-slate-50 border-b border-slate-200 py-5 sm:py-6 px-4 sm:px-8">
         <div className="max-w-[1640px] w-full mx-auto px-2 sm:px-4 grid grid-cols-2 md:grid-cols-5 gap-6 text-center md:text-left">
           <div className="flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-2xl bg-red-50 text-[#B71C1C] flex items-center justify-center shrink-0 shadow-2xs">
               <Truck className="w-5.5 h-5.5" />
             </div>
             <div>
-              <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">{footerConfig.b1Title}</h4>
+              <h4 className="text-sm sm:text-base font-extrabold text-slate-900 leading-tight">{footerConfig.b1Title}</h4>
               <p className="text-xs text-slate-500 font-medium mt-0.5">{footerConfig.b1Sub}</p>
             </div>
           </div>
@@ -256,7 +267,7 @@ export default function Footer() {
               <RotateCcw className="w-5.5 h-5.5" />
             </div>
             <div>
-              <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">{footerConfig.b2Title}</h4>
+              <h4 className="text-sm sm:text-base font-extrabold text-slate-900 leading-tight">{footerConfig.b2Title}</h4>
               <p className="text-xs text-slate-500 font-medium mt-0.5">{footerConfig.b2Sub}</p>
             </div>
           </div>
@@ -266,7 +277,7 @@ export default function Footer() {
               <ShieldCheck className="w-5.5 h-5.5" />
             </div>
             <div>
-              <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">{footerConfig.b3Title}</h4>
+              <h4 className="text-sm sm:text-base font-extrabold text-slate-900 leading-tight">{footerConfig.b3Title}</h4>
               <p className="text-xs text-slate-500 font-medium mt-0.5">{footerConfig.b3Sub}</p>
             </div>
           </div>
@@ -276,7 +287,7 @@ export default function Footer() {
               <Tag className="w-5.5 h-5.5" />
             </div>
             <div>
-              <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">{footerConfig.b4Title}</h4>
+              <h4 className="text-sm sm:text-base font-extrabold text-slate-900 leading-tight">{footerConfig.b4Title}</h4>
               <p className="text-xs text-slate-500 font-medium mt-0.5">{footerConfig.b4Sub}</p>
             </div>
           </div>
@@ -286,7 +297,7 @@ export default function Footer() {
               <Headphones className="w-5.5 h-5.5" />
             </div>
             <div>
-              <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">{footerConfig.b5Title}</h4>
+              <h4 className="text-sm sm:text-base font-extrabold text-slate-900 leading-tight">{footerConfig.b5Title}</h4>
               <p className="text-xs text-slate-500 font-medium mt-0.5">{footerConfig.b5Sub}</p>
             </div>
           </div>
@@ -294,10 +305,10 @@ export default function Footer() {
       </div>
 
       {/* Main 4-Column Balanced Grid Desktop & Responsive Mobile Footer Content */}
-      <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-8 xl:px-12 pt-8 pb-10 md:py-14 grid grid-cols-1 md:grid-cols-4 gap-8 xl:gap-12 items-start">
+      <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-8 xl:px-12 pt-10 pb-12 grid grid-cols-1 md:grid-cols-4 gap-8 xl:gap-12 items-start">
         
         {/* Column 1: Brand Information Section */}
-        <div className="space-y-4 text-left">
+        <div className="flex flex-col gap-4 text-left items-start">
           <Link to="/" className="inline-flex items-center gap-2.5">
             {footerConfig.logoUrl && isValidImageUrl(footerConfig.logoUrl) && !logoFailed ? (
               <img
@@ -324,23 +335,23 @@ export default function Footer() {
             {footerConfig.about}
           </p>
 
-          <div className="text-sm space-y-2.5 text-slate-700 font-medium pt-1">
+          <div className="space-y-2.5 text-slate-700 font-medium pt-1 w-full text-sm sm:text-[14.5px]">
             {footerConfig.address && (
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4.5 h-4.5 text-[#B71C1C] shrink-0 mt-0.5" />
-                <span className="leading-snug text-sm">{footerConfig.address}</span>
+                <span className="leading-snug">{footerConfig.address}</span>
               </div>
             )}
             {footerConfig.phone && (
               <div className="flex items-center gap-2.5">
                 <Phone className="w-4.5 h-4.5 text-[#B71C1C] shrink-0" />
-                <a href={`tel:${footerConfig.phone}`} className="hover:text-[#B71C1C] transition-colors text-sm font-semibold">{footerConfig.phone}</a>
+                <a href={`tel:${footerConfig.phone}`} className="hover:text-[#B71C1C] transition-colors font-semibold">{footerConfig.phone}</a>
               </div>
             )}
             {footerConfig.email && (
               <div className="flex items-center gap-2.5">
                 <Mail className="w-4.5 h-4.5 text-[#B71C1C] shrink-0" />
-                <a href={`mailto:${footerConfig.email}`} className="hover:text-[#B71C1C] transition-colors text-sm font-semibold">{footerConfig.email}</a>
+                <a href={`mailto:${footerConfig.email}`} className="hover:text-[#B71C1C] transition-colors font-semibold">{footerConfig.email}</a>
               </div>
             )}
           </div>
@@ -348,45 +359,45 @@ export default function Footer() {
           {/* Social Icons */}
           <div className="pt-2 flex items-center gap-2.5 flex-wrap">
             {social.instagram && (
-              <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-600 flex items-center justify-center transition-colors shadow-2xs" title="Instagram">
-                <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="w-9.5 h-9.5 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-700 flex items-center justify-center transition-colors shadow-2xs" title="Instagram">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
               </a>
             )}
             {social.facebook && (
-              <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-600 flex items-center justify-center transition-colors shadow-2xs" title="Facebook">
-                <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24"><path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.5 5H18V0h-3.808C10.592 0 9 1.592 9 4.415V8z"/></svg>
+              <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="w-9.5 h-9.5 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-700 flex items-center justify-center transition-colors shadow-2xs" title="Facebook">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.5 5H18V0h-3.808C10.592 0 9 1.592 9 4.415V8z"/></svg>
               </a>
             )}
             {social.youtube && (
-              <a href={social.youtube} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-600 flex items-center justify-center transition-colors shadow-2xs" title="YouTube">
-                <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              <a href={social.youtube} target="_blank" rel="noopener noreferrer" className="w-9.5 h-9.5 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-700 flex items-center justify-center transition-colors shadow-2xs" title="YouTube">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
               </a>
             )}
             {social.whatsapp && (
-              <a href={social.whatsapp} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-600 flex items-center justify-center transition-colors shadow-2xs" title="WhatsApp">
-                <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-1.146 4.195 4.316-1.134z"/></svg>
+              <a href={social.whatsapp} target="_blank" rel="noopener noreferrer" className="w-9.5 h-9.5 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-700 flex items-center justify-center transition-colors shadow-2xs" title="WhatsApp">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-1.146 4.195 4.316-1.134z"/></svg>
               </a>
             )}
             {social.twitter && (
-              <a href={social.twitter} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-600 flex items-center justify-center transition-colors shadow-2xs" title="Twitter / X">
-                <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              <a href={social.twitter} target="_blank" rel="noopener noreferrer" className="w-9.5 h-9.5 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-700 flex items-center justify-center transition-colors shadow-2xs" title="Twitter / X">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               </a>
             )}
           </div>
         </div>
 
-        {/* Columns 2 & 3: Dynamic Category, Customer Care & Quick Links Columns */}
-        {activeColumns.slice(0, 2).map((col, idx) => {
+        {/* Columns 2 & 3: CATEGORIES & CUSTOMER CARE */}
+        {activeColumns.slice(0, 2).map((col) => {
           const activeLinks = (col.links || [])
             .filter(l => l && l.enabled !== false)
             .sort((a, b) => (a.order || 0) - (b.order || 0));
 
           return (
-            <div key={col.id || col.title} className="space-y-4 text-left">
-              <h3 className="font-display font-bold text-base sm:text-lg text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">
+            <div key={col.id || col.title} className="flex flex-col gap-4 text-left items-start w-full">
+              <h3 className="font-display font-black text-base sm:text-[17px] text-slate-900 uppercase tracking-wider border-b border-slate-200 pb-2.5 w-full">
                 {col.title}
               </h3>
-              <ul className="space-y-2.5 text-sm sm:text-[14.5px] font-medium text-slate-600">
+              <ul className="space-y-3 text-sm sm:text-[14.5px] font-semibold text-slate-700 w-full flex flex-col gap-0.5">
                 {activeLinks.map((link) => {
                   const dest = resolveLinkDestination(link);
                   const isExternal = link.openNewTab || dest.startsWith('http://') || dest.startsWith('https://');
@@ -398,7 +409,7 @@ export default function Footer() {
                           href={dest}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="hover:text-[#B71C1C] transition-colors inline-flex items-center gap-1 font-medium"
+                          className="hover:text-[#B71C1C] transition-colors inline-flex items-center gap-1.5 font-semibold py-0.5"
                           onClick={(e) => handleLinkClick(e, link)}
                         >
                           <span>{link.title}</span>
@@ -407,7 +418,7 @@ export default function Footer() {
                       ) : (
                         <Link
                           to={dest}
-                          className="hover:text-[#B71C1C] transition-colors block font-medium"
+                          className="hover:text-[#B71C1C] transition-colors block font-semibold py-0.5"
                           onClick={(e) => handleLinkClick(e, link)}
                         >
                           {link.title}
@@ -421,92 +432,96 @@ export default function Footer() {
           );
         })}
 
-        {/* Column 4: Quick Links / Stay Updated Newsletter Column */}
-        {activeColumns.length > 2 ? (
-          <div className="space-y-4 text-left">
-            <h3 className="font-display font-bold text-base sm:text-lg text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">
-              {activeColumns[2].title}
-            </h3>
-            <ul className="space-y-2.5 text-sm sm:text-[14.5px] font-medium text-slate-600">
-              {(activeColumns[2].links || [])
-                .filter(l => l && l.enabled !== false)
-                .sort((a, b) => (a.order || 0) - (b.order || 0))
-                .map((link) => {
-                  const dest = resolveLinkDestination(link);
-                  return (
-                    <li key={link.id || link.title}>
-                      <Link
-                        to={dest}
-                        className="hover:text-[#B71C1C] transition-colors block font-medium"
-                        onClick={(e) => handleLinkClick(e, link)}
-                      >
-                        {link.title}
-                      </Link>
-                    </li>
-                  );
-                })}
-            </ul>
-          </div>
-        ) : footerConfig.newsletterEnabled !== false ? (
-          <div className="space-y-4 bg-slate-50/80 p-5 sm:p-6 rounded-3xl border border-slate-200/80 text-left">
-            <h3 className="font-display font-bold text-base sm:text-lg text-slate-900 uppercase tracking-wider">
-              {footerConfig.stayUpdatedTitle || 'STAY UPDATED'}
-            </h3>
-            <p className="text-sm text-slate-600 font-normal leading-relaxed">
-              {footerConfig.stayUpdatedDescription || 'Subscribe to get special drop alerts, VIP coupons & discounts.'}
-            </p>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (subSubmitting) return;
+        {/* Column 4: QUICK LINKS & STAY UPDATED */}
+        <div className="flex flex-col gap-6 text-left items-start w-full">
+          {activeColumns.length > 2 && (
+            <div className="w-full space-y-4">
+              <h3 className="font-display font-black text-base sm:text-[17px] text-slate-900 uppercase tracking-wider border-b border-slate-200 pb-2.5 w-full">
+                {activeColumns[2].title}
+              </h3>
+              <ul className="space-y-3 text-sm sm:text-[14.5px] font-semibold text-slate-700 w-full flex flex-col gap-0.5">
+                {(activeColumns[2].links || [])
+                  .filter(l => l && l.enabled !== false)
+                  .sort((a, b) => (a.order || 0) - (b.order || 0))
+                  .map((link) => {
+                    const dest = resolveLinkDestination(link);
+                    return (
+                      <li key={link.id || link.title}>
+                        <Link
+                          to={dest}
+                          className="hover:text-[#B71C1C] transition-colors block font-semibold py-0.5"
+                          onClick={(e) => handleLinkClick(e, link)}
+                        >
+                          {link.title}
+                        </Link>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </div>
+          )}
 
-                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!subEmail || !emailPattern.test(subEmail.trim())) {
-                  toast.error('Please enter a valid email address.');
-                  return;
-                }
+          {footerConfig.newsletterEnabled !== false && (
+            <div className="space-y-3 bg-slate-50/90 p-5 rounded-3xl border border-slate-200/90 text-left w-full shadow-2xs">
+              <h3 className="font-display font-black text-base sm:text-[16px] text-slate-900 uppercase tracking-wider">
+                {footerConfig.stayUpdatedTitle || 'STAY UPDATED'}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
+                {footerConfig.stayUpdatedDescription || 'Subscribe to get special drop alerts, VIP coupons & discounts.'}
+              </p>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (subSubmitting) return;
 
-                setSubSubmitting(true);
-                toast.loading('Initiating subscription...', { id: 'footer-sub-toast' });
-
-                try {
-                  const res = await api.post('/subscriptions/subscribe', { email: subEmail.trim() });
-                  const data = res.data?.data || res.data;
-
-                  if (res.data?.success || data) {
-                    toast.success("You're subscribed! Welcome to Karviyam. 🎉", { id: 'footer-sub-toast' });
-                    setSubEmail('');
-                  } else {
-                    toast.error(res.data?.message || 'Subscription failed. Please try again.', { id: 'footer-sub-toast' });
+                  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                  if (!subEmail || !emailPattern.test(subEmail.trim())) {
+                    toast.error('Please enter a valid email address.');
+                    return;
                   }
-                } catch (err) {
-                  const msg = err.response?.data?.message || 'Unable to complete subscription request.';
-                  toast.error(msg, { id: 'footer-sub-toast' });
-                } finally {
-                  setSubSubmitting(false);
-                }
-              }}
-              className="space-y-2.5 pt-1"
-            >
-              <input
-                type="email"
-                value={subEmail}
-                onChange={(e) => setSubEmail(e.target.value)}
-                placeholder="Enter your email address"
-                disabled={subSubmitting}
-                className="w-full bg-white border border-slate-200 text-sm px-4 py-3 rounded-2xl outline-none focus:border-[#B71C1C] transition-all font-medium disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={subSubmitting}
-                className="w-full bg-[#B71C1C] hover:bg-[#900C0C] disabled:bg-slate-400 text-white font-extrabold text-sm uppercase tracking-wider py-3 rounded-2xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
+
+                  setSubSubmitting(true);
+                  toast.loading('Initiating subscription...', { id: 'footer-sub-toast' });
+
+                  try {
+                    const res = await api.post('/subscriptions/subscribe', { email: subEmail.trim() });
+                    const data = res.data?.data || res.data;
+
+                    if (res.data?.success || data) {
+                      toast.success("You're subscribed! Welcome to Karviyam. 🎉", { id: 'footer-sub-toast' });
+                      setSubEmail('');
+                    } else {
+                      toast.error(res.data?.message || 'Subscription failed. Please try again.', { id: 'footer-sub-toast' });
+                    }
+                  } catch (err) {
+                    const msg = err.response?.data?.message || 'Unable to complete subscription request.';
+                    toast.error(msg, { id: 'footer-sub-toast' });
+                  } finally {
+                    setSubSubmitting(false);
+                  }
+                }}
+                className="space-y-2 pt-1"
               >
-                {subSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span>SUBSCRIBE NOW</span>
-              </button>
-            </form>
-          </div>
-        ) : null}
+                <input
+                  type="email"
+                  value={subEmail}
+                  onChange={(e) => setSubEmail(e.target.value)}
+                  placeholder="Enter your email address"
+                  disabled={subSubmitting}
+                  className="w-full bg-white border border-slate-200 text-xs sm:text-sm px-4 py-2.5 rounded-xl outline-none focus:border-[#B71C1C] transition-all font-medium disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={subSubmitting}
+                  className="w-full bg-[#B71C1C] hover:bg-[#900C0C] disabled:bg-slate-400 text-white font-extrabold text-xs uppercase tracking-wider py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {subSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>SUBSCRIBE NOW</span>
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
 
       </div>
 

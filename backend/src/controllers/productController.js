@@ -445,10 +445,40 @@ const buildProductFilterConditions = (queryParams) => {
     params.push(parseFloat(rating));
   }
 
+  const { filter, tag, subCategory, search } = queryParams;
+
+  if (filter === 'new' || filter === 'new_arrival' || isNewArrival === 'true' || isNewArrival === '1') {
+    conditions.push('(p.is_new_arrival = 1 OR p.created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY))');
+  }
+  if (filter === 'bestsellers' || filter === 'best_sellers' || isBestSeller === 'true' || isBestSeller === '1') {
+    conditions.push('(p.is_best_seller = 1 OR p.rating >= 4.0 OR p.sales_count > 0)');
+  }
+  if (filter === 'trending' || isTrending === 'true' || isTrending === '1') {
+    conditions.push('(p.is_trending = 1 OR p.rating >= 4.5)');
+  }
+  if (filter === 'offers' || filter === 'discount') {
+    conditions.push('(p.old_price > p.price OR p.discount_percentage > 0)');
+  }
+
   if (isFeatured === 'true' || isFeatured === '1') conditions.push('p.is_featured = 1');
-  if (isTrending === 'true' || isTrending === '1') conditions.push('p.is_trending = 1');
-  if (isBestSeller === 'true' || isBestSeller === '1') conditions.push('p.is_best_seller = 1');
-  if (isNewArrival === 'true' || isNewArrival === '1') conditions.push('p.is_new_arrival = 1');
+
+  if (tag && tag.trim()) {
+    const tagTerm = `%${tag.trim()}%`;
+    conditions.push('(LOWER(p.name) LIKE LOWER(?) OR LOWER(p.description) LIKE LOWER(?) OR LOWER(p.tags) LIKE LOWER(?))');
+    params.push(tagTerm, tagTerm, tagTerm);
+  }
+
+  if (subCategory && subCategory.trim()) {
+    const subTerm = `%${subCategory.trim()}%`;
+    conditions.push('(LOWER(p.name) LIKE LOWER(?) OR LOWER(p.description) LIKE LOWER(?) OR LOWER(c.name) LIKE LOWER(?))');
+    params.push(subTerm, subTerm, subTerm);
+  }
+
+  if (search && search.trim()) {
+    const sTerm = `%${search.trim()}%`;
+    conditions.push('(LOWER(p.name) LIKE LOWER(?) OR LOWER(p.description) LIKE LOWER(?) OR LOWER(p.brand) LIKE LOWER(?))');
+    params.push(sTerm, sTerm, sTerm);
+  }
 
   return { conditions, params };
 };

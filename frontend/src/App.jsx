@@ -36,6 +36,7 @@ import RegisterPage from './pages/RegisterPage';
 import ContactPage from './pages/ContactPage';
 import MaintenancePage from './pages/MaintenancePage';
 import OffersPage from './pages/OffersPage';
+import FAQPage from './pages/FAQPage';
 
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminProductsPage from './pages/AdminProductsPage';
@@ -102,6 +103,7 @@ export default function App() {
                   <Route path="/order-success" element={<OrderSuccessPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/faq" element={<FAQPage />} />
                   <Route path="/offers" element={<OffersPage />} />
                   <Route path="/subscribe/payment" element={<SubscriptionCheckoutPage />} />
                   <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
