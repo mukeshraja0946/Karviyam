@@ -58,6 +58,10 @@ export default function AdminOrdersPage() {
     pincode: '',
     trackingNumber: '',
     courierName: '',
+    trackingStatus: '',
+    currentLocation: '',
+    statusMessage: '',
+    estimatedDelivery: '',
     notes: ''
   });
 
@@ -166,7 +170,11 @@ export default function AdminOrdersPage() {
       city: order.city || order.shippingAddress?.city || '',
       pincode: order.pincode || order.shippingAddress?.pincode || '',
       trackingNumber: order.trackingNumber || '',
-      courierName: order.courierName || 'Delhivery',
+      courierName: order.courierName || order.courierPartner || 'Delhivery',
+      trackingStatus: order.trackingStatus || order.tracking_status || order.status || 'ORDER_PLACED',
+      currentLocation: order.currentLocation || order.current_location || '',
+      statusMessage: order.statusMessage || order.status_message || '',
+      estimatedDelivery: order.estimatedDelivery || order.estimated_delivery || '',
       notes: order.notes || ''
     });
     setEditModalOpen(true);
@@ -549,6 +557,56 @@ export default function AdminOrdersPage() {
                     className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl font-mono font-bold outline-none focus:border-[#B71C1C]"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Current Hub / Location</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Chennai Sort Facility"
+                    value={editFormData.currentLocation}
+                    onChange={(e) => setEditFormData({ ...editFormData, currentLocation: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl font-medium outline-none focus:border-[#B71C1C]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tracking Timeline Stage</label>
+                  <select
+                    value={editFormData.trackingStatus || editFormData.status}
+                    onChange={(e) => setEditFormData({ ...editFormData, trackingStatus: e.target.value, status: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl font-bold outline-none focus:border-[#B71C1C]"
+                  >
+                    <option value="ORDER_PLACED">1. Order Placed</option>
+                    <option value="CONFIRMED">2. Order Confirmed</option>
+                    <option value="PACKED">3. Packed & Ready</option>
+                    <option value="SHIPPED">4. In Transit / Shipped</option>
+                    <option value="OUT_FOR_DELIVERY">5. Out for Delivery</option>
+                    <option value="DELIVERED">6. Delivered</option>
+                    <option value="CANCELLED">Cancelled</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Est. Delivery Date</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 15 May 2026"
+                    value={editFormData.estimatedDelivery}
+                    onChange={(e) => setEditFormData({ ...editFormData, estimatedDelivery: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl font-bold outline-none focus:border-[#B71C1C]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Customer Tracking Note / Live Update Message</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Package arrived at local hub, dispatched with rider"
+                  value={editFormData.statusMessage}
+                  onChange={(e) => setEditFormData({ ...editFormData, statusMessage: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl font-medium outline-none focus:border-[#B71C1C]"
+                />
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">

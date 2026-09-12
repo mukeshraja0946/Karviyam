@@ -2,8 +2,26 @@ const pool = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
 const { generateInvoiceHtml } = require('../services/invoiceService');
 
+const ensureOrderTrackingColumns = async () => {
+  try {
+    const columns = [
+      "ALTER TABLE orders ADD COLUMN tracking_status VARCHAR(100) DEFAULT 'Order Placed'",
+      "ALTER TABLE orders ADD COLUMN current_location VARCHAR(255) DEFAULT ''",
+      "ALTER TABLE orders ADD COLUMN courier_partner VARCHAR(150) DEFAULT ''",
+      "ALTER TABLE orders ADD COLUMN tracking_number VARCHAR(150) DEFAULT ''",
+      "ALTER TABLE orders ADD COLUMN estimated_delivery VARCHAR(100) DEFAULT ''",
+      "ALTER TABLE orders ADD COLUMN status_message TEXT",
+      "ALTER TABLE orders ADD COLUMN delivered_at TIMESTAMP NULL DEFAULT NULL"
+    ];
+    for (const q of columns) {
+      try { await pool.query(q); } catch (e) {}
+    }
+  } catch (e) {}
+};
+
 const mapOrderRowToDTO = async (order) => {
   if (!order) return null;
+  await ensureOrderTrackingColumns();
 
   const [items] = await pool.query(
     `SELECT oi.*, p.name as product_name, p.image_url 
@@ -44,13 +62,19 @@ const mapOrderRowToDTO = async (order) => {
     discountAmount: parseFloat(order.discount_amount || 0),
     shippingCost: parseFloat(order.shipping_cost || 0),
     status: order.status || 'PAYMENT_PENDING',
+    trackingStatus: order.tracking_status || order.status || 'Order Placed',
+    currentLocation: order.current_location || '',
+    courierPartner: order.courier_partner || '',
+    trackingNumber: order.tracking_number || '',
+    estimatedDelivery: order.estimated_delivery || '',
+    statusMessage: order.status_message || '',
+    deliveredAt: order.delivered_at || null,
     fullName: order.full_name,
     email: order.email,
     phone: order.phone,
     address: order.address,
     city: order.city,
     pincode: order.pincode,
-    trackingNumber: order.tracking_number,
     paymentMethod,
     paymentStatus,
     transactionId,
@@ -336,11 +360,42 @@ exports.getInvoice = async (req, res, next) => {
 exports.updateOrder = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, trackingNumber } = req.body;
+    const {
+      status,
+      trackingStatus,
+      currentLocation,
+      courierPartner,
+      trackingNumber,
+      estimatedDelivery,
+      statusMessage
+    } = req.body;
+
+    await ensureOrderTrackingColumns();
+
+    const isDelivered = String(status || trackingStatus || '').toUpperCase() === 'DELIVERED';
 
     await pool.query(
-      'UPDATE orders SET status = COALESCE(?, status), tracking_number = COALESCE(?, tracking_number) WHERE id = ?',
-      [status, trackingNumber, id]
+      `UPDATE orders SET 
+       status = COALESCE(?, status), 
+       tracking_status = COALESCE(?, tracking_status),
+       current_location = COALESCE(?, current_location),
+       courier_partner = COALESCE(?, courier_partner),
+       tracking_number = COALESCE(?, tracking_number),
+       estimated_delivery = COALESCE(?, estimated_delivery),
+       status_message = COALESCE(?, status_message),
+       delivered_at = CASE WHEN ? = 1 AND delivered_at IS NULL THEN NOW() ELSE delivered_at END
+       WHERE id = ?`,
+      [
+        status || null,
+        trackingStatus || status || null,
+        currentLocation !== undefined ? currentLocation : null,
+        courierPartner !== undefined ? courierPartner : null,
+        trackingNumber !== undefined ? trackingNumber : null,
+        estimatedDelivery !== undefined ? estimatedDelivery : null,
+        statusMessage !== undefined ? statusMessage : null,
+        isDelivered ? 1 : 0,
+        id
+      ]
     );
 
     const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
