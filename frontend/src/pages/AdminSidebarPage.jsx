@@ -78,11 +78,14 @@ export default function AdminSidebarPage() {
   const [promoCard, setPromoCard] = useState({
     enabled: true,
     badge: '✨ FESTIVE SPECIAL',
-    title: 'UP TO 60% OFF',
+    title: 'UP TO',
+    highlightedText: '60% OFF',
     subtitle: 'On Bestsellers',
     buttonText: 'SHOP NOW',
     link: '/shop',
-    imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600'
+    imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600',
+    mobileImageUrl: '',
+    imagePosition: 'center'
   });
 
   // Right Sidebar States
@@ -601,86 +604,196 @@ export default function AdminSidebarPage() {
 
       {/* TAB 3: PROMOTIONAL BANNER CARD */}
       {activeTab === 'promo' && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4 max-w-2xl">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h3 className="font-bold text-slate-900 text-sm">Festive Banner Card</h3>
-              <p className="text-slate-500 text-[11px]">Manage the festive banner image & text on the left sidebar.</p>
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer font-bold text-xs">
-              <span>Status:</span>
-              <input
-                type="checkbox"
-                checked={promoCard.enabled !== false}
-                onChange={(e) => setPromoCard({ ...promoCard, enabled: e.target.checked })}
-                className="accent-[#B71C1C] w-4 h-4"
-              />
-              <span className={promoCard.enabled !== false ? 'text-emerald-700' : 'text-slate-400'}>
-                {promoCard.enabled !== false ? 'Active' : 'Disabled'}
-              </span>
-            </label>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Badge Tag</label>
-              <input
-                type="text"
-                value={promoCard.badge || ''}
-                onChange={(e) => setPromoCard({ ...promoCard, badge: e.target.value })}
-                placeholder="FESTIVE SPECIAL"
-                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold uppercase outline-none focus:border-[#B71C1C]"
-              />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl">
+          {/* Admin Edit Controls Column */}
+          <div className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">Festive Promotional Card</h3>
+                <p className="text-slate-500 text-[11px]">Configure full-bleed promotional card artwork & overlay text.</p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-xs">
+                <span>Status:</span>
+                <input
+                  type="checkbox"
+                  checked={promoCard.enabled !== false}
+                  onChange={(e) => setPromoCard({ ...promoCard, enabled: e.target.checked })}
+                  className="accent-[#B71C1C] w-4 h-4"
+                />
+                <span className={promoCard.enabled !== false ? 'text-emerald-700 font-extrabold' : 'text-slate-400 font-bold'}>
+                  {promoCard.enabled !== false ? 'Active' : 'Disabled'}
+                </span>
+              </label>
             </div>
 
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Card Title</label>
-              <input
-                type="text"
-                value={promoCard.title || ''}
-                onChange={(e) => setPromoCard({ ...promoCard, title: e.target.value })}
-                placeholder="UP TO 60% OFF"
-                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C]"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Subtitle</label>
-              <input
-                type="text"
-                value={promoCard.subtitle || ''}
-                onChange={(e) => setPromoCard({ ...promoCard, subtitle: e.target.value })}
-                placeholder="On Bestsellers"
-                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs outline-none focus:border-[#B71C1C]"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Button Text</label>
-              <input
-                type="text"
-                value={promoCard.buttonText || ''}
-                onChange={(e) => setPromoCard({ ...promoCard, buttonText: e.target.value })}
-                placeholder="SHOP NOW"
-                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold uppercase outline-none focus:border-[#B71C1C]"
-              />
-            </div>
-
-            <div className="col-span-1 sm:col-span-2">
-              <label className="block font-bold text-slate-700 mb-1">Banner Image URL</label>
-              <div className="flex items-center gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 text-xs">Badge Tag</label>
                 <input
                   type="text"
-                  value={promoCard.imageUrl || ''}
-                  onChange={(e) => setPromoCard({ ...promoCard, imageUrl: e.target.value })}
-                  placeholder="https://images.unsplash.com/..."
-                  className="flex-1 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-mono outline-none focus:border-[#B71C1C]"
+                  value={promoCard.badge || ''}
+                  onChange={(e) => setPromoCard({ ...promoCard, badge: e.target.value })}
+                  placeholder="✨ FESTIVE SPECIAL"
+                  className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold uppercase outline-none focus:border-[#B71C1C]"
                 />
-                <label className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer shrink-0 flex items-center gap-1.5">
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  <span>Upload & Crop</span>
-                  <input type="file" accept="image/*" onChange={(e) => handleImageFileSelect(e, 'promo')} className="hidden" />
-                </label>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 text-xs">Card Title</label>
+                <input
+                  type="text"
+                  value={promoCard.title || ''}
+                  onChange={(e) => setPromoCard({ ...promoCard, title: e.target.value })}
+                  placeholder="UP TO"
+                  className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold uppercase outline-none focus:border-[#B71C1C]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 text-xs">Highlighted Offer Text</label>
+                <input
+                  type="text"
+                  value={promoCard.highlightedText || ''}
+                  onChange={(e) => setPromoCard({ ...promoCard, highlightedText: e.target.value })}
+                  placeholder="60% OFF"
+                  className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-extrabold text-amber-600 uppercase outline-none focus:border-[#B71C1C]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 text-xs">Subtitle</label>
+                <input
+                  type="text"
+                  value={promoCard.subtitle || ''}
+                  onChange={(e) => setPromoCard({ ...promoCard, subtitle: e.target.value })}
+                  placeholder="On Bestsellers"
+                  className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-medium outline-none focus:border-[#B71C1C]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 text-xs">Button CTA Text</label>
+                <input
+                  type="text"
+                  value={promoCard.buttonText || ''}
+                  onChange={(e) => setPromoCard({ ...promoCard, buttonText: e.target.value })}
+                  placeholder="SHOP NOW"
+                  className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold uppercase outline-none focus:border-[#B71C1C]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 text-xs">Destination URL</label>
+                <input
+                  type="text"
+                  value={promoCard.link || ''}
+                  onChange={(e) => setPromoCard({ ...promoCard, link: e.target.value })}
+                  placeholder="/shop"
+                  className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-mono outline-none focus:border-[#B71C1C]"
+                />
+              </div>
+
+              <div className="col-span-1 sm:col-span-2 space-y-1">
+                <label className="block font-bold text-slate-700 text-xs">Desktop Promotional Banner Image</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={promoCard.imageUrl || ''}
+                    onChange={(e) => setPromoCard({ ...promoCard, imageUrl: e.target.value })}
+                    placeholder="https://images.unsplash.com/..."
+                    className="flex-1 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-mono outline-none focus:border-[#B71C1C]"
+                  />
+                  <label className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-xl cursor-pointer shrink-0 flex items-center gap-1">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>Upload & Crop</span>
+                    <input type="file" accept="image/*" onChange={(e) => handleImageFileSelect(e, 'promo')} className="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1 text-xs">Mobile Image (Optional)</label>
+                  <input
+                    type="text"
+                    value={promoCard.mobileImageUrl || ''}
+                    onChange={(e) => setPromoCard({ ...promoCard, mobileImageUrl: e.target.value })}
+                    placeholder="Fallback to desktop image if empty"
+                    className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-mono outline-none focus:border-[#B71C1C]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1 text-xs">Image Focal Position</label>
+                  <select
+                    value={promoCard.imagePosition || 'center'}
+                    onChange={(e) => setPromoCard({ ...promoCard, imagePosition: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C]"
+                  >
+                    <option value="center">Center</option>
+                    <option value="top">Top</option>
+                    <option value="bottom">Bottom</option>
+                    <option value="left">Left</option>
+                    <option value="right">Right</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Admin Live Full-Bleed Preview Column */}
+          <div className="lg:col-span-5 flex flex-col gap-3">
+            <div className="flex items-center justify-between px-1">
+              <span className="font-extrabold text-xs text-slate-700 uppercase tracking-wide">Customer Live Preview</span>
+              <span className="text-[10px] font-bold text-slate-400">Exact Storefront Render</span>
+            </div>
+
+            <div className="w-full max-w-[220px] mx-auto">
+              <div
+                className="w-full relative rounded-2xl overflow-hidden shadow-md border border-red-200/50 flex flex-col justify-between p-4"
+                style={{ minHeight: '360px' }}
+              >
+                {/* Full Bleed Image */}
+                <img
+                  src={resolveImageUrl(promoCard.imageUrl || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600')}
+                  alt={promoCard.title || 'Preview'}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ objectPosition: promoCard.imagePosition || 'center' }}
+                  onError={handleImageError}
+                />
+
+                {/* Subtly Darkened Gradient Overlay */}
+                <div className="absolute inset-0 z-10 bg-gradient-to-b from-[#8B0000]/75 via-[#900C0C]/35 to-black/70 pointer-events-none" />
+
+                {/* Top Content */}
+                <div className="relative z-20 space-y-1 text-left pt-1">
+                  <span className="inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-wider text-amber-300 bg-black/45 backdrop-blur-xs border border-amber-400/40 px-2.5 py-1 rounded-full shadow-xs">
+                    <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+                    <span>{promoCard.badge || '✨ FESTIVE SPECIAL'}</span>
+                  </span>
+
+                  <div className="pt-1.5">
+                    <span className="font-display font-black text-lg text-white block uppercase tracking-tight leading-none drop-shadow-md">
+                      {promoCard.title || 'UP TO'}
+                    </span>
+                    <span className="font-display font-black text-2xl text-amber-400 block uppercase tracking-tight leading-none drop-shadow-md mt-1">
+                      {promoCard.highlightedText || '60% OFF'}
+                    </span>
+                    <span className="text-xs text-white/95 font-bold block mt-1.5 drop-shadow-sm">
+                      {promoCard.subtitle || 'On Bestsellers'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Bottom CTA Button */}
+                <div className="relative z-30 pt-4 flex justify-center w-full">
+                  <button
+                    type="button"
+                    className="w-[92%] bg-white text-[#B71C1C] font-display font-black text-xs uppercase tracking-wider py-2.5 px-3 rounded-full shadow-md text-center border border-white/60"
+                  >
+                    {promoCard.buttonText || 'SHOP NOW'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

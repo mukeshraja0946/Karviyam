@@ -27,12 +27,15 @@ const DEFAULT_OFFER_CARD = {
 const DEFAULT_PROMO_CARD = {
   enabled: true,
   badge: '✨ FESTIVE SPECIAL',
-  title: 'UP TO 60% OFF',
+  title: 'UP TO',
+  highlightedText: '60% OFF',
   subtitle: 'On Bestsellers',
   description: 'Limited time festive drops & trending styles.',
   buttonText: 'SHOP NOW',
   link: '/shop',
-  imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600'
+  imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600',
+  mobileImageUrl: '',
+  imagePosition: 'center'
 };
 
 const DEFAULT_SHOP_BY_PRICE = [

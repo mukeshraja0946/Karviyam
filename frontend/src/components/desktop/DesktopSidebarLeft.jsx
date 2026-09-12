@@ -76,12 +76,15 @@ const DEFAULT_OFFER_CARD = {
 
 const DEFAULT_PROMO_CARD = {
   enabled: true,
-  badge: 'FESTIVE SPECIAL',
-  title: 'UP TO 60% OFF',
+  badge: '✨ FESTIVE SPECIAL',
+  title: 'UP TO',
+  highlightedText: '60% OFF',
   subtitle: 'On Bestsellers',
   buttonText: 'SHOP NOW',
   link: '/shop',
-  imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600'
+  imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600',
+  mobileImageUrl: '',
+  imagePosition: 'center'
 };
 
 const DEFAULT_SHOP_BY_PRICE = [
@@ -296,45 +299,60 @@ export default function DesktopSidebarLeft() {
         </div>
       )}
 
-      {/* 3. FESTIVE SPECIAL AD BANNER (LIGHT CREAM / RED) */}
+      {/* 3. FESTIVE SPECIAL AD BANNER CARD (FULL BLEED COVER DESIGN - MATCHING REFERENCE IMAGE) */}
       {promoCard && promoCard.enabled !== false && (
         <div
           onClick={() => navigate(promoCard.link || '/shop')}
-          className="w-full bg-[#FFF5F0] border border-orange-200/90 rounded-2xl p-3.5 shadow-2xs flex flex-col justify-between gap-3 group cursor-pointer hover:border-[#C91C1C] transition-all"
+          className="w-full relative rounded-2xl overflow-hidden shadow-sm group cursor-pointer border border-red-200/50 flex flex-col justify-between p-3.5 transition-all duration-300 hover:shadow-md hover:border-[#C91C1C]"
+          style={{ minHeight: '340px' }}
         >
-          <div className="space-y-2">
-            <span className="inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-widest text-orange-900 bg-orange-100 border border-orange-200 px-2 py-0.5 rounded">
-              <Sparkles className="w-3 h-3 text-[#C91C1C]" /> {promoCard.badge || 'FESTIVE SPECIAL'}
+          {/* Full-bleed Background Image */}
+          <img
+            src={resolveImageUrl(promoCard.imageUrl || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600')}
+            alt={promoCard.title || 'Festive Special'}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            style={{
+              objectPosition: promoCard.imagePosition || 'center'
+            }}
+            onError={handleImageError}
+          />
+
+          {/* Subtly darkened gradient overlay to guarantee text legibility while keeping artwork vibrant */}
+          <div className="absolute inset-0 z-10 bg-gradient-to-b from-[#8B0000]/75 via-[#900C0C]/35 to-black/70 pointer-events-none" />
+
+          {/* Text Overlay (Top / Top-Left) */}
+          <div className="relative z-20 space-y-1 text-left pt-1">
+            <span className="inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-wider text-amber-300 bg-black/45 backdrop-blur-xs border border-amber-400/40 px-2.5 py-1 rounded-full shadow-xs">
+              <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+              <span>{promoCard.badge || '✨ FESTIVE SPECIAL'}</span>
             </span>
-            <div>
-              <span className="font-display font-black text-lg xl:text-xl text-[#C91C1C] block uppercase tracking-tight">
-                {promoCard.title || 'UP TO 60% OFF'}
+
+            <div className="pt-1.5">
+              <span className="font-display font-black text-lg xl:text-xl text-white block uppercase tracking-tight leading-none drop-shadow-md">
+                {promoCard.title || 'UP TO'}
               </span>
-              <span className="text-xs text-slate-700 font-bold block mt-0.5">
+              <span className="font-display font-black text-2xl xl:text-3xl text-amber-400 block uppercase tracking-tight leading-none drop-shadow-md mt-1">
+                {promoCard.highlightedText || promoCard.discountText || '60% OFF'}
+              </span>
+              <span className="text-xs text-white/95 font-bold block mt-1.5 drop-shadow-sm">
                 {promoCard.subtitle || 'On Bestsellers'}
               </span>
             </div>
           </div>
 
-          <div className="w-full h-[120px] rounded-xl overflow-hidden border border-orange-100 bg-white p-1 flex items-center justify-center">
-            <img
-              src={resolveImageUrl(promoCard.imageUrl)}
-              alt={promoCard.title || 'Festive Ad'}
-              className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
-              onError={handleImageError}
-            />
+          {/* SHOP NOW CTA Button (Bottom Overlay) */}
+          <div className="relative z-30 pt-4 flex justify-center w-full">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(promoCard.link || '/shop');
+              }}
+              className="w-[92%] bg-white hover:bg-slate-50 text-[#B71C1C] font-display font-black text-xs uppercase tracking-wider py-2.5 px-3 rounded-full shadow-md transition-transform group-hover:scale-104 cursor-pointer text-center border border-white/60"
+            >
+              {promoCard.buttonText || 'SHOP NOW'}
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(promoCard.link || '/shop');
-            }}
-            className="w-full bg-[#C91C1C] hover:bg-[#A81515] text-white font-black text-xs uppercase tracking-wider py-2 rounded-xl shadow-xs transition-transform group-hover:scale-102 cursor-pointer text-center"
-          >
-            {promoCard.buttonText || 'SHOP NOW'}
-          </button>
         </div>
       )}
 
