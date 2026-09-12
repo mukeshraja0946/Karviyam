@@ -196,10 +196,15 @@ export default function AdminLayout() {
         { name: 'Promotional Cards', path: '/admin/promo-cards' },
         { name: 'Right Sidebar Banners', path: '/admin/right-sidebar-banners' },
         { name: 'Right Sidebar Promotional Card', path: '/admin/right-sidebar-promo-card' },
-        { name: 'Storefront Footer Management', path: '/admin/footer' },
         { name: 'Coupons', path: '/admin/coupons' },
         { name: 'Offers & Discounts', path: '/admin/offers' },
       ],
+    },
+    {
+      id: 'footer-management',
+      title: 'Footer Management',
+      icon: Globe,
+      path: '/admin/footer-management',
     },
     {
       id: 'finance',

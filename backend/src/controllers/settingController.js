@@ -479,6 +479,56 @@ exports.updateCompanySettings = async (req, res, next) => {
   }
 };
 
+const DEFAULT_FOOTER_COLUMNS = [
+  {
+    id: 'col_categories',
+    title: 'CATEGORIES',
+    enabled: true,
+    order: 1,
+    links: [
+      { id: 'l1', title: 'Oversized T-Shirts', destinationType: 'Category', destination: '/shop?category=Clothing', openNewTab: false, enabled: true, order: 1 },
+      { id: 'l2', title: 'Casual Linen Shirts', destinationType: 'Category', destination: '/shop?category=Clothing', openNewTab: false, enabled: true, order: 2 },
+      { id: 'l3', title: 'Apex Stealth Sneakers', destinationType: 'Category', destination: '/shop?category=Footwear', openNewTab: false, enabled: true, order: 3 },
+      { id: 'l4', title: '925 Silver Jewellery', destinationType: 'Category', destination: '/shop?category=Jewellery', openNewTab: false, enabled: true, order: 4 },
+      { id: 'l5', title: 'Anime Graphic Hoodies', destinationType: 'Category', destination: '/shop?category=Clothing', openNewTab: false, enabled: true, order: 5 }
+    ]
+  },
+  {
+    id: 'col_customercare',
+    title: 'CUSTOMER CARE',
+    enabled: true,
+    order: 2,
+    links: [
+      { id: 'l6', title: 'Track My Order', destinationType: 'Page', destination: '/profile', openNewTab: false, enabled: true, order: 1 },
+      { id: 'l7', title: 'Help Center & FAQ', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 2 },
+      { id: 'l8', title: 'Return Policy', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 3 },
+      { id: 'l9', title: 'Terms of Service', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 4 },
+      { id: 'l10', title: 'Privacy Policy', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 5 }
+    ]
+  },
+  {
+    id: 'col_quicklinks',
+    title: 'QUICK LINKS',
+    enabled: true,
+    order: 3,
+    links: [
+      { id: 'l11', title: 'About Us', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 1 },
+      { id: 'l12', title: 'Shop Catalog', destinationType: 'Page', destination: '/shop', openNewTab: false, enabled: true, order: 2 },
+      { id: 'l13', title: 'New Arrivals', destinationType: 'Page', destination: '/shop?filter=new', openNewTab: false, enabled: true, order: 3 },
+      { id: 'l14', title: 'Best Sellers', destinationType: 'Page', destination: '/shop?filter=bestsellers', openNewTab: false, enabled: true, order: 4 },
+      { id: 'l15', title: 'Contact Us', destinationType: 'Page', destination: '/contact', openNewTab: false, enabled: true, order: 5 }
+    ]
+  }
+];
+
+const DEFAULT_SOCIAL_LINKS = {
+  instagram: 'https://instagram.com/karviyam',
+  facebook: 'https://facebook.com/karviyam',
+  youtube: 'https://youtube.com/karviyam',
+  whatsapp: 'https://wa.me/919344330782',
+  twitter: 'https://twitter.com/karviyam'
+};
+
 exports.getFooterSettings = async (req, res, next) => {
   try {
     await ensureSettingsTable();
@@ -489,6 +539,9 @@ exports.getFooterSettings = async (req, res, next) => {
       let val = r.setting_value;
       if (val === 'true') val = true;
       else if (val === 'false') val = false;
+      else if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+        try { val = JSON.parse(val); } catch (e) {}
+      }
       settingsObj[r.setting_key] = val;
     });
 
@@ -502,13 +555,30 @@ exports.getFooterSettings = async (req, res, next) => {
       }
     } catch (e) {}
 
+    let parsedColumns = settingsObj.footerColumns || settingsObj.footer_columns;
+    if (!Array.isArray(parsedColumns) || parsedColumns.length === 0) {
+      parsedColumns = DEFAULT_FOOTER_COLUMNS;
+    }
+
+    let parsedSocial = settingsObj.footerSocialLinks || settingsObj.socialLinks;
+    if (!parsedSocial || typeof parsedSocial !== 'object') {
+      parsedSocial = DEFAULT_SOCIAL_LINKS;
+    }
+
     const footerConfig = {
+      footerEnabled: settingsObj.footerEnabled !== undefined ? Boolean(settingsObj.footerEnabled) : true,
+      brandName: settingsObj.brandName || settingsObj.companyName || 'KARVIYAM',
       about: settingsObj.footerAbout || settingsObj.about || 'Karviyam is a premium marketplace destination for high-street streetwear, 925 sterling silver jewellery, luxury kicks, and lifestyle products.',
-      address: settingsObj.registeredAddress || settingsObj.address || 'Karviyam Tower, Park Avenue, Chennai, Tamil Nadu 600001',
-      phone: settingsObj.supportPhone || settingsObj.phone || '+91 98765 43210',
+      address: settingsObj.registeredAddress || settingsObj.address || 'Tamil Nadu, Salem, Attur, Gangavalli - 636105',
+      phone: settingsObj.supportPhone || settingsObj.phone || '+91 93443 30782',
       email: settingsObj.supportEmail || settingsObj.email || 'vanakkam@karviyam.com',
       logoUrl: settingsObj.logoUrl || settingsObj.logo || '',
-      copyright: settingsObj.copyrightText || '© 2026 Karviyam E-Commerce Platform. All Rights Reserved. Built for Enterprise Performance.',
+      copyright: settingsObj.copyrightText || settingsObj.copyright || '© 2026 Karviyam E-Commerce Platform. All Rights Reserved. Built for Enterprise Performance.',
+      stayUpdatedTitle: settingsObj.stayUpdatedTitle || 'STAY UPDATED',
+      stayUpdatedDescription: settingsObj.stayUpdatedDescription || 'Subscribe to get special drop alerts, VIP coupons & discounts.',
+      newsletterEnabled: settingsObj.newsletterEnabled !== undefined ? Boolean(settingsObj.newsletterEnabled) : true,
+      columns: parsedColumns,
+      socialLinks: parsedSocial,
       b1Title: settingsObj.badge1Title || 'Free Delivery',
       b1Sub: settingsObj.badge1Sub || 'On orders above ₹499',
       b2Title: settingsObj.badge2Title || 'Easy Returns',
@@ -533,6 +603,8 @@ exports.updateFooterSettings = async (req, res, next) => {
     const data = req.body || {};
 
     const updates = {};
+    if (data.footerEnabled !== undefined) updates['footerEnabled'] = String(Boolean(data.footerEnabled));
+    if (data.brandName !== undefined) updates['brandName'] = String(data.brandName);
     if (data.about !== undefined) updates['footerAbout'] = String(data.about);
     if (data.footerAbout !== undefined) updates['footerAbout'] = String(data.footerAbout);
     if (data.address !== undefined) updates['address'] = String(data.address);
@@ -540,8 +612,20 @@ exports.updateFooterSettings = async (req, res, next) => {
     if (data.supportPhone !== undefined) updates['supportPhone'] = String(data.supportPhone);
     if (data.email !== undefined) updates['supportEmail'] = String(data.email);
     if (data.supportEmail !== undefined) updates['supportEmail'] = String(data.supportEmail);
-    if (data.logoUrl !== undefined) updates['logoUrl'] = String(data.logoUrl);
+    if (data.logoUrl !== undefined) {
+      let lUrl = String(data.logoUrl);
+      if (lUrl.startsWith('data:image/')) {
+        lUrl = saveBase64Image(lUrl, 'logo');
+      }
+      updates['logoUrl'] = lUrl;
+    }
     if (data.copyright !== undefined) updates['copyrightText'] = String(data.copyright);
+    if (data.stayUpdatedTitle !== undefined) updates['stayUpdatedTitle'] = String(data.stayUpdatedTitle);
+    if (data.stayUpdatedDescription !== undefined) updates['stayUpdatedDescription'] = String(data.stayUpdatedDescription);
+    if (data.newsletterEnabled !== undefined) updates['newsletterEnabled'] = String(Boolean(data.newsletterEnabled));
+    if (data.columns !== undefined) updates['footerColumns'] = typeof data.columns === 'object' ? JSON.stringify(data.columns) : String(data.columns);
+    if (data.socialLinks !== undefined) updates['footerSocialLinks'] = typeof data.socialLinks === 'object' ? JSON.stringify(data.socialLinks) : String(data.socialLinks);
+    
     if (data.b1Title !== undefined) updates['badge1Title'] = String(data.b1Title);
     if (data.b1Sub !== undefined) updates['badge1Sub'] = String(data.b1Sub);
     if (data.b2Title !== undefined) updates['badge2Title'] = String(data.b2Title);

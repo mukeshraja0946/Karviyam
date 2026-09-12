@@ -145,6 +145,7 @@ export default function App() {
                     <Route path="/admin/payments" element={<AdminOrdersPage />} />
                     <Route path="/admin/returns" element={<AdminReturnsPage />} />
                     <Route path="/admin/footer" element={<AdminFooterPage />} />
+                    <Route path="/admin/footer-management" element={<AdminFooterPage />} />
                     <Route path="/admin/bank-account" element={<AdminBankAccountPage />} />
                     <Route path="/admin/reports" element={<AdminReportsPage />} />
                     <Route path="/admin/payment-settings" element={<AdminPaymentSettingsPage />} />

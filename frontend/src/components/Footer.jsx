@@ -1,130 +1,130 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Truck, RotateCcw, ShieldCheck, Tag, Headphones, Mail, Phone, MapPin, Loader2 } from 'lucide-react';
+import {
+  Truck,
+  RotateCcw,
+  ShieldCheck,
+  Tag,
+  Headphones,
+  Mail,
+  Phone,
+  MapPin,
+  Loader2,
+  ExternalLink
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import { resolveImageUrl, isValidImageUrl } from '../utils/imageUtils';
 
 export default function Footer() {
   const navigate = useNavigate();
-  const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
-  
-  const [footerData, setFooterData] = useState(() => ({
-    about: localStorage.getItem('karviyam_footer_about') || 'Karviyam is a premium marketplace destination for high-street streetwear, 925 sterling silver jewellery, luxury kicks, and lifestyle products.',
-    address: localStorage.getItem('karviyam_address') || 'Karviyam Tower, Park Avenue, Chennai, Tamil Nadu 600001',
-    phone: localStorage.getItem('karviyam_support_phone') || '+91 98765 43210',
-    email: localStorage.getItem('karviyam_support_email') || 'support@karviyam.com',
-    b1Title: localStorage.getItem('karviyam_badge1Title') || 'Free Delivery',
-    b1Sub: localStorage.getItem('karviyam_badge1Sub') || 'On orders above ₹499',
-    b2Title: localStorage.getItem('karviyam_badge2Title') || 'Easy Returns',
-    b2Sub: localStorage.getItem('karviyam_badge2Sub') || '30 days return policy',
-    b3Title: localStorage.getItem('karviyam_badge3Title') || 'Secure Payments',
-    b3Sub: localStorage.getItem('karviyam_badge3Sub') || '100% secure checkout',
-    b4Title: localStorage.getItem('karviyam_badge4Title') || 'Best Price Guarantee',
-    b4Sub: localStorage.getItem('karviyam_badge4Sub') || 'Unmatched value',
-    b5Title: localStorage.getItem('karviyam_badge5Title') || '24/7 Support',
-    b5Sub: localStorage.getItem('karviyam_badge5Sub') || 'Dedicated assistance',
-  }));
+  const [logoFailed, setLogoFailed] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Subscription Settings & State
-  const [subSettings, setSubSettings] = useState({
-    enabled: true,
-    title: 'STAY UPDATED',
-    description: 'Subscribe to get special drop alerts, VIP coupons & discounts.',
-    buttonText: 'SUBSCRIBE NOW'
+  const [footerConfig, setFooterConfig] = useState({
+    footerEnabled: true,
+    brandName: 'KARVIYAM',
+    about: 'Karviyam is a premium marketplace destination for high-street streetwear, 925 sterling silver jewellery, luxury kicks, and lifestyle products.',
+    address: 'Tamil Nadu, Salem, Attur, Gangavalli - 636105',
+    phone: '+91 93443 30782',
+    email: 'vanakkam@karviyam.com',
+    logoUrl: '',
+    copyright: '© 2026 Karviyam E-Commerce Platform. All Rights Reserved. Built for Enterprise Performance.',
+    stayUpdatedTitle: 'STAY UPDATED',
+    stayUpdatedDescription: 'Subscribe to get special drop alerts, VIP coupons & discounts.',
+    newsletterEnabled: true,
+    columns: [],
+    socialLinks: {
+      instagram: 'https://instagram.com/karviyam',
+      facebook: 'https://facebook.com/karviyam',
+      youtube: 'https://youtube.com/karviyam',
+      whatsapp: 'https://wa.me/919344330782',
+      twitter: 'https://twitter.com/karviyam'
+    },
+    b1Title: 'Free Delivery',
+    b1Sub: 'On orders above ₹499',
+    b2Title: 'Easy Returns',
+    b2Sub: '30 days return policy',
+    b3Title: 'Secure Payments',
+    b3Sub: '100% secure checkout',
+    b4Title: 'Best Price Guarantee',
+    b4Sub: 'Unmatched value',
+    b5Title: '24/7 Support',
+    b5Sub: 'Dedicated assistance'
   });
+
   const [subEmail, setSubEmail] = useState('');
   const [subSubmitting, setSubSubmitting] = useState(false);
 
+  const fetchFooterSettings = async () => {
+    try {
+      const res = await api.get('/footer-settings').catch(() => api.get('/settings/footer')).catch(() => null);
+      const data = res?.data?.data || res?.data;
+
+      if (data && typeof data === 'object') {
+        setFooterConfig({
+          footerEnabled: data.footerEnabled !== undefined ? Boolean(data.footerEnabled) : true,
+          brandName: data.brandName || 'KARVIYAM',
+          about: data.about || data.footerAbout || 'Karviyam is a premium marketplace destination for high-street streetwear, 925 sterling silver jewellery, luxury kicks, and lifestyle products.',
+          address: data.address || data.registeredAddress || 'Tamil Nadu, Salem, Attur, Gangavalli - 636105',
+          phone: data.phone || data.supportPhone || '+91 93443 30782',
+          email: data.email || data.supportEmail || 'vanakkam@karviyam.com',
+          logoUrl: data.logoUrl || data.logo || '',
+          copyright: data.copyright || data.copyrightText || '© 2026 Karviyam E-Commerce Platform. All Rights Reserved. Built for Enterprise Performance.',
+          stayUpdatedTitle: data.stayUpdatedTitle || 'STAY UPDATED',
+          stayUpdatedDescription: data.stayUpdatedDescription || 'Subscribe to get special drop alerts, VIP coupons & discounts.',
+          newsletterEnabled: data.newsletterEnabled !== undefined ? Boolean(data.newsletterEnabled) : true,
+          columns: Array.isArray(data.columns) ? data.columns : [],
+          socialLinks: (data.socialLinks && typeof data.socialLinks === 'object') ? data.socialLinks : {},
+          b1Title: data.b1Title || data.badge1Title || 'Free Delivery',
+          b1Sub: data.b1Sub || data.badge1Sub || 'On orders above ₹499',
+          b2Title: data.b2Title || data.badge2Title || 'Easy Returns',
+          b2Sub: data.b2Sub || data.badge2Sub || '30 days return policy',
+          b3Title: data.b3Title || data.badge3Title || 'Secure Payments',
+          b3Sub: data.b3Sub || data.badge3Sub || '100% secure checkout',
+          b4Title: data.b4Title || data.badge4Title || 'Best Price Guarantee',
+          b4Sub: data.b4Sub || data.badge4Sub || 'Unmatched value',
+          b5Title: data.b5Title || data.badge5Title || '24/7 Support',
+          b5Sub: data.b5Sub || data.badge5Sub || 'Dedicated assistance'
+        });
+      }
+    } catch (e) {
+      console.error('Failed to load footer settings:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchPublicSettings();
-    fetchSubscriptionSettings();
+    fetchFooterSettings();
+
+    const handleSync = () => {
+      fetchFooterSettings();
+      setLogoFailed(false);
+    };
+
     window.addEventListener('storage', handleSync);
     window.addEventListener('karviyam_logo_updated', handleSync);
     window.addEventListener('karviyam_footer_updated', handleSync);
-    window.addEventListener('karviyam_subscription_updated', handleSync);
     return () => {
       window.removeEventListener('storage', handleSync);
       window.removeEventListener('karviyam_logo_updated', handleSync);
       window.removeEventListener('karviyam_footer_updated', handleSync);
-      window.removeEventListener('karviyam_subscription_updated', handleSync);
     };
   }, []);
 
-  const handleSync = () => {
-    fetchPublicSettings();
-    fetchSubscriptionSettings();
-  };
+  if (footerConfig.footerEnabled === false) return null;
 
-  const fetchSubscriptionSettings = async () => {
-    try {
-      const res = await api.get('/subscriptions/settings').catch(() => null);
-      const data = res?.data?.data || res?.data;
-      if (data && typeof data === 'object') {
-        setSubSettings({
-          enabled: data.enabled !== false,
-          title: data.title || 'STAY UPDATED',
-          description: data.description || 'Subscribe to get special drop alerts, VIP coupons & discounts.',
-          buttonText: data.buttonText || 'SUBSCRIBE NOW'
-        });
-      }
-    } catch (e) {}
-  };
+  const activeColumns = (footerConfig.columns || [])
+    .filter(col => col && col.enabled !== false)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  const fetchPublicSettings = async () => {
-    try {
-      const res = await api.get('/footer-settings').catch(() => api.get('/settings/footer')).catch(() => api.get('/settings'));
-      const apiData = res.data ? res.data : res;
-      const dataMap = apiData.data !== undefined ? apiData.data : apiData;
-
-      if (dataMap && typeof dataMap === 'object') {
-        const logo = dataMap.logoUrl || dataMap.logo;
-        if (logo) {
-          setCustomLogo(logo);
-          localStorage.setItem('karviyam_logo', logo);
-        }
-
-        const aboutText = dataMap.about || dataMap.footerAbout;
-        let addrText = dataMap.address || dataMap.registeredAddress;
-        if (!addrText || addrText === 'ABC00123') {
-          addrText = 'Karviyam Tower, Park Avenue, Chennai, Tamil Nadu 600001';
-        }
-        const phoneText = dataMap.phone || dataMap.supportPhone;
-        const emailText = dataMap.email || dataMap.supportEmail;
-        const copyText = dataMap.copyright || dataMap.copyrightText;
-
-        if (aboutText) localStorage.setItem('karviyam_footer_about', aboutText);
-        if (addrText) localStorage.setItem('karviyam_address', addrText);
-        if (phoneText) localStorage.setItem('karviyam_support_phone', phoneText);
-        if (emailText) localStorage.setItem('karviyam_support_email', emailText);
-
-        setFooterData(prev => ({
-          ...prev,
-          about: aboutText || prev.about,
-          address: addrText || prev.address,
-          phone: phoneText || prev.phone,
-          email: emailText || prev.email,
-          copyright: copyText || prev.copyright || '© 2026 Karviyam E-Commerce Platform. All Rights Reserved. Built for Enterprise Performance.',
-          b1Title: dataMap.b1Title || dataMap.badge1Title || prev.b1Title,
-          b1Sub: dataMap.b1Sub || dataMap.badge1Sub || prev.b1Sub,
-          b2Title: dataMap.b2Title || dataMap.badge2Title || prev.b2Title,
-          b2Sub: dataMap.b2Sub || dataMap.badge2Sub || prev.b2Sub,
-          b3Title: dataMap.b3Title || dataMap.badge3Title || prev.b3Title,
-          b3Sub: dataMap.b3Sub || dataMap.badge3Sub || prev.b3Sub,
-          b4Title: dataMap.b4Title || dataMap.badge4Title || prev.b4Title,
-          b4Sub: dataMap.b4Sub || dataMap.badge4Sub || prev.b4Sub,
-          b5Title: dataMap.b5Title || dataMap.badge5Title || prev.b5Title,
-          b5Sub: dataMap.b5Sub || dataMap.badge5Sub || prev.b5Sub,
-        }));
-      }
-    } catch (e) {
-      console.error('Failed to load database footer settings:', e);
-    }
-  };
+  const social = footerConfig.socialLinks || {};
 
   return (
-    <footer className="bg-white border-t border-slate-200 text-slate-700">
+    <footer className="bg-white border-t border-slate-200 text-slate-700 font-sans">
       
-      {/* Top Value Proposition Trust Badges (Dynamic Admin Content) */}
+      {/* Top Value Proposition Trust Badges */}
       <div className="bg-slate-50 border-b border-slate-200 py-3.5 sm:py-6 px-3 sm:px-8">
         <div className="max-w-[1640px] w-full mx-auto px-2 sm:px-4 grid grid-cols-2 md:grid-cols-5 gap-6 text-center md:text-left">
           <div className="flex items-center gap-3">
@@ -132,8 +132,8 @@ export default function Footer() {
               <Truck className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">{footerData.b1Title}</h4>
-              <p className="text-[10px] text-slate-500">{footerData.b1Sub}</p>
+              <h4 className="text-xs font-bold text-slate-900">{footerConfig.b1Title}</h4>
+              <p className="text-[10px] text-slate-500">{footerConfig.b1Sub}</p>
             </div>
           </div>
 
@@ -142,8 +142,8 @@ export default function Footer() {
               <RotateCcw className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">{footerData.b2Title}</h4>
-              <p className="text-[10px] text-slate-500">{footerData.b2Sub}</p>
+              <h4 className="text-xs font-bold text-slate-900">{footerConfig.b2Title}</h4>
+              <p className="text-[10px] text-slate-500">{footerConfig.b2Sub}</p>
             </div>
           </div>
 
@@ -152,8 +152,8 @@ export default function Footer() {
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">{footerData.b3Title}</h4>
-              <p className="text-[10px] text-slate-500">{footerData.b3Sub}</p>
+              <h4 className="text-xs font-bold text-slate-900">{footerConfig.b3Title}</h4>
+              <p className="text-[10px] text-slate-500">{footerConfig.b3Sub}</p>
             </div>
           </div>
 
@@ -162,8 +162,8 @@ export default function Footer() {
               <Tag className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">{footerData.b4Title}</h4>
-              <p className="text-[10px] text-slate-500">{footerData.b4Sub}</p>
+              <h4 className="text-xs font-bold text-slate-900">{footerConfig.b4Title}</h4>
+              <p className="text-[10px] text-slate-500">{footerConfig.b4Sub}</p>
             </div>
           </div>
 
@@ -172,21 +172,26 @@ export default function Footer() {
               <Headphones className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">{footerData.b5Title}</h4>
-              <p className="text-[10px] text-slate-500">{footerData.b5Sub}</p>
+              <h4 className="text-xs font-bold text-slate-900">{footerConfig.b5Title}</h4>
+              <p className="text-[10px] text-slate-500">{footerConfig.b5Sub}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Footer Content */}
-      <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-8 xl:px-12 pt-4 pb-8 md:py-12 grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
+      <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-8 xl:px-12 pt-6 pb-8 md:py-12 grid grid-cols-1 md:grid-cols-12 gap-8">
         
-        {/* Brand Column (Dynamic Admin Content) */}
-        <div className="space-y-4">
-          <Link to="/" className="flex items-center gap-2.5">
-            {customLogo ? (
-              <img src={customLogo} alt="Karviyam" className="h-10 w-auto object-contain max-w-[200px]" />
+        {/* Brand Column */}
+        <div className="md:col-span-4 space-y-4">
+          <Link to="/" className="inline-flex items-center gap-2.5">
+            {footerConfig.logoUrl && isValidImageUrl(footerConfig.logoUrl) && !logoFailed ? (
+              <img
+                src={resolveImageUrl(footerConfig.logoUrl)}
+                alt={footerConfig.brandName || 'Karviyam'}
+                onError={() => setLogoFailed(true)}
+                className="h-9 sm:h-10 w-auto object-contain max-w-[200px]"
+              />
             ) : (
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white flex items-center justify-center font-black shadow-md">
@@ -194,68 +199,122 @@ export default function Footer() {
                     <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
                   </svg>
                 </div>
-                <span className="font-display font-black text-xl tracking-tight text-[#B71C1C]">
-                  KARVIYAM
+                <span className="font-display font-black text-xl tracking-tight text-[#B71C1C] uppercase">
+                  {footerConfig.brandName || 'KARVIYAM'}
                 </span>
               </div>
             )}
           </Link>
           
-          <p className="text-xs text-slate-500 leading-relaxed font-medium">
-            {footerData.about}
+          <p className="text-xs text-slate-500 leading-relaxed font-medium max-w-md">
+            {footerConfig.about}
           </p>
 
-          <div className="text-xs space-y-2 text-slate-600 font-medium pt-2">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[#B71C1C] shrink-0" />
-              <span>{footerData.address}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-[#B71C1C] shrink-0" />
-              <span>{footerData.phone}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-[#B71C1C] shrink-0" />
-              <span>{footerData.email}</span>
-            </div>
+          <div className="text-xs space-y-2 text-slate-600 font-medium pt-1">
+            {footerConfig.address && (
+              <div className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 text-[#B71C1C] shrink-0 mt-0.5" />
+                <span className="leading-snug">{footerConfig.address}</span>
+              </div>
+            )}
+            {footerConfig.phone && (
+              <div className="flex items-center gap-2.5">
+                <Phone className="w-4 h-4 text-[#B71C1C] shrink-0" />
+                <a href={`tel:${footerConfig.phone}`} className="hover:text-[#B71C1C] transition-colors">{footerConfig.phone}</a>
+              </div>
+            )}
+            {footerConfig.email && (
+              <div className="flex items-center gap-2.5">
+                <Mail className="w-4 h-4 text-[#B71C1C] shrink-0" />
+                <a href={`mailto:${footerConfig.email}`} className="hover:text-[#B71C1C] transition-colors">{footerConfig.email}</a>
+              </div>
+            )}
+          </div>
+
+          {/* Social Links */}
+          <div className="pt-2 flex items-center gap-2 flex-wrap">
+            {social.instagram && (
+              <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-600 flex items-center justify-center transition-colors shadow-2xs" title="Instagram">
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              </a>
+            )}
+            {social.facebook && (
+              <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-600 flex items-center justify-center transition-colors shadow-2xs" title="Facebook">
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.5 5H18V0h-3.808C10.592 0 9 1.592 9 4.415V8z"/></svg>
+              </a>
+            )}
+            {social.youtube && (
+              <a href={social.youtube} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-600 flex items-center justify-center transition-colors shadow-2xs" title="YouTube">
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              </a>
+            )}
+            {social.whatsapp && (
+              <a href={social.whatsapp} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-600 flex items-center justify-center transition-colors shadow-2xs" title="WhatsApp">
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-1.146 4.195 4.316-1.134z"/></svg>
+              </a>
+            )}
+            {social.twitter && (
+              <a href={social.twitter} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-[#B71C1C] hover:text-white text-slate-600 flex items-center justify-center transition-colors shadow-2xs" title="Twitter / X">
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+            )}
           </div>
         </div>
 
-        {/* Categories Link Column & Customer Care Column Side-by-Side on Mobile */}
-        <div className="grid grid-cols-2 gap-6 col-span-1 md:col-span-2">
-          {/* Categories Link Column */}
-          <div>
-            <h4 className="font-display font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">Categories</h4>
-            <ul className="space-y-2 text-xs font-medium text-slate-500">
-              <li><Link to="/shop?category=Clothing" className="hover:text-[#B71C1C] transition-colors">Oversized T-Shirts</Link></li>
-              <li><Link to="/shop?category=Clothing" className="hover:text-[#B71C1C] transition-colors">Casual Linen Shirts</Link></li>
-              <li><Link to="/shop?category=Footwear" className="hover:text-[#B71C1C] transition-colors">Apex Stealth Sneakers</Link></li>
-              <li><Link to="/shop?category=Jewellery" className="hover:text-[#B71C1C] transition-colors">925 Silver Jewellery</Link></li>
-              <li><Link to="/shop?category=Clothing" className="hover:text-[#B71C1C] transition-colors">Anime Graphic Hoodies</Link></li>
-            </ul>
-          </div>
+        {/* Dynamic Column Columns */}
+        <div className="md:col-span-5 grid grid-cols-2 sm:grid-cols-3 gap-6">
+          {activeColumns.map((col) => {
+            const activeLinks = (col.links || [])
+              .filter(l => l && l.enabled !== false)
+              .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-          {/* Customer Care Column */}
-          <div>
-            <h4 className="font-display font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">Customer Care</h4>
-            <ul className="space-y-2 text-xs font-medium text-slate-500">
-              <li><Link to="/profile" className="hover:text-[#B71C1C] transition-colors">Track My Order</Link></li>
-              <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Help Center & FAQ</Link></li>
-              <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Return Policy</Link></li>
-              <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Terms of Service</Link></li>
-              <li><Link to="/contact" className="hover:text-[#B71C1C] transition-colors">Privacy Policy</Link></li>
-            </ul>
-          </div>
+            return (
+              <div key={col.id || col.title} className="space-y-3">
+                <h4 className="font-display font-bold text-xs text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-1.5">
+                  {col.title}
+                </h4>
+                <ul className="space-y-2 text-xs font-medium text-slate-500">
+                  {activeLinks.map((link) => {
+                    const dest = link.destination || '#';
+                    const isExternal = link.openNewTab || dest.startsWith('http://') || dest.startsWith('https://');
+                    
+                    return (
+                      <li key={link.id || link.title}>
+                        {isExternal ? (
+                          <a
+                            href={dest}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-[#B71C1C] transition-colors inline-flex items-center gap-1"
+                          >
+                            <span>{link.title}</span>
+                            <ExternalLink className="w-3 h-3 text-slate-400" />
+                          </a>
+                        ) : (
+                          <Link
+                            to={dest}
+                            className="hover:text-[#B71C1C] transition-colors block"
+                          >
+                            {link.title}
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Newsletter Subscription (Shown ONLY if enabled by Admin) */}
-        {subSettings.enabled && (
-          <div>
-            <h4 className="font-display font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">
-              {subSettings.title || 'Stay Updated'}
+        {/* Newsletter Subscription Column */}
+        {footerConfig.newsletterEnabled !== false && (
+          <div className="md:col-span-3 space-y-3 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
+            <h4 className="font-display font-bold text-xs text-slate-900 uppercase tracking-wider">
+              {footerConfig.stayUpdatedTitle || 'STAY UPDATED'}
             </h4>
-            <p className="text-xs text-slate-500 mb-3">
-              {subSettings.description || 'Subscribe to get special drop alerts, VIP coupons & discounts.'}
+            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+              {footerConfig.stayUpdatedDescription || 'Subscribe to get special drop alerts, VIP coupons & discounts.'}
             </p>
             <form
               onSubmit={async (e) => {
@@ -289,7 +348,7 @@ export default function Footer() {
                   setSubSubmitting(false);
                 }
               }}
-              className="space-y-2"
+              className="space-y-2 pt-1"
             >
               <input
                 type="email"
@@ -297,15 +356,15 @@ export default function Footer() {
                 onChange={(e) => setSubEmail(e.target.value)}
                 placeholder="Enter your email address"
                 disabled={subSubmitting}
-                className="w-full bg-slate-100 border border-slate-200 text-xs px-4 py-3 rounded-xl outline-none focus:border-[#B71C1C] focus:bg-white transition-all font-medium disabled:opacity-50"
+                className="w-full bg-white border border-slate-200 text-xs px-3.5 py-2.5 rounded-xl outline-none focus:border-[#B71C1C] transition-all font-medium disabled:opacity-50"
               />
               <button
                 type="submit"
                 disabled={subSubmitting}
-                className="w-full bg-[#B71C1C] hover:bg-[#900C0C] disabled:bg-slate-400 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
+                className="w-full bg-[#B71C1C] hover:bg-[#900C0C] disabled:bg-slate-400 text-white font-bold text-xs uppercase tracking-wider py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
               >
                 {subSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>{subSettings.buttonText || 'Subscribe Now'}</span>
+                <span>SUBSCRIBE NOW</span>
               </button>
             </form>
           </div>
@@ -313,9 +372,9 @@ export default function Footer() {
 
       </div>
 
-      {/* Copyright Bar */}
+      {/* Bottom Copyright Bar */}
       <div className="bg-slate-50 border-t border-slate-200 py-4 px-4 text-center text-xs text-slate-500 font-medium">
-        © 2026 Karviyam E-Commerce Platform. All Rights Reserved. Built for Enterprise Performance.
+        {footerConfig.copyright}
       </div>
     </footer>
   );
