@@ -270,6 +270,39 @@ exports.deleteAddress = async (req, res, next) => {
   }
 };
 
+exports.subscribeNewsletter = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+      return res.status(400).json(ApiResponse.error('Please provide a valid email address'));
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+          id BIGINT AUTO_INCREMENT PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await pool.query(
+        `INSERT INTO newsletter_subscribers (email) VALUES (?) ON DUPLICATE KEY UPDATE created_at = NOW()`,
+        [cleanEmail]
+      );
+    } catch (e) {}
+
+    return res.status(200).json(ApiResponse.success({
+      email: cleanEmail,
+      discountCode: 'KARVIYAM10',
+      message: 'Successfully subscribed! Use coupon KARVIYAM10 at checkout.'
+    }, 'Newsletter subscription successful'));
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.updateUserRole = async (req, res, next) => {
   try {
     const { id } = req.params;

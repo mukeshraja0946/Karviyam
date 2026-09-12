@@ -8,6 +8,7 @@ import SkeletonLoader from '../components/SkeletonLoader';
 import DesktopSidebarLeft from '../components/desktop/DesktopSidebarLeft';
 import DesktopCenterContent from '../components/desktop/DesktopCenterContent';
 import DesktopSidebarRight from '../components/desktop/DesktopSidebarRight';
+import DesktopHomepage from '../components/desktop/DesktopHomepage';
 import DesktopTrustBar from '../components/desktop/DesktopTrustBar';
 import MobileHomePage from '../components/mobile/MobileHomePage';
 import api from '../utils/api';
@@ -431,19 +432,10 @@ export default function HomePage() {
     <div>
       {/* ========================================================= */}
       {/* DESKTOP HOMEPAGE LAYOUT (>= 1024px / lg)                   */}
-      {/* STRICT DESKTOP ISOLATION - 100% UNTOUCHED                    */}
+      {/* FULL-WIDTH 1440px MODERN E-COMMERCE LAYOUT                 */}
       {/* ========================================================= */}
-      <div className="hidden lg:block py-3 bg-[#FAFAFA] min-h-screen">
-        <div className="max-w-[1560px] w-full mx-auto px-2 sm:px-3 flex justify-center items-start gap-2 xl:gap-2.5">
-          {/* Column 1: Left Sidebar */}
-          <DesktopSidebarLeft />
-
-          {/* Column 2: Center Content */}
-          <DesktopCenterContent />
-
-          {/* Column 3: Right Column */}
-          <DesktopSidebarRight />
-        </div>
+      <div className="hidden lg:block bg-[#FAFAFA] min-h-screen">
+        <DesktopHomepage />
       </div>
 
       {/* ========================================================= */}
