@@ -35,6 +35,24 @@ const mapReviewDTO = (r, currentUserId = null, userVotesMap = {}) => {
     createdAt: r.created_at,
     updatedAt: r.updated_at
   };
+// GET /api/reviews/latest (Public - Fetch latest approved customer reviews)
+exports.getRecentApprovedReviews = async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT r.*, u.full_name as customer_name
+       FROM reviews r
+       LEFT JOIN users u ON r.user_id = u.id
+       WHERE r.status = 'Approved' OR r.status IS NULL
+       ORDER BY r.created_at DESC
+       LIMIT 10`
+    );
+
+    const dtos = rows.map(r => mapReviewDTO(r));
+    return res.status(200).json(ApiResponse.success(dtos, 'Latest reviews retrieved successfully'));
+  } catch (err) {
+    console.error('[getRecentApprovedReviews Error]:', err);
+    return res.status(200).json(ApiResponse.success([], 'No reviews found'));
+  }
 };
 
 // GET /api/reviews/product/:productId (Public - Fetch product reviews & summary stats)

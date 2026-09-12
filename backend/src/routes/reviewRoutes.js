@@ -4,6 +4,7 @@ const reviewController = require('../controllers/reviewController');
 const { optionalToken } = require('../middleware/authMiddleware');
 
 // Public endpoints
+router.get('/latest', reviewController.getRecentApprovedReviews);
 router.get('/product/:productId', optionalToken, reviewController.getProductReviews);
 
 // Customer actions
