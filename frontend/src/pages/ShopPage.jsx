@@ -539,18 +539,18 @@ export default function ShopPage() {
     <div className="w-full bg-[#FAFAFA] min-h-screen py-4 text-left font-sans">
       <div className="max-w-[1640px] mx-auto px-3 sm:px-6">
         {/* ========================================================= */}
-        {/* DESKTOP LAYOUT (≥ 1024px / lg)                             */}
+        {/* DESKTOP LAYOUT (≥ 1024px / lg) — INDEPENDENT SCROLLING    */}
         {/* ========================================================= */}
-        <div className="hidden lg:flex gap-6 items-start">
-          {/* LEFT SIDEBAR: FIXED STICKY POSITION WITH INDEPENDENT SCROLL */}
-          <aside className="w-[250px] xl:w-[270px] shrink-0 sticky top-[80px] h-[calc(100vh-100px)] overflow-y-auto overscroll-contain pr-2 no-scrollbar bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
+        <div className="hidden lg:flex gap-6 items-start h-[calc(100vh-140px)] overflow-hidden">
+          {/* 1. LEFT FILTER SIDEBAR: INDEPENDENT VERTICAL SCROLL */}
+          <aside className="w-[250px] xl:w-[270px] shrink-0 h-full overflow-y-auto overscroll-contain pr-1.5 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
             {renderFilterSidebar()}
           </aside>
 
-          {/* RIGHT MAIN PRODUCT AREA */}
-          <main className="flex-1 min-w-0 space-y-4">
+          {/* 2. MAIN PRODUCT CATALOG: INDEPENDENT VERTICAL SCROLL */}
+          <main className="flex-1 min-w-0 h-full overflow-y-auto overscroll-contain pr-1.5 space-y-4">
             {/* Results Header Bar */}
-            <div className="flex items-center justify-between bg-white px-5 py-3 rounded-2xl border border-slate-200/90 shadow-2xs">
+            <div className="flex items-center justify-between bg-white px-5 py-3 rounded-2xl border border-slate-200/90 shadow-2xs sticky top-0 z-10">
               <div>
                 <h1 className="font-display font-black text-lg text-slate-900 tracking-tight">
                   {pageTitleLabel}
