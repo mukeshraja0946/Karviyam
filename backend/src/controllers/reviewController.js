@@ -35,6 +35,8 @@ const mapReviewDTO = (r, currentUserId = null, userVotesMap = {}) => {
     createdAt: r.created_at,
     updatedAt: r.updated_at
   };
+};
+
 // GET /api/reviews/latest (Public - Fetch latest approved customer reviews)
 exports.getRecentApprovedReviews = async (req, res, next) => {
   try {
