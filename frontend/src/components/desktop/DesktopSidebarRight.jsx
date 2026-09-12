@@ -45,7 +45,8 @@ const ICON_MAP = {
   Lock,
   Flame,
   Zap,
-  Tag
+  Tag,
+  Percent
 };
 
 const DEFAULT_TODAY_SPECIAL = {
@@ -247,42 +248,42 @@ export default function DesktopSidebarRight() {
   return (
     <aside className="w-[200px] xl:w-[220px] shrink-0 flex flex-col gap-3">
 
-      {/* 1. TODAY'S SPECIAL DEAL (Countdown + Product Card) */}
+      {/* 1. TODAY'S SPECIAL DEAL (LIGHT SOFT RED CARD + WHITE TIMER BOXES) */}
       {todaySpecial && todaySpecial.enabled !== false && (
-        <div className="w-full bg-white rounded-xl border border-[#B71C1C]/30 shadow-2xs p-3 space-y-2.5 overflow-hidden">
+        <div className="w-full bg-[#FFF5F5] rounded-xl border border-red-200/90 shadow-2xs p-3 space-y-2.5 overflow-hidden">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-[9px] font-black uppercase text-[#B71C1C] tracking-wider">
+              <span className="text-[9px] font-black uppercase text-[#C91C1C] tracking-wider">
                 {todaySpecial.badge || "TODAY'S SPECIAL DEAL"}
               </span>
-              <span className="text-[8.5px] font-bold text-slate-400">
+              <span className="text-[8.5px] font-bold text-slate-500">
                 {todaySpecial.subtitle || 'Limited Time Only'}
               </span>
             </div>
 
-            {/* Countdown Boxes */}
+            {/* Countdown Boxes (LIGHT THEME) */}
             <div className="grid grid-cols-3 gap-1.5 pt-2 text-center">
-              <div className="bg-slate-900 text-white rounded-lg py-1 px-1">
-                <span className="font-mono font-black text-xs block leading-none">
+              <div className="bg-white text-slate-900 border border-red-200 rounded-lg py-1 px-1 shadow-2xs">
+                <span className="font-mono font-black text-xs block leading-none text-[#C91C1C]">
                   {formatNumber(timeLeft.hours)}
                 </span>
-                <span className="text-[7.5px] font-bold text-slate-400 uppercase block mt-0.5">
+                <span className="text-[7.5px] font-bold text-slate-500 uppercase block mt-0.5">
                   Hrs
                 </span>
               </div>
-              <div className="bg-slate-900 text-white rounded-lg py-1 px-1">
-                <span className="font-mono font-black text-xs block leading-none">
+              <div className="bg-white text-slate-900 border border-red-200 rounded-lg py-1 px-1 shadow-2xs">
+                <span className="font-mono font-black text-xs block leading-none text-[#C91C1C]">
                   {formatNumber(timeLeft.minutes)}
                 </span>
-                <span className="text-[7.5px] font-bold text-slate-400 uppercase block mt-0.5">
+                <span className="text-[7.5px] font-bold text-slate-500 uppercase block mt-0.5">
                   Mins
                 </span>
               </div>
-              <div className="bg-slate-900 text-white rounded-lg py-1 px-1">
-                <span className="font-mono font-black text-xs block leading-none text-red-400">
+              <div className="bg-white text-slate-900 border border-red-200 rounded-lg py-1 px-1 shadow-2xs">
+                <span className="font-mono font-black text-xs block leading-none text-[#C91C1C]">
                   {formatNumber(timeLeft.seconds)}
                 </span>
-                <span className="text-[7.5px] font-bold text-slate-400 uppercase block mt-0.5">
+                <span className="text-[7.5px] font-bold text-slate-500 uppercase block mt-0.5">
                   Secs
                 </span>
               </div>
@@ -294,7 +295,7 @@ export default function DesktopSidebarRight() {
             onClick={() => navigate(todaySpecial.link || '/shop')}
             className="group cursor-pointer space-y-2"
           >
-            <div className="w-full h-[120px] xl:h-[130px] bg-slate-50 rounded-xl border border-slate-100 overflow-hidden relative p-1 flex items-center justify-center">
+            <div className="w-full h-[120px] xl:h-[130px] bg-white rounded-xl border border-slate-200/80 overflow-hidden relative p-1 flex items-center justify-center">
               <img
                 src={resolveImageUrl(todaySpecial.imageUrl)}
                 alt={todaySpecial.productName}
@@ -302,14 +303,14 @@ export default function DesktopSidebarRight() {
                 onError={handleImageError}
               />
               {todaySpecial.discountText && (
-                <span className="absolute top-1.5 left-1.5 bg-[#B71C1C] text-white text-[8.5px] font-black px-1.5 py-0.5 rounded shadow-2xs">
+                <span className="absolute top-1.5 left-1.5 bg-[#C91C1C] text-white text-[8.5px] font-black px-1.5 py-0.5 rounded shadow-2xs">
                   {todaySpecial.discountText}
                 </span>
               )}
             </div>
 
             <div>
-              <h4 className="font-extrabold text-xs text-slate-900 leading-snug truncate group-hover:text-[#B71C1C]">
+              <h4 className="font-extrabold text-xs text-slate-900 leading-snug truncate group-hover:text-[#C91C1C]">
                 {todaySpecial.productName || 'Sports Sneakers'}
               </h4>
               <p className="text-[9.5px] text-slate-500 font-medium truncate">
@@ -329,7 +330,7 @@ export default function DesktopSidebarRight() {
 
             <button
               type="button"
-              className="w-full bg-[#B71C1C] hover:bg-[#8E0000] text-white font-black text-[10px] uppercase tracking-wider py-2 rounded-lg shadow-2xs transition-colors cursor-pointer text-center"
+              className="w-full bg-[#C91C1C] hover:bg-[#A81515] text-white font-black text-[10px] uppercase tracking-wider py-2 rounded-lg shadow-2xs transition-colors cursor-pointer text-center"
             >
               {todaySpecial.buttonText || 'SHOP NOW →'}
             </button>
@@ -355,11 +356,11 @@ export default function DesktopSidebarRight() {
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-xs shrink-0">{deal.icon || '🔥'}</span>
-                  <span className="font-bold text-[11px] text-slate-800 group-hover:text-[#B71C1C] truncate">
+                  <span className="font-bold text-[11px] text-slate-800 group-hover:text-[#C91C1C] truncate">
                     {deal.title}
                   </span>
                 </div>
-                <span className="text-[9px] font-black text-[#B71C1C] bg-red-100/80 px-1.5 py-0.5 rounded shrink-0">
+                <span className="text-[9px] font-black text-[#C91C1C] bg-red-100/80 px-1.5 py-0.5 rounded shrink-0">
                   {deal.tag}
                 </span>
               </div>
@@ -374,7 +375,7 @@ export default function DesktopSidebarRight() {
           <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
             <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1">
               <span>POPULAR PICKS</span>
-              <span className="text-red-500">🔥</span>
+              <span className="text-[#C91C1C]">🔥</span>
             </h4>
             {trendingProducts.length > 1 && (
               <div className="flex items-center gap-1">
@@ -419,11 +420,11 @@ export default function DesktopSidebarRight() {
                   )}
                 </div>
                 <div>
-                  <h5 className="font-extrabold text-[11px] text-slate-900 truncate group-hover:text-[#B71C1C]">
+                  <h5 className="font-extrabold text-[11px] text-slate-900 truncate group-hover:text-[#C91C1C]">
                     {p.name}
                   </h5>
                   <div className="flex items-center justify-between pt-0.5">
-                    <span className="font-black text-xs text-[#B71C1C]">
+                    <span className="font-black text-xs text-[#C91C1C]">
                       ₹{p.sale_price || p.price}
                     </span>
                     {p.regular_price > (p.sale_price || p.price) && (
@@ -439,27 +440,30 @@ export default function DesktopSidebarRight() {
         </div>
       )}
 
-      {/* 4. COUPON / SAVINGS CARD */}
+      {/* 4. COUPON / SAVINGS CARD (LIGHT YELLOW THEME) */}
       {couponSavings && couponSavings.enabled !== false && (
         <div
           onClick={() => navigate(couponSavings.link || '/shop?filter=offers')}
-          className="w-full bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white rounded-xl shadow-2xs p-3 space-y-1.5 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden"
+          className="w-full bg-[#FFF9E8] border border-amber-300/90 text-slate-900 rounded-xl shadow-2xs p-3 space-y-1.5 cursor-pointer hover:border-[#C91C1C] transition-all relative overflow-hidden group"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[8.5px] font-black uppercase tracking-wider bg-black/20 text-amber-100 px-1.5 py-0.5 rounded">
+            <span className="text-[8.5px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-200 px-1.5 py-0.5 rounded">
               {couponSavings.badge || 'EXTRA SAVINGS'}
             </span>
-            <BadgePercent className="w-4 h-4 text-amber-200" />
+            <BadgePercent className="w-4 h-4 text-amber-700" />
           </div>
-          <h4 className="font-display font-black text-xs uppercase leading-tight pt-1">
+          <h4 className="font-display font-black text-xs uppercase leading-tight pt-1 text-slate-900">
             {couponSavings.title || 'UNLOCK EXTRA SAVINGS'}
           </h4>
-          <p className="text-[9.5px] text-amber-100 font-medium leading-snug">
+          <p className="text-[9.5px] text-slate-600 font-medium leading-snug">
             {couponSavings.subtitle || 'Use available coupons and promo codes at checkout.'}
           </p>
-          <div className="pt-1 flex items-center gap-1 text-[9.5px] font-black uppercase text-amber-900 bg-white/95 px-2.5 py-1 rounded-lg justify-center shadow-2xs">
-            <span>{couponSavings.buttonText || 'VIEW OFFERS →'}</span>
-          </div>
+          <button
+            type="button"
+            className="w-full bg-[#C91C1C] hover:bg-[#A81515] text-white font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors text-center"
+          >
+            {couponSavings.buttonText || 'VIEW OFFERS →'}
+          </button>
         </div>
       )}
 
@@ -478,7 +482,7 @@ export default function DesktopSidebarRight() {
                 onClick={() => navigate(cat.link || `/shop?category=${encodeURIComponent(cat.name)}`)}
                 className="w-full text-left bg-slate-50 hover:bg-red-50 hover:border-red-200 border border-slate-100 rounded-lg p-1.5 transition-colors cursor-pointer group"
               >
-                <span className="font-bold text-[10px] text-slate-700 group-hover:text-[#B71C1C] block truncate">
+                <span className="font-bold text-[10px] text-slate-700 group-hover:text-[#C91C1C] block truncate">
                   {cat.name}
                 </span>
               </button>
@@ -493,7 +497,7 @@ export default function DesktopSidebarRight() {
           <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
             <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1">
               <span>CUSTOMER LOVE</span>
-              <span className="text-red-500">❤️</span>
+              <span className="text-[#C91C1C]">❤️</span>
             </h4>
             {reviews.length > 1 && (
               <div className="flex items-center gap-1">
@@ -536,37 +540,38 @@ export default function DesktopSidebarRight() {
         </div>
       )}
 
-      {/* 7. STYLE INSPIRATION CARD */}
+      {/* 7. STYLE INSPIRATION CARD (LIGHT CREAM THEME) */}
       {styleInspiration && styleInspiration.enabled !== false && (
         <div
           onClick={() => navigate(styleInspiration.link || '/shop')}
-          className="w-full h-[240px] xl:h-[260px] rounded-2xl overflow-hidden relative shadow-md text-white p-3.5 flex flex-col justify-between group cursor-pointer border border-slate-800 bg-slate-900"
+          className="w-full bg-[#FFF9F0] border border-amber-200/90 rounded-2xl p-3.5 shadow-2xs flex flex-col justify-between gap-3 group cursor-pointer hover:border-[#C91C1C] transition-all text-slate-900"
         >
-          <img
-            src={resolveImageUrl(styleInspiration.imageUrl)}
-            alt={styleInspiration.title || 'Style Inspiration'}
-            className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
-            onError={handleImageError}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
-
-          <div className="relative z-10 space-y-1">
-            <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-300 bg-black/40 border border-amber-400/60 px-2 py-0.5 rounded backdrop-blur-xs">
+          <div className="space-y-1.5">
+            <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-900 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded">
               {styleInspiration.badge || 'STYLE INSPIRATION'}
             </span>
-            <h4 className="font-display font-black text-sm xl:text-base leading-tight uppercase drop-shadow-md pt-1">
+            <h4 className="font-display font-black text-sm xl:text-base leading-tight uppercase pt-1 text-slate-900">
               {styleInspiration.title || 'Look Good.'}
               <br />
-              <span className="text-amber-200">{styleInspiration.subtitle || 'Feel Confident.'}</span>
+              <span className="text-[#C91C1C]">{styleInspiration.subtitle || 'Feel Confident.'}</span>
             </h4>
           </div>
 
-          <div className="relative z-10 space-y-2">
+          <div className="w-full h-[120px] bg-white rounded-xl border border-amber-100 p-1 flex items-center justify-center overflow-hidden">
+            <img
+              src={resolveImageUrl(styleInspiration.imageUrl)}
+              alt={styleInspiration.title || 'Style Inspiration'}
+              className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
+              onError={handleImageError}
+            />
+          </div>
+
+          <div className="space-y-2">
             <div>
-              <span className="text-[9px] font-black uppercase tracking-wider text-slate-300 block">
+              <span className="text-[9px] font-black uppercase tracking-wider text-slate-700 block">
                 {styleInspiration.tag || 'CASUAL LOOKS'}
               </span>
-              <span className="text-[8.5px] text-slate-400 font-bold block">
+              <span className="text-[8.5px] text-slate-500 font-bold block">
                 {styleInspiration.tagSub || 'For Everyday'}
               </span>
             </div>
@@ -577,7 +582,7 @@ export default function DesktopSidebarRight() {
                 e.stopPropagation();
                 navigate(styleInspiration.link || '/shop');
               }}
-              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-black text-[10px] uppercase tracking-wider py-2 rounded-lg shadow-lg transition-transform group-hover:scale-102 cursor-pointer text-center"
+              className="w-full bg-[#C91C1C] hover:bg-[#A81515] text-white font-black text-[10px] uppercase tracking-wider py-2 rounded-xl shadow-xs transition-transform group-hover:scale-102 cursor-pointer text-center"
             >
               {styleInspiration.buttonText || 'EXPLORE NOW →'}
             </button>
@@ -585,18 +590,18 @@ export default function DesktopSidebarRight() {
         </div>
       )}
 
-      {/* 8. JOIN OUR COMMUNITY (NEWSLETTER SIGNUP) */}
-      <div className="w-full bg-slate-900 text-white rounded-xl shadow-2xs p-3 space-y-2 border border-slate-800">
-        <h4 className="font-display font-black text-xs uppercase tracking-wide text-amber-300">
+      {/* 8. JOIN OUR COMMUNITY (LIGHT PINK NEWSLETTER SIGNUP) */}
+      <div className="w-full bg-[#FFF1F2] border border-red-200/90 text-slate-900 rounded-xl shadow-2xs p-3 space-y-2">
+        <h4 className="font-display font-black text-xs uppercase tracking-wide text-[#C91C1C]">
           JOIN OUR COMMUNITY
         </h4>
-        <p className="text-[9.5px] text-slate-300 font-medium leading-tight">
+        <p className="text-[9.5px] text-slate-600 font-medium leading-tight">
           Get exclusive offers, new arrivals and style inspiration.
         </p>
 
         {subscribed ? (
-          <div className="bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold p-2 rounded-lg text-center flex items-center justify-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 text-[10px] font-bold p-2 rounded-lg text-center flex items-center justify-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>Subscribed to Karviyam!</span>
           </div>
         ) : (
@@ -606,12 +611,12 @@ export default function DesktopSidebarRight() {
               placeholder="Enter your email"
               value={emailInput}
               onChange={(e) => setEmailInput(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 text-xs px-2.5 py-1.5 rounded-lg text-white outline-none focus:border-amber-400 font-medium placeholder:text-slate-500"
+              className="w-full bg-white border border-red-200 text-xs px-2.5 py-1.5 rounded-lg text-slate-900 outline-none focus:border-[#C91C1C] font-medium placeholder:text-slate-400"
               required
             />
             <button
               type="submit"
-              className="w-full bg-[#B71C1C] hover:bg-[#8E0000] text-white font-black text-[10px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer flex items-center justify-center gap-1"
+              className="w-full bg-[#C91C1C] hover:bg-[#A81515] text-white font-black text-[10px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer flex items-center justify-center gap-1"
             >
               <span>SUBSCRIBE</span>
               <Send className="w-2.5 h-2.5" />
@@ -645,7 +650,7 @@ export default function DesktopSidebarRight() {
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h5 className="font-bold text-[10.5px] text-slate-900 leading-tight truncate group-hover:text-[#B71C1C]">
+                  <h5 className="font-bold text-[10.5px] text-slate-900 leading-tight truncate group-hover:text-[#C91C1C]">
                     {prod.name}
                   </h5>
                   <div className="flex items-center gap-1 pt-0.5">
@@ -659,15 +664,15 @@ export default function DesktopSidebarRight() {
         </div>
       )}
 
-      {/* 10. EXCLUSIVE OFFER / INSTANT DISCOUNT */}
-      <div className="w-full bg-red-950/20 border border-red-500/30 text-slate-900 rounded-xl p-3 space-y-1.5 shadow-2xs">
+      {/* 10. EXCLUSIVE OFFER / INSTANT DISCOUNT (LIGHT SOFT RED THEME) */}
+      <div className="w-full bg-[#FFF5F5] border border-red-200/90 text-slate-900 rounded-xl p-3 space-y-1.5 shadow-2xs">
         <div className="flex items-center justify-between">
-          <span className="text-[8.5px] font-black uppercase text-[#B71C1C] bg-red-100 px-1.5 py-0.5 rounded">
+          <span className="text-[8.5px] font-black uppercase text-[#C91C1C] bg-red-100 px-1.5 py-0.5 rounded border border-red-200">
             INSTANT DISCOUNT
           </span>
-          <Percent className="w-3.5 h-3.5 text-[#B71C1C]" />
+          <Percent className="w-3.5 h-3.5 text-[#C91C1C]" />
         </div>
-        <h4 className="font-display font-black text-xs uppercase leading-tight pt-1">
+        <h4 className="font-display font-black text-xs uppercase leading-tight pt-1 text-slate-900">
           5% OFF ON UPI PAYMENTS
         </h4>
         <p className="text-[9.5px] text-slate-600 font-medium">
@@ -676,7 +681,7 @@ export default function DesktopSidebarRight() {
         <button
           type="button"
           onClick={() => navigate('/shop')}
-          className="w-full bg-[#B71C1C] hover:bg-[#8E0000] text-white font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer text-center"
+          className="w-full bg-[#C91C1C] hover:bg-[#A81515] text-white font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer text-center"
         >
           APPLY AT CHECKOUT →
         </button>
@@ -695,7 +700,7 @@ export default function DesktopSidebarRight() {
             className="text-left bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg p-1.5 transition-colors cursor-pointer"
           >
             <span className="font-bold text-[10px] text-slate-800 block truncate">Under ₹299</span>
-            <span className="text-[8.5px] text-slate-400 block font-medium">Super Value</span>
+            <span className="text-[8.5px] text-slate-500 block font-medium">Super Value</span>
           </button>
           <button
             type="button"
@@ -703,30 +708,30 @@ export default function DesktopSidebarRight() {
             className="text-left bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg p-1.5 transition-colors cursor-pointer"
           >
             <span className="font-bold text-[10px] text-slate-800 block truncate">Under ₹499</span>
-            <span className="text-[8.5px] text-slate-400 block font-medium">Best Deals</span>
+            <span className="text-[8.5px] text-slate-500 block font-medium">Best Deals</span>
           </button>
         </div>
       </div>
 
-      {/* 12. FASHION TIP & STYLE GUIDE CARD */}
-      <div className="w-full bg-slate-900 text-white rounded-xl shadow-2xs p-3 space-y-1.5 border border-slate-800">
-        <div className="flex items-center gap-1.5 text-amber-300">
-          <Lightbulb className="w-4 h-4 text-amber-400" />
+      {/* 12. FASHION TIP & STYLE GUIDE CARD (LIGHT YELLOW THEME) */}
+      <div className="w-full bg-[#FFF9E8] border border-amber-300/80 text-slate-900 rounded-xl shadow-2xs p-3 space-y-1.5">
+        <div className="flex items-center gap-1.5 text-amber-900">
+          <Lightbulb className="w-4 h-4 text-amber-600" />
           <h4 className="font-display font-black text-xs uppercase tracking-wide">
             FASHION STYLE TIP
           </h4>
         </div>
-        <p className="text-[9.5px] text-slate-300 font-medium leading-snug italic">
+        <p className="text-[9.5px] text-slate-700 font-medium leading-snug italic">
           "Pair oversized printed tees with chunky white sneakers for an effortless casual look."
         </p>
-        <span className="block text-[8px] font-bold text-slate-400 uppercase pt-0.5">
+        <span className="block text-[8px] font-bold text-slate-500 uppercase pt-0.5">
           — KARVIYAM STYLE TEAM
         </span>
       </div>
 
       {/* 13. CUSTOMER SUPPORT & ASSISTANCE CARD */}
       <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
-        <div className="flex items-center gap-1.5 text-[#B71C1C]">
+        <div className="flex items-center gap-1.5 text-[#C91C1C]">
           <Headphones className="w-4 h-4" />
           <h4 className="font-display font-black text-xs uppercase tracking-wide text-slate-900">
             NEED ASSISTANCE?
@@ -744,44 +749,44 @@ export default function DesktopSidebarRight() {
         </button>
       </div>
 
-      {/* 14. PREMIUM STORE SHOWCASE */}
-      <div className="w-full bg-gradient-to-br from-amber-600 to-amber-800 text-white rounded-xl p-3 space-y-1.5 shadow-2xs">
-        <span className="text-[8px] font-black uppercase text-amber-200 tracking-wider bg-black/20 px-1.5 py-0.5 rounded">
+      {/* 14. PREMIUM STORE SHOWCASE (LIGHT BLUE THEME) */}
+      <div className="w-full bg-[#EFF7FF] border border-blue-200/90 text-slate-900 rounded-xl p-3 space-y-1.5 shadow-2xs">
+        <span className="text-[8px] font-black uppercase text-blue-900 bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded">
           PREMIUM STORE
         </span>
-        <h4 className="font-display font-black text-xs uppercase leading-tight">
+        <h4 className="font-display font-black text-xs uppercase leading-tight text-slate-900">
           925 SILVER JEWELLERY
         </h4>
-        <p className="text-[9.5px] text-amber-100 font-medium">
+        <p className="text-[9.5px] text-slate-600 font-medium">
           Handcrafted hallmark silver rings & pendants.
         </p>
         <button
           type="button"
           onClick={() => navigate('/shop?category=Jewellery')}
-          className="w-full bg-white text-amber-900 font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors mt-0.5 cursor-pointer text-center"
+          className="w-full bg-[#C91C1C] hover:bg-[#A81515] text-white font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors mt-0.5 cursor-pointer text-center"
         >
           VISIT STORE →
         </button>
       </div>
 
-      {/* 15. FINAL RIGHT PROMOTION */}
+      {/* 15. FINAL RIGHT PROMOTION (LIGHT PEACH THEME) */}
       {finalRightPromo && finalRightPromo.enabled !== false && (
         <div
           onClick={() => navigate(finalRightPromo.link || '/shop')}
-          className="w-full bg-gradient-to-br from-[#B71C1C] via-[#900000] to-slate-900 text-white rounded-xl shadow-2xs p-3.5 space-y-2 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden"
+          className="w-full bg-[#FFF4EC] border border-orange-200/90 text-slate-900 rounded-xl shadow-2xs p-3.5 space-y-2 cursor-pointer hover:border-[#C91C1C] transition-all group overflow-hidden"
         >
-          <span className="text-[8.5px] font-black uppercase tracking-wider text-amber-300 bg-black/30 border border-amber-400/40 px-1.5 py-0.5 rounded">
+          <span className="text-[8.5px] font-black uppercase tracking-wider text-orange-900 bg-orange-100 border border-orange-200 px-1.5 py-0.5 rounded">
             {finalRightPromo.badge || 'NEW COLLECTION'}
           </span>
-          <h4 className="font-display font-black text-xs uppercase leading-tight pt-1">
+          <h4 className="font-display font-black text-xs uppercase leading-tight pt-1 text-slate-900">
             {finalRightPromo.title || 'DISCOVER YOUR STYLE'}
           </h4>
-          <p className="text-[9.5px] text-slate-200 font-medium leading-snug">
+          <p className="text-[9.5px] text-slate-600 font-medium leading-snug">
             {finalRightPromo.subtitle || 'New drops. Fresh looks. Better prices.'}
           </p>
           <button
             type="button"
-            className="w-full bg-white text-[#B71C1C] hover:bg-slate-100 font-black text-[10px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-transform hover:scale-102 cursor-pointer text-center"
+            className="w-full bg-[#C91C1C] hover:bg-[#A81515] text-white font-black text-[10px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-transform group-hover:scale-102 cursor-pointer text-center"
           >
             {finalRightPromo.buttonText || 'SHOP NOW →'}
           </button>
