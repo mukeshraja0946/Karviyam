@@ -543,12 +543,12 @@ export default function ShopPage() {
         {/* ========================================================= */}
         <div className="hidden lg:flex gap-6 items-start h-[calc(100vh-140px)] overflow-hidden">
           {/* 1. LEFT FILTER SIDEBAR: INDEPENDENT VERTICAL SCROLL */}
-          <aside className="w-[250px] xl:w-[270px] shrink-0 h-full overflow-y-auto overscroll-contain pr-1.5 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
+          <aside className="w-[250px] xl:w-[270px] shrink-0 h-full overflow-y-auto overscroll-contain no-scrollbar pr-1.5 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
             {renderFilterSidebar()}
           </aside>
 
           {/* 2. MAIN PRODUCT CATALOG: INDEPENDENT VERTICAL SCROLL */}
-          <main className="flex-1 min-w-0 h-full overflow-y-auto overscroll-contain pr-1.5 space-y-4">
+          <main className="flex-1 min-w-0 h-full overflow-y-auto overscroll-contain no-scrollbar pr-1.5 space-y-4">
             {/* Results Header Bar */}
             <div className="flex items-center justify-between bg-white px-5 py-3 rounded-2xl border border-slate-200/90 shadow-2xs sticky top-0 z-10">
               <div>
@@ -754,7 +754,7 @@ export default function ShopPage() {
       {/* MOBILE FILTER DRAWER MODAL */}
       {mobileFilterOpen && (
         <div className="fixed inset-0 z-50 flex bg-slate-900/60 backdrop-blur-xs justify-start">
-          <div className="w-[300px] max-w-[85%] bg-white h-full shadow-2xl flex flex-col justify-between p-4 overflow-y-auto">
+          <div className="w-[300px] max-w-[85%] bg-white h-full shadow-2xl flex flex-col justify-between p-4 overflow-y-auto no-scrollbar">
             {renderFilterSidebar()}
 
             <div className="border-t border-slate-200 pt-3 mt-4 flex gap-2">
