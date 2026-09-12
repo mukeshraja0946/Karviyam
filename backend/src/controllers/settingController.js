@@ -579,6 +579,10 @@ exports.getFooterSettings = async (req, res, next) => {
       newsletterEnabled: settingsObj.newsletterEnabled !== undefined ? Boolean(settingsObj.newsletterEnabled) : true,
       columns: parsedColumns,
       socialLinks: parsedSocial,
+      aboutUsContent: settingsObj.aboutUsContent || 'Karviyam is India’s premier streetwear & luxury fashion destination. Founded with a vision to bring authentic high-street apparel, 925 sterling silver jewellery, and footwear to fashion enthusiasts nationwide.',
+      returnPolicyContent: settingsObj.returnPolicyContent || '<h3>Karviyam 30-Day Return & Replacement Policy</h3>\n<p>We want you to love your order! If you are not entirely satisfied, you can return or exchange any unworn, unwashed item within 30 days of receipt.</p>\n<h4>Return Guidelines:</h4>\n<ul>\n  <li>Items must be in original condition with tags intact.</li>\n  <li>Footwear must be returned in original shoebox.</li>\n  <li>Refunds are processed within 3-5 business days upon inspection.</li>\n</ul>',
+      termsContent: settingsObj.termsContent || '<h3>Terms of Service</h3>\n<p>By accessing and placing an order on Karviyam, you agree to be bound by these terms. All prices are in Indian Rupees (INR) inclusive of applicable taxes.</p>',
+      privacyContent: settingsObj.privacyContent || '<h3>Privacy Policy</h3>\n<p>Your privacy is paramount. We collect personal information solely to process orders, improve delivery, and send requested notifications. We never sell your data to third parties.</p>',
       b1Title: settingsObj.badge1Title || 'Free Delivery',
       b1Sub: settingsObj.badge1Sub || 'On orders above ₹499',
       b2Title: settingsObj.badge2Title || 'Easy Returns',
@@ -625,6 +629,11 @@ exports.updateFooterSettings = async (req, res, next) => {
     if (data.newsletterEnabled !== undefined) updates['newsletterEnabled'] = String(Boolean(data.newsletterEnabled));
     if (data.columns !== undefined) updates['footerColumns'] = typeof data.columns === 'object' ? JSON.stringify(data.columns) : String(data.columns);
     if (data.socialLinks !== undefined) updates['footerSocialLinks'] = typeof data.socialLinks === 'object' ? JSON.stringify(data.socialLinks) : String(data.socialLinks);
+    
+    if (data.aboutUsContent !== undefined) updates['aboutUsContent'] = String(data.aboutUsContent);
+    if (data.returnPolicyContent !== undefined) updates['returnPolicyContent'] = String(data.returnPolicyContent);
+    if (data.termsContent !== undefined) updates['termsContent'] = String(data.termsContent);
+    if (data.privacyContent !== undefined) updates['privacyContent'] = String(data.privacyContent);
     
     if (data.b1Title !== undefined) updates['badge1Title'] = String(data.b1Title);
     if (data.b1Sub !== undefined) updates['badge1Sub'] = String(data.b1Sub);

@@ -248,6 +248,11 @@ app.post('/api/admin/sidebar-config', optionalToken, requireAdmin, sidebarContro
 app.put('/api/admin/sidebar-config', optionalToken, requireAdmin, sidebarController.updateSidebarConfig);
 
 app.get('/api/footer-settings', settingController.getFooterSettings);
+app.get('/api/admin/footer-settings', settingController.getFooterSettings);
+app.post('/api/footer-settings', optionalToken, requireAdmin, settingController.updateFooterSettings);
+app.put('/api/footer-settings', optionalToken, requireAdmin, settingController.updateFooterSettings);
+app.post('/api/admin/footer-settings', optionalToken, requireAdmin, settingController.updateFooterSettings);
+app.put('/api/admin/footer-settings', optionalToken, requireAdmin, settingController.updateFooterSettings);
 
 app.use('/api/pincodes', pincodeRoutes);
 

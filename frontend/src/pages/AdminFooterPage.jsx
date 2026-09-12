@@ -178,12 +178,17 @@ export default function AdminFooterPage() {
   const handleSaveAll = async (e) => {
     if (e) e.preventDefault();
     setSaving(true);
+    toast.loading('Saving footer settings to database...', { id: 'footer-save-toast' });
 
     try {
-      const res = await api.post('/admin/footer-settings', formData).catch(() => api.post('/footer-settings', formData));
+      const res = await api.put('/admin/footer-settings', formData)
+        .catch(() => api.post('/admin/footer-settings', formData))
+        .catch(() => api.put('/footer-settings', formData))
+        .catch(() => api.post('/footer-settings', formData))
+        .catch(() => api.post('/settings/footer-settings', formData));
 
       if (res?.data?.success || res?.status === 200) {
-        toast.success('Footer management settings saved & updated live!');
+        toast.success('Footer management settings saved & updated live!', { id: 'footer-save-toast' });
         if (formData.logoUrl) {
           localStorage.setItem('karviyam_logo', formData.logoUrl);
         } else {
@@ -192,12 +197,13 @@ export default function AdminFooterPage() {
         window.dispatchEvent(new Event('karviyam_footer_updated'));
         window.dispatchEvent(new Event('karviyam_logo_updated'));
         window.dispatchEvent(new Event('storage'));
+        fetchFooterData();
       } else {
-        toast.error(res?.data?.message || 'Failed to save footer settings');
+        toast.error(res?.data?.message || 'Failed to save footer settings', { id: 'footer-save-toast' });
       }
     } catch (err) {
       console.error(err);
-      toast.error('Unable to save footer settings to database');
+      toast.error('Unable to save footer settings to database', { id: 'footer-save-toast' });
     } finally {
       setSaving(false);
     }
