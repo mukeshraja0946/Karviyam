@@ -23,7 +23,12 @@ import {
   Check,
   IndianRupee,
   ArrowRight,
-  Grid
+  Grid,
+  Zap,
+  CheckCircle2,
+  BadgePercent,
+  Layers,
+  ShoppingBag
 } from 'lucide-react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -140,6 +145,7 @@ export default function DesktopSidebarLeft() {
   const [quickCategories, setQuickCategories] = useState(DEFAULT_QUICK_CATEGORIES);
   const [whyShopItems, setWhyShopItems] = useState(DEFAULT_WHY_SHOP);
   const [popularProducts, setPopularProducts] = useState([]);
+  const [trendingShortProducts, setTrendingShortProducts] = useState([]);
   const [appCard, setAppCard] = useState(DEFAULT_APP_CARD);
   const [brandTrust, setBrandTrust] = useState(DEFAULT_BRAND_TRUST);
   const [finalLeftPromo, setFinalLeftPromo] = useState(DEFAULT_FINAL_LEFT_PROMO);
@@ -181,11 +187,11 @@ export default function DesktopSidebarLeft() {
 
   const fetchPopularProducts = async () => {
     try {
-      const res = await api.get('/products?size=2').catch(() => null);
-      const dataObj = res?.data?.data || res?.data;
-      const list = Array.isArray(dataObj?.content) ? dataObj.content : (Array.isArray(dataObj) ? dataObj : []);
-      if (list && list.length > 0) {
+      const res = await api.get('/products?limit=4').catch(() => null);
+      const list = res?.data?.data?.products || res?.data?.products || res?.data;
+      if (Array.isArray(list) && list.length > 0) {
         setPopularProducts(list.slice(0, 2));
+        setTrendingShortProducts(list.slice(2, 4));
       }
     } catch (e) {}
   };
@@ -310,6 +316,7 @@ export default function DesktopSidebarLeft() {
             src={resolveImageUrl(promoCard.imageUrl)}
             alt={promoCard.title || 'Festive Ad'}
             className="absolute inset-0 w-full h-full object-cover opacity-45 mix-blend-overlay group-hover:scale-105 transition-transform duration-700"
+            onError={handleImageError}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
 
@@ -487,7 +494,32 @@ export default function DesktopSidebarLeft() {
         </div>
       )}
 
-      {/* 9. BRAND / TRUST CARD (WHY KARVIYAM?) */}
+      {/* 9. BUDGET DEALS UNDER ₹499 */}
+      <div className="w-full bg-amber-500/10 border border-amber-400/40 rounded-xl p-3 space-y-2 shadow-2xs">
+        <div className="flex items-center justify-between">
+          <span className="text-[8.5px] font-black uppercase text-amber-900 bg-amber-300/60 px-1.5 py-0.5 rounded">
+            BUDGET STORE
+          </span>
+          <Zap className="w-3.5 h-3.5 text-amber-600" />
+        </div>
+        <div>
+          <h4 className="font-display font-black text-xs text-slate-900 uppercase leading-tight">
+            DEALS UNDER ₹499
+          </h4>
+          <p className="text-[9.5px] text-slate-600 font-medium pt-0.5">
+            Unbeatable budget fashion picks.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/shop?maxPrice=499')}
+          className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer text-center"
+        >
+          GRAB DEALS →
+        </button>
+      </div>
+
+      {/* 10. BRAND / TRUST CARD (WHY KARVIYAM?) */}
       {brandTrust && brandTrust.enabled !== false && (
         <div className="w-full bg-slate-900 text-white rounded-xl shadow-2xs p-3 space-y-2 border border-slate-800">
           <h4 className="font-display font-black text-xs uppercase tracking-wide text-amber-300 border-b border-slate-800 pb-1.5">
@@ -504,11 +536,131 @@ export default function DesktopSidebarLeft() {
         </div>
       )}
 
-      {/* 10. FINAL LEFT PROMOTION */}
+      {/* 11. TRENDING SHORT PICKS */}
+      {trendingShortProducts.length > 0 && (
+        <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+            <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1">
+              <span>TRENDING STYLES</span>
+              <Flame className="w-3 h-3 text-[#B71C1C]" />
+            </h4>
+          </div>
+          <div className="space-y-2">
+            {trendingShortProducts.map((prod) => (
+              <div
+                key={prod.id}
+                onClick={() => navigate(`/product/${prod.id}`)}
+                className="flex items-center gap-2 border border-slate-100 rounded-lg p-1.5 hover:border-slate-300 transition-colors cursor-pointer group"
+              >
+                <div className="w-12 h-12 bg-slate-50 rounded-md overflow-hidden flex items-center justify-center shrink-0 p-0.5">
+                  <img
+                    src={resolveImageUrl(prod.imageUrl || prod.images?.[0])}
+                    alt={prod.name}
+                    onError={(e) => handleImageError(e, prod.id)}
+                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h5 className="font-bold text-[10.5px] text-slate-900 leading-tight truncate group-hover:text-[#B71C1C]">
+                    {prod.name}
+                  </h5>
+                  <div className="flex items-center gap-1 pt-0.5">
+                    <span className="font-black text-[11px] text-[#B71C1C]">₹{prod.price}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 12. POPULAR CATEGORIES SHOWCASE GRID */}
+      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
+        <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide border-b border-slate-100 pb-1.5 flex items-center justify-between">
+          <span>TOP COLLECTIONS</span>
+          <Layers className="w-3.5 h-3.5 text-slate-400" />
+        </h4>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            onClick={() => navigate('/shop?category=T-Shirts')}
+            className="text-left bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg p-1.5 transition-colors cursor-pointer"
+          >
+            <span className="font-bold text-[10px] text-slate-800 block truncate">Oversized Tees</span>
+            <span className="text-[8.5px] text-slate-400 block font-medium">From ₹499</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/shop?category=Kurta+Sets')}
+            className="text-left bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg p-1.5 transition-colors cursor-pointer"
+          >
+            <span className="font-bold text-[10px] text-slate-800 block truncate">Kurta Sets</span>
+            <span className="text-[8.5px] text-slate-400 block font-medium">Up to 50%</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/shop?category=Sneakers')}
+            className="text-left bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg p-1.5 transition-colors cursor-pointer"
+          >
+            <span className="font-bold text-[10px] text-slate-800 block truncate">Casual Kicks</span>
+            <span className="text-[8.5px] text-slate-400 block font-medium">Starting ₹999</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/shop?category=Jewellery')}
+            className="text-left bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg p-1.5 transition-colors cursor-pointer"
+          >
+            <span className="font-bold text-[10px] text-slate-800 block truncate">925 Silver</span>
+            <span className="text-[8.5px] text-slate-400 block font-medium">New Store</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 13. SEASONAL STYLE BANNER */}
+      <div
+        onClick={() => navigate('/shop')}
+        className="w-full h-[190px] xl:h-[210px] rounded-xl overflow-hidden relative shadow-2xs text-white p-3.5 flex flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-800 to-[#8B0000] border border-slate-800 cursor-pointer group"
+      >
+        <div className="space-y-1">
+          <span className="text-[8px] font-black uppercase text-amber-300 tracking-wider bg-black/40 border border-amber-400/40 px-1.5 py-0.5 rounded">
+            SEASONAL DROP
+          </span>
+          <h4 className="font-display font-black text-xs uppercase leading-tight pt-1">
+            FRESH SUMMER LOOKS
+          </h4>
+          <p className="text-[9px] text-slate-300 font-medium leading-tight">
+            Lightweight fabrics & modern relaxed fits.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="w-full bg-white text-slate-900 font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-transform group-hover:scale-102 cursor-pointer text-center"
+        >
+          SHOP COLLECTION →
+        </button>
+      </div>
+
+      {/* 14. KARVIYAM QUALITY ASSURED BADGE CARD */}
+      <div className="w-full bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-3 space-y-1.5 shadow-2xs text-slate-900">
+        <div className="flex items-center gap-1.5 text-emerald-700">
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <h4 className="font-display font-black text-xs uppercase tracking-wide">
+            100% ORIGINAL
+          </h4>
+        </div>
+        <p className="text-[9.5px] text-slate-600 font-medium leading-snug">
+          Verified authentic fashion directly from top manufacturers.
+        </p>
+        <span className="inline-block text-[8.5px] font-black text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
+          ✓ QUALITY ASSURED
+        </span>
+      </div>
+
+      {/* 15. FINAL LEFT PROMOTION */}
       {finalLeftPromo && finalLeftPromo.enabled !== false && (
         <div
           onClick={() => navigate(finalLeftPromo.link || '/shop')}
-          className="w-full bg-gradient-to-br from-red-500 to-[#B71C1C] text-white rounded-xl p-3 space-y-1.5 cursor-pointer hover:shadow-md transition-shadow group"
+          className="w-full bg-gradient-to-br from-[#B71C1C] via-[#900000] to-slate-900 text-white rounded-xl p-3 space-y-1.5 cursor-pointer hover:shadow-md transition-shadow group"
         >
           <span className="text-[8.5px] font-black uppercase text-amber-200 tracking-wider block">
             {finalLeftPromo.badge || 'EXPLORE STYLES'}
@@ -521,7 +673,7 @@ export default function DesktopSidebarLeft() {
           </p>
           <button
             type="button"
-            className="w-full bg-white text-slate-900 font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors mt-1"
+            className="w-full bg-white text-[#B71C1C] font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors mt-1"
           >
             {finalLeftPromo.buttonText || 'EXPLORE NOW →'}
           </button>

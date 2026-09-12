@@ -22,7 +22,10 @@ import {
   Clock,
   Layers,
   Zap,
-  ShoppingBag
+  ShoppingBag,
+  HelpCircle,
+  Lightbulb,
+  Sparkle
 } from 'lucide-react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -42,11 +45,6 @@ const ICON_MAP = {
   Flame,
   Zap,
   Tag
-};
-
-const renderIcon = (iconName, fallbackIcon = Award) => {
-  const IconComp = ICON_MAP[iconName] || fallbackIcon;
-  return <IconComp className="w-3.5 h-3.5 text-[#B71C1C]" />;
 };
 
 const DEFAULT_TODAY_SPECIAL = {
@@ -121,8 +119,9 @@ export default function DesktopSidebarRight() {
   const [styleInspiration, setStyleInspiration] = useState(DEFAULT_STYLE_INSPIRATION);
   const [finalRightPromo, setFinalRightPromo] = useState(DEFAULT_FINAL_RIGHT_PROMO);
   
-  // Real Backend Trending Products for Carousel Widget
+  // Dynamic Product Datasets
   const [trendingProducts, setTrendingProducts] = useState([]);
+  const [newArrivals, setNewArrivals] = useState([]);
   const [currentProductIdx, setCurrentProductIdx] = useState(0);
 
   // Real Reviews State
@@ -154,12 +153,21 @@ export default function DesktopSidebarRight() {
     }
   };
 
-  const fetchTrendingProducts = async () => {
+  const fetchProducts = async () => {
     try {
-      const res = await api.get('/products?limit=8').catch(() => null);
-      const list = res?.data?.data?.products || res?.data?.products || res?.data;
-      if (Array.isArray(list) && list.length > 0) {
-        setTrendingProducts(list.slice(0, 8));
+      const [trendRes, newRes] = await Promise.all([
+        api.get('/products?limit=8').catch(() => null),
+        api.get('/products/new-arrivals').catch(() => null)
+      ]);
+
+      const trendList = trendRes?.data?.data?.products || trendRes?.data?.products || trendRes?.data;
+      if (Array.isArray(trendList) && trendList.length > 0) {
+        setTrendingProducts(trendList.slice(0, 8));
+      }
+
+      const newList = newRes?.data?.data || newRes?.data;
+      if (Array.isArray(newList) && newList.length > 0) {
+        setNewArrivals(newList.slice(0, 2));
       }
     } catch (e) {}
   };
@@ -176,12 +184,12 @@ export default function DesktopSidebarRight() {
 
   useEffect(() => {
     fetchConfig();
-    fetchTrendingProducts();
+    fetchProducts();
     fetchReviews();
 
     const handleUpdate = () => {
       fetchConfig();
-      fetchTrendingProducts();
+      fetchProducts();
       fetchReviews();
     };
 
@@ -611,7 +619,151 @@ export default function DesktopSidebarRight() {
         )}
       </div>
 
-      {/* 9. FINAL RIGHT PROMOTION */}
+      {/* 9. NEW ARRIVALS MINI SHOWCASE */}
+      {newArrivals.length > 0 && (
+        <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+            <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1">
+              <span>NEW ARRIVALS</span>
+              <Sparkles className="w-3 h-3 text-amber-500" />
+            </h4>
+          </div>
+          <div className="space-y-2">
+            {newArrivals.map((prod) => (
+              <div
+                key={prod.id}
+                onClick={() => navigate(`/product/${prod.id}`)}
+                className="flex items-center gap-2 border border-slate-100 rounded-lg p-1.5 hover:border-slate-300 transition-colors cursor-pointer group"
+              >
+                <div className="w-12 h-12 bg-slate-50 rounded-md overflow-hidden flex items-center justify-center shrink-0 p-0.5">
+                  <img
+                    src={resolveImageUrl(prod.imageUrl || prod.images?.[0])}
+                    alt={prod.name}
+                    onError={(e) => handleImageError(e, prod.id)}
+                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h5 className="font-bold text-[10.5px] text-slate-900 leading-tight truncate group-hover:text-[#B71C1C]">
+                    {prod.name}
+                  </h5>
+                  <div className="flex items-center gap-1 pt-0.5">
+                    <span className="font-black text-[11px] text-slate-900">₹{prod.price}</span>
+                    <span className="text-[8px] font-black text-emerald-700 bg-emerald-50 px-1 rounded ml-auto">NEW</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 10. EXCLUSIVE OFFER / INSTANT DISCOUNT */}
+      <div className="w-full bg-red-950/20 border border-red-500/30 text-slate-900 rounded-xl p-3 space-y-1.5 shadow-2xs">
+        <div className="flex items-center justify-between">
+          <span className="text-[8.5px] font-black uppercase text-[#B71C1C] bg-red-100 px-1.5 py-0.5 rounded">
+            INSTANT DISCOUNT
+          </span>
+          <Percent className="w-3.5 h-3.5 text-[#B71C1C]" />
+        </div>
+        <h4 className="font-display font-black text-xs uppercase leading-tight pt-1">
+          5% OFF ON UPI PAYMENTS
+        </h4>
+        <p className="text-[9.5px] text-slate-600 font-medium">
+          Instant automatic discount applied at checkout.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate('/shop')}
+          className="w-full bg-[#B71C1C] hover:bg-[#8E0000] text-white font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer text-center"
+        >
+          APPLY AT CHECKOUT →
+        </button>
+      </div>
+
+      {/* 11. LOW BUDGET PICKS STORE */}
+      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
+        <h4 className="font-display font-black text-xs text-slate-900 uppercase tracking-wide border-b border-slate-100 pb-1.5 flex items-center justify-between">
+          <span>BUDGET SHOPPING</span>
+          <Zap className="w-3.5 h-3.5 text-amber-500" />
+        </h4>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            onClick={() => navigate('/shop?maxPrice=299')}
+            className="text-left bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg p-1.5 transition-colors cursor-pointer"
+          >
+            <span className="font-bold text-[10px] text-slate-800 block truncate">Under ₹299</span>
+            <span className="text-[8.5px] text-slate-400 block font-medium">Super Value</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/shop?maxPrice=499')}
+            className="text-left bg-slate-50 hover:bg-red-50 border border-slate-100 rounded-lg p-1.5 transition-colors cursor-pointer"
+          >
+            <span className="font-bold text-[10px] text-slate-800 block truncate">Under ₹499</span>
+            <span className="text-[8.5px] text-slate-400 block font-medium">Best Deals</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 12. FASHION TIP & STYLE GUIDE CARD */}
+      <div className="w-full bg-slate-900 text-white rounded-xl shadow-2xs p-3 space-y-1.5 border border-slate-800">
+        <div className="flex items-center gap-1.5 text-amber-300">
+          <Lightbulb className="w-4 h-4 text-amber-400" />
+          <h4 className="font-display font-black text-xs uppercase tracking-wide">
+            FASHION STYLE TIP
+          </h4>
+        </div>
+        <p className="text-[9.5px] text-slate-300 font-medium leading-snug italic">
+          "Pair oversized printed tees with chunky white sneakers for an effortless casual look."
+        </p>
+        <span className="block text-[8px] font-bold text-slate-400 uppercase pt-0.5">
+          — KARVIYAM STYLE TEAM
+        </span>
+      </div>
+
+      {/* 13. CUSTOMER SUPPORT & ASSISTANCE CARD */}
+      <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2">
+        <div className="flex items-center gap-1.5 text-[#B71C1C]">
+          <Headphones className="w-4 h-4" />
+          <h4 className="font-display font-black text-xs uppercase tracking-wide text-slate-900">
+            NEED ASSISTANCE?
+          </h4>
+        </div>
+        <p className="text-[9.5px] text-slate-500 font-medium leading-tight">
+          24/7 Live order tracking & dedicated support.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate('/contact')}
+          className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-extrabold text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg transition-colors cursor-pointer text-center"
+        >
+          CONTACT SUPPORT →
+        </button>
+      </div>
+
+      {/* 14. PREMIUM STORE SHOWCASE */}
+      <div className="w-full bg-gradient-to-br from-amber-600 to-amber-800 text-white rounded-xl p-3 space-y-1.5 shadow-2xs">
+        <span className="text-[8px] font-black uppercase text-amber-200 tracking-wider bg-black/20 px-1.5 py-0.5 rounded">
+          PREMIUM STORE
+        </span>
+        <h4 className="font-display font-black text-xs uppercase leading-tight">
+          925 SILVER JEWELLERY
+        </h4>
+        <p className="text-[9.5px] text-amber-100 font-medium">
+          Handcrafted hallmark silver rings & pendants.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate('/shop?category=Jewellery')}
+          className="w-full bg-white text-amber-900 font-black text-[9.5px] uppercase tracking-wider py-1.5 rounded-lg shadow-2xs transition-colors mt-0.5 cursor-pointer text-center"
+        >
+          VISIT STORE →
+        </button>
+      </div>
+
+      {/* 15. FINAL RIGHT PROMOTION */}
       {finalRightPromo && finalRightPromo.enabled !== false && (
         <div
           onClick={() => navigate(finalRightPromo.link || '/shop')}
@@ -638,4 +790,3 @@ export default function DesktopSidebarRight() {
     </aside>
   );
 }
-
