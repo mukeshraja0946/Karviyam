@@ -60,13 +60,6 @@ export default function ProductCard({ product }) {
             loading="lazy"
           />
 
-          {/* Top-Left Karviyam's Choice Badge */}
-          {product.id % 2 === 1 && (
-            <div className="absolute top-2 left-0 bg-slate-900 text-white text-[9.5px] font-bold px-2 py-0.5 rounded-r-md flex items-center gap-1 shadow-xs z-10">
-              <span>Karviyam's</span>
-              <span className="text-amber-400 font-extrabold">Choice</span>
-            </div>
-          )}
 
           {/* Wishlist Button (Top-Right) */}
           <button
