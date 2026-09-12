@@ -21,7 +21,7 @@ const DEFAULT_HOMEPAGE_SECTIONS = [
   {
     id: 'trending',
     section_key: 'trending',
-    title: 'Trending',
+    title: 'Trending Now',
     subtitle: 'Popular styles customers are loving right now',
     enabled: true,
     display_type: 'horizontal',
@@ -57,6 +57,34 @@ const DEFAULT_HOMEPAGE_SECTIONS = [
     limit: 8,
     view_all_text: 'Explore Under ₹199 →',
     view_all_link: '/shop?max_price=399',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'new_arrivals',
+    section_key: 'new_arrivals',
+    title: 'New Arrivals',
+    subtitle: 'Explore the latest fashion drops & arrivals',
+    enabled: true,
+    display_type: 'horizontal',
+    position: 5,
+    limit: 8,
+    view_all_text: 'View All →',
+    view_all_link: '/shop?filter=new',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'best_sellers',
+    section_key: 'best_sellers',
+    title: 'Best Sellers',
+    subtitle: 'Customer favorite picks & top-rated items',
+    enabled: true,
+    display_type: 'horizontal',
+    position: 6,
+    limit: 8,
+    view_all_text: 'View All →',
+    view_all_link: '/shop?filter=bestsellers',
     selection_mode: 'auto',
     custom_product_ids: []
   }
@@ -181,6 +209,18 @@ exports.getPublicHomepageSections = async (req, res, next) => {
                 })
               };
               await recommendationController.getStartingPriceProducts(reqMock, resMock, () => {});
+            } else if (sec.id === 'new_arrivals' || sec.section_key === 'new_arrivals') {
+              const [newProds] = await pool.query(
+                `SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_active = true AND p.stock_quantity > 0 ORDER BY p.created_at DESC, p.id DESC LIMIT ?`,
+                [needed]
+              );
+              autoProducts = newProds;
+            } else if (sec.id === 'best_sellers' || sec.section_key === 'best_sellers') {
+              const [bestProds] = await pool.query(
+                `SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_active = true AND p.stock_quantity > 0 ORDER BY p.ratings_count DESC, p.id DESC LIMIT ?`,
+                [needed]
+              );
+              autoProducts = bestProds;
             } else {
               const [fallbackProds] = await pool.query(
                 `SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_active = true AND p.stock_quantity > 0 ORDER BY p.id DESC LIMIT ?`,
