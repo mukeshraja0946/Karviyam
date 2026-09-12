@@ -458,41 +458,6 @@ export default function DesktopSidebarLeft() {
         </div>
       )}
 
-      {/* 8. DOWNLOAD KARVIYAM APP */}
-      {appCard && appCard.enabled !== false && (
-        <div className="w-full bg-white rounded-xl border border-slate-200/90 shadow-2xs p-3 space-y-2 text-center">
-          <div className="flex items-center justify-center gap-1 text-[#B71C1C]">
-            <Smartphone className="w-4 h-4" />
-            <h4 className="font-display font-black text-xs uppercase tracking-wide text-slate-900">
-              {appCard.title || 'DOWNLOAD KARVIYAM APP'}
-            </h4>
-          </div>
-          <p className="text-[9.5px] text-slate-500 font-medium">
-            {appCard.subtitle || 'Shop Anytime, Anywhere'}
-          </p>
-
-          <div className="flex flex-col gap-1 pt-0.5">
-            <a
-              href={appCard.playStoreUrl || 'https://play.google.com'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-slate-900 hover:bg-slate-800 text-white text-[9.5px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 transition-colors"
-            >
-              <span>GET IT ON</span>
-              <span className="font-black">Google Play</span>
-            </a>
-            <a
-              href={appCard.appStoreUrl || 'https://apple.com'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-slate-900 hover:bg-slate-800 text-white text-[9.5px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 transition-colors"
-            >
-              <span>Download on the</span>
-              <span className="font-black">App Store</span>
-            </a>
-          </div>
-        </div>
-      )}
 
       {/* 9. BUDGET DEALS UNDER ₹499 */}
       <div className="w-full bg-amber-500/10 border border-amber-400/40 rounded-xl p-3 space-y-2 shadow-2xs">
