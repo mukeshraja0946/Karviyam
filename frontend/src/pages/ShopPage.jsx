@@ -580,15 +580,15 @@ export default function ShopPage() {
         {/* DESKTOP LAYOUT (≥ 1024px / lg) — NATURAL CONTENT FLOW     */}
         {/* ========================================================= */}
         <div className="hidden lg:flex gap-6 items-start">
-          {/* 1. LEFT FILTER SIDEBAR: STICKY NATURAL HEIGHT */}
-          <aside className="w-[250px] xl:w-[270px] shrink-0 sticky top-4 max-h-[calc(100vh-32px)] overflow-y-auto no-scrollbar bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
+          {/* 1. LEFT FILTER SIDEBAR: STICKY WITH INDEPENDENT SCROLL BELOW NAVBAR */}
+          <aside className="w-[250px] xl:w-[270px] shrink-0 sticky top-[132px] max-h-[calc(100vh-145px)] overflow-y-auto overscroll-contain no-scrollbar bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
             {renderFilterSidebar()}
           </aside>
 
           {/* 2. MAIN PRODUCT CATALOG: NATURAL VERTICAL FLOW */}
           <main className="flex-1 min-w-0 space-y-4">
-            {/* Results Header Bar */}
-            <div className="flex items-center justify-between bg-white px-5 py-3 rounded-2xl border border-slate-200/90 shadow-2xs sticky top-0 z-10">
+            {/* Results Header Bar (Sticks below Navbar) */}
+            <div className="flex items-center justify-between bg-white px-5 py-3 rounded-2xl border border-slate-200/90 shadow-2xs sticky top-[132px] z-20">
               <div>
                 <h1 className="font-display font-black text-lg text-slate-900 tracking-tight">
                   {pageTitleLabel}
