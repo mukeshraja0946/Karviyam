@@ -36,6 +36,14 @@ export const isValidImageUrl = (url) => {
   return false;
 };
 
+export const isValidAvatarUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === 'null' || trimmed === 'undefined' || trimmed === 'false') return false;
+  if (trimmed.includes('karviyam_product_placeholder') || trimmed.includes('unsplash.com')) return false;
+  return trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.includes('/uploads/') || trimmed.startsWith('data:image/') || trimmed.startsWith('blob:');
+};
+
 export const resolveImageUrl = (path, fallbackSeed = 0, updatedAt = null) => {
   if (!isValidImageUrl(path)) {
     const idx = Math.abs(Number(fallbackSeed) || 0) % DEFAULT_FALLBACK_IMAGES.length;

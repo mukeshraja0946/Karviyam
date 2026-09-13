@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
 import api from '../utils/api';
+import { isValidAvatarUrl } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import {
   Package, Search, Truck, RotateCcw, FileText, CheckCircle2, Clock,
@@ -351,8 +352,12 @@ export default function UserProfilePage() {
         {/* User Account Banner */}
         <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#131921] text-white flex items-center justify-center font-bold text-base shadow-2xs shrink-0">
-              {user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'U'}
+            <div className="w-10 h-10 rounded-full bg-[#131921] text-white flex items-center justify-center font-bold text-base shadow-2xs shrink-0 overflow-hidden">
+              {isValidAvatarUrl(user?.profilePicture) || isValidAvatarUrl(user?.avatar) ? (
+                <img src={resolveImageUrl(user?.profilePicture || user?.avatar)} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span>{user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'U'}</span>
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2">

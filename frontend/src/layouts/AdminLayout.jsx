@@ -35,7 +35,7 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import ErrorBoundary from '../components/ErrorBoundary';
 import api from '../services/api';
-import { resolveImageUrl } from '../utils/imageUtils';
+import { resolveImageUrl, isValidAvatarUrl } from '../utils/imageUtils';
 
 export default function AdminLayout() {
   const { logout, user } = useAuth();
@@ -485,11 +485,13 @@ export default function AdminLayout() {
 
           {/* Admin User Profile Header */}
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-bold text-xs flex items-center justify-center shadow-xs overflow-hidden border border-slate-200">
-              {adminPhoto ? (
-                <img src={resolveImageUrl(adminPhoto)} alt="Admin Avatar" className="w-full h-full object-cover" />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-black text-xs flex items-center justify-center shadow-2xs overflow-hidden border border-[#B71C1C] shrink-0">
+              {isValidAvatarUrl(adminPhoto) || isValidAvatarUrl(user?.profilePicture) || isValidAvatarUrl(user?.avatar) ? (
+                <img src={resolveImageUrl(adminPhoto || user?.profilePicture || user?.avatar)} alt="Admin Avatar" className="w-full h-full object-cover" />
               ) : (
-                'K'
+                <span className="font-display font-black text-xs uppercase text-white">
+                  {user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'K'}
+                </span>
               )}
             </div>
             <div className="hidden sm:block text-left">

@@ -34,7 +34,7 @@ import {
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { broadcastSyncEvent } from '../services/api';
-import { resolveImageUrl } from '../utils/imageUtils';
+import { resolveImageUrl, isValidAvatarUrl } from '../utils/imageUtils';
 
 const DEFAULT_MOBILE_SECTIONS = [
   { id: 'parent_categories', title: 'Quick Categories', subtitle: '', enabled: true, layout: 'horizontal', order: 1 },
@@ -861,10 +861,10 @@ export default function AdminSettingsPage() {
               <div className="flex flex-col sm:flex-row items-center gap-6 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <div className="relative shrink-0">
                   <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-black text-2xl flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
-                    {adminPhotoUrl ? (
+                    {isValidAvatarUrl(adminPhotoUrl) ? (
                       <img src={resolveImageUrl(adminPhotoUrl)} alt="Admin Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      'K'
+                      <span className="font-display font-black text-2xl uppercase text-white">K</span>
                     )}
                   </div>
                 </div>
