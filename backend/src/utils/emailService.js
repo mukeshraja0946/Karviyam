@@ -14,8 +14,8 @@ const getSmtpConfig = async () => {
 
   let envHost = process.env.SMTP_HOST || '';
   let envPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : null;
-  let envUser = process.env.SMTP_USER || process.env.MAIL_FROM || '';
-  let envPass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.HOSTINGER_SMTP_PASS || process.env.MAIL_PASS || '';
+  let envUser = process.env.SMTP_USER || '';
+  let envPass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || '';
 
   let host = envHost;
   let port = envPort;
@@ -475,7 +475,7 @@ const sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMessag
   for (const transporter of transporters) {
     try {
       const info = await transporter.sendMail(mailOptions);
-      const hostInfo = transporter.options?.host || 'smtp.hostinger.com';
+      const hostInfo = transporter.options?.host || 'smtp.gmail.com';
       const portInfo = transporter.options?.port || 465;
 
       console.log(`\n========================================`);

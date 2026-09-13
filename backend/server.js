@@ -37,6 +37,16 @@ const initDbSafe = async () => {
 const PORT = process.env.PORT || 3000;
 
 const server = app.listen(PORT, () => {
+  console.log(`\n========================================`);
+  console.log(`[EMAIL SMTP RUNTIME CONFIG]`);
+  console.log(`Git Commit: ${process.env.GIT_COMMIT_HASH || 'bdba17d'}`);
+  console.log(`Node ENV: ${process.env.NODE_ENV || 'production'}`);
+  console.log(`SMTP_HOST = ${process.env.SMTP_HOST || 'smtp.gmail.com'}`);
+  console.log(`SMTP_PORT = ${process.env.SMTP_PORT || '465'}`);
+  console.log(`SMTP_SECURE = ${process.env.SMTP_SECURE || 'true'}`);
+  console.log(`SMTP_USER = ${process.env.SMTP_USER || 'vanakkam@karviyam.com'}`);
+  console.log(`SMTP_PASSWORD_CONFIGURED = ${Boolean(process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASSWORD)}`);
+  console.log(`========================================\n`);
   console.log(`🚀 Karviyam Express Backend listening on ${PORT}`);
   initDbSafe();
 });
