@@ -228,12 +228,16 @@ export default function ShopPage() {
       const urlPromotion = searchParams.get('promotion') || searchParams.get('promo') || '';
       const urlMaxDiscount = searchParams.get('maxDiscount') || '';
       const urlMinDiscount = searchParams.get('minDiscount') || '';
+      const urlMaxPriceParam = searchParams.get('maxPrice') || '';
+      const urlMinPriceParam = searchParams.get('minPrice') || '';
 
       if (urlSearch) queryParts.push(`keyword=${encodeURIComponent(urlSearch)}`);
       if (urlFilter) queryParts.push(`filter=${encodeURIComponent(urlFilter)}`);
       if (urlPromotion) queryParts.push(`promotion=${encodeURIComponent(urlPromotion)}`);
       if (urlMaxDiscount) queryParts.push(`maxDiscount=${encodeURIComponent(urlMaxDiscount)}`);
       if (urlMinDiscount) queryParts.push(`minDiscount=${encodeURIComponent(urlMinDiscount)}`);
+      if (urlMaxPriceParam) queryParts.push(`maxPrice=${encodeURIComponent(urlMaxPriceParam)}`);
+      if (urlMinPriceParam) queryParts.push(`minPrice=${encodeURIComponent(urlMinPriceParam)}`);
       if (urlTag) queryParts.push(`tag=${encodeURIComponent(urlTag)}`);
       if (urlSubCat) queryParts.push(`subCategory=${encodeURIComponent(urlSubCat)}`);
       if (urlIsNew) queryParts.push(`isNewArrival=${encodeURIComponent(urlIsNew)}`);
@@ -755,6 +759,32 @@ export default function ShopPage() {
                   className="text-xs font-black text-[#C91C1C] hover:bg-red-100/80 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-red-200"
                 >
                   <span>Clear Promotion Filter</span>
+                  <span>✕</span>
+                </button>
+              </div>
+            )}
+            {Boolean(searchParams.get('maxPrice') || searchParams.get('minPrice')) && (
+              <div className="bg-[#FFF5F5] border border-red-200/90 rounded-2xl px-5 py-3 flex items-center justify-between shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <span className="bg-[#C91C1C] text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-full shadow-2xs">
+                    🏷️ PRICE FILTER
+                  </span>
+                  <span className="font-display font-extrabold text-xs text-[#C91C1C]">
+                    {searchParams.get('maxPrice') ? `PRODUCTS UNDER ₹${searchParams.get('maxPrice')}` : ''}
+                    {searchParams.get('minPrice') ? `ABOVE ₹${searchParams.get('minPrice')}` : ''}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = new URLSearchParams(searchParams);
+                    p.delete('maxPrice');
+                    p.delete('minPrice');
+                    setSearchParams(p, { replace: true });
+                  }}
+                  className="text-xs font-black text-[#C91C1C] hover:bg-red-100/80 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-red-200"
+                >
+                  <span>Clear Price Filter</span>
                   <span>✕</span>
                 </button>
               </div>
