@@ -88,19 +88,6 @@ const getTransporters = async () => {
     }));
   }
 
-  if (config.pass && config.user && config.host !== 'smtp.hostinger.com') {
-    list.push(nodemailer.createTransport({
-      host: 'smtp.hostinger.com',
-      port: 465,
-      secure: true,
-      auth: { user: config.user, pass: config.pass },
-      tls: { rejectUnauthorized: false },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000
-    }));
-  }
-
   return list;
 };
 

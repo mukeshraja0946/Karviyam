@@ -313,9 +313,28 @@ exports.updateOrderStatus = async (req, res, next) => {
 
 exports.getSmtpStatus = async (req, res, next) => {
   try {
-    const { verifySmtpConnection } = require('../utils/emailService');
-    const smtpStatus = await verifySmtpConnection();
-    return res.status(200).json(ApiResponse.success(smtpStatus, 'SMTP status checked'));
+    const { verifySmtpConnection, getSmtpConfig } = require('../utils/emailService');
+    const smtpVerification = await verifySmtpConnection();
+    const config = await getSmtpConfig();
+
+    const diagnosticPayload = {
+      environment: process.env.NODE_ENV || 'production',
+      smtpHost: process.env.SMTP_HOST || null,
+      smtpPort: process.env.SMTP_PORT || null,
+      smtpSecure: process.env.SMTP_SECURE || null,
+      smtpUser: process.env.SMTP_USER || null,
+      smtpPasswordConfigured: Boolean(process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASSWORD),
+      activeConfig: {
+        host: config.host,
+        port: config.port,
+        secure: config.secure,
+        user: config.user,
+        passwordConfigured: Boolean(config.pass)
+      },
+      smtpVerification
+    };
+
+    return res.status(200).json(ApiResponse.success(diagnosticPayload, 'SMTP diagnostic status retrieved'));
   } catch (err) {
     next(err);
   }

@@ -256,13 +256,26 @@ const triggerOrderEmailNotification = async ({ orderId, eventType = 'ORDER_PLACE
       attachments
     };
 
+    const { getSmtpConfig } = require('../utils/emailService');
+    const smtpConfig = await getSmtpConfig();
+
+    console.log(`\n========================================`);
+    console.log(`[EMAIL_SEND_START]`);
+    console.log(`Provider: Google Workspace SMTP (${smtpConfig.host}:${smtpConfig.port})`);
+    console.log(`From: Karviyam <${VERIFIED_FROM_EMAIL}>`);
+    console.log(`To: ${customerEmail}`);
+    console.log(`Type: ${eventType}`);
+    console.log(`Order ID: #ORD-${order.id}`);
+    console.log(`========================================\n`);
+
     const transporters = await getTransporters();
     let sentSuccess = false;
+    let sentInfo = null;
     let lastErr = null;
 
     for (const transporter of transporters) {
       try {
-        await transporter.sendMail(mailOptions);
+        sentInfo = await transporter.sendMail(mailOptions);
         sentSuccess = true;
         break;
       } catch (err) {
@@ -271,8 +284,18 @@ const triggerOrderEmailNotification = async ({ orderId, eventType = 'ORDER_PLACE
       }
     }
 
-    if (sentSuccess) {
-      console.log(`[Order Email SUCCESS]: Sent ${emailSubject} to ${customerEmail} for Order #ORD-${order.id}`);
+    if (sentSuccess && sentInfo) {
+      console.log(`\n========================================`);
+      console.log(`[EMAIL_SEND_SUCCESS]`);
+      console.log(`Provider: Google Workspace SMTP (${smtpConfig.host}:${smtpConfig.port})`);
+      console.log(`From: Karviyam <${VERIFIED_FROM_EMAIL}>`);
+      console.log(`To: ${customerEmail}`);
+      console.log(`Type: ${eventType}`);
+      console.log(`Order ID: #ORD-${order.id}`);
+      console.log(`Message ID: ${sentInfo.messageId || 'OK'}`);
+      console.log(`Response: ${sentInfo.response || '250 OK'}`);
+      console.log(`========================================\n`);
+
       await logEmailRecord({
         orderId: order.id,
         userId,
@@ -283,10 +306,21 @@ const triggerOrderEmailNotification = async ({ orderId, eventType = 'ORDER_PLACE
         status: 'SENT',
         failureReason: null
       });
-      return { success: true, email: customerEmail };
+      return { success: true, email: customerEmail, messageId: sentInfo.messageId };
     } else {
       const errMsg = lastErr?.message || 'Failed to send email via SMTP transporters';
-      console.error(`[Order Email FAILURE]: Failed to send to ${customerEmail} for Order #ORD-${order.id}: ${errMsg}`);
+      console.error(`\n========================================`);
+      console.error(`[EMAIL_SEND_FAILED]`);
+      console.error(`Provider: Google Workspace SMTP (${smtpConfig.host}:${smtpConfig.port})`);
+      console.error(`From: Karviyam <${VERIFIED_FROM_EMAIL}>`);
+      console.error(`To: ${customerEmail}`);
+      console.error(`Type: ${eventType}`);
+      console.error(`Order ID: #ORD-${order.id}`);
+      console.error(`Code: ${lastErr?.code || 'E_SMTP_FAIL'}`);
+      console.error(`Response Code: ${lastErr?.responseCode || '535'}`);
+      console.error(`Message: ${errMsg}`);
+      console.error(`========================================\n`);
+
       await logEmailRecord({
         orderId: order.id,
         userId,

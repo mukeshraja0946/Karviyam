@@ -125,6 +125,7 @@ router.post('/payment-settings/qr', upload.single('file'), settingController.upl
 router.delete('/payment-settings/qr', settingController.deleteQrImage);
 
 // Email Notifications & Templates Management Routes
+router.get('/email/smtp-status', adminController.getSmtpStatus);
 router.get('/email-notifications/settings', adminController.getEmailNotificationSettings);
 router.get('/email-notifications/smtp-status', adminController.getSmtpStatus);
 router.post('/email-notifications/settings', adminController.updateEmailNotificationSettings);
