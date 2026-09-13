@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Upload, AlertCircle, Eye, EyeOff, Film, FileSpreadsheet, FileText, Printer } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Upload, AlertCircle, Eye, EyeOff, Film, FileSpreadsheet, FileText, Printer, Percent } from 'lucide-react';
 import api from '../utils/api';
 import { broadcastSyncEvent } from '../services/api';
 import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
@@ -627,7 +627,7 @@ export default function AdminProductsPage() {
       price: p.price || '',
       oldPrice: p.oldPrice || '',
       costPrice: p.costPrice || '',
-      discountPercentage: p.discountPercentage || '',
+      discountPercentage: (p.discountPercentage !== undefined && p.discountPercentage !== null) ? String(p.discountPercentage) : '',
       stockQuantity: p.stockQuantity != null ? p.stockQuantity.toString() : '0',
       type: p.type || 'Clothing',
       gender: p.gender || 'Unisex',
@@ -762,7 +762,7 @@ export default function AdminProductsPage() {
         price: parseFloat(formData.price),
         oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
         costPrice: formData.costPrice ? parseFloat(formData.costPrice) : null,
-        discountPercentage: formData.discountPercentage ? parseFloat(formData.discountPercentage) : null,
+        discountPercentage: (formData.discountPercentage !== '' && formData.discountPercentage !== null && formData.discountPercentage !== undefined && !isNaN(formData.discountPercentage)) ? parseFloat(formData.discountPercentage) : null,
         stockQuantity: qty,
         categoryId: finalCatId,
         category_id: finalCatId,
@@ -879,6 +879,29 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleBulkUpdateDiscount = async () => {
+    if (selectedIds.length === 0) return;
+    const valStr = window.prompt(`Enter manual discount (%) for ${selectedIds.length} selected product(s):`, '30');
+    if (valStr === null) return;
+    const num = parseFloat(valStr);
+    if (isNaN(num) || num < 0 || num > 100) {
+      toast.error('Discount must be a number between 0% and 100%');
+      return;
+    }
+
+    toast.loading(`Updating discount to ${num}% for ${selectedIds.length} product(s)...`, { id: 'bulk-disc-toast' });
+    try {
+      await Promise.all(
+        selectedIds.map(id => api.put(`/products/${id}`, { discountPercentage: num }))
+      );
+      toast.success(`Successfully updated discount to ${num}% for ${selectedIds.length} product(s)! 🎉`, { id: 'bulk-disc-toast' });
+      fetchData();
+      setSelectedIds([]);
+    } catch (e) {
+      toast.error('Failed to update discounts for selected products', { id: 'bulk-disc-toast' });
+    }
+  };
+
   const filtered = products.filter(p =>
     (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
     (p.sku && p.sku.toLowerCase().includes(search.toLowerCase())) ||
@@ -897,13 +920,23 @@ export default function AdminProductsPage() {
 
         <div className="flex items-center gap-2">
           {selectedSkus && selectedSkus.length > 0 && (
-            <button
-              onClick={handleBulkDeleteSelected}
-              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3.5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer animate-in fade-in duration-150"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Delete Selected ({selectedSkus.length})</span>
-            </button>
+            <>
+              <button
+                onClick={handleBulkDeleteSelected}
+                className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3.5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer animate-in fade-in duration-150"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Selected ({selectedSkus.length})</span>
+              </button>
+
+              <button
+                onClick={handleBulkUpdateDiscount}
+                className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer animate-in fade-in duration-150"
+              >
+                <Percent className="w-4 h-4" />
+                <span>Bulk Set Discount ({selectedSkus.length})</span>
+              </button>
+            </>
           )}
 
           <button
@@ -996,6 +1029,7 @@ export default function AdminProductsPage() {
               <th className="p-4">SKU / Barcode</th>
               <th className="p-4">Category</th>
               <th className="p-4">Price / MRP</th>
+              <th className="p-4 text-center">Discount</th>
               <th className="p-4 text-center">Stock</th>
               <th className="p-4 text-center">Status</th>
               <th className="p-4 text-right">Actions</th>
@@ -1037,6 +1071,19 @@ export default function AdminProductsPage() {
                 <td className="p-4 font-bold text-[#B71C1C]">
                   ₹{p.price}
                   {p.oldPrice && <span className="text-[10px] text-slate-400 line-through block">₹{p.oldPrice}</span>}
+                </td>
+                <td className="p-4 text-center">
+                  {p.discountPercentage != null ? (
+                    <span className="bg-red-50 text-[#B71C1C] border border-red-200 px-2 py-0.5 rounded-full font-black text-xs">
+                      {p.discountPercentage}% OFF
+                    </span>
+                  ) : p.oldPrice && Number(p.oldPrice) > Number(p.price) ? (
+                    <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-full font-extrabold text-xs">
+                      {Math.round(((Number(p.oldPrice) - Number(p.price)) / Number(p.oldPrice)) * 100)}% OFF
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 text-xs">-</span>
+                  )}
                 </td>
                 <td className="p-4 text-center font-bold text-slate-800">{p.stockQuantity} Units</td>
                 <td className="p-4 text-center">
@@ -1145,7 +1192,7 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Selling Price (₹) *</label>
                   <input
@@ -1153,7 +1200,7 @@ export default function AdminProductsPage() {
                     required
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none focus:border-[#B71C1C]"
                   />
                 </div>
                 <div>
@@ -1162,20 +1209,54 @@ export default function AdminProductsPage() {
                     type="number"
                     value={formData.oldPrice}
                     onChange={(e) => setFormData({ ...formData, oldPrice: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none focus:border-[#B71C1C]"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Stock Quantity</label>
+                  <label className="block font-bold text-slate-700 mb-1">Discount (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={formData.discountPercentage}
+                    placeholder="e.g. 23"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || (!isNaN(val) && Number(val) >= 0 && Number(val) <= 100)) {
+                        setFormData({ ...formData, discountPercentage: val });
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none focus:border-[#B71C1C] font-bold text-[#B71C1C]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Stock Quantity *</label>
                   <input
                     type="number"
                     required
                     value={formData.stockQuantity}
                     onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none focus:border-[#B71C1C]"
                   />
                 </div>
               </div>
+
+              {Boolean(formData.price && formData.oldPrice && Number(formData.oldPrice) > Number(formData.price) && formData.discountPercentage !== '') && (
+                (() => {
+                  const calc = Math.round(((Number(formData.oldPrice) - Number(formData.price)) / Number(formData.oldPrice)) * 100);
+                  const manual = Number(formData.discountPercentage);
+                  if (Math.abs(calc - manual) >= 1) {
+                    return (
+                      <div className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200/90 rounded-xl p-2.5 font-semibold flex items-center gap-2 shadow-2xs">
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Manual discount ({manual}%) differs from calculated discount ({calc}%). Saved manual discount will be used on customer pages.</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()
+              )}
 
               {/* Product Color Variants & Galleries Management Section */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">

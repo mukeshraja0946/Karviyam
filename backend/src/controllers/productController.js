@@ -192,7 +192,11 @@ const mapProductRowToDTO = async (p) => {
     price: parseFloat(p.price || 0),
     oldPrice: p.old_price !== null && p.old_price !== undefined ? parseFloat(p.old_price) : null,
     costPrice: p.cost_price !== null && p.cost_price !== undefined ? parseFloat(p.cost_price) : null,
-    discountPercentage: p.discount_percentage !== null && p.discount_percentage !== undefined ? parseFloat(p.discount_percentage) : null,
+    discountPercentage: p.discount_percentage !== null && p.discount_percentage !== undefined
+      ? parseFloat(p.discount_percentage)
+      : (p.old_price && parseFloat(p.old_price) > parseFloat(p.price || 0)
+          ? Math.round(((parseFloat(p.old_price) - parseFloat(p.price)) / parseFloat(p.old_price)) * 100)
+          : null),
     stockQuantity: p.stock_quantity !== undefined ? p.stock_quantity : 0,
     imageUrl: primaryImageUrl,
     images: resolvedImages,

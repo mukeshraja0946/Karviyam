@@ -18,9 +18,11 @@ export default function ProductCard({ product }) {
 
   const price = product.price || 361;
   const oldPrice = product.oldPrice || Math.round(price * 4.2);
-  const discountPercent = oldPrice > price
-    ? Math.round(((oldPrice - price) / oldPrice) * 100)
-    : 82;
+  const discountPercent = product.discountPercentage !== null && product.discountPercentage !== undefined
+    ? Math.round(Number(product.discountPercentage))
+    : (oldPrice > price
+      ? Math.round(((oldPrice - price) / oldPrice) * 100)
+      : 0);
 
   const rating = Number(product.rating || 0);
   const reviewsCount = Number(product.reviewsCount || product.ratingsCount || 0);

@@ -314,6 +314,11 @@ exports.getAdminProducts = async (req, res, next) => {
       price: parseFloat(p.price || 0),
       oldPrice: p.old_price ? parseFloat(p.old_price) : null,
       costPrice: p.cost_price ? parseFloat(p.cost_price) : null,
+      discountPercentage: p.discount_percentage !== null && p.discount_percentage !== undefined
+        ? parseFloat(p.discount_percentage)
+        : (p.old_price && parseFloat(p.old_price) > parseFloat(p.price || 0)
+            ? Math.round(((parseFloat(p.old_price) - parseFloat(p.price)) / parseFloat(p.old_price)) * 100)
+            : null),
       stockQuantity: p.stock_quantity || 0,
       imageUrl: p.image_url,
       type: p.type || 'General',
@@ -368,16 +373,20 @@ exports.createProduct = async (req, res, next) => {
     }
 
     const mainImg = dto.imageUrl || (Array.isArray(dto.images) && dto.images.length > 0 ? dto.images[0] : null);
+    const discVal = dto.discountPercentage !== undefined && dto.discountPercentage !== '' && dto.discountPercentage !== null
+      ? parseFloat(dto.discountPercentage)
+      : (dto.discount !== undefined && dto.discount !== '' && dto.discount !== null ? parseFloat(dto.discount) : null);
 
     const [result] = await pool.query(
       `INSERT INTO products 
-       (category_id, subcategory_id, brand_id, name, sku, barcode, description, price, old_price, cost_price, stock_quantity, image_url, video_url, type, gender, brand, rating, is_featured, is_trending, is_best_seller, is_new_arrival, is_active, size, color, fabric, fit, material, weight, tags, review, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+       (category_id, subcategory_id, brand_id, name, sku, barcode, description, price, old_price, cost_price, discount_percentage, stock_quantity, image_url, video_url, type, gender, brand, rating, is_featured, is_trending, is_best_seller, is_new_arrival, is_active, size, color, fabric, fit, material, weight, tags, review, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         catId, subCatId, brandIdVal,
         dto.name, dto.sku || null, dto.barcode || null, dto.description || null,
         parseFloat(dto.price), dto.oldPrice ? parseFloat(dto.oldPrice) : null,
         dto.costPrice ? parseFloat(dto.costPrice) : null,
+        discVal,
         dto.stockQuantity !== undefined ? parseInt(dto.stockQuantity, 10) : 10,
         mainImg, dto.videoUrl || null,
         dto.type || 'General', dto.gender || 'Unisex', dto.brand || 'Karviyam',
@@ -437,6 +446,11 @@ exports.updateProduct = async (req, res, next) => {
     if (dto.price !== undefined) { updates.push('price = ?'); params.push(parseFloat(dto.price)); }
     if (dto.oldPrice !== undefined) { updates.push('old_price = ?'); params.push(dto.oldPrice ? parseFloat(dto.oldPrice) : null); }
     if (dto.costPrice !== undefined) { updates.push('cost_price = ?'); params.push(dto.costPrice ? parseFloat(dto.costPrice) : null); }
+    const rawDisc = dto.discountPercentage !== undefined ? dto.discountPercentage : (dto.discount !== undefined ? dto.discount : dto.discount_percentage);
+    if (rawDisc !== undefined) {
+      updates.push('discount_percentage = ?');
+      params.push(rawDisc !== '' && rawDisc !== null && !isNaN(rawDisc) ? parseFloat(rawDisc) : null);
+    }
     if (dto.stockQuantity !== undefined) { updates.push('stock_quantity = ?'); params.push(parseInt(dto.stockQuantity)); }
     if (dto.description !== undefined) { updates.push('description = ?'); params.push(dto.description); }
     if (dto.imageUrl !== undefined) { updates.push('image_url = ?'); params.push(dto.imageUrl); }

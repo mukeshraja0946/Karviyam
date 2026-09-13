@@ -510,7 +510,9 @@ export default function ProductDetailPage() {
 
   const price = product?.price || 1128;
   const oldPrice = product?.oldPrice || 1614;
-  const discountPercent = product?.discountPercent || Math.round(((oldPrice - price) / oldPrice) * 100) || 40;
+  const discountPercent = (product?.discountPercentage !== null && product?.discountPercentage !== undefined)
+    ? Math.round(Number(product.discountPercentage))
+    : (product?.discountPercent || Math.round(((oldPrice - price) / oldPrice) * 100) || 40);
 
   return (
     <div className="w-full text-slate-900 font-sans">
