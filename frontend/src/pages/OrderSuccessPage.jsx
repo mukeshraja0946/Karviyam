@@ -94,7 +94,7 @@ export default function OrderSuccessPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6 text-center font-sans">
+      <div className="min-h-[50vh] bg-[#FAFAFA] flex flex-col items-center justify-start pt-8 pb-12 px-4 text-center font-sans">
         <Loader2 className="w-10 h-10 text-[#B71C1C] animate-spin mb-3" />
         <h3 className="font-bold text-slate-800 text-sm">Loading Order & Payment Details...</h3>
       </div>
@@ -106,7 +106,7 @@ export default function OrderSuccessPage() {
   // ----------------------------------------------------
   if (!order || (!isConfirmed && !isFailed && !isCancelled && !isExpired)) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4 py-12 font-sans">
+      <div className="min-h-[60vh] bg-[#FAFAFA] flex justify-center items-start px-4 pt-4 pb-10 font-sans">
         <div className="bg-white max-w-lg w-full p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-2xl text-center space-y-6">
           
           <div className="w-20 h-20 bg-amber-100 border-4 border-amber-200 text-amber-600 rounded-full flex items-center justify-center mx-auto shadow-md">
@@ -184,7 +184,7 @@ export default function OrderSuccessPage() {
       : 'Your transaction was declined by the bank or payment provider.';
 
     return (
-      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4 py-12 font-sans">
+      <div className="min-h-[60vh] bg-[#FAFAFA] flex justify-center items-start px-4 pt-4 pb-10 font-sans">
         <div className="bg-white max-w-lg w-full p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-2xl text-center space-y-6">
           <div className="w-20 h-20 bg-red-100 border-4 border-red-200 text-red-600 rounded-full flex items-center justify-center mx-auto shadow-md">
             <XCircle className="w-10 h-10" />
@@ -233,7 +233,7 @@ export default function OrderSuccessPage() {
   // 3. VERIFIED SUCCESSFUL STATE
   // ----------------------------------------------------
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4 py-12 font-sans">
+    <div className="min-h-[60vh] bg-[#FAFAFA] flex justify-center items-start px-4 pt-4 pb-10 font-sans">
       <div className="bg-white max-w-lg w-full p-8 sm:p-10 rounded-3xl border border-slate-200 shadow-2xl text-center space-y-6">
         
         {/* Verified Success Badge */}

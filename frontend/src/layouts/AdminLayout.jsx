@@ -28,11 +28,14 @@ import {
   LogOut,
   Plus,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  Mail
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import ErrorBoundary from '../components/ErrorBoundary';
+import api from '../services/api';
+import { resolveImageUrl } from '../utils/imageUtils';
 
 export default function AdminLayout() {
   const { logout, user } = useAuth();
@@ -109,6 +112,7 @@ export default function AdminLayout() {
 
   // Custom Admin Logo State
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
+  const [adminPhoto, setAdminPhoto] = useState(() => localStorage.getItem('karviyam_admin_photo') || '');
 
   useEffect(() => {
     const updateLogo = () => {
@@ -121,6 +125,54 @@ export default function AdminLayout() {
       window.removeEventListener('karviyam_logo_updated', updateLogo);
     };
   }, []);
+
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        const res = await api.get('/admin/profile');
+        if (res.data?.success && res.data.data?.photoUrl) {
+          setAdminPhoto(res.data.data.photoUrl);
+          localStorage.setItem('karviyam_admin_photo', res.data.data.photoUrl);
+        }
+      } catch (e) {}
+    };
+
+    fetchAdminProfile();
+
+    const handlePhotoUpdated = () => {
+      const savedPhoto = localStorage.getItem('karviyam_admin_photo') || '';
+      setAdminPhoto(savedPhoto);
+      fetchAdminProfile();
+    };
+
+    window.addEventListener('storage', handlePhotoUpdated);
+    window.addEventListener('karviyam_admin_photo_updated', handlePhotoUpdated);
+    return () => {
+      window.removeEventListener('storage', handlePhotoUpdated);
+      window.removeEventListener('karviyam_admin_photo_updated', handlePhotoUpdated);
+    };
+  }, []);
+
+  // Automatically expand sidebar parent section if current route matches any child subItem
+  useEffect(() => {
+    const currentPath = location.pathname;
+    for (const section of navSections) {
+      if (section.subItems && section.subItems.length > 0) {
+        const isMatch = section.subItems.some(sub => {
+          const subBasePath = sub.path.split('?')[0];
+          if (currentPath === subBasePath) return true;
+          if (subBasePath !== '/admin' && currentPath.startsWith(subBasePath + '/')) return true;
+          if (sub.path === '/admin/emails' && (currentPath === '/admin/emails/logs' || currentPath === '/admin/email-notifications')) return true;
+          if (sub.path === '/admin/email-marketing' && currentPath === '/admin/mail') return true;
+          return false;
+        });
+        if (isMatch) {
+          setExpandedMenu(section.id);
+          break;
+        }
+      }
+    }
+  }, [location.pathname]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -191,7 +243,6 @@ export default function AdminLayout() {
         { name: 'Homepage Sections', path: '/admin/homepage-sections' },
         { name: 'Find Your Price', path: '/admin/find-your-price' },
         { name: 'Why Shop With Karviyam?', path: '/admin/why-shop' },
-        { name: 'Email Marketing', path: '/admin/email-marketing' },
         { name: 'Hero Banners', path: '/admin/banners' },
         { name: 'Promotional Cards', path: '/admin/promo-cards' },
         { name: 'Right Sidebar Banners', path: '/admin/right-sidebar-banners' },
@@ -216,6 +267,15 @@ export default function AdminLayout() {
         { name: 'Refund & Returns', path: '/admin/returns' },
         { name: 'Bank Account Details', path: '/admin/bank-account' },
         { name: 'Invoices & GST', path: '/admin/orders' },
+      ],
+    },
+    {
+      id: 'emails',
+      title: 'Emails',
+      icon: Mail,
+      subItems: [
+        { name: 'Email Marketing', path: '/admin/email-marketing' },
+        { name: 'Email Notifications & Templates', path: '/admin/emails' },
       ],
     },
     {
@@ -263,10 +323,10 @@ export default function AdminLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-[#1F2937] flex flex-col font-sans">
+    <div className="h-screen bg-[#FAFAFA] text-[#1F2937] flex flex-col font-sans overflow-hidden">
       
       {/* TOP HEADER */}
-      <header className="h-16 bg-white border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+      <header className="h-16 shrink-0 bg-white border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center justify-between z-30 shadow-xs">
         
         {/* Left Section: Logo & Sidebar Toggle */}
         <div className="flex items-center gap-3 sm:gap-4">
@@ -425,15 +485,19 @@ export default function AdminLayout() {
 
           {/* Admin User Profile Header */}
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-bold text-xs flex items-center justify-center shadow-xs">
-              K
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-bold text-xs flex items-center justify-center shadow-xs overflow-hidden border border-slate-200">
+              {adminPhoto ? (
+                <img src={resolveImageUrl(adminPhoto)} alt="Admin Avatar" className="w-full h-full object-cover" />
+              ) : (
+                'K'
+              )}
             </div>
             <div className="hidden sm:block text-left">
               <div className="text-xs font-bold text-slate-900 leading-tight">
                 Karviyam Admin
               </div>
               <div className="text-[10px] font-semibold text-[#B71C1C]">
-                Super Admin
+                vanakkam@karviyam.com
               </div>
             </div>
 
@@ -455,11 +519,11 @@ export default function AdminLayout() {
         
         {/* LEFT COLLAPSIBLE SIDEBAR */}
         <aside
-          className={`bg-white border-r border-[#E5E7EB] flex flex-col justify-between p-3 shrink-0 transition-all duration-300 z-20 ${
+          className={`bg-white border-r border-[#E5E7EB] flex flex-col justify-between p-3 shrink-0 transition-all duration-300 z-20 h-full ${
             sidebarCollapsed ? 'w-16' : 'w-64'
-          } ${mobileSidebarOpen ? 'fixed inset-y-0 left-0 w-64 shadow-2xl z-50' : 'hidden lg:flex'}`}
+          } ${mobileSidebarOpen ? 'fixed inset-y-0 left-0 w-64 shadow-2xl z-50 h-full' : 'hidden lg:flex h-full'}`}
         >
-          <nav className="space-y-1 overflow-y-auto">
+          <nav className="flex-1 space-y-1 overflow-y-auto no-scrollbar">
             {navSections.map((section) => {
               const Icon = section.icon;
               const hasSub = section.subItems && section.subItems.length > 0;
@@ -483,32 +547,58 @@ export default function AdminLayout() {
                 );
               }
 
+              const hasActiveChild = hasSub && section.subItems.some(sub => {
+                const subBasePath = sub.path.split('?')[0];
+                if (location.pathname === subBasePath) return true;
+                if (subBasePath !== '/admin' && location.pathname.startsWith(subBasePath + '/')) return true;
+                if (sub.path === '/admin/emails' && (location.pathname === '/admin/emails/logs' || location.pathname === '/admin/email-notifications')) return true;
+                if (sub.path === '/admin/email-marketing' && location.pathname === '/admin/mail') return true;
+                return false;
+              });
+
               return (
                 <div key={section.id} className="space-y-1">
                   <button
                     onClick={() => setExpandedMenu(isExpanded ? null : section.id)}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-[#F5F5F5] hover:text-slate-900 transition-colors"
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                      hasActiveChild
+                        ? 'text-[#B71C1C] font-bold bg-red-50/50'
+                        : 'text-slate-600 hover:bg-[#F5F5F5] hover:text-slate-900'
+                    }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Icon className="w-4 h-4 shrink-0 text-slate-400" />
+                      <Icon className={`w-4 h-4 shrink-0 ${hasActiveChild ? 'text-[#B71C1C]' : 'text-slate-400'}`} />
                       {!sidebarCollapsed && <span>{section.title}</span>}
                     </div>
                     {!sidebarCollapsed && (
-                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`w-3.5 h-3.5 ${hasActiveChild ? 'text-[#B71C1C]' : 'text-slate-400'} transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     )}
                   </button>
 
                   {!sidebarCollapsed && isExpanded && (
                     <div className="pl-9 space-y-1 border-l-2 border-slate-100 ml-3">
-                      {section.subItems.map((sub, idx) => (
-                        <Link
-                          key={idx}
-                          to={sub.path}
-                          className="block py-1.5 px-2 rounded-lg text-[11px] font-medium text-slate-600 hover:text-[#B71C1C] hover:bg-red-50 transition-colors"
-                        >
-                          {sub.name}
-                        </Link>
-                      ))}
+                      {section.subItems.map((sub, idx) => {
+                        const subBasePath = sub.path.split('?')[0];
+                        const isSubActive =
+                          location.pathname === subBasePath ||
+                          (subBasePath !== '/admin' && location.pathname.startsWith(subBasePath + '/')) ||
+                          (sub.path === '/admin/emails' && (location.pathname === '/admin/emails/logs' || location.pathname === '/admin/email-notifications')) ||
+                          (sub.path === '/admin/email-marketing' && location.pathname === '/admin/mail');
+
+                        return (
+                          <Link
+                            key={idx}
+                            to={sub.path}
+                            className={`block py-1.5 px-2.5 rounded-lg text-[11px] transition-colors ${
+                              isSubActive
+                                ? 'bg-red-50 text-[#B71C1C] font-bold shadow-2xs'
+                                : 'font-medium text-slate-600 hover:text-[#B71C1C] hover:bg-red-50'
+                            }`}
+                          >
+                            {sub.name}
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -518,14 +608,14 @@ export default function AdminLayout() {
 
           {/* Footer inside sidebar */}
           {!sidebarCollapsed && (
-            <div className="pt-3 border-t border-[#E5E7EB] text-[10px] text-slate-400 text-center font-medium">
+            <div className="pt-3 shrink-0 border-t border-[#E5E7EB] text-[10px] text-slate-400 text-center font-medium">
               Karviyam Enterprise v2.4
             </div>
           )}
         </aside>
 
         {/* MAIN WORKSPACE CONTENT */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 bg-[#F8FAFC]">
+        <main className="flex-1 overflow-y-auto no-scrollbar p-3 sm:p-4 bg-[#F8FAFC]">
           <div className="max-w-[1650px] mx-auto">
             <ErrorBoundary>
               <Outlet />

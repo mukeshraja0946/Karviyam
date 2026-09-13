@@ -7,14 +7,14 @@ const ApiResponse = require('../utils/apiResponse');
 
 const ensureSingleKarviyamAdminAccount = async () => {
   try {
-    // 1. Force name of all admin accounts to 'Karviyam Admin'
+    // 1. Force name of vanakkam@karviyam.com to 'Karviyam Admin' and role to 'admin'
     await pool.query(
-      "UPDATE users SET full_name = 'Karviyam Admin' WHERE LOWER(role) = 'admin' OR LOWER(email) IN ('vanakkam@karviyam.com', 'admin@karviyam.com')"
+      "UPDATE users SET full_name = 'Karviyam Admin', name = 'Karviyam Admin', role = 'admin' WHERE LOWER(email) = 'vanakkam@karviyam.com'"
     );
 
-    // 2. Demote any non-primary secondary accounts assigned as admin to 'customer'
+    // 2. Demote any other account assigned as admin to 'customer'
     await pool.query(
-      "UPDATE users SET role = 'customer' WHERE LOWER(role) = 'admin' AND LOWER(email) NOT IN ('vanakkam@karviyam.com', 'admin@karviyam.com')"
+      "UPDATE users SET role = 'customer' WHERE LOWER(role) = 'admin' AND LOWER(email) != 'vanakkam@karviyam.com'"
     );
 
     // 3. Ensure primary admin account exists in `users` table
@@ -22,7 +22,7 @@ const ensureSingleKarviyamAdminAccount = async () => {
     if (!existing || existing.length === 0) {
       const defaultHash = await bcrypt.hash('Karviyam@2026', 10);
       await pool.query(
-        "INSERT INTO users (full_name, email, password, role) VALUES ('Karviyam Admin', 'vanakkam@karviyam.com', ?, 'admin')",
+        "INSERT INTO users (name, full_name, email, password, role) VALUES ('Karviyam Admin', 'Karviyam Admin', 'vanakkam@karviyam.com', ?, 'admin')",
         [defaultHash]
       );
     }

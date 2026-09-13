@@ -122,13 +122,16 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
       if (res.data?.success || res.status === 200) {
         const d = res.data?.data || {};
         const created = d.createdCount ?? d.successCount ?? d.created ?? 0;
-        const updated = d.updatedCount ?? d.updated ?? 0;
+        const skipped = d.skippedCount ?? d.skipped ?? 0;
         const failed = d.failedCount ?? d.failed ?? 0;
 
         setReportLog(d);
 
-        // Success Toast Notification
-        toast.success(`Import Complete! Created: ${created}, Updated: ${updated}, Failed: ${failed}`);
+        if (skipped > 0 || failed > 0) {
+          toast.success(`Import completed! Added: ${created}, Skipped Duplicates: ${skipped}, Failed: ${failed}`);
+        } else {
+          toast.success(`Import completed successfully! ${created} product(s) added.`);
+        }
 
         // Broadcast global update events so all components across the app update immediately
         window.dispatchEvent(new CustomEvent(`karviyam_${type}_updated`));
@@ -137,17 +140,9 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
         window.dispatchEvent(new CustomEvent('karviyam_parent_categories_updated'));
         window.dispatchEvent(new Event('storage'));
 
-        // Refresh parent page table dataset
+        // Refresh parent page table dataset immediately
         if (onImportSuccess) {
-          await onImportSuccess(d);
-        }
-
-        // Clean up internal states and auto-close import popup immediately
-        setFile(null);
-        setFileName('');
-        setPreviewData(null);
-        if (onClose) {
-          onClose();
+          onImportSuccess(d);
         }
       } else {
         throw new Error(res.data?.message || 'Import failed');
@@ -156,7 +151,6 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
       console.error('Import execution error:', err);
       const errorMsg = err.response?.data?.message || err.message || 'Failed to execute import.';
       toast.error(errorMsg);
-      // Keep modal open on error so the user can inspect the error message and retry
     } finally {
       setProcessing(false);
     }
@@ -194,7 +188,7 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
               <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
               <span className="capitalize">Bulk {type.replace('-', ' ')} Import System</span>
             </h3>
-            <p className="text-[11px] text-slate-400">Complete non-destructive Excel backup & restore for all fields and media</p>
+            <p className="text-[11px] text-slate-400">Strict Excel product import with duplicate protection & validation</p>
           </div>
           <button
             onClick={onClose}
@@ -251,7 +245,7 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
           )}
 
           {/* Import Validation Preview Window */}
-          {previewData && !loading && (
+          {previewData && !loading && !reportLog && (
             <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
@@ -259,7 +253,8 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
                   <span>IMPORT PREVIEW SUMMARY</span>
                 </span>
                 <div className="flex items-center gap-2 font-bold text-[11px]">
-                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">Valid: {previewData.newCount || 0}</span>
+                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">New: {previewData.newCount || 0}</span>
+                  <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">Duplicates: {previewData.skipCount || 0}</span>
                   {previewData.errorCount > 0 && (
                     <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded-md">Errors: {previewData.errorCount}</span>
                   )}
@@ -281,23 +276,25 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium">
                     {previewData.previewRows?.map((row, idx) => (
-                      <tr key={idx} className={row.status === 'ERROR' ? 'bg-red-50/50' : ''}>
+                      <tr key={idx} className={row.status === 'ERROR' ? 'bg-red-50/50' : (row.status === 'DUPLICATE' ? 'bg-amber-50/50' : '')}>
                         <td className="p-2 font-mono">{row.rowNumber}</td>
                         {type === 'products' && <td className="p-2 font-mono font-bold text-slate-800">{row.sku}</td>}
                         <td className="p-2 truncate max-w-[180px]">{row.productName}</td>
                         <td className="p-2 font-bold">
-                          <span className={row.status === 'VALID' ? 'text-emerald-700' : 'text-slate-400'}>
+                          <span className={row.status === 'VALID' ? 'text-emerald-700' : (row.status === 'DUPLICATE' ? 'text-amber-700' : 'text-slate-400')}>
                             {row.action}
                           </span>
                         </td>
                         <td className="p-2 font-extrabold">
                           {row.status === 'VALID' ? (
                             <span className="text-emerald-600">VALID</span>
+                          ) : row.status === 'DUPLICATE' ? (
+                            <span className="text-amber-600">DUPLICATE</span>
                           ) : (
                             <span className="text-red-600">ERROR</span>
                           )}
                         </td>
-                        <td className="p-2 text-red-600 text-[10px]">
+                        <td className="p-2 text-slate-600 text-[10px]">
                           {row.errors?.length > 0 ? row.errors.join('; ') : 'OK'}
                         </td>
                       </tr>
@@ -308,24 +305,80 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
             </div>
           )}
 
-          {/* Results Summary & Error Download */}
+          {/* Results Summary Breakdown */}
           {reportLog && (
-            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl space-y-2 text-emerald-900">
+            <div className="space-y-3 bg-slate-50 p-5 rounded-2xl border border-slate-200">
               <div className="flex items-center justify-between">
-                <span className="font-bold flex items-center gap-1.5 text-xs">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Import Result: Created {reportLog.createdCount || 0} / Updated {reportLog.updatedCount || 0} / Failed {reportLog.failedCount || 0}</span>
-                </span>
+                <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <span>Product Import Completed</span>
+                </h4>
                 {reportLog.failedCount > 0 && (
                   <button
                     onClick={handleDownloadErrorReport}
-                    className="text-[11px] font-bold text-red-600 hover:underline cursor-pointer flex items-center gap-1 bg-white px-3 py-1 rounded-lg border border-red-200 shadow-2xs"
+                    className="text-xs font-bold text-red-600 hover:underline cursor-pointer flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-red-200 shadow-2xs"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download Excel Error Report</span>
+                    <Download className="w-4 h-4" />
+                    <span>Download Error Report</span>
                   </button>
                 )}
               </div>
+
+              {/* Metric Card Table */}
+              <div className="grid grid-cols-4 gap-3 text-center">
+                <div className="bg-white p-3 rounded-xl border border-slate-200">
+                  <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Total Rows</p>
+                  <p className="text-lg font-black text-slate-800">{reportLog.totalRows || 0}</p>
+                </div>
+                <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+                  <p className="text-[10px] uppercase tracking-wider font-bold text-emerald-700">Successfully Added</p>
+                  <p className="text-lg font-black text-emerald-800">{reportLog.createdCount || 0}</p>
+                </div>
+                <div className="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                  <p className="text-[10px] uppercase tracking-wider font-bold text-amber-700">Duplicate Skipped</p>
+                  <p className="text-lg font-black text-amber-800">{reportLog.skippedCount || 0}</p>
+                </div>
+                <div className="bg-red-50 p-3 rounded-xl border border-red-200">
+                  <p className="text-[10px] uppercase tracking-wider font-bold text-red-700">Failed</p>
+                  <p className="text-lg font-black text-red-800">{reportLog.failedCount || 0}</p>
+                </div>
+              </div>
+
+              {/* Skipped Rows List */}
+              {reportLog.skippedRows && reportLog.skippedRows.length > 0 && (
+                <div className="space-y-1.5 pt-2">
+                  <p className="font-bold text-amber-900 text-xs flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    <span>Duplicate Skipped Rows ({reportLog.skippedRows.length}):</span>
+                  </p>
+                  <div className="max-h-32 overflow-y-auto bg-white p-2.5 rounded-xl border border-slate-200 text-[11px] space-y-1 font-mono text-slate-700">
+                    {reportLog.skippedRows.map((sr, i) => (
+                      <div key={i} className="flex items-center justify-between border-b border-slate-100 last:border-0 pb-1 last:pb-0">
+                        <span className="font-bold text-slate-900">Row {sr.rowNumber} — SKU {sr.sku}</span>
+                        <span className="text-amber-700 font-sans text-[10px]">{sr.reason}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Failed Rows List */}
+              {reportLog.failedRows && reportLog.failedRows.length > 0 && (
+                <div className="space-y-1.5 pt-2">
+                  <p className="font-bold text-red-900 text-xs flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-red-600" />
+                    <span>Failed / Invalid Rows ({reportLog.failedRows.length}):</span>
+                  </p>
+                  <div className="max-h-32 overflow-y-auto bg-white p-2.5 rounded-xl border border-slate-200 text-[11px] space-y-1 text-slate-700">
+                    {reportLog.failedRows.map((fr, i) => (
+                      <div key={i} className="flex items-center justify-between border-b border-slate-100 last:border-0 pb-1 last:pb-0">
+                        <span className="font-bold text-red-700 font-mono">Row {fr.rowNumber} — SKU {fr.sku} ({fr.field})</span>
+                        <span className="text-slate-600 text-[10px]">{fr.problem}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -338,14 +391,16 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
               Close
             </button>
 
-            <button
-              onClick={handleExecuteImport}
-              disabled={!file || processing}
-              className="px-6 py-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold rounded-xl shadow-md disabled:opacity-50 cursor-pointer flex items-center gap-2"
-            >
-              {processing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              <span>Execute Import ({previewData?.totalRows || 0} Rows)</span>
-            </button>
+            {!reportLog && (
+              <button
+                onClick={handleExecuteImport}
+                disabled={!file || processing}
+                className="px-6 py-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold rounded-xl shadow-md disabled:opacity-50 cursor-pointer flex items-center gap-2"
+              >
+                {processing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                <span>Execute Import ({previewData?.totalRows || 0} Rows)</span>
+              </button>
+            )}
           </div>
 
         </div>

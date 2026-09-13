@@ -36,6 +36,23 @@ export const AuthProvider = ({ children }) => {
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
           setToken(storedToken);
+
+          // Synchronize profile with backend database
+          try {
+            const meRes = await api.get('/auth/me');
+            if (meRes.data && meRes.data.success && meRes.data.data) {
+              const freshUser = meRes.data.data;
+              setUser(freshUser);
+              localStorage.setItem('karviyam_user', JSON.stringify(freshUser));
+            }
+          } catch (meErr) {
+            if (meErr.response && meErr.response.status === 401) {
+              localStorage.removeItem('karviyam_token');
+              localStorage.removeItem('karviyam_user');
+              setUser(null);
+              setToken(null);
+            }
+          }
         } catch (e) {
           console.error('Failed to parse cached user data:', e);
           localStorage.removeItem('karviyam_token');
@@ -89,13 +106,13 @@ export const AuthProvider = ({ children }) => {
 
       // Fallback for admin credentials if server returns 403 / 500 / network error
       const cleanEmail = String(email || '').trim().toLowerCase();
-      const isAdminEmail = cleanEmail === 'vanakkam@karviyam.com' || cleanEmail === 'admin@karviyam.com';
+      const isAdminEmail = cleanEmail === 'vanakkam@karviyam.com';
       const allowedAdminPasswords = ['Karviyam@2026', 'Karviyam#2026!', 'Karviyam@2006', 'admin123'];
 
       if (isAdminEmail && allowedAdminPasswords.includes(String(password || '').trim())) {
         const fallbackUserData = {
-          id: 1,
-          email: cleanEmail,
+          id: 24,
+          email: 'vanakkam@karviyam.com',
           fullName: 'Karviyam Admin',
           role: 'admin',
           roles: ['ROLE_ADMIN', 'ROLE_USER']

@@ -279,6 +279,9 @@ exports.updateOrderStatus = async (req, res, next) => {
 
     if (cleanId) {
       try {
+        const [existingRows] = await pool.query('SELECT status FROM orders WHERE id = ?', [cleanId]);
+        const oldStatus = existingRows && existingRows.length > 0 ? existingRows[0].status : null;
+
         await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, cleanId]);
 
         if (status.toUpperCase() === 'DELIVERED') {
@@ -286,10 +289,664 @@ exports.updateOrderStatus = async (req, res, next) => {
         } else if (status.toUpperCase() === 'CANCELLED') {
           await pool.query("UPDATE payments SET payment_status = 'Failed' WHERE order_id = ? AND payment_status = 'Pending'", [cleanId]);
         }
+
+        // Trigger Status Email Notification
+        if (oldStatus && String(oldStatus).toUpperCase() !== String(status).toUpperCase()) {
+          const { triggerOrderEmailNotification } = require('../services/orderEmailService');
+          triggerOrderEmailNotification({
+            orderId: cleanId,
+            eventType: 'STATUS_UPDATE',
+            oldStatus,
+            newStatus: status
+          }).catch(e => console.error('[Admin Status Email Error]:', e));
+        }
       } catch (errQuery) {}
     }
 
     return res.status(200).json(ApiResponse.success({ id, status }, 'Order status updated successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Admin Email Notification Settings & Template Management Controllers
+
+exports.getSmtpStatus = async (req, res, next) => {
+  try {
+    const { verifySmtpConnection } = require('../utils/emailService');
+    const smtpStatus = await verifySmtpConnection();
+    return res.status(200).json(ApiResponse.success(smtpStatus, 'SMTP status checked'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getEmailNotificationSettings = async (req, res, next) => {
+  try {
+    const { verifySmtpConnection } = require('../utils/emailService');
+    const smtpStatus = await verifySmtpConnection();
+
+    const [settingsRows] = await pool.query(
+      "SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'email_%' OR setting_key LIKE 'enable_%' OR setting_key LIKE 'logo_%' OR setting_key LIKE 'smtp_%'"
+    );
+    const settingsMap = {};
+    settingsRows.forEach(r => {
+      if (r.setting_key !== 'smtp_pass' && r.setting_key !== 'smtp_password') {
+        settingsMap[r.setting_key] = r.setting_value === 'true' || r.setting_value === '1' ? true : (r.setting_value === 'false' || r.setting_value === '0' ? false : r.setting_value);
+      }
+    });
+
+    const [logoRows] = await pool.query(
+      "SELECT setting_value FROM settings WHERE setting_key IN ('email_logo_url', 'emailLogoUrl', 'logo_url', 'logoUrl') AND setting_value IS NOT NULL AND setting_value != '' ORDER BY id DESC LIMIT 1"
+    );
+    let emailLogoUrl = logoRows.length > 0 ? logoRows[0].setting_value : null;
+    if (emailLogoUrl && typeof emailLogoUrl === 'string' && emailLogoUrl.includes('/uploads/')) {
+      const match = emailLogoUrl.match(/\/uploads\/.+$/);
+      if (match) emailLogoUrl = match[0];
+    }
+
+    const [templates] = await pool.query('SELECT * FROM email_templates ORDER BY id ASC');
+
+    const [logs] = await pool.query(
+      `SELECT * FROM email_logs ORDER BY id DESC LIMIT 50`
+    );
+
+    return res.status(200).json(ApiResponse.success({
+      settings: {
+        emailNotificationsEnabled: settingsMap.email_notifications_enabled !== false,
+        enableOrderPlacedEmail: settingsMap.enable_order_placed_email !== false,
+        enableStatusUpdateEmail: settingsMap.enable_status_update_email !== false,
+        enableOutForDeliveryEmail: settingsMap.enable_out_for_delivery_email !== false,
+        enableDeliveredEmail: settingsMap.enable_delivered_email !== false,
+        enableCancelledEmail: settingsMap.enable_cancelled_email !== false,
+        enableRefundEmail: settingsMap.enable_refund_email !== false,
+        emailLogoUrl,
+        smtpHost: settingsMap.smtp_host || '',
+        smtpPort: settingsMap.smtp_port || '',
+        smtpUser: settingsMap.smtp_user || '',
+        smtpStatus
+      },
+      templates,
+      logs
+    }, 'Email notification settings retrieved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.uploadEmailLogo = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json(ApiResponse.error('No image file uploaded'));
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+
+    await pool.query(
+      `INSERT INTO settings (setting_key, setting_value) VALUES ('email_logo_url', ?) ON DUPLICATE KEY UPDATE setting_value = ?`,
+      [fileUrl, fileUrl]
+    );
+
+    return res.status(200).json(ApiResponse.success({ logoUrl: fileUrl, filename: req.file.filename }, 'Email logo uploaded and saved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.removeEmailLogo = async (req, res, next) => {
+  try {
+    await pool.query(
+      `UPDATE settings SET setting_value = '' WHERE setting_key IN ('email_logo_url', 'emailLogoUrl', 'logo_url', 'logoUrl')`
+    );
+    return res.status(200).json(ApiResponse.success({ logoUrl: null }, 'Custom email logo removed. Default logo restored.'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.exportEmailLogsExcel = async (req, res, next) => {
+  try {
+    const XLSX = require('xlsx');
+    const { eventType, status, recipientEmail, orderId, search } = req.query;
+
+    let whereClauses = [];
+    let params = [];
+
+    if (eventType && eventType !== 'ALL') {
+      whereClauses.push('(event_type = ? OR email_type = ?)');
+      params.push(eventType, eventType);
+    }
+    if (status && status !== 'ALL') {
+      whereClauses.push('status = ?');
+      params.push(status);
+    }
+    if (recipientEmail) {
+      whereClauses.push('recipient_email LIKE ?');
+      params.push(`%${recipientEmail}%`);
+    }
+    if (orderId) {
+      whereClauses.push('order_id = ?');
+      params.push(orderId);
+    }
+    if (search) {
+      whereClauses.push('(recipient_email LIKE ? OR order_id LIKE ? OR subject LIKE ? OR event_type LIKE ? OR email_type LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const [logs] = await pool.query(
+      `SELECT * FROM email_logs ${whereSql} ORDER BY id DESC`,
+      params
+    );
+
+    const excelRows = logs.map(r => ({
+      'Email ID': r.id,
+      'Event Type': r.event_type || r.email_type || 'N/A',
+      'Recipient Email': r.recipient_email || r.customer_email || 'N/A',
+      'Order ID': r.order_id ? `#ORD-${r.order_id}` : 'N/A',
+      'Subject': r.subject || 'N/A',
+      'Status': r.status || 'N/A',
+      'Sent At': r.created_at ? new Date(r.created_at).toLocaleString('en-IN') : 'N/A',
+      'Failure Reason': r.failure_reason || r.error_message || 'None'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Email Audit Logs');
+
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=Karviyam_Email_Delivery_Audit_Logs.xlsx');
+    return res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.exportEmailLogsPdf = async (req, res, next) => {
+  try {
+    const PDFDocument = require('pdfkit');
+    const { eventType, status, recipientEmail, orderId, search } = req.query;
+
+    let whereClauses = [];
+    let params = [];
+
+    if (eventType && eventType !== 'ALL') {
+      whereClauses.push('(event_type = ? OR email_type = ?)');
+      params.push(eventType, eventType);
+    }
+    if (status && status !== 'ALL') {
+      whereClauses.push('status = ?');
+      params.push(status);
+    }
+    if (recipientEmail) {
+      whereClauses.push('recipient_email LIKE ?');
+      params.push(`%${recipientEmail}%`);
+    }
+    if (orderId) {
+      whereClauses.push('order_id = ?');
+      params.push(orderId);
+    }
+    if (search) {
+      whereClauses.push('(recipient_email LIKE ? OR order_id LIKE ? OR subject LIKE ? OR event_type LIKE ? OR email_type LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const [logs] = await pool.query(
+      `SELECT * FROM email_logs ${whereSql} ORDER BY id DESC`,
+      params
+    );
+
+    const doc = new PDFDocument({ margin: 30, size: 'A4' });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=Karviyam_Email_Delivery_Audit_Report.pdf');
+
+    doc.pipe(res);
+
+    // Title
+    doc.fillColor('#B71C1C').fontSize(20).text('KARVIYAM', { align: 'center' });
+    doc.fillColor('#333333').fontSize(13).text('Email Delivery Audit Report', { align: 'center' });
+    doc.fontSize(9).fillColor('#666666').text(`Generated: ${new Date().toLocaleString('en-IN')}`, { align: 'center' });
+    doc.moveDown(1);
+
+    // Summary statistics
+    const totalCount = logs.length;
+    const sentCount = logs.filter(l => l.status === 'SENT').length;
+    const failedCount = logs.filter(l => l.status === 'FAILED').length;
+    const skippedCount = logs.filter(l => l.status === 'SKIPPED').length;
+
+    const startY = doc.y;
+    doc.rect(30, startY, 535, 30).fill('#F8FAFC').stroke('#E2E8F0');
+    doc.fillColor('#1E293B').fontSize(9).text(`Total Logs: ${totalCount}  |  Sent: ${sentCount}  |  Failed: ${failedCount}  |  Skipped: ${skippedCount}`, 45, startY + 10);
+    doc.moveDown(2);
+
+    // Table Header
+    const tableTop = doc.y + 10;
+    doc.fillColor('#1E293B').fontSize(9).font('Helvetica-Bold');
+    doc.text('ID', 35, tableTop);
+    doc.text('Event Type', 65, tableTop);
+    doc.text('Recipient', 170, tableTop);
+    doc.text('Order ID', 320, tableTop);
+    doc.text('Status', 385, tableTop);
+    doc.text('Sent At', 450, tableTop);
+
+    doc.moveTo(30, tableTop + 14).lineTo(565, tableTop + 14).stroke('#CBD5E1');
+
+    let position = tableTop + 20;
+    doc.font('Helvetica').fontSize(8);
+
+    logs.forEach((log) => {
+      if (position > 760) {
+        doc.addPage();
+        position = 40;
+      }
+
+      doc.fillColor('#475569');
+      doc.text(`#${log.id}`, 35, position);
+      doc.text(String(log.event_type || log.email_type || '').substring(0, 18), 65, position);
+      doc.text(String(log.recipient_email || log.customer_email || '').substring(0, 26), 170, position);
+      doc.text(log.order_id ? `#ORD-${log.order_id}` : '—', 320, position);
+
+      const statusColor = log.status === 'SENT' ? '#16A34A' : log.status === 'FAILED' ? '#DC2626' : '#D97706';
+      doc.fillColor(statusColor).text(log.status || 'N/A', 385, position);
+
+      doc.fillColor('#64748B').text(log.created_at ? new Date(log.created_at).toLocaleDateString('en-IN') : '—', 450, position);
+
+      position += 16;
+    });
+
+    doc.end();
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateEmailNotificationSettings = async (req, res, next) => {
+  try {
+    const { settings, templates } = req.body;
+
+    if (settings && typeof settings === 'object') {
+      const keysToSave = {
+        email_notifications_enabled: settings.emailNotificationsEnabled !== false ? 'true' : 'false',
+        enable_order_placed_email: settings.enableOrderPlacedEmail !== false ? 'true' : 'false',
+        enable_status_update_email: settings.enableStatusUpdateEmail !== false ? 'true' : 'false',
+        enable_out_for_delivery_email: settings.enableOutForDeliveryEmail !== false ? 'true' : 'false',
+        enable_delivered_email: settings.enableDeliveredEmail !== false ? 'true' : 'false',
+        enable_cancelled_email: settings.enableCancelledEmail !== false ? 'true' : 'false',
+        enable_refund_email: settings.enableRefundEmail !== false ? 'true' : 'false'
+      };
+
+      for (const [k, v] of Object.entries(keysToSave)) {
+        await pool.query(
+          `INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?`,
+          [k, v, v]
+        );
+      }
+    }
+
+    if (Array.isArray(templates)) {
+      for (const tpl of templates) {
+        if (tpl.id || tpl.template_key) {
+          await pool.query(
+            `UPDATE email_templates SET
+             subject = COALESCE(?, subject),
+             heading = COALESCE(?, heading),
+             body_html = COALESCE(?, body_html),
+             footer_text = COALESCE(?, footer_text),
+             button_text = COALESCE(?, button_text),
+             button_url = COALESCE(?, button_url),
+             is_enabled = COALESCE(?, is_enabled)
+             WHERE template_key = ? OR id = ?`,
+            [
+              tpl.subject || null,
+              tpl.heading || null,
+              tpl.body_html || tpl.bodyHtml || null,
+              tpl.footer_text || tpl.footerText || null,
+              tpl.button_text || tpl.buttonText || null,
+              tpl.button_url || tpl.buttonUrl || null,
+              tpl.is_enabled !== undefined ? (tpl.is_enabled ? 1 : 0) : null,
+              tpl.template_key || tpl.templateKey,
+              tpl.id || 0
+            ]
+          );
+        }
+      }
+    }
+
+    return res.status(200).json(ApiResponse.success(null, 'Email notification settings and templates saved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.previewEmailTemplate = async (req, res, next) => {
+  try {
+    const { templateKey = 'ORDER_PLACED', subject, heading, bodyHtml, buttonText, buttonUrl } = req.body;
+
+    const { getTemplateFromDb, replaceTemplatePlaceholders, generateFullOrderEmailHtml } = require('../services/orderEmailService');
+    const { getEmailLogoHeader } = require('../utils/emailService');
+
+    let baseTpl = await getTemplateFromDb(templateKey);
+
+    const sampleProductListHtml = `
+      <tr>
+        <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; width: 64px;">
+          <img src="https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=200" alt="Sample Product" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0;" />
+        </td>
+        <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top;">
+          <strong style="color: #0f172a; font-size: 13.5px; display: block; margin-bottom: 3px;">Karviyam Premium Silk Saree Edition</strong>
+          <span style="color: #64748b; font-size: 11px; font-family: monospace; display: block; margin-bottom: 4px;">SKU: KV-SAR-102</span>
+          <div><span style="display:inline-block; margin-right:8px; background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:11px;">Size: Free Size</span><span style="display:inline-block; background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:11px;">Color: Crimson Red</span></div>
+        </td>
+        <td align="center" style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; font-size: 13px; color: #475569; font-weight: 600;">
+          x1
+        </td>
+        <td align="right" style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; font-size: 13.5px; color: #0f172a; font-weight: 700;">
+          ₹1,399
+        </td>
+      </tr>
+    `;
+
+    const replacements = {
+      customer_name: 'Madhan Kumar',
+      order_id: 'ORD-17',
+      order_date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+      payment_method: 'Cash on Delivery',
+      payment_status: 'Cash on Delivery / Pending Collection',
+      order_total: '₹1,399',
+      subtotal: '₹1,399',
+      discount_amount: '₹0',
+      shipping_cost: 'FREE',
+      coupon_code: 'KARVIYAM10',
+      product_list_html: sampleProductListHtml,
+      delivery_address: '123 Heritage Lane, Anna Nagar, Salem, Tamil Nadu - 636105',
+      customer_phone: '+91 98765 43210',
+      current_location: 'Salem Distribution Center',
+      courier_partner: 'Express Logistics',
+      tracking_number: 'TRK-98765432',
+      estimated_delivery: '3-5 Business Days',
+      status_message: 'Package scanned at local facility',
+      delivery_status: 'OUT FOR DELIVERY',
+      track_order_url: `${process.env.FRONTEND_URL || 'https://karviyam.com'}/profile`,
+      shop_url: `${process.env.FRONTEND_URL || 'https://karviyam.com'}/shop`
+    };
+
+    const finalSubject = replaceTemplatePlaceholders(subject || baseTpl.subject, replacements);
+    const finalHeading = replaceTemplatePlaceholders(heading || baseTpl.heading, replacements);
+    const finalBody = replaceTemplatePlaceholders(bodyHtml || baseTpl.body_html, replacements);
+    const finalButtonText = buttonText || baseTpl.button_text || 'TRACK MY ORDER';
+    const finalButtonUrl = buttonUrl || baseTpl.button_url || 'https://karviyam.com/profile';
+
+    const { logoHeaderHtml } = await getEmailLogoHeader({ isPreview: true, req });
+
+    const fullHtml = generateFullOrderEmailHtml({
+      logoHeaderHtml,
+      heading: finalHeading,
+      customerName: 'Madhan Kumar',
+      orderId: '17',
+      orderDate: replacements.order_date,
+      paymentMethod: replacements.payment_method,
+      paymentStatus: replacements.payment_status,
+      productListHtml: sampleProductListHtml,
+      totalAmount: '1,399',
+      discountAmount: '0',
+      shippingCost: 'FREE',
+      customerPhone: replacements.customer_phone,
+      fullAddress: replacements.delivery_address,
+      currentLocation: replacements.current_location,
+      courierPartner: replacements.courier_partner,
+      trackingNumber: replacements.tracking_number,
+      estimatedDelivery: replacements.estimated_delivery,
+      statusMessage: replacements.status_message,
+      bodyHtml: finalBody,
+      buttonText: finalButtonText,
+      buttonUrl: finalButtonUrl,
+      supportEmail: 'vanakkam@karviyam.com'
+    });
+
+    return res.status(200).json(ApiResponse.success({
+      subject: finalSubject,
+      html: fullHtml
+    }, 'Email preview generated successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getEmailLogs = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page || 1);
+    const limit = parseInt(req.query.limit || 50);
+    const offset = (page - 1) * limit;
+
+    const { eventType, status, recipientEmail, orderId, search } = req.query;
+
+    let whereClauses = [];
+    let params = [];
+
+    if (eventType && eventType !== 'ALL') {
+      whereClauses.push('(event_type = ? OR email_type = ?)');
+      params.push(eventType, eventType);
+    }
+    if (status && status !== 'ALL') {
+      whereClauses.push('status = ?');
+      params.push(status);
+    }
+    if (recipientEmail) {
+      whereClauses.push('recipient_email LIKE ?');
+      params.push(`%${recipientEmail}%`);
+    }
+    if (orderId) {
+      whereClauses.push('order_id = ?');
+      params.push(orderId);
+    }
+    if (search) {
+      whereClauses.push('(recipient_email LIKE ? OR order_id LIKE ? OR subject LIKE ? OR event_type LIKE ? OR email_type LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const [logs] = await pool.query(
+      `SELECT * FROM email_logs ${whereSql} ORDER BY id DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    const [totalRows] = await pool.query(`SELECT COUNT(*) as cnt FROM email_logs ${whereSql}`, params);
+
+    return res.status(200).json(ApiResponse.success({
+      logs,
+      total: totalRows[0]?.cnt || 0,
+      page,
+      limit
+    }, 'Email logs retrieved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.clearEmailLogs = async (req, res, next) => {
+  try {
+    const [countResult] = await pool.query('SELECT COUNT(*) as cnt FROM email_logs');
+    const previousCount = countResult[0]?.cnt || 0;
+
+    await pool.query('DELETE FROM email_logs');
+
+    // Audit compliance log into audit_logs table (without polluting email_logs)
+    try {
+      await pool.query(
+        `INSERT INTO audit_logs (action, admin_name, entity_name, old_value, new_value, ip_address, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          'CLEAR_EMAIL_DELIVERY_AUDIT_LOGS',
+          req.user?.name || req.user?.email || 'Super Admin',
+          'EMAIL_LOGS',
+          `Deleted ${previousCount} audit log records`,
+          '0 records remaining',
+          req.ip || req.headers['x-forwarded-for'] || ''
+        ]
+      );
+    } catch (eAudit) {
+      console.warn('[Audit Log Warning] Could not record clear email logs activity:', eAudit.message);
+    }
+
+    return res.status(200).json(ApiResponse.success({
+      deletedCount: previousCount
+    }, 'All email delivery audit logs cleared successfully.'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.sendTestEmail = async (req, res, next) => {
+  try {
+    const { recipientEmail, templateKey = 'ORDER_PLACED', subject, heading, bodyHtml, buttonText, buttonUrl, footerText } = req.body;
+    if (!recipientEmail) {
+      return res.status(400).json(ApiResponse.error('Recipient email address is required'));
+    }
+
+    const { getTemplateFromDb, replaceTemplatePlaceholders, generateFullOrderEmailHtml } = require('../services/orderEmailService');
+    const { getSmtpConfig, getTransporters, getEmailLogoHeader } = require('../utils/emailService');
+
+    let baseTpl = await getTemplateFromDb(templateKey);
+
+    const sampleProductListHtml = `
+      <tr>
+        <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; width: 64px;">
+          <img src="https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=200" alt="Sample Product" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0;" />
+        </td>
+        <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top;">
+          <strong style="color: #0f172a; font-size: 13.5px; display: block; margin-bottom: 3px;">Karviyam Premium Silk Saree Edition</strong>
+          <span style="color: #64748b; font-size: 11px; font-family: monospace; display: block; margin-bottom: 4px;">SKU: KV-SAR-102</span>
+        </td>
+        <td align="center" style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; font-size: 13px; color: #475569; font-weight: 600;">x1</td>
+        <td align="right" style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; font-size: 13.5px; color: #0f172a; font-weight: 700;">₹1,399</td>
+      </tr>
+    `;
+
+    const replacements = {
+      customer_name: 'Test Customer',
+      customer_email: recipientEmail,
+      order_id: 'TEST-101',
+      order_date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+      payment_method: 'Online Payment / COD',
+      payment_status: 'PAID',
+      order_total: '₹1,399',
+      subtotal: '₹1,399',
+      discount_amount: '₹0',
+      shipping_cost: 'FREE',
+      product_list_html: sampleProductListHtml,
+      delivery_address: '123 Test Street, Karviyam HQ, Salem, Tamil Nadu - 636105',
+      customer_phone: '+91 98765 43210',
+      current_location: 'Salem Hub',
+      courier_partner: 'Express Logistics',
+      tracking_number: 'TEST-TRK-101',
+      estimated_delivery: '3-5 Business Days',
+      delivery_status: 'TEST DELIVERED',
+      track_order_url: `${process.env.FRONTEND_URL || 'https://karviyam.com'}/profile`,
+      shop_url: `${process.env.FRONTEND_URL || 'https://karviyam.com'}/shop`
+    };
+
+    const finalSubject = replaceTemplatePlaceholders(subject || baseTpl?.subject || `Test Email: ${templateKey}`, replacements);
+    const finalHeading = replaceTemplatePlaceholders(heading || baseTpl?.heading || 'Test Email Notification', replacements);
+    const finalBody = replaceTemplatePlaceholders(bodyHtml || baseTpl?.body_html || '<p>This is a test email sent from Karviyam Admin Panel.</p>', replacements);
+    const finalButtonText = buttonText || baseTpl?.button_text || 'VISIT STORE';
+    const finalButtonUrl = buttonUrl || baseTpl?.button_url || 'https://karviyam.com';
+    const finalFooterText = footerText || baseTpl?.footer_text || 'Karviyam Support';
+
+    const { logoHeaderHtml, attachments } = await getEmailLogoHeader({ req });
+    const fullHtml = generateFullOrderEmailHtml({
+      logoHeaderHtml,
+      heading: finalHeading,
+      customerName: 'Test Customer',
+      orderId: 'TEST-101',
+      orderDate: replacements.order_date,
+      paymentMethod: replacements.payment_method,
+      paymentStatus: replacements.payment_status,
+      productListHtml: sampleProductListHtml,
+      totalAmount: '1,399',
+      discountAmount: '0',
+      shippingCost: 'FREE',
+      customerPhone: replacements.customer_phone,
+      fullAddress: replacements.delivery_address,
+      currentLocation: replacements.current_location,
+      courierPartner: replacements.courier_partner,
+      trackingNumber: replacements.tracking_number,
+      estimatedDelivery: replacements.estimated_delivery,
+      statusMessage: 'Test notification dispatch',
+      bodyHtml: finalBody,
+      buttonText: finalButtonText,
+      buttonUrl: finalButtonUrl,
+      footerText: finalFooterText,
+      supportEmail: 'vanakkam@karviyam.com'
+    });
+
+    const smtpConfig = await getSmtpConfig();
+    const fromName = smtpConfig.fromName || 'Karviyam Admin';
+    const fromEmail = smtpConfig.fromEmail || smtpConfig.user || 'vanakkam@karviyam.com';
+    const fromHeader = `"${fromName}" <${fromEmail}>`;
+
+    const transporters = await getTransporters();
+    let sentInfo = null;
+    let lastErr = null;
+
+    if (!transporters || transporters.length === 0) {
+      try {
+        await pool.query(
+          `INSERT INTO email_logs (email_type, customer_email, order_id, subject, status, failure_reason)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [`TEST_${templateKey}`, recipientEmail, null, finalSubject, 'FAILED', 'No SMTP transporters available']
+        );
+      } catch (eLog) {
+        console.error('[TEST EMAIL LOG ERROR]:', eLog.message);
+      }
+      return res.status(400).json(ApiResponse.error('No SMTP transporters available. Please configure SMTP settings.'));
+    }
+
+    for (const transporter of transporters) {
+      try {
+        sentInfo = await transporter.sendMail({
+          from: fromHeader,
+          to: recipientEmail,
+          subject: `[TEST] ${finalSubject}`,
+          html: fullHtml,
+          attachments
+        });
+        console.log(`[TEST EMAIL SUCCESS]:`, sentInfo.messageId || sentInfo.response);
+        break;
+      } catch (e) {
+        lastErr = e;
+        console.warn(`[TEST EMAIL TRANSPORTER ERROR]:`, e.message);
+      }
+    }
+
+    try {
+      await pool.query(
+        `INSERT INTO email_logs (email_type, customer_email, order_id, subject, status, failure_reason)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          `TEST_${templateKey}`,
+          recipientEmail,
+          null,
+          finalSubject,
+          sentInfo ? 'SENT' : 'FAILED',
+          sentInfo ? null : (lastErr?.message || 'Failed to dispatch via transporters')
+        ]
+      );
+    } catch (eLog) {
+      console.error('[TEST EMAIL LOG ERROR]:', eLog.message);
+    }
+
+    if (sentInfo) {
+      return res.status(200).json(ApiResponse.success(null, `Test email successfully sent to ${recipientEmail}`));
+    } else {
+      return res.status(500).json(ApiResponse.error(`Failed to send test email: ${lastErr?.message || 'Transporter authentication or connection failed'}`));
+    }
   } catch (err) {
     next(err);
   }
@@ -1256,6 +1913,54 @@ exports.globalAdminSearch = async (req, res, next) => {
       customers,
       categories
     }, 'Global search results retrieved successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getAdminProfile = async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT setting_value FROM settings WHERE setting_key IN ('admin_profile_photo', 'adminPhotoUrl') AND setting_value IS NOT NULL AND setting_value != '' ORDER BY id DESC LIMIT 1"
+    );
+    let photoUrl = rows.length > 0 ? rows[0].setting_value : null;
+
+    return res.status(200).json(ApiResponse.success({
+      fullName: 'Karviyam Admin',
+      email: 'vanakkam@karviyam.com',
+      role: 'Super Admin',
+      photoUrl
+    }, 'Admin profile fetched successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.uploadAdminProfilePhoto = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json(ApiResponse.error('No image file uploaded'));
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+
+    await pool.query(
+      `INSERT INTO settings (setting_key, setting_value) VALUES ('admin_profile_photo', ?) ON DUPLICATE KEY UPDATE setting_value = ?`,
+      [fileUrl, fileUrl]
+    );
+
+    return res.status(200).json(ApiResponse.success({ photoUrl: fileUrl, filename: req.file.filename }, 'Admin profile photo uploaded successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.removeAdminProfilePhoto = async (req, res, next) => {
+  try {
+    await pool.query(
+      `UPDATE settings SET setting_value = '' WHERE setting_key IN ('admin_profile_photo', 'adminPhotoUrl')`
+    );
+    return res.status(200).json(ApiResponse.success({ photoUrl: null }, 'Admin profile photo removed'));
   } catch (err) {
     next(err);
   }

@@ -121,6 +121,18 @@ export default function CustomerSettingsPage() {
           twoFactorEnabled: !!data.twoFactorEnabled,
         });
 
+        // Also update local storage cached user session so email & profile remain in sync
+        const savedUser = JSON.parse(localStorage.getItem('karviyam_user') || '{}');
+        if (data.email || data.fullName) {
+          const updatedUser = {
+            ...savedUser,
+            email: data.email || savedUser.email,
+            fullName: data.fullName || savedUser.fullName,
+            phone: data.phone || savedUser.phone,
+          };
+          localStorage.setItem('karviyam_user', JSON.stringify(updatedUser));
+        }
+
         if (Array.isArray(data.addresses)) {
           setAddresses(data.addresses);
           localStorage.setItem('karviyam_customer_addresses', JSON.stringify(data.addresses));
@@ -460,29 +472,6 @@ export default function CustomerSettingsPage() {
                   <span>Personal Information</span>
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">Update your customer profile details & personal contact info</p>
-              </div>
-
-              {/* Profile Avatar Box */}
-              <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-full bg-[#B71C1C] text-white font-black text-xl flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
-                    {profileData.profilePhoto ? (
-                      <img src={profileData.profilePhoto} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      profileData.fullName ? profileData.fullName[0].toUpperCase() : 'U'
-                    )}
-                  </div>
-                </div>
-                <div className="flex-1 space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">Profile Photo URL</label>
-                  <input
-                    type="url"
-                    value={profileData.profilePhoto}
-                    onChange={(e) => setProfileData({ ...profileData, profilePhoto: e.target.value })}
-                    placeholder="https://example.com/my-photo.jpg"
-                    className="w-full bg-white text-xs p-2.5 rounded-xl border border-slate-200 outline-none focus:border-[#B71C1C]"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">

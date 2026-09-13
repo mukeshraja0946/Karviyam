@@ -27,11 +27,14 @@ import {
   CheckCircle2,
   Grid,
   Layers,
-  Loader2
+  Loader2,
+  Clock,
+  User
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { broadcastSyncEvent } from '../services/api';
+import { resolveImageUrl } from '../utils/imageUtils';
 
 const DEFAULT_MOBILE_SECTIONS = [
   { id: 'parent_categories', title: 'Quick Categories', subtitle: '', enabled: true, layout: 'horizontal', order: 1 },
@@ -152,6 +155,88 @@ export default function AdminSettingsPage() {
     return DEFAULT_MOBILE_SECTIONS;
   });
 
+  // Email Notification Settings State
+  const [emailSettings, setEmailSettings] = useState({
+    emailNotificationsEnabled: true,
+    enableOrderPlacedEmail: true,
+    enableStatusUpdateEmail: true,
+    enableOutForDeliveryEmail: true,
+    enableDeliveredEmail: true,
+    enableCancelledEmail: true,
+    enableRefundEmail: true
+  });
+
+  const [emailTemplates, setEmailTemplates] = useState([]);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState('ORDER_PLACED');
+  const [emailLogs, setEmailLogs] = useState([]);
+  const [savingEmailSettings, setSavingEmailSettings] = useState(false);
+
+  // Email Preview Modal State
+  const [showOrderEmailPreviewModal, setShowOrderEmailPreviewModal] = useState(false);
+  const [emailPreviewSubject, setEmailPreviewSubject] = useState('');
+  const [emailPreviewHtml, setEmailPreviewHtml] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const fetchEmailNotificationSettings = async () => {
+    try {
+      const res = await api.get('/admin/email-notifications/settings').catch(() => null);
+      const data = res?.data?.data || res?.data;
+      if (data) {
+        if (data.settings) setEmailSettings(data.settings);
+        if (Array.isArray(data.templates) && data.templates.length > 0) setEmailTemplates(data.templates);
+        if (Array.isArray(data.logs)) setEmailLogs(data.logs);
+      }
+    } catch (e) {
+      console.error('Error fetching email notification settings:', e);
+    }
+  };
+
+  const handleSaveEmailNotificationSettings = async () => {
+    setSavingEmailSettings(true);
+    toast.loading('Saving email notification settings & templates...', { id: 'email-settings-toast' });
+    try {
+      await api.post('/admin/email-notifications/settings', {
+        settings: emailSettings,
+        templates: emailTemplates
+      });
+      toast.success('Email notification settings & templates saved successfully!', { id: 'email-settings-toast' });
+      await fetchEmailNotificationSettings();
+    } catch (e) {
+      toast.error('Failed to save email settings.', { id: 'email-settings-toast' });
+    } finally {
+      setSavingEmailSettings(false);
+    }
+  };
+
+  const handlePreviewOrderEmail = async (template) => {
+    setPreviewLoading(true);
+    setShowOrderEmailPreviewModal(true);
+    try {
+      const payload = {
+        templateKey: template.template_key || template.templateKey || selectedTemplateKey,
+        subject: template.subject,
+        heading: template.heading,
+        bodyHtml: template.body_html || template.bodyHtml,
+        buttonText: template.button_text || template.buttonText,
+        buttonUrl: template.button_url || template.buttonUrl
+      };
+      const res = await api.post('/admin/email-notifications/preview', payload);
+      const data = res?.data?.data || res?.data;
+      if (data) {
+        setEmailPreviewSubject(data.subject || '');
+        setEmailPreviewHtml(data.html || '');
+      }
+    } catch (e) {
+      toast.error('Failed to generate email preview.');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleUpdateTemplate = (key, field, val) => {
+    setEmailTemplates(prev => prev.map(t => (t.template_key === key || t.templateKey === key) ? { ...t, [field]: val } : t));
+  };
+
   const handleToggleSection = (id) => {
     setMobileSections(prev => prev.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s));
   };
@@ -234,6 +319,67 @@ export default function AdminSettingsPage() {
     maintenanceShowSocial: true,
     maintenanceAllowSearchEngines: true,
   });
+
+  const [adminPhotoUrl, setAdminPhotoUrl] = useState(() => localStorage.getItem('karviyam_admin_photo') || '');
+  const [uploadingAdminPhoto, setUploadingAdminPhoto] = useState(false);
+
+  useEffect(() => {
+    const fetchAdminPhoto = async () => {
+      try {
+        const res = await api.get('/admin/profile');
+        if (res.data?.success && res.data.data?.photoUrl) {
+          setAdminPhotoUrl(res.data.data.photoUrl);
+          localStorage.setItem('karviyam_admin_photo', res.data.data.photoUrl);
+        }
+      } catch (e) {}
+    };
+    fetchAdminPhoto();
+  }, []);
+
+  const handleAdminPhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const toastId = toast.loading('Uploading admin profile photo...');
+    setUploadingAdminPhoto(true);
+    try {
+      const res = await api.post('/admin/profile/photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (res.data && res.data.success) {
+        toast.success('Admin profile photo updated successfully!', { id: toastId });
+        const newPhoto = res.data.data.photoUrl;
+        setAdminPhotoUrl(newPhoto);
+        localStorage.setItem('karviyam_admin_photo', newPhoto);
+        window.dispatchEvent(new Event('karviyam_admin_photo_updated'));
+      } else {
+        toast.error(res.data?.message || 'Photo upload failed', { id: toastId });
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload admin photo', { id: toastId });
+    } finally {
+      setUploadingAdminPhoto(false);
+    }
+  };
+
+  const handleRemoveAdminPhoto = async () => {
+    const toastId = toast.loading('Removing admin profile photo...');
+    try {
+      const res = await api.post('/admin/profile/photo/remove');
+      if (res.data && res.data.success) {
+        toast.success('Admin profile photo removed', { id: toastId });
+        setAdminPhotoUrl('');
+        localStorage.removeItem('karviyam_admin_photo');
+        window.dispatchEvent(new Event('karviyam_admin_photo_updated'));
+      }
+    } catch (err) {
+      toast.error('Failed to remove photo', { id: toastId });
+    }
+  };
 
   useEffect(() => {
     try {
@@ -702,13 +848,69 @@ export default function AdminSettingsPage() {
 
       <form onSubmit={handleSave} className="space-y-6">
         
-        {/* Tab 1: Company Information */}
+        {/* Tab 1: Company Information & Admin Profile */}
         {activeTab === 'company' && (
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4 text-xs">
-            <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-[#B71C1C]" />
-              <span>Company Legal & Tax Details (Printed on Invoices)</span>
-            </h3>
+          <div className="space-y-6">
+            {/* ADMIN PROFILE & PHOTO UPLOAD CARD */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4 text-xs">
+              <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
+                <User className="w-4 h-4 text-[#B71C1C]" />
+                <span>Admin Profile & Avatar</span>
+              </h3>
+
+              <div className="flex flex-col sm:flex-row items-center gap-6 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div className="relative shrink-0">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-black text-2xl flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
+                    {adminPhotoUrl ? (
+                      <img src={resolveImageUrl(adminPhotoUrl)} alt="Admin Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      'K'
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex-1 space-y-2 text-center sm:text-left">
+                  <div>
+                    <div className="font-extrabold text-slate-900 text-sm">Karviyam Admin</div>
+                    <div className="text-xs font-semibold text-[#B71C1C] flex items-center gap-1.5 justify-center sm:justify-start mt-0.5 font-mono">
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>vanakkam@karviyam.com</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-1 justify-center sm:justify-start">
+                    <label className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#D32F2F] to-[#B71C1C] text-white font-extrabold text-xs rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer">
+                      <Upload className="w-4 h-4" />
+                      <span>{uploadingAdminPhoto ? 'Uploading Photo...' : 'Upload Profile Photo'}</span>
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                        onChange={handleAdminPhotoUpload}
+                        disabled={uploadingAdminPhoto}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {adminPhotoUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAdminPhoto}
+                        className="px-3.5 py-2 bg-slate-200 hover:bg-rose-100 hover:text-rose-700 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Remove Photo
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-400">Allowed formats: PNG, JPG, JPEG, WEBP. Uploaded photo updates Admin Layout header instantly.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4 text-xs">
+              <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-[#B71C1C]" />
+                <span>Company Legal & Tax Details (Printed on Invoices)</span>
+              </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -865,7 +1067,8 @@ export default function AdminSettingsPage() {
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {/* Tab 2: Payment Methods */}
         {activeTab === 'payment' && (
@@ -1785,7 +1988,6 @@ export default function AdminSettingsPage() {
                   />
                 </div>
               </div>
-
             </div>
           </div>
         )}

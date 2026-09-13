@@ -185,32 +185,54 @@ const parseBool = (val, defaultVal = false) => {
 };
 
 // Helper to format product export row with ALL Normal Fields FIRST and ALL Color 1..10 Fields LAST
-function formatProductExportRow(p, dto) {
+function formatProductExportRow(p, dto, sellingTypesSet = new Set()) {
   const sku = p.sku || `KV-SKU-${p.id}`;
 
   const productMainImg = resolvePermanentImageUrl(p.image_url || p.image || dto?.images?.[0]);
   const productSubImgs = (dto?.images || []).filter(img => img && resolvePermanentImageUrl(img) !== productMainImg);
 
-  // 1. Normal Product Fields FIRST
+  const price = parseFloat(p.price || 0);
+  const oldPrice = parseFloat(p.old_price || p.oldPrice || p.price || 0);
+  const discountPerc = (oldPrice > price && oldPrice > 0)
+    ? Math.round(((oldPrice - price) / oldPrice) * 100)
+    : parseInt(p.discount_percentage || p.discountPercentage || 0, 10);
+
+  // Derive Selling Types string
+  const stList = [];
+  if (sellingTypesSet.has('TOP_OFFERS') || (oldPrice > price)) stList.push('Top Offers');
+  if (sellingTypesSet.has('NEW_ARRIVALS') || parseBool(p.is_new_arrival, true)) stList.push('New Arrivals');
+  if (sellingTypesSet.has('BEST_SELLERS') || parseBool(p.is_bestseller) || parseBool(p.is_best_seller)) stList.push('Best Sellers');
+  if (sellingTypesSet.has('TRENDING_NOW') || parseBool(p.is_trending)) stList.push('Trending Now');
+
+  // Derive Colors string
+  const colors = dto?.colors || [];
+  const colorNames = colors.map(c => c.colorName).filter(Boolean).join(', ');
+
   const row = {
     'Product ID': p.id || '',
     'SKU Code': sku,
     'Product Name': p.name || '',
     'Main Category': p.category_name || p.categoryName || 'Apparel',
-    'Subcategory': p.subcategory || p.subCategory || '',
+    'Subcategory': p.subcategory || p.subCategory || p.subcategoryName || '',
     'Brand': p.brand || 'Karviyam',
-    'Selling Price': parseFloat(p.price || 0),
-    'MRP Price': parseFloat(p.old_price || p.oldPrice || p.price || 0),
-    'Stock Quantity': parseInt(p.stock_quantity || p.stockQuantity || 0, 10),
-    'Available Sizes': p.sizes || 'S, M, L, XL, XXL',
+    'Gender': p.gender || 'Unisex',
+    'Selling Price': price,
+    'MRP Price': oldPrice,
+    'Discount (%)': discountPerc,
+    'Stock Quantity': parseInt(p.stock_quantity || p.stockQuantity || p.stock || 0, 10),
+    'Product Status': parseBool(p.is_active, true) ? 'Active' : 'Inactive',
+    'Active Catalog Status': parseBool(p.is_active, true),
+    'Selling Type': stList.join(', '),
+    'Top Offers': sellingTypesSet.has('TOP_OFFERS') || (oldPrice > price),
+    'Best Seller': sellingTypesSet.has('BEST_SELLERS') || parseBool(p.is_bestseller) || parseBool(p.is_best_seller),
+    'New Arrival': sellingTypesSet.has('NEW_ARRIVALS') || parseBool(p.is_new_arrival, true),
+    'Trending Product': sellingTypesSet.has('TRENDING_NOW') || parseBool(p.is_trending),
+    'Featured Product': parseBool(p.is_featured, false),
+    'Available Sizes': p.sizes || p.size || 'S, M, L, XL, XXL',
+    'Colours': colorNames,
     'Material / Fabric': p.material || p.fabric || 'Cotton Blend',
     'Description': p.description || '',
     'Tags': p.tags || '',
-    'Featured Product': parseBool(p.is_featured, false),
-    'Trending Product': parseBool(p.is_trending, false),
-    'Best Seller': parseBool(p.is_bestseller, false),
-    'New Arrival': parseBool(p.is_new_arrival, true),
-    'Active Catalog Status': parseBool(p.is_active, true),
     'Barcode': p.barcode || '',
     'Weight': p.weight || '',
     'Dimensions': p.dimensions || '',
@@ -237,8 +259,7 @@ function formatProductExportRow(p, dto) {
     'Product Video': resolvePermanentImageUrl(p.video_url || dto?.videoUrl || '')
   };
 
-  // 2. Color 1 to Color 10 Fields AT THE VERY END
-  const colors = dto?.colors || [];
+  // Color 1 to Color 10 Fields AT THE VERY END
   for (let c = 1; c <= 10; c++) {
     const col = colors[c - 1];
     if (col) {
@@ -279,6 +300,14 @@ exports.exportProducts = async (req, res, next) => {
       ORDER BY p.id DESC
     `);
 
+    // Fetch selling types for all products
+    const [stRows] = await pool.query('SELECT product_id, selling_type FROM product_selling_types').catch(() => [[]]);
+    const stMap = {};
+    for (const r of stRows) {
+      if (!stMap[r.product_id]) stMap[r.product_id] = new Set();
+      stMap[r.product_id].add(r.selling_type);
+    }
+
     const productsSheetRows = [];
     const colorsSheetRows = [];
     const mediaSheetRows = [];
@@ -286,9 +315,10 @@ exports.exportProducts = async (req, res, next) => {
     for (const p of products) {
       const dto = await mapProductRowToDTO(p);
       const sku = p.sku || `KV-SKU-${p.id}`;
+      const sellingTypesSet = stMap[p.id] || new Set();
 
       // 1. Products Sheet Row (Normal fields first, Colors last)
-      productsSheetRows.push(formatProductExportRow(p, dto));
+      productsSheetRows.push(formatProductExportRow(p, dto, sellingTypesSet));
 
       // 2. Relational Colors & Media Sheet Rows (For Multi-Sheet Power Users)
       const colors = dto?.colors || [];
@@ -345,17 +375,15 @@ exports.exportProducts = async (req, res, next) => {
 
     // 3. Field Guide Sheet Row
     const fieldGuideRows = [
-      { Column: 'SKU Code', Required: 'REQUIRED', Type: 'Text', Example: 'KV-PRD-001', Description: 'Unique product identifier. Used for non-destructive updates.' },
+      { Column: 'SKU Code', Required: 'REQUIRED', Type: 'Text', Example: 'KV-PRD-001', Description: 'Unique product SKU code. Used for duplicate checking.' },
       { Column: 'Product Name', Required: 'REQUIRED', Type: 'Text', Example: 'Silk Kurta Set', Description: 'Title of the product shown to customers.' },
       { Column: 'Selling Price', Required: 'REQUIRED', Type: 'Number', Example: '1499', Description: 'Actual selling price in INR.' },
       { Column: 'MRP Price', Required: 'OPTIONAL', Type: 'Number', Example: '2499', Description: 'Original maximum retail price before discount.' },
       { Column: 'Stock Quantity', Required: 'REQUIRED', Type: 'Number', Example: '50', Description: 'Available inventory count.' },
+      { Column: 'Selling Type', Required: 'OPTIONAL', Type: 'Text', Example: 'Top Offers, Best Sellers', Description: 'Comma-separated selling types (Top Offers, New Arrivals, Best Sellers, Trending Now).' },
       { Column: 'Main Product Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/main.jpg', Description: 'Permanent public URL of main image.' },
       { Column: 'Sub Image 1..6', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/sub1.jpg', Description: 'Permanent public URLs for gallery sub images.' },
-      { Column: 'Color 1..10 Name', Required: 'OPTIONAL', Type: 'Text', Example: 'Crimson Red', Description: 'Color variant name (located in the last columns).' },
-      { Column: 'Color 1..10 Main Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/red-main.jpg', Description: 'Main image URL for color variant.' },
-      { Column: 'Color 1..10 Sub Image 1..6', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/red-sub1.jpg', Description: 'Sub images 1 to 6 for color variant.' },
-      { Column: 'Color 1..10 Video', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/video.mp4', Description: 'Product video URL for color variant.' }
+      { Column: 'Color 1..10 Name', Required: 'OPTIONAL', Type: 'Text', Example: 'Crimson Red', Description: 'Color variant name (located in the last columns).' }
     ];
 
     const wb = XLSX.utils.book_new();
@@ -451,15 +479,12 @@ exports.downloadProductTemplate = async (req, res, next) => {
     ];
 
     const fieldGuideRows = [
-      { Column: 'SKU Code', Required: 'REQUIRED', Type: 'Text', Example: 'KV-DEMO-001', Description: 'Unique identifier. Used to match and update existing products.' },
+      { Column: 'SKU Code', Required: 'REQUIRED', Type: 'Text', Example: 'KV-DEMO-001', Description: 'Unique identifier.' },
       { Column: 'Product Name', Required: 'REQUIRED', Type: 'Text', Example: 'Silk Kurta', Description: 'Product title displayed to customers.' },
       { Column: 'Selling Price', Required: 'REQUIRED', Type: 'Number', Example: '1299', Description: 'Final retail price in INR.' },
       { Column: 'MRP Price', Required: 'OPTIONAL', Type: 'Number', Example: '1999', Description: 'Maximum retail price.' },
       { Column: 'Stock Quantity', Required: 'REQUIRED', Type: 'Number', Example: '50', Description: 'Available stock.' },
-      { Column: 'Main Product Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/main.jpg', Description: 'Main product display image.' },
-      { Column: 'Color 1..10 Name', Required: 'OPTIONAL', Type: 'Text', Example: 'Emerald Green', Description: 'Color variant name (located in the last columns).' },
-      { Column: 'Color 1..10 Main Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/green-main.jpg', Description: 'Main image for color variant.' },
-      { Column: 'Color 1..10 Video', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/green-video.mp4', Description: 'Product video URL for color variant.' }
+      { Column: 'Main Product Image', Required: 'OPTIONAL', Type: 'URL/Path', Example: 'https://karviyam.com/uploads/products/main.jpg', Description: 'Main product display image.' }
     ];
 
     const wb = XLSX.utils.book_new();
@@ -478,7 +503,7 @@ exports.downloadProductTemplate = async (req, res, next) => {
 };
 
 // =========================================================================
-// 3. PRODUCT IMPORT PREVIEW & VALIDATION (NORMALIZED HEADERS)
+// 3. PRODUCT IMPORT PREVIEW & VALIDATION (STRICT DUPLICATE DETECTION)
 // =========================================================================
 exports.previewProductImport = async (req, res, next) => {
   try {
@@ -497,19 +522,24 @@ exports.previewProductImport = async (req, res, next) => {
     const mainSheetName = hasProductsSheet ? 'PRODUCTS' : sheetNames[0];
     const rawProducts = XLSX.utils.sheet_to_json(workbook.Sheets[mainSheetName]);
 
-    const [existingSkusRows] = await pool.query('SELECT sku FROM products WHERE sku IS NOT NULL AND sku != ""');
-    const existingSkusSet = new Set(existingSkusRows.map(r => String(r.sku).trim().toLowerCase()));
+    // Fetch existing SKUs and IDs from DB
+    const [existingRows] = await pool.query('SELECT id, sku FROM products');
+    const existingSkusSet = new Set(existingRows.map(r => r.sku ? String(r.sku).trim().toLowerCase() : '').filter(Boolean));
+    const existingIdsSet = new Set(existingRows.map(r => String(r.id)));
+
+    const seenInFileSkusSet = new Set();
+    const seenInFileIdsSet = new Set();
 
     const previewRows = [];
     let newCount = 0;
-    let updateCount = 0;
-    let errorCount = 0;
     let skipCount = 0;
+    let errorCount = 0;
 
     for (let idx = 0; idx < rawProducts.length; idx++) {
       const row = rawProducts[idx];
       const sku = String(getNormalizedRowValue(row, ['SKU Code', 'SKU', 'sku_code', 'SKUCode', 'Product SKU', 'Item SKU'])).trim();
-      const name = String(getNormalizedRowValue(row, ['Product Name', 'Name', 'product_name', 'Title', 'Item Name'])).trim();
+      const prodId = String(getNormalizedRowValue(row, ['Product ID', 'ID', 'product_id', 'id'], '')).trim();
+      const name = String(getNormalizedRowValue(row, ['Product Name', 'Name', 'product_name', 'Title', 'Item Name', 'Product Title'])).trim();
       const priceVal = getNormalizedRowValue(row, ['Selling Price', 'Price', 'selling_price', 'Selling Price (₹)', 'Retail Price']);
       const stockVal = getNormalizedRowValue(row, ['Stock Quantity', 'Stock', 'stock_quantity', 'Quantity', 'Qty'], 0);
 
@@ -518,8 +548,8 @@ exports.previewProductImport = async (req, res, next) => {
 
       const rowErrors = [];
 
-      if (!sku) {
-        rowErrors.push('SKU Code is required.');
+      if (!sku && !prodId) {
+        rowErrors.push('SKU Code or Product ID is required.');
       }
       if (!name) {
         rowErrors.push('Product Name is required.');
@@ -531,34 +561,36 @@ exports.previewProductImport = async (req, res, next) => {
         rowErrors.push('Stock Quantity must be a non-negative integer.');
       }
 
-      // Validate image URLs (must not be temporary browser blob/data URLs)
       const mainImg = getNormalizedRowValue(row, ['Main Product Image', 'Image URL', 'image_url', 'Main Image']);
       if (mainImg && (String(mainImg).startsWith('blob:') || String(mainImg).startsWith('data:'))) {
-        rowErrors.push(`Main Product Image contains invalid temporary browser URL (${mainImg.substring(0, 15)}...). Only permanent URLs are allowed.`);
+        rowErrors.push(`Main Product Image contains invalid temporary browser URL (${String(mainImg).substring(0, 15)}...).`);
       }
 
-      for (let c = 1; c <= 10; c++) {
-        const cImg = getNormalizedRowValue(row, [`Color ${c} Main Image`, `Color${c}MainImage`]);
-        if (cImg && (String(cImg).startsWith('blob:') || String(cImg).startsWith('data:'))) {
-          rowErrors.push(`Color ${c} Main Image contains invalid temporary browser URL (${cImg.substring(0, 15)}...). Only permanent URLs are allowed.`);
-        }
-      }
+      let status = 'VALID';
+      let action = 'CREATE';
 
-      const isUpdate = sku && existingSkusSet.has(sku.toLowerCase());
-      let action = isUpdate ? 'UPDATE' : 'CREATE';
-      let status = rowErrors.length === 0 ? 'VALID' : 'ERROR';
+      const skuKey = sku.toLowerCase();
+      const isDuplicateInDb = (skuKey && existingSkusSet.has(skuKey)) || (prodId && existingIdsSet.has(prodId));
+      const isDuplicateInFile = (skuKey && seenInFileSkusSet.has(skuKey)) || (prodId && seenInFileIdsSet.has(prodId));
 
-      if (status === 'ERROR') {
+      if (rowErrors.length > 0) {
+        status = 'ERROR';
+        action = 'SKIP';
         errorCount++;
-      } else if (isUpdate) {
-        updateCount++;
+      } else if (isDuplicateInDb || isDuplicateInFile) {
+        status = 'DUPLICATE';
+        action = 'SKIP (DUPLICATE)';
+        skipCount++;
+        rowErrors.push('Duplicate product detected (exists in database or file). Row will be skipped.');
       } else {
         newCount++;
+        if (skuKey) seenInFileSkusSet.add(skuKey);
+        if (prodId) seenInFileIdsSet.add(prodId);
       }
 
       previewRows.push({
         rowNumber: idx + 1,
-        sku: sku || `ROW-${idx + 1}`,
+        sku: sku || (prodId ? `ID-${prodId}` : `ROW-${idx + 1}`),
         productName: name || 'Untitled Product',
         action,
         status,
@@ -571,9 +603,8 @@ exports.previewProductImport = async (req, res, next) => {
     return res.status(200).json(ApiResponse.success({
       totalRows: rawProducts.length,
       newCount,
-      updateCount,
-      errorCount,
       skipCount,
+      errorCount,
       previewRows
     }, 'Import preview generated successfully'));
   } catch (err) {
@@ -582,7 +613,7 @@ exports.previewProductImport = async (req, res, next) => {
 };
 
 // =========================================================================
-// 4. PRODUCT IMPORT EXECUTION (UPSERT TRANSACTION)
+// 4. PRODUCT IMPORT EXECUTION (STRICT ADD-NEW & DUPLICATE SKIPPING)
 // =========================================================================
 exports.executeProductImport = async (req, res, next) => {
   const connection = await pool.getConnection();
@@ -613,7 +644,6 @@ exports.executeProductImport = async (req, res, next) => {
       rawMedia = XLSX.utils.sheet_to_json(workbook.Sheets['PRODUCT MEDIA']);
     }
 
-    // Group colors & media by SKU Code for multi-sheet imports
     const colorsBySku = {};
     rawColors.forEach(rc => {
       const sku = String(rc['SKU Code'] || rc['SKU'] || '').trim().toLowerCase();
@@ -630,26 +660,38 @@ exports.executeProductImport = async (req, res, next) => {
       mediaBySku[sku].push(rm);
     });
 
-    let createdCount = 0;
-    let updatedCount = 0;
-    let failedCount = 0;
-    const failedRows = [];
-
+    // Ensure columns exist on products & related tables
+    try { await connection.query("ALTER TABLE products ADD COLUMN gender VARCHAR(50) DEFAULT 'Unisex'"); } catch (e) {}
     try { await connection.query("ALTER TABLE products ADD COLUMN sizes VARCHAR(255)"); } catch (e) {}
     try { await connection.query("ALTER TABLE products ADD COLUMN size VARCHAR(255)"); } catch (e) {}
     try { await connection.query("ALTER TABLE products ADD COLUMN is_bestseller BOOLEAN DEFAULT FALSE"); } catch (e) {}
+    try { await connection.query("ALTER TABLE products ADD COLUMN is_best_seller BOOLEAN DEFAULT FALSE"); } catch (e) {}
+    try { await connection.query("ALTER TABLE products ADD COLUMN is_top_offers BOOLEAN DEFAULT FALSE"); } catch (e) {}
     try { await connection.query("ALTER TABLE products ADD COLUMN seo_title VARCHAR(255)"); } catch (e) {}
     try { await connection.query("ALTER TABLE products ADD COLUMN meta_keywords VARCHAR(255)"); } catch (e) {}
     try { await connection.query("ALTER TABLE products ADD COLUMN meta_description TEXT"); } catch (e) {}
     try { await connection.query("ALTER TABLE product_images ADD COLUMN sort_order INT DEFAULT 0"); } catch (e) {}
     try { await connection.query("ALTER TABLE product_images ADD COLUMN is_main BOOLEAN DEFAULT FALSE"); } catch (e) {}
 
-    await connection.beginTransaction();
+    // Fetch existing SKUs and Product IDs from DB
+    const [dbProdRows] = await connection.query('SELECT id, sku FROM products');
+    const existingSkusSet = new Set(dbProdRows.map(r => r.sku ? String(r.sku).trim().toLowerCase() : '').filter(Boolean));
+    const existingIdsSet = new Set(dbProdRows.map(r => String(r.id)));
+
+    const processedSkusInCurrentImport = new Set();
+    const processedIdsInCurrentImport = new Set();
+
+    let createdCount = 0;
+    let skippedCount = 0;
+    let failedCount = 0;
+    const skippedRows = [];
+    const failedRows = [];
 
     for (let idx = 0; idx < rawProducts.length; idx++) {
       const row = rawProducts[idx];
       const sku = String(getNormalizedRowValue(row, ['SKU Code', 'SKU', 'sku_code', 'SKUCode', 'Product SKU', 'Item SKU'])).trim();
-      const name = String(getNormalizedRowValue(row, ['Product Name', 'Name', 'product_name', 'Title', 'Item Name'])).trim();
+      const prodId = String(getNormalizedRowValue(row, ['Product ID', 'ID', 'product_id', 'id'], '')).trim();
+      const name = String(getNormalizedRowValue(row, ['Product Name', 'Name', 'product_name', 'Title', 'Item Name', 'Product Title'])).trim();
       const priceVal = getNormalizedRowValue(row, ['Selling Price', 'Price', 'selling_price', 'Selling Price (₹)', 'Retail Price']);
       const oldPriceVal = getNormalizedRowValue(row, ['MRP Price', 'MRP', 'old_price', 'MRP (₹)', 'Original Price'], priceVal);
       const stockVal = getNormalizedRowValue(row, ['Stock Quantity', 'Stock', 'stock_quantity', 'Quantity', 'Qty'], 0);
@@ -658,45 +700,42 @@ exports.executeProductImport = async (req, res, next) => {
       const oldPrice = parseFloat(oldPriceVal);
       const stock = parseInt(stockVal, 10);
 
-      const categoryName = String(getNormalizedRowValue(row, ['Main Category', 'Category Name', 'Category', 'category_name'], 'Apparel')).trim();
-      const subcategory = String(getNormalizedRowValue(row, ['Subcategory', 'Sub Category', 'subcategory_name'], '')).trim();
-      const brand = String(getNormalizedRowValue(row, ['Brand', 'Brand Name', 'Manufacturer'], 'Karviyam')).trim();
-      const sizes = String(getNormalizedRowValue(row, ['Available Sizes', 'Sizes', 'Size'], 'S, M, L, XL, XXL')).trim();
-      const material = String(getNormalizedRowValue(row, ['Material / Fabric', 'Material', 'Fabric'], 'Cotton Blend')).trim();
-      const description = String(getNormalizedRowValue(row, ['Description', 'desc', 'detail'], '')).trim();
-      const tags = String(getNormalizedRowValue(row, ['Tags', 'keywords'], '')).trim();
-      const isFeatured = parseBool(getNormalizedRowValue(row, ['Featured Product', 'isFeatured', 'is_featured']), false);
-      const isTrending = parseBool(getNormalizedRowValue(row, ['Trending Product', 'isTrending', 'is_trending']), false);
-      const isBestseller = parseBool(getNormalizedRowValue(row, ['Best Seller', 'isBestseller', 'is_bestseller']), false);
-      const isNewArrival = parseBool(getNormalizedRowValue(row, ['New Arrival', 'isNewArrival', 'is_new_arrival']), true);
-      const isActive = parseBool(getNormalizedRowValue(row, ['Active Catalog Status', 'Active Status', 'isActive', 'is_active']), true);
-      const seoTitle = String(getNormalizedRowValue(row, ['SEO Title', 'seo_title'], name)).trim();
-      const metaKeywords = String(getNormalizedRowValue(row, ['Meta Keywords', 'meta_keywords'], tags)).trim();
-      const metaDescription = String(getNormalizedRowValue(row, ['Meta Description', 'meta_description'], description)).trim();
-
-      const rawMainImageVal = getNormalizedRowValue(row, ['Main Product Image', 'Image URL', 'image_url', 'Main Image']);
-      const mainImgValRes = validateAndExtractImageUrl(rawMainImageVal, 'Main Product Image');
-      
-      let mainProductImage = '';
-      if (mainImgValRes.isValid && mainImgValRes.cleanUrl) {
-        const storedLocalPath = await downloadAndStoreExternalImage(mainImgValRes.cleanUrl);
-        mainProductImage = storedLocalPath || mainImgValRes.cleanUrl;
-      }
-
-      const videoUrl = sanitizeImportImageUrl(getNormalizedRowValue(row, ['Product Video', 'video_url', 'Video URL']));
-
-      if (!sku || !name || priceVal === '' || isNaN(price)) {
+      // Validate required fields
+      if ((!sku && !prodId) || !name || priceVal === '' || isNaN(price) || price < 0) {
         failedCount++;
         failedRows.push({
           rowNumber: idx + 1,
-          sku: sku || `ROW-${idx + 1}`,
-          field: !sku ? 'SKU Code' : (!name ? 'Product Name' : 'Selling Price'),
-          problem: 'Required field missing or invalid format.',
-          suggestedFix: 'Provide a valid non-empty value.'
+          sku: sku || (prodId ? `ID-${prodId}` : `ROW-${idx + 1}`),
+          field: !sku && !prodId ? 'SKU Code' : (!name ? 'Product Name' : 'Selling Price'),
+          problem: 'Required field missing or invalid price.',
+          suggestedFix: 'Provide a valid non-empty SKU, Product Name, and non-negative Selling Price.'
         });
         continue;
       }
 
+      // STRICT DUPLICATE CHECK:
+      // Priority 1: SKU. Priority 2: Product ID.
+      // Check BOTH database and previous rows in this file!
+      const skuKey = sku.toLowerCase();
+      const isDuplicateInDb = (skuKey && existingSkusSet.has(skuKey)) || (prodId && existingIdsSet.has(prodId));
+      const isDuplicateInFile = (skuKey && processedSkusInCurrentImport.has(skuKey)) || (prodId && processedIdsInCurrentImport.has(prodId));
+
+      if (isDuplicateInDb || isDuplicateInFile) {
+        skippedCount++;
+        skippedRows.push({
+          rowNumber: idx + 1,
+          sku: sku || `ID-${prodId}`,
+          reason: isDuplicateInDb
+            ? `Duplicate skipped — SKU '${sku}' or ID '${prodId}' already exists in database.`
+            : `Duplicate skipped — SKU '${sku}' or ID '${prodId}' appears multiple times in uploaded file.`
+        });
+        continue; // STRICT RULE: DO NOT INSERT, DO NOT UPDATE! SKIP ROW.
+      }
+
+      // Validate image URL
+      const rawMainImageVal = getNormalizedRowValue(row, ['Main Product Image', 'Image URL', 'image_url', 'Main Image']);
+      const mainImgValRes = validateAndExtractImageUrl(rawMainImageVal, 'Main Product Image');
+      
       if (rawMainImageVal && !mainImgValRes.isValid) {
         failedCount++;
         failedRows.push({
@@ -709,6 +748,35 @@ exports.executeProductImport = async (req, res, next) => {
         continue;
       }
 
+      let mainProductImage = '';
+      if (mainImgValRes.isValid && mainImgValRes.cleanUrl) {
+        const storedLocalPath = await downloadAndStoreExternalImage(mainImgValRes.cleanUrl);
+        mainProductImage = storedLocalPath || mainImgValRes.cleanUrl;
+      }
+
+      const videoUrl = sanitizeImportImageUrl(getNormalizedRowValue(row, ['Product Video', 'video_url', 'Video URL']));
+
+      const categoryName = String(getNormalizedRowValue(row, ['Main Category', 'Category Name', 'Category', 'category_name'], 'Apparel')).trim();
+      const subcategory = String(getNormalizedRowValue(row, ['Subcategory', 'Sub Category', 'subcategory_name'], '')).trim();
+      const brand = String(getNormalizedRowValue(row, ['Brand', 'Brand Name', 'Manufacturer'], 'Karviyam')).trim();
+      const gender = String(getNormalizedRowValue(row, ['Gender', 'gender'], 'Unisex')).trim();
+      const sizes = String(getNormalizedRowValue(row, ['Available Sizes', 'Sizes', 'Size'], 'S, M, L, XL, XXL')).trim();
+      const material = String(getNormalizedRowValue(row, ['Material / Fabric', 'Material', 'Fabric'], 'Cotton Blend')).trim();
+      const description = String(getNormalizedRowValue(row, ['Description', 'desc', 'detail'], '')).trim();
+      const tags = String(getNormalizedRowValue(row, ['Tags', 'keywords'], '')).trim();
+      
+      // Selling Type & Flags
+      const sellingTypeStr = String(getNormalizedRowValue(row, ['Selling Type', 'Selling Types', 'selling_type', 'selling_types'], '')).trim();
+      const isTopOffers = parseBool(getNormalizedRowValue(row, ['Top Offers', 'isTopOffers', 'is_top_offers']), sellingTypeStr.toUpperCase().includes('TOP_OFFERS') || sellingTypeStr.toLowerCase().includes('top offer'));
+      const isBestseller = parseBool(getNormalizedRowValue(row, ['Best Seller', 'isBestseller', 'is_bestseller', 'is_best_seller']), sellingTypeStr.toUpperCase().includes('BEST_SELLERS') || sellingTypeStr.toLowerCase().includes('best seller'));
+      const isNewArrival = parseBool(getNormalizedRowValue(row, ['New Arrival', 'isNewArrival', 'is_new_arrival']), sellingTypeStr.toUpperCase().includes('NEW_ARRIVALS') || sellingTypeStr.toLowerCase().includes('new arrival') || sellingTypeStr === '');
+      const isTrending = parseBool(getNormalizedRowValue(row, ['Trending Product', 'Trending Now', 'isTrending', 'is_trending']), sellingTypeStr.toUpperCase().includes('TRENDING_NOW') || sellingTypeStr.toLowerCase().includes('trending'));
+      const isFeatured = parseBool(getNormalizedRowValue(row, ['Featured Product', 'isFeatured', 'is_featured']), false);
+      const isActive = parseBool(getNormalizedRowValue(row, ['Active Catalog Status', 'Active Status', 'Product Status', 'isActive', 'is_active']), true);
+      const seoTitle = String(getNormalizedRowValue(row, ['SEO Title', 'seo_title'], name)).trim();
+      const metaKeywords = String(getNormalizedRowValue(row, ['Meta Keywords', 'meta_keywords'], tags)).trim();
+      const metaDescription = String(getNormalizedRowValue(row, ['Meta Description', 'meta_description'], description)).trim();
+
       // Resolve Category ID
       let categoryId = 1;
       const [cats] = await connection.query('SELECT id FROM categories WHERE LOWER(name) = ? LIMIT 1', [categoryName.toLowerCase()]);
@@ -716,199 +784,200 @@ exports.executeProductImport = async (req, res, next) => {
         categoryId = cats[0].id;
       }
 
-      // Check if product exists by SKU
-      const [existing] = await connection.query('SELECT * FROM products WHERE LOWER(sku) = ? LIMIT 1', [sku.toLowerCase()]);
-
+      // Safe Insertion with Row-level Error Catching
       let productId;
-      if (existing.length > 0) {
-        productId = existing[0].id;
-        const currentProd = existing[0];
-        const finalImage = mainProductImage !== '' ? mainProductImage : currentProd.image_url;
-        const finalVideo = videoUrl !== '' ? videoUrl : currentProd.video_url;
-
-        // Non-destructive update: Update product normal fields first
-        await connection.query(
-          `UPDATE products SET 
-           category_id = ?, name = ?, description = ?, price = ?, old_price = ?, stock_quantity = ?,
-           image_url = ?, video_url = ?, brand = ?, sizes = ?, material = ?, tags = ?, is_featured = ?, is_trending = ?,
-           is_bestseller = ?, is_new_arrival = ?, is_active = ?, seo_title = ?, meta_keywords = ?,
-           meta_description = ?
-           WHERE id = ?`,
-          [
-            categoryId, name, description, price, oldPrice, stock, finalImage, finalVideo, brand, sizes, material, tags,
-            isFeatured ? 1 : 0, isTrending ? 1 : 0, isBestseller ? 1 : 0, isNewArrival ? 1 : 0,
-            isActive ? 1 : 0, seoTitle, metaKeywords, metaDescription, productId
-          ]
-        );
-        updatedCount++;
-      } else {
-        // Insert new product
+      try {
         const [insertRes] = await connection.query(
           `INSERT INTO products 
-           (category_id, name, sku, description, price, old_price, stock_quantity, image_url, video_url, brand, sizes, material, tags,
-            is_featured, is_trending, is_bestseller, is_new_arrival, is_active, seo_title, meta_keywords, meta_description, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+           (category_id, name, sku, description, price, old_price, stock_quantity, image_url, video_url, brand, gender, sizes, material, tags,
+            is_featured, is_trending, is_bestseller, is_best_seller, is_new_arrival, is_active, seo_title, meta_keywords, meta_description, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
           [
-            categoryId, name, sku, description, price, oldPrice, stock, mainProductImage, videoUrl, brand, sizes, material, tags,
-            isFeatured ? 1 : 0, isTrending ? 1 : 0, isBestseller ? 1 : 0, isNewArrival ? 1 : 0,
+            categoryId, name, sku, description, price, oldPrice, stock, mainProductImage, videoUrl, brand, gender, sizes, material, tags,
+            isFeatured ? 1 : 0, isTrending ? 1 : 0, isBestseller ? 1 : 0, isBestseller ? 1 : 0, isNewArrival ? 1 : 0,
             isActive ? 1 : 0, seoTitle, metaKeywords, metaDescription
           ]
         );
         productId = insertRes.insertId;
-        createdCount++;
-      }
 
-      // Base Sub Images processing (Sub Image 1..6)
-      const baseSubImages = [];
-      for (let s = 1; s <= 6; s++) {
-        const rawSubVal = getNormalizedRowValue(row, [`Sub Image ${s}`, `SubImage${s}`, `Sub Image${s}`]);
-        const subValRes = validateAndExtractImageUrl(rawSubVal, `Sub Image ${s}`);
-        if (subValRes.isValid && subValRes.cleanUrl) {
-          const storedSubPath = await downloadAndStoreExternalImage(subValRes.cleanUrl);
-          const finalSub = storedSubPath || subValRes.cleanUrl;
-          if (finalSub) baseSubImages.push(finalSub);
+        // Update tracking sets
+        if (skuKey) {
+          existingSkusSet.add(skuKey);
+          processedSkusInCurrentImport.add(skuKey);
         }
-      }
-      if (baseSubImages.length > 0) {
-        await connection.query('DELETE FROM product_images WHERE product_id = ? AND is_main = 0', [productId]);
-        for (let sIdx = 0; sIdx < baseSubImages.length; sIdx++) {
+        if (productId) {
+          existingIdsSet.add(String(productId));
+          processedIdsInCurrentImport.add(String(productId));
+        }
+
+        // Insert Canonical Selling Types into `product_selling_types`
+        const sellingTypesToInsert = new Set();
+        if (isTopOffers) sellingTypesToInsert.add('TOP_OFFERS');
+        if (isNewArrival) sellingTypesToInsert.add('NEW_ARRIVALS');
+        if (isBestseller) sellingTypesToInsert.add('BEST_SELLERS');
+        if (isTrending) sellingTypesToInsert.add('TRENDING_NOW');
+
+        if (sellingTypeStr) {
+          const parts = sellingTypeStr.split(/[,|;]/).map(s => s.trim().toUpperCase());
+          parts.forEach(p => {
+            if (p.includes('TOP') || p.includes('OFFER')) sellingTypesToInsert.add('TOP_OFFERS');
+            if (p.includes('NEW') || p.includes('ARRIVAL')) sellingTypesToInsert.add('NEW_ARRIVALS');
+            if (p.includes('BEST') || p.includes('SELLER')) sellingTypesToInsert.add('BEST_SELLERS');
+            if (p.includes('TREND')) sellingTypesToInsert.add('TRENDING_NOW');
+          });
+        }
+
+        for (const st of sellingTypesToInsert) {
           await connection.query(
-            'INSERT INTO product_images (product_id, image_url, is_main, sort_order) VALUES (?, ?, 0, ?)',
-            [productId, baseSubImages[sIdx], sIdx + 2]
-          );
+            'INSERT IGNORE INTO product_selling_types (product_id, selling_type) VALUES (?, ?)',
+            [productId, st]
+          ).catch(() => null);
         }
-      }
 
-      // -----------------------------------------------------------------
-      // Process Color Data from the Last Columns (or Multi-sheet)
-      // -----------------------------------------------------------------
-      let parsedColors = [];
-
-      const skuKey = sku.toLowerCase();
-      if (colorsBySku[skuKey] && colorsBySku[skuKey].length > 0) {
-        // Multi-sheet format
-        const relMedia = mediaBySku[skuKey] || [];
-        colorsBySku[skuKey].forEach(cRow => {
-          const cName = String(getNormalizedRowValue(cRow, ['Color Name', 'Color'])).trim();
-          const cCode = String(getNormalizedRowValue(cRow, ['Color Code', 'Color Hex', 'Hex'], '#000000')).trim();
-          const isDefault = parseBool(getNormalizedRowValue(cRow, ['Is Default', 'Default']), false);
-
-          const cMedia = relMedia.filter(m => String(getNormalizedRowValue(m, ['Color Name', 'Color'])).trim().toLowerCase() === cName.toLowerCase());
-          const mainMedia = cMedia.find(m => parseBool(getNormalizedRowValue(m, ['Is Main', 'Main'])) || getNormalizedRowValue(m, ['Sort Order']) === 1);
-          const subMedia = cMedia.filter(m => m !== mainMedia && String(getNormalizedRowValue(m, ['Media Type'])).toLowerCase() !== 'video');
-          const videoMedia = cMedia.find(m => String(getNormalizedRowValue(m, ['Media Type'])).toLowerCase() === 'video');
-
-          if (cName || (mainMedia && mainMedia['Media URL'])) {
-            parsedColors.push({
-              colorName: cName || 'Standard',
-              colorCode: cCode,
-              isDefault,
-              mainImage: mainMedia ? sanitizeImportImageUrl(getNormalizedRowValue(mainMedia, ['Media URL', 'URL'])) : '',
-              subImages: subMedia.map(sm => sanitizeImportImageUrl(getNormalizedRowValue(sm, ['Media URL', 'URL']))).filter(Boolean),
-              videoUrl: videoMedia ? sanitizeImportImageUrl(getNormalizedRowValue(videoMedia, ['Media URL', 'URL'])) : ''
-            });
-          }
-        });
-      }
-
-      // Flat format columns at the end of row (Color 1 Name ... Color 10 Video)
-      if (parsedColors.length === 0) {
-        for (let c = 1; c <= 20; c++) {
-          const cName = String(getNormalizedRowValue(row, [`Color ${c} Name`, `Color${c}Name`, `Color ${c}`])).trim();
-          const cCode = String(getNormalizedRowValue(row, [`Color ${c} Hex`, `Color ${c} Code`, `Color${c}Hex`], '#000000')).trim();
-          const mainImg = sanitizeImportImageUrl(getNormalizedRowValue(row, [`Color ${c} Main Image`, `Color${c}MainImage`]));
-          const isDef = parseBool(getNormalizedRowValue(row, [`Color ${c} Default`, `Color ${c} Is Default`]), c === 1);
-
-          const subImgs = [];
-          for (let s = 1; s <= 6; s++) {
-            const subUrl = sanitizeImportImageUrl(getNormalizedRowValue(row, [`Color ${c} Sub Image ${s}`, `Color${c}SubImage${s}`]));
-            if (subUrl) subImgs.push(subUrl);
-          }
-          const cVideo = sanitizeImportImageUrl(getNormalizedRowValue(row, [`Color ${c} Video`, `Color${c}Video`]));
-
-          // RULES: Create ONLY colors that actually contain data.
-          const hasData = cName !== '' || mainImg !== '' || subImgs.length > 0;
-          if (hasData) {
-            parsedColors.push({
-              colorName: cName || `Color ${c}`,
-              colorCode: cCode || '#000000',
-              isDefault: isDef,
-              mainImage: mainImg,
-              subImages: subImgs,
-              videoUrl: cVideo
-            });
+        // Process Base Sub Images
+        const baseSubImages = [];
+        for (let s = 1; s <= 6; s++) {
+          const rawSubVal = getNormalizedRowValue(row, [`Sub Image ${s}`, `SubImage${s}`, `Sub Image${s}`]);
+          const subValRes = validateAndExtractImageUrl(rawSubVal, `Sub Image ${s}`);
+          if (subValRes.isValid && subValRes.cleanUrl) {
+            const storedSubPath = await downloadAndStoreExternalImage(subValRes.cleanUrl);
+            const finalSub = storedSubPath || subValRes.cleanUrl;
+            if (finalSub) baseSubImages.push(finalSub);
           }
         }
-      }
-
-      // RULES: If parsedColors contains new color data, update color variants.
-      // If parsedColors.length === 0, DO NOT RESET OR DELETE PREVIOUSLY SAVED COLORS!
-      if (parsedColors.length > 0) {
-        // Delete existing color records before re-inserting updated color variants
-        const [oldColors] = await connection.query('SELECT id FROM product_colors WHERE product_id = ?', [productId]);
-        for (const oc of oldColors) {
-          await connection.query('DELETE FROM product_color_images WHERE product_color_id = ? OR color_id = ?', [oc.id, oc.id]).catch(() => null);
-        }
-        await connection.query('DELETE FROM product_colors WHERE product_id = ?', [productId]);
-
-        // Insert colors maintaining exact order, main image, sub images & video
-        for (let cIdx = 0; cIdx < parsedColors.length; cIdx++) {
-          const c = parsedColors[cIdx];
-          const isDefaultVal = c.isDefault || (cIdx === 0 && !parsedColors.some(pc => pc.isDefault));
-
-          try { await connection.query("ALTER TABLE product_colors ADD COLUMN hex_code VARCHAR(50)"); } catch (e) {}
-          try { await connection.query("ALTER TABLE product_colors ADD COLUMN is_default BOOLEAN DEFAULT FALSE"); } catch (e) {}
-          try { await connection.query("ALTER TABLE product_colors ADD COLUMN image_url VARCHAR(500)"); } catch (e) {}
-          try { await connection.query("ALTER TABLE product_colors ADD COLUMN main_image VARCHAR(500)"); } catch (e) {}
-          try { await connection.query("ALTER TABLE product_colors ADD COLUMN video_url VARCHAR(500)"); } catch (e) {}
-
-          const [cRes] = await connection.query(
-            `INSERT INTO product_colors (product_id, color_name, color_code, hex_code, is_default, image_url, main_image, video_url)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [productId, c.colorName, c.colorCode, c.colorCode, isDefaultVal ? 1 : 0, c.mainImage || null, c.mainImage || null, c.videoUrl || null]
-          );
-          const colorId = cRes.insertId;
-
-          try { await connection.query("ALTER TABLE product_color_images ADD COLUMN product_color_id BIGINT"); } catch (e) {}
-          try { await connection.query("ALTER TABLE product_color_images ADD COLUMN color_id BIGINT"); } catch (e) {}
-          try { await connection.query("ALTER TABLE product_color_images ADD COLUMN is_main BOOLEAN DEFAULT FALSE"); } catch (e) {}
-          try { await connection.query("ALTER TABLE product_color_images ADD COLUMN sort_order INT DEFAULT 0"); } catch (e) {}
-
-          if (c.mainImage) {
+        if (baseSubImages.length > 0) {
+          for (let sIdx = 0; sIdx < baseSubImages.length; sIdx++) {
             await connection.query(
-              `INSERT INTO product_color_images (product_color_id, image_url, is_main, sort_order) VALUES (?, ?, 1, 1)`,
-              [colorId, c.mainImage]
-            );
-          }
-
-          for (let sIdx = 0; sIdx < c.subImages.length; sIdx++) {
-            await connection.query(
-              `INSERT INTO product_color_images (product_color_id, image_url, is_main, sort_order) VALUES (?, ?, 0, ?)`,
-              [colorId, c.subImages[sIdx], sIdx + 2]
-            );
+              'INSERT INTO product_images (product_id, image_url, is_main, sort_order) VALUES (?, ?, 0, ?)',
+              [productId, baseSubImages[sIdx], sIdx + 2]
+            ).catch(() => null);
           }
         }
 
-        // Update main product image_url from default color
-        const defaultColor = parsedColors.find(c => c.isDefault) || parsedColors[0];
-        if (defaultColor && defaultColor.mainImage) {
-          await connection.query('UPDATE products SET image_url = ? WHERE id = ?', [defaultColor.mainImage, productId]);
+        // Process Colors & Variants
+        let parsedColors = [];
+        if (skuKey && colorsBySku[skuKey] && colorsBySku[skuKey].length > 0) {
+          const relMedia = mediaBySku[skuKey] || [];
+          colorsBySku[skuKey].forEach(cRow => {
+            const cName = String(getNormalizedRowValue(cRow, ['Color Name', 'Color'])).trim();
+            const cCode = String(getNormalizedRowValue(cRow, ['Color Code', 'Color Hex', 'Hex'], '#000000')).trim();
+            const isDef = parseBool(getNormalizedRowValue(cRow, ['Is Default', 'Default']), false);
+
+            const cMedia = relMedia.filter(m => String(getNormalizedRowValue(m, ['Color Name', 'Color'])).trim().toLowerCase() === cName.toLowerCase());
+            const mainMedia = cMedia.find(m => parseBool(getNormalizedRowValue(m, ['Is Main', 'Main'])) || getNormalizedRowValue(m, ['Sort Order']) === 1);
+            const subMedia = cMedia.filter(m => m !== mainMedia && String(getNormalizedRowValue(m, ['Media Type'])).toLowerCase() !== 'video');
+            const videoMedia = cMedia.find(m => String(getNormalizedRowValue(m, ['Media Type'])).toLowerCase() === 'video');
+
+            if (cName || (mainMedia && mainMedia['Media URL'])) {
+              parsedColors.push({
+                colorName: cName || 'Standard',
+                colorCode: cCode,
+                isDefault: isDef,
+                mainImage: mainMedia ? sanitizeImportImageUrl(getNormalizedRowValue(mainMedia, ['Media URL', 'URL'])) : '',
+                subImages: subMedia.map(sm => sanitizeImportImageUrl(getNormalizedRowValue(sm, ['Media URL', 'URL']))).filter(Boolean),
+                videoUrl: videoMedia ? sanitizeImportImageUrl(getNormalizedRowValue(videoMedia, ['Media URL', 'URL'])) : ''
+              });
+            }
+          });
+        }
+
+        if (parsedColors.length === 0) {
+          for (let c = 1; c <= 10; c++) {
+            const cName = String(getNormalizedRowValue(row, [`Color ${c} Name`, `Color${c}Name`, `Color ${c}`])).trim();
+            const cCode = String(getNormalizedRowValue(row, [`Color ${c} Hex`, `Color ${c} Code`, `Color${c}Hex`], '#000000')).trim();
+            const mainImg = sanitizeImportImageUrl(getNormalizedRowValue(row, [`Color ${c} Main Image`, `Color${c}MainImage`]));
+            const isDef = parseBool(getNormalizedRowValue(row, [`Color ${c} Default`, `Color ${c} Is Default`]), c === 1);
+
+            const subImgs = [];
+            for (let s = 1; s <= 6; s++) {
+              const subUrl = sanitizeImportImageUrl(getNormalizedRowValue(row, [`Color ${c} Sub Image ${s}`, `Color${c}SubImage${s}`]));
+              if (subUrl) subImgs.push(subUrl);
+            }
+            const cVideo = sanitizeImportImageUrl(getNormalizedRowValue(row, [`Color ${c} Video`, `Color${c}Video`]));
+
+            if (cName !== '' || mainImg !== '' || subImgs.length > 0) {
+              parsedColors.push({
+                colorName: cName || `Color ${c}`,
+                colorCode: cCode || '#000000',
+                isDefault: isDef,
+                mainImage: mainImg,
+                subImages: subImgs,
+                videoUrl: cVideo
+              });
+            }
+          }
+        }
+
+        if (parsedColors.length > 0) {
+          for (let cIdx = 0; cIdx < parsedColors.length; cIdx++) {
+            const c = parsedColors[cIdx];
+            const isDefaultVal = c.isDefault || (cIdx === 0 && !parsedColors.some(pc => pc.isDefault));
+
+            const [cRes] = await connection.query(
+              `INSERT INTO product_colors (product_id, color_name, color_code, hex_code, is_default, image_url, main_image, video_url)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [productId, c.colorName, c.colorCode, c.colorCode, isDefaultVal ? 1 : 0, c.mainImage || null, c.mainImage || null, c.videoUrl || null]
+            ).catch(() => [{ insertId: 0 }]);
+            
+            const colorId = cRes.insertId;
+            if (colorId) {
+              if (c.mainImage) {
+                await connection.query(
+                  `INSERT INTO product_color_images (product_color_id, image_url, is_main, sort_order) VALUES (?, ?, 1, 1)`,
+                  [colorId, c.mainImage]
+                ).catch(() => null);
+              }
+              for (let sIdx = 0; sIdx < c.subImages.length; sIdx++) {
+                await connection.query(
+                  `INSERT INTO product_color_images (product_color_id, image_url, is_main, sort_order) VALUES (?, ?, 0, ?)`,
+                  [colorId, c.subImages[sIdx], sIdx + 2]
+                ).catch(() => null);
+              }
+            }
+          }
+        }
+
+        createdCount++;
+      } catch (insertErr) {
+        console.error('[Product Import Row Insert Error]:', insertErr.message);
+        if (insertErr.code === 'ER_DUP_ENTRY' || insertErr.message.includes('Duplicate entry')) {
+          skippedCount++;
+          skippedRows.push({
+            rowNumber: idx + 1,
+            sku: sku || `ID-${prodId}`,
+            reason: `Duplicate key skipped — DB constraint prevented duplicate entry.`
+          });
+        } else {
+          failedCount++;
+          failedRows.push({
+            rowNumber: idx + 1,
+            sku: sku || `ROW-${idx + 1}`,
+            field: 'Database Insert',
+            problem: insertErr.message || 'Database error during insertion.',
+            suggestedFix: 'Check product field values and try again.'
+          });
         }
       }
     }
 
-    await connection.commit();
     connection.release();
 
+    const totalRows = rawProducts.length;
+    let message = `Product import completed successfully. ${createdCount} added.`;
+    if (skippedCount > 0 || failedCount > 0) {
+      message = `Product import completed with ${createdCount} added, ${skippedCount} duplicates skipped, ${failedCount} failed rows.`;
+    }
+
     return res.status(200).json(ApiResponse.success({
+      totalRows,
       createdCount,
-      updatedCount,
+      skippedCount,
       failedCount,
+      skippedRows,
       failedRows
-    }, 'Product import completed successfully'));
+    }, message));
   } catch (err) {
-    await connection.rollback();
-    connection.release();
+    if (connection) connection.release();
     next(err);
   }
 };

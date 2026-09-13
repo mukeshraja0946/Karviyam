@@ -1209,6 +1209,282 @@ async function initShopFiltersAndNotificationsSchema() {
       }
       console.log('[initDb] Seeded default Left & Right Sidebar Sections into homepage_sidebar_sections table.');
     }
+    // 9. Email Templates Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS email_templates (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        template_key VARCHAR(50) NOT NULL UNIQUE,
+        subject VARCHAR(255) NOT NULL,
+        heading VARCHAR(255),
+        body_html LONGTEXT NOT NULL,
+        footer_text TEXT,
+        button_text VARCHAR(100),
+        button_url VARCHAR(255),
+        is_enabled TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 10. Email Logs Table (Audit Trail & Duplicate Protection)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS email_logs (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        order_id BIGINT NULL,
+        user_id BIGINT NULL,
+        customer_email VARCHAR(150) NOT NULL,
+        email_type VARCHAR(50) NOT NULL,
+        status_key VARCHAR(50) NULL,
+        subject VARCHAR(255),
+        status VARCHAR(20) NOT NULL,
+        failure_reason TEXT NULL,
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_el_order_type (order_id, email_type, status_key)
+      );
+    `);
+
+    // Seed default Email Notification settings in settings table
+    const defaultEmailSettings = [
+      ['email_notifications_enabled', 'true'],
+      ['enable_order_placed_email', 'true'],
+      ['enable_status_update_email', 'true'],
+      ['enable_out_for_delivery_email', 'true'],
+      ['enable_delivered_email', 'true'],
+      ['enable_cancelled_email', 'true'],
+      ['enable_refund_email', 'true']
+    ];
+    for (const [sKey, sVal] of defaultEmailSettings) {
+      await pool.query(
+        `INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = COALESCE(setting_value, VALUES(setting_value))`,
+        [sKey, sVal]
+      );
+    }
+
+    // Seed default email templates if missing
+    const defaultTemplates = [
+      [
+        'ORDER_PLACED',
+        'Karviyam — Your Order #{{order_id}} Has Been Placed',
+        'Order Placed Successfully',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Thank you for shopping with Karviyam. Your order has been successfully placed.</p>',
+        'Thank you for choosing Karviyam.',
+        'TRACK MY ORDER',
+        'https://karviyam.com/profile',
+        1
+      ],
+      [
+        'PAYMENT_CONFIRMED',
+        'Karviyam — Payment Confirmed for Order #{{order_id}}',
+        'Payment Received',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>We have successfully received payment of <strong>{{order_total}}</strong> for your order #{{order_id}}.</p>',
+        'Your transaction is secure and verified.',
+        'VIEW RECEIPT',
+        'https://karviyam.com/profile',
+        1
+      ],
+      [
+        'PROCESSING',
+        'Karviyam — Your Order #{{order_id}} Is Being Processed',
+        'Order Under Processing',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Your Karviyam order #{{order_id}} is currently being processed and prepared for packing.</p>',
+        'We will notify you once your order is packed and dispatched.',
+        'TRACK MY ORDER',
+        'https://karviyam.com/profile',
+        1
+      ],
+      [
+        'PACKED',
+        'Karviyam — Your Order #{{order_id}} Has Been Packed',
+        'Order Packed & Ready',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Great news! Your order #{{order_id}} has been packed and handed over to our courier partner.</p>',
+        'Expected delivery: {{estimated_delivery}}.',
+        'TRACK MY ORDER',
+        'https://karviyam.com/profile',
+        1
+      ],
+      [
+        'SHIPPED',
+        'Karviyam — Your Order #{{order_id}} Has Been Shipped',
+        'Order On The Way',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Your Karviyam order #{{order_id}} has been shipped via <strong>{{courier_partner}}</strong>.</p>',
+        'Tracking Number: {{tracking_number}}',
+        'TRACK MY ORDER',
+        'https://karviyam.com/profile',
+        1
+      ],
+      [
+        'OUT_FOR_DELIVERY',
+        'Karviyam — Your Order #{{order_id}} Is Out for Delivery',
+        '🚚 YOUR ORDER IS OUT FOR DELIVERY',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Your Karviyam order is now out for delivery to your shipping address.</p>',
+        'Delivery location: {{current_location}}.',
+        'TRACK MY ORDER',
+        'https://karviyam.com/profile',
+        1
+      ],
+      [
+        'DELIVERED',
+        'Karviyam — Order #{{order_id}} Delivered Successfully',
+        '✓ Order Delivered Successfully',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Your Karviyam order #{{order_id}} has been delivered successfully to {{current_location}}.</p>',
+        'Thank you for shopping with Karviyam!',
+        'CONTINUE SHOPPING',
+        'https://karviyam.com/shop',
+        1
+      ],
+      [
+        'CANCELLED',
+        'Karviyam — Order #{{order_id}} Order Cancellation Confirmed',
+        'Order Cancelled',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Your Karviyam order #{{order_id}} has been cancelled as per your request or system updates.</p>',
+        'If paid online, refund process will be initiated shortly.',
+        'EXPLORE STORE',
+        'https://karviyam.com/shop',
+        1
+      ],
+      [
+        'RETURN_REQUESTED',
+        'Karviyam — Return Request Received for Order #{{order_id}}',
+        'Return Request Received',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>We have received your return request for order #{{order_id}}. Our quality check team is inspecting your request.</p>',
+        'You will receive an update within 24-48 hours.',
+        'VIEW RETURN STATUS',
+        'https://karviyam.com/profile',
+        1
+      ],
+      [
+        'RETURN_APPROVED',
+        'Karviyam — Return Request Approved for Order #{{order_id}}',
+        'Return Approved',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Your return request for order #{{order_id}} has been approved. Pickup has been scheduled.</p>',
+        'Please keep the item ready in original packaging.',
+        'TRACK PICKUP',
+        'https://karviyam.com/profile',
+        1
+      ],
+      [
+        'RETURN_REJECTED',
+        'Karviyam — Return Request Update for Order #{{order_id}}',
+        'Return Request Declined',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Your return request for order #{{order_id}} could not be approved based on our return policy verification.</p>',
+        'Contact support if you need further assistance.',
+        'CONTACT SUPPORT',
+        'https://karviyam.com/contact',
+        1
+      ],
+      [
+        'REFUND_INITIATED',
+        'Karviyam — Refund Initiated for Order #{{order_id}}',
+        'Refund Initiated',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>A refund of <strong>{{order_total}}</strong> for order #{{order_id}} has been initiated to your original payment method.</p>',
+        'Amount will credit in 3-5 business days.',
+        'VIEW DETAILS',
+        'https://karviyam.com/profile',
+        1
+      ],
+      [
+        'REFUNDED',
+        'Karviyam — Refund Processed for Order #{{order_id}}',
+        'Refund Completed',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Your refund for Karviyam order #{{order_id}} has been completed successfully.</p>',
+        'Thank you for your patience.',
+        'VIEW ORDERS',
+        'https://karviyam.com/profile',
+        1
+      ],
+      [
+        'ACCOUNT_CREATED',
+        'Welcome to Karviyam — Account Created Successfully',
+        'Welcome to Karviyam Family! 🎉',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Welcome to Karviyam! Your customer account has been created successfully.</p>',
+        'Explore our handcrafted artisan collection today.',
+        'EXPLORE STORE',
+        'https://karviyam.com/shop',
+        1
+      ],
+      [
+        'OTP_LOGIN',
+        'Karviyam — Your One Time Password (OTP)',
+        'Security Verification Code',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Your OTP verification code for login is <strong>{{otp_code}}</strong>. Valid for 10 minutes.</p>',
+        'Do not share your OTP code with anyone.',
+        'VERIFY NOW',
+        'https://karviyam.com/login',
+        1
+      ],
+      [
+        'PASSWORD_RESET',
+        'Karviyam — Password Reset Request',
+        'Reset Your Password',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>We received a request to reset the password for your account {{customer_email}}.</p>',
+        'If you did not request this, please ignore this email.',
+        'RESET PASSWORD',
+        'https://karviyam.com/reset-password',
+        1
+      ],
+      [
+        'EMAIL_VERIFICATION',
+        'Karviyam — Verify Your Email Address',
+        'Verify Your Email',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Please click the button below to verify your email address and activate all member benefits.</p>',
+        'Thank you for joining Karviyam.',
+        'VERIFY EMAIL',
+        'https://karviyam.com/verify-email',
+        1
+      ],
+      [
+        'CONTACT_RESPONSE',
+        'Karviyam Support — Response to Your Message',
+        'Support Team Reply',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Thank you for contacting Karviyam Support regarding <em>"{{message_subject}}"</em>.</p>',
+        'We are always here to help you.',
+        'VIEW CONVERSATION',
+        'https://karviyam.com/profile',
+        1
+      ],
+      [
+        'NEWSLETTER',
+        'Karviyam — Exclusive Deals & Artisan Highlights',
+        'Artisan Collections & Offers',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Check out our latest exclusive artisan arrivals and handcrafted special offers.</p>',
+        'Unsubscribe at any time in your account settings.',
+        'SHOP NEW ARRIVALS',
+        'https://karviyam.com/shop',
+        1
+      ],
+      [
+        'PROMOTIONAL',
+        'Karviyam Special Offer — Limited Time Discount!',
+        'Special Discount Just For You 🏷️',
+        '<p>Hello <strong>{{customer_name}}</strong>,</p><p>Use coupon code <strong>{{coupon_code}}</strong> to get flat discount on your next order!</p>',
+        'Valid on all items.',
+        'CLAIM OFFER',
+        'https://karviyam.com/shop',
+        1
+      ],
+      [
+        'ADMIN_NOTIFICATION',
+        'Karviyam System Alert — Admin Notification',
+        'System Status Update',
+        '<p>Hello Admin,</p><p>System alert or bulk operation status update: {{status_message}}.</p>',
+        'Karviyam Enterprise Admin.',
+        'GO TO ADMIN DASHBOARD',
+        'https://karviyam.com/admin',
+        1
+      ]
+    ];
+
+    for (const tpl of defaultTemplates) {
+      await pool.query(
+        `INSERT INTO email_templates (template_key, subject, heading, body_html, footer_text, button_text, button_url, is_enabled)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           subject = COALESCE(email_templates.subject, VALUES(subject)),
+           heading = COALESCE(email_templates.heading, VALUES(heading))`,
+        tpl
+      ).catch(() => null);
+    }
+    console.log('[initDb] Seeded default email templates into email_templates table.');
   } catch (errSchema) {
     console.warn('⚠️ initShopFiltersAndNotificationsSchema warning:', errSchema.message);
   }

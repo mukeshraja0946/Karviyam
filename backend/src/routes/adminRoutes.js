@@ -124,4 +124,26 @@ router.put('/payment-settings', settingController.updatePaymentSettings);
 router.post('/payment-settings/qr', upload.single('file'), settingController.uploadQrImage);
 router.delete('/payment-settings/qr', settingController.deleteQrImage);
 
+// Email Notifications & Templates Management Routes
+router.get('/email-notifications/settings', adminController.getEmailNotificationSettings);
+router.get('/email-notifications/smtp-status', adminController.getSmtpStatus);
+router.post('/email-notifications/settings', adminController.updateEmailNotificationSettings);
+router.put('/email-notifications/settings', adminController.updateEmailNotificationSettings);
+router.post('/email-notifications/logo', upload.single('file'), adminController.uploadEmailLogo);
+router.post('/email-notifications/logo/remove', adminController.removeEmailLogo);
+router.delete('/email-notifications/logo', adminController.removeEmailLogo);
+router.post('/email-notifications/preview', adminController.previewEmailTemplate);
+router.post('/email-notifications/test-email', adminController.sendTestEmail);
+router.get('/email-notifications/logs', adminController.getEmailLogs);
+router.delete('/email-notifications/logs', adminController.clearEmailLogs);
+router.post('/email-notifications/logs/clear', adminController.clearEmailLogs);
+router.get('/email-notifications/logs/export/excel', adminController.exportEmailLogsExcel);
+router.get('/email-notifications/logs/export/pdf', adminController.exportEmailLogsPdf);
+
+// Admin Profile & Photo Upload Routes
+router.get('/profile', adminController.getAdminProfile);
+router.post('/profile/photo', upload.single('file'), adminController.uploadAdminProfilePhoto);
+router.post('/profile/photo/remove', adminController.removeAdminProfilePhoto);
+router.delete('/profile/photo', adminController.removeAdminProfilePhoto);
+
 module.exports = router;

@@ -73,6 +73,7 @@ import AdminNotificationsPage from './pages/AdminNotificationsPage';
 import AdminReturnsPage from './pages/AdminReturnsPage';
 import AdminFooterPage from './pages/AdminFooterPage';
 import AdminPaymentSettingsPage from './pages/AdminPaymentSettingsPage';
+import AdminEmailsPage from './pages/AdminEmailsPage';
 
 export default function App() {
   return (
@@ -131,6 +132,9 @@ export default function App() {
                     <Route path="/admin/homepage-sections" element={<AdminHomepageSectionsPage />} />
                     <Route path="/admin/find-your-price" element={<AdminFindYourPricePage />} />
                     <Route path="/admin/why-shop" element={<AdminWhyShopPage />} />
+                    <Route path="/admin/emails" element={<AdminEmailsPage />} />
+                    <Route path="/admin/emails/logs" element={<AdminEmailsPage />} />
+                    <Route path="/admin/email-notifications" element={<AdminEmailsPage />} />
                     <Route path="/admin/email-marketing" element={<AdminEmailMarketingPage />} />
                     <Route path="/admin/mail" element={<AdminEmailMarketingPage />} />
                     <Route path="/admin/banners" element={<AdminBannersPage />} />

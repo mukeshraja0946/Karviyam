@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { ShieldCheck, Truck, RotateCcw, Headphones, Tag, Lock, CreditCard, Smartphone, Banknote, Building, X, RefreshCw, Trash2, MapPin, Plus, Loader2, QrCode } from 'lucide-react';
 import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
+import OrderConfirmationModal from '../components/OrderConfirmationModal';
 
 export default function CheckoutPage() {
   const { user, login } = useAuth();
@@ -20,6 +21,7 @@ export default function CheckoutPage() {
   const [couponDiscount, setCouponDiscount] = useState(location.state?.couponDiscount || 0);
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [orderConfirmationModalOpen, setOrderConfirmationModalOpen] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('COD');
   const [submitting, setSubmitting] = useState(false);
 
@@ -490,6 +492,26 @@ export default function CheckoutPage() {
     }
   };
 
+  // Proceed from Payment Selection screen to Order Confirmation Popup
+  const handleProceedToConfirmationPopup = () => {
+    if (orderTotal <= 0) {
+      toast.error('Unable to calculate the order total. Please refresh your cart and try again.');
+      return;
+    }
+
+    if (selectedPaymentMethod === 'UPI') {
+      const cleanUpi = customerUpi.trim();
+      if (cleanUpi && !validateUpiFormat(cleanUpi)) {
+        setUpiError('Invalid UPI ID format. Example: user@upi or mobile@ybl');
+        return;
+      }
+      setUpiError('');
+    }
+
+    setPaymentModalOpen(false);
+    setOrderConfirmationModalOpen(true);
+  };
+
   // Execute Final Order Placement
   const handleConfirmAndPlaceOrder = async () => {
     if (orderTotal <= 0) {
@@ -553,6 +575,8 @@ export default function CheckoutPage() {
         setSubmitting(false);
         return;
       }
+
+      setOrderConfirmationModalOpen(false);
 
       // If Cash on Delivery -> Immediately finish order
       if (selectedPaymentMethod === 'COD') {
@@ -1467,7 +1491,7 @@ export default function CheckoutPage() {
               <div className="pt-3 space-y-2">
                 <button
                   type="button"
-                  onClick={handleConfirmAndPlaceOrder}
+                  onClick={handleProceedToConfirmationPopup}
                   disabled={submitting || availablePaymentMethods.length === 0 || orderTotal <= 0}
                   className="w-full bg-[#B71C1C] hover:bg-[#900C0C] active:bg-[#780E0E] disabled:opacity-50 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
@@ -1497,6 +1521,36 @@ export default function CheckoutPage() {
           </div>
         </div>
       )}
+
+      {/* ========================================================= */}
+      {/* 4. FINAL ORDER CONFIRMATION POPUP MODAL                    */}
+      {/* ========================================================= */}
+      <OrderConfirmationModal
+        isOpen={orderConfirmationModalOpen}
+        onClose={() => setOrderConfirmationModalOpen(false)}
+        address={userAddresses.find(a => a.id === selectedAddressId) || userAddresses[0] || (formData.address ? formData : null)}
+        onChangeAddress={() => {
+          setOrderConfirmationModalOpen(false);
+          openAddressModal(null);
+        }}
+        items={itemsList}
+        subtotal={rawItemTotal}
+        discount={0}
+        couponDiscount={activeDiscount}
+        shippingCharge={shippingCharge}
+        totalAmount={orderTotal}
+        paymentMethod={selectedPaymentMethod}
+        onChangePayment={() => {
+          setOrderConfirmationModalOpen(false);
+          setPaymentModalOpen(true);
+        }}
+        onBack={() => {
+          setOrderConfirmationModalOpen(false);
+          setPaymentModalOpen(true);
+        }}
+        onConfirm={handleConfirmAndPlaceOrder}
+        submitting={submitting}
+      />
 
       {/* ========================================================= */}
       {/* 5. UPI PAYMENT REQUEST SENT WAITING CARD MODAL            */}

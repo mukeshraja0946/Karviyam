@@ -3,76 +3,137 @@ const pool = require('../config/db');
 const fs = require('fs');
 const path = require('path');
 
-const getTransporters = async () => {
-  let host = process.env.SMTP_HOST || 'smtp.hostinger.com';
-  let port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465;
-  let user = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+const getSmtpConfig = async () => {
+  let host = process.env.SMTP_HOST || '';
+  let port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : null;
+  let user = process.env.SMTP_USER || process.env.MAIL_FROM || '';
   let pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.HOSTINGER_SMTP_PASS || process.env.MAIL_PASS || '';
+  let fromName = process.env.SMTP_FROM_NAME || process.env.MAIL_FROM_NAME || 'Karviyam';
+  let fromEmail = process.env.SMTP_FROM_EMAIL || process.env.MAIL_FROM_EMAIL || '';
 
-  if (!pass) {
-    try {
-      const [rows] = await pool.query("SELECT setting_value FROM settings WHERE setting_key IN ('smtp_pass', 'smtp_password', 'email_password') AND setting_value IS NOT NULL AND setting_value != '' LIMIT 1");
-      if (rows && rows.length > 0 && rows[0].setting_value) {
-        pass = rows[0].setting_value;
-      }
-    } catch (eDb) {}
+  try {
+    const [rows] = await pool.query(
+      "SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_password', 'email_password', 'smtp_from_email', 'smtp_from_name') AND setting_value IS NOT NULL AND setting_value != ''"
+    );
+    const dbMap = {};
+    rows.forEach(r => { dbMap[r.setting_key] = r.setting_value; });
+
+    if (!host && dbMap.smtp_host) host = dbMap.smtp_host;
+    if (!port && dbMap.smtp_port) port = Number(dbMap.smtp_port);
+    if (!user && dbMap.smtp_user) user = dbMap.smtp_user;
+    if (!pass && (dbMap.smtp_pass || dbMap.smtp_password || dbMap.email_password)) {
+      pass = dbMap.smtp_pass || dbMap.smtp_password || dbMap.email_password;
+    }
+    if (!fromName && dbMap.smtp_from_name) fromName = dbMap.smtp_from_name;
+    if (!fromEmail && dbMap.smtp_from_email) fromEmail = dbMap.smtp_from_email;
+  } catch (eDb) {
+    console.error('Failed to load SMTP settings from DB:', eDb.message);
   }
+
+  // Safe Fallback defaults
+  if (!host) host = 'smtp.gmail.com';
+  if (!port) port = 587;
+  if (!user) user = 'mukeshraja0946@gmail.com';
+  if (!fromEmail) fromEmail = user;
+
+  const secure = port === 465;
+
+  return { host, port, secure, user, pass, fromName, fromEmail };
+};
+
+const getTransporters = async () => {
+  const config = await getSmtpConfig();
+  console.log(`[SMTP Diagnostic]: Host=${config.host}:${config.port}, User=${config.user ? 'Configured (' + config.user + ')' : 'Missing'}, Password=${config.pass ? 'Configured (Hidden)' : 'Missing'}, Secure=${config.secure}`);
 
   const list = [];
 
-  if (pass) {
-    // 1. Primary Configured SMTP
+  if (config.pass && config.user) {
     list.push(nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: { user: config.user, pass: config.pass },
       tls: { rejectUnauthorized: false },
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 10000
     }));
+  }
 
-    // 2. Hostinger SSL (Port 465)
+  if (config.pass && config.user && config.host !== 'smtp.hostinger.com') {
     list.push(nodemailer.createTransport({
       host: 'smtp.hostinger.com',
       port: 465,
       secure: true,
-      auth: { user, pass },
+      auth: { user: config.user, pass: config.pass },
       tls: { rejectUnauthorized: false },
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 10000
     }));
-
-    // 3. Hostinger TLS (Port 587)
-    list.push(nodemailer.createTransport({
-      host: 'smtp.hostinger.com',
-      port: 587,
-      secure: false,
-      auth: { user, pass },
-      tls: { rejectUnauthorized: false },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000
-    }));
-  } else {
-    console.warn(`⚠️ [SMTP Configuration Warning]: SMTP_PASS is missing in backend/.env for ${user}. Hostinger SMTP requires authentication password.`);
   }
 
-  // 4. Server Sendmail Binary Fallback
   try {
-    list.push(nodemailer.createTransport({
-      sendmail: true,
-      newline: 'unix',
-      path: '/usr/sbin/sendmail'
-    }));
+    if (fs.existsSync('/usr/sbin/sendmail')) {
+      list.push(nodemailer.createTransport({
+        sendmail: true,
+        newline: 'unix',
+        path: '/usr/sbin/sendmail'
+      }));
+    }
   } catch (e) {}
 
   return list;
 };
 
-const getEmailLogoHeader = async () => {
+const verifySmtpConnection = async () => {
+  const config = await getSmtpConfig();
+  const maskedUser = config.user ? `${config.user.slice(0, 2)}***@${config.user.split('@')[1] || ''}` : null;
+
+  if (!config.user || !config.pass) {
+    return {
+      status: 'NOT_CONFIGURED',
+      message: 'SMTP credentials (user/password) not configured',
+      host: config.host,
+      port: config.port,
+      user: maskedUser
+    };
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: { user: config.user, pass: config.pass },
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000
+  });
+
+  try {
+    await transporter.verify();
+    return {
+      status: 'CONNECTED',
+      message: 'SMTP connection verified successfully',
+      host: config.host,
+      port: config.port,
+      user: maskedUser
+    };
+  } catch (err) {
+    const isAuthErr = err.message.includes('535') || err.message.toLowerCase().includes('authentication') || err.message.toLowerCase().includes('login');
+    return {
+      status: isAuthErr ? 'AUTH_FAILED' : 'CONNECTION_FAILED',
+      message: err.message,
+      host: config.host,
+      port: config.port,
+      user: maskedUser
+    };
+  }
+};
+
+const getEmailLogoHeader = async (options = {}) => {
+  const { isPreview = false, req = null } = options;
   let customEmailLogoUrl = '';
   try {
     const [logoRows] = await pool.query(
@@ -88,6 +149,12 @@ const getEmailLogoHeader = async () => {
 
   if (customEmailLogoUrl) {
     let logoSrc = '';
+    let cleanPath = customEmailLogoUrl;
+
+    if (cleanPath.includes('/uploads/')) {
+      const match = cleanPath.match(/\/uploads\/.+$/);
+      if (match) cleanPath = match[0];
+    }
 
     if (customEmailLogoUrl.startsWith('data:image/')) {
       const matches = customEmailLogoUrl.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
@@ -98,41 +165,12 @@ const getEmailLogoHeader = async () => {
           content: Buffer.from(matches[2], 'base64'),
           cid: 'admin_custom_email_logo'
         });
-        logoSrc = 'cid:admin_custom_email_logo';
+        logoSrc = isPreview ? customEmailLogoUrl : 'cid:admin_custom_email_logo';
       }
-    } else if (customEmailLogoUrl.startsWith('http://') || customEmailLogoUrl.startsWith('https://')) {
-      if (!customEmailLogoUrl.includes('localhost') && !customEmailLogoUrl.includes('127.0.0.1')) {
-        logoSrc = customEmailLogoUrl;
-      } else {
-        const relativePath = customEmailLogoUrl.replace(/^https?:\/\/[^\/]+/, '');
-        const possibleDirs = [
-          path.join(process.cwd(), relativePath),
-          path.join(__dirname, '../..', relativePath),
-          path.join(__dirname, '..', relativePath)
-        ];
-        let foundPath = null;
-        for (const p of possibleDirs) {
-          if (fs.existsSync(p)) {
-            foundPath = p;
-            break;
-          }
-        }
-        if (foundPath) {
-          attachments.push({
-            filename: 'email-logo.png',
-            path: foundPath,
-            cid: 'admin_custom_email_logo'
-          });
-          logoSrc = 'cid:admin_custom_email_logo';
-        } else {
-          const publicBaseUrl = process.env.BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com';
-          logoSrc = `${publicBaseUrl.replace(/\/$/, '')}${relativePath.startsWith('/') ? relativePath : '/' + relativePath}`;
-        }
-      }
-    } else if (customEmailLogoUrl.startsWith('/') || customEmailLogoUrl.startsWith('uploads/')) {
-      const cleanPath = customEmailLogoUrl.startsWith('/') ? customEmailLogoUrl : `/${customEmailLogoUrl}`;
+    } else {
       const possibleDirs = [
         path.join(process.cwd(), cleanPath),
+        path.join(process.cwd(), 'backend', cleanPath),
         path.join(__dirname, '../..', cleanPath),
         path.join(__dirname, '..', cleanPath)
       ];
@@ -143,16 +181,30 @@ const getEmailLogoHeader = async () => {
           break;
         }
       }
-      if (foundPath) {
-        attachments.push({
-          filename: 'email-logo.png',
-          path: foundPath,
-          cid: 'admin_custom_email_logo'
-        });
-        logoSrc = 'cid:admin_custom_email_logo';
+
+      if (isPreview) {
+        if (req) {
+          const host = req.get('host');
+          const protocol = req.protocol || 'http';
+          logoSrc = `${protocol}://${host}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+        } else {
+          const publicBaseUrl = process.env.BASE_URL || process.env.FRONTEND_URL || 'http://localhost:8080';
+          logoSrc = `${publicBaseUrl.replace(/\/$/, '')}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+        }
       } else {
-        const publicBaseUrl = process.env.BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com';
-        logoSrc = `${publicBaseUrl.replace(/\/$/, '')}${cleanPath}`;
+        if (foundPath) {
+          attachments.push({
+            filename: path.basename(foundPath),
+            path: foundPath,
+            cid: 'admin_custom_email_logo'
+          });
+          logoSrc = 'cid:admin_custom_email_logo';
+        } else if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+          logoSrc = cleanPath;
+        } else {
+          const publicBaseUrl = process.env.BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com';
+          logoSrc = `${publicBaseUrl.replace(/\/$/, '')}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+        }
       }
     }
 
@@ -160,8 +212,8 @@ const getEmailLogoHeader = async () => {
       logoHeaderHtml = `
         <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
           <tr>
-            <td align="center" style="padding: 10px 0 16px 0;">
-              <img src="${logoSrc}" alt="Karviyam Logo" style="max-width: 240px; max-height: 85px; width: auto; height: auto; display: block; border: 0; outline: none; text-decoration: none;" />
+            <td align="center" style="padding: 6px 0 2px 0;">
+              <img src="${logoSrc}" alt="Karviyam Logo" style="max-width: 285px; max-height: 105px; width: auto; height: auto; display: block; border: 0; outline: none; text-decoration: none;" />
             </td>
           </tr>
         </table>
@@ -174,19 +226,19 @@ const getEmailLogoHeader = async () => {
       <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto; text-align: center;">
         <tr>
           <td align="center" style="padding-bottom: 4px;">
-            <div style="display: inline-block; width: 44px; height: 44px; background-color: #B71C1C; border-radius: 12px; line-height: 44px; text-align: center; color: #ffffff; font-family: Georgia, serif; font-size: 24px; font-weight: 900; box-shadow: 0 4px 10px rgba(183, 28, 28, 0.25);">
+            <div style="display: inline-block; width: 52px; height: 52px; background-color: #B71C1C; border-radius: 12px; line-height: 52px; text-align: center; color: #ffffff; font-family: Georgia, serif; font-size: 28px; font-weight: 900; box-shadow: 0 4px 10px rgba(183, 28, 28, 0.25);">
               K
             </div>
           </td>
         </tr>
         <tr>
           <td align="center" style="padding-top: 6px;">
-            <span style="font-family: Georgia, 'Times New Roman', serif; font-size: 26px; font-weight: 900; color: #B71C1C; letter-spacing: 4px; text-transform: uppercase; display: block;">KARVIYAM</span>
+            <span style="font-family: Georgia, 'Times New Roman', serif; font-size: 30px; font-weight: 900; color: #B71C1C; letter-spacing: 4px; text-transform: uppercase; display: block;">KARVIYAM</span>
           </td>
         </tr>
         <tr>
           <td align="center" style="padding-top: 2px;">
-            <span style="font-family: Arial, sans-serif; font-size: 11.5px; color: #64748b; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">Timeless Style • Premium Elegance</span>
+            <span style="font-family: Arial, sans-serif; font-size: 12px; color: #64748b; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">Timeless Style • Premium Elegance</span>
           </td>
         </tr>
       </table>
@@ -710,7 +762,14 @@ const sendTestEmail = async (toEmail) => {
       lastErr = err;
     }
   }
-  throw new Error(lastErr?.message || 'Failed to send test email');
+
+  const cleanErr = lastErr ? (
+    lastErr.message.includes('ENOENT') || lastErr.message.includes('sendmail')
+      ? 'SMTP connection failed. Please verify SMTP_USER and SMTP_PASS in backend/.env for vanakkam@karviyam.com'
+      : lastErr.message
+  ) : 'SMTP connection failed. Please configure SMTP_USER and SMTP_PASS in backend/.env';
+
+  throw new Error(cleanErr);
 };
 
 const sendLoginOTPEmail = async ({ toEmail, otp }) => {
@@ -775,6 +834,10 @@ const sendLoginOTPEmail = async ({ toEmail, otp }) => {
 const sendAdminOTPEmail = sendLoginOTPEmail;
 
 module.exports = {
+  getSmtpConfig,
+  getTransporters,
+  verifySmtpConnection,
+  getEmailLogoHeader,
   sendContactEmail,
   sendAdminReplyEmail,
   sendSubscriptionSuccessEmail,

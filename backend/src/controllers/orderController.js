@@ -136,9 +136,17 @@ exports.checkout = async (req, res, next) => {
 
     let calculatedTotal = 0;
     for (const item of orderItemsData) {
-      const [pRows] = await pool.query('SELECT price FROM products WHERE id = ?', [item.productId]);
-      if (pRows.length > 0 && parseFloat(pRows[0].price || 0) > 0) {
-        item.priceAtTime = parseFloat(pRows[0].price);
+      const targetProdId = item.productId || item.id;
+      const [pRows] = await pool.query('SELECT name, price, stock_quantity, is_active FROM products WHERE id = ?', [targetProdId]);
+      if (pRows.length > 0) {
+        const prod = pRows[0];
+        if (prod.is_active === 0 || prod.is_active === false) {
+          return res.status(400).json(ApiResponse.error(`Some items in your cart are no longer available.`));
+        }
+        if (prod.stock_quantity !== undefined && prod.stock_quantity !== null && prod.stock_quantity < item.quantity) {
+          return res.status(400).json(ApiResponse.error(`Some items in your cart are no longer available in the requested quantity.`));
+        }
+        item.priceAtTime = parseFloat(prod.price || 0);
       } else {
         item.priceAtTime = parseFloat(item.priceAtTime || item.price || 999.00);
       }
@@ -207,6 +215,14 @@ exports.checkout = async (req, res, next) => {
     const [createdOrder] = await pool.query('SELECT * FROM orders WHERE id = ?', [orderId]);
     const dto = await mapOrderRowToDTO(createdOrder[0]);
 
+    // Send "Order Placed" email for COD orders
+    if (normalizedMethod === 'COD') {
+      try {
+        const { triggerOrderEmailNotification } = require('../services/orderEmailService');
+        triggerOrderEmailNotification({ orderId, eventType: 'ORDER_PLACED' }).catch(e => console.error('[Checkout COD Email Error]:', e));
+      } catch (e) {}
+    }
+
     return res.status(200).json(ApiResponse.success(dto, 'Order created successfully.'));
   } catch (err) {
     next(err);
@@ -274,12 +290,10 @@ exports.verifyOrderPayment = async (req, res, next) => {
       [txnRef, amountPaid, order.id]
     );
 
-    // Send order confirmation email ONLY after verified SUCCESS
+    // Send order confirmation email ONLY after verified SUCCESS (respects enable_order_placed_email setting)
     try {
-      const emailService = require('../utils/emailService');
-      if (emailService.sendOrderConfirmationEmail) {
-        emailService.sendOrderConfirmationEmail(order).catch(e => console.error('[Order Confirmation Email Error]:', e));
-      }
+      const { triggerOrderEmailNotification } = require('../services/orderEmailService');
+      triggerOrderEmailNotification({ orderId: order.id, eventType: 'ORDER_PLACED', forceSend: false }).catch(e => console.error('[Verified Order Payment Email Error]:', e));
     } catch (e) {}
 
     const updatedOrder = await mapOrderRowToDTO({
@@ -336,6 +350,11 @@ exports.cancelOrder = async (req, res, next) => {
     await pool.query("UPDATE orders SET status = 'CANCELLED' WHERE id = ?", [id]);
     await pool.query("UPDATE payments SET payment_status = 'CANCELLED' WHERE order_id = ?", [id]);
 
+    try {
+      const { triggerOrderEmailNotification } = require('../services/orderEmailService');
+      triggerOrderEmailNotification({ orderId: id, eventType: 'CANCELLED', newStatus: 'CANCELLED' }).catch(e => console.error('[Cancel Order Email Error]:', e));
+    } catch (e) {}
+
     return res.status(200).json(ApiResponse.success({ id }, 'Order cancelled successfully'));
   } catch (err) {
     next(err);
@@ -372,7 +391,12 @@ exports.updateOrder = async (req, res, next) => {
 
     await ensureOrderTrackingColumns();
 
-    const isDelivered = String(status || trackingStatus || '').toUpperCase() === 'DELIVERED';
+    const [existingRows] = await pool.query('SELECT status, tracking_status, current_location FROM orders WHERE id = ?', [id]);
+    const oldStatus = existingRows && existingRows.length > 0 ? (existingRows[0].status || existingRows[0].tracking_status) : null;
+    const oldLocation = existingRows && existingRows.length > 0 ? existingRows[0].current_location : '';
+
+    const newStatusVal = status || trackingStatus || null;
+    const isDelivered = String(newStatusVal || '').toUpperCase() === 'DELIVERED';
 
     await pool.query(
       `UPDATE orders SET 
@@ -397,6 +421,22 @@ exports.updateOrder = async (req, res, next) => {
         id
       ]
     );
+
+    // Status Change & Delivery Location Email Trigger Detection
+    const hasStatusChanged = newStatusVal && String(newStatusVal).toUpperCase() !== String(oldStatus).toUpperCase();
+    const hasLocationChanged = currentLocation !== undefined && currentLocation !== null && String(currentLocation).trim() !== String(oldLocation).trim();
+
+    if (hasStatusChanged || hasLocationChanged) {
+      try {
+        const { triggerOrderEmailNotification } = require('../services/orderEmailService');
+        triggerOrderEmailNotification({
+          orderId: id,
+          eventType: 'STATUS_UPDATE',
+          oldStatus,
+          newStatus: newStatusVal || oldStatus
+        }).catch(e => console.error('[Update Order Email Error]:', e));
+      } catch (e) {}
+    }
 
     const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
     const dto = await mapOrderRowToDTO(orders[0]);

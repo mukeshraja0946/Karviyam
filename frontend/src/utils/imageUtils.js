@@ -42,7 +42,17 @@ export const resolveImageUrl = (path, fallbackSeed = 0, updatedAt = null) => {
     return DEFAULT_FALLBACK_IMAGES[idx];
   }
 
-  const trimmed = path.trim();
+  let trimmed = path.trim();
+
+  // If path is an absolute URL containing /uploads/ (e.g. legacy https://karviyam.com/uploads/file.png),
+  // extract /uploads/... so it resolves against current environment's API base URL.
+  if ((trimmed.startsWith('http://') || trimmed.startsWith('https://')) && trimmed.includes('/uploads/')) {
+    const match = trimmed.match(/\/uploads\/.+$/);
+    if (match) {
+      trimmed = match[0];
+    }
+  }
+
   let baseResolvedUrl = trimmed;
 
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/') || trimmed.startsWith('blob:')) {
