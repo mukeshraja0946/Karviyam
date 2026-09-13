@@ -106,6 +106,11 @@ export default function ShopPage() {
       if (Array.isArray(data) && data.length > 0) {
         setFilterSections(data);
       }
+      const catRes = await api.get('/categories').catch(() => null);
+      const catData = catRes?.data?.data || catRes?.data || catRes;
+      if (Array.isArray(catData) && catData.length > 0) {
+        setDbCategories(catData);
+      }
     } catch (err) {
       console.error('Error fetching shop filter config:', err);
     }
@@ -250,7 +255,8 @@ export default function ShopPage() {
     selectedColors,
     inStockOnly,
     sortBy,
-    currentPage
+    currentPage,
+    searchParams
   ]);
 
   useEffect(() => {
@@ -334,11 +340,31 @@ export default function ShopPage() {
 
   // Page Title Label
   const pageTitleLabel = useMemo(() => {
-    if (selectedCategories.length === 1) return selectedCategories[0];
+    const filterParam = searchParams.get('filter') || '';
+    if (filterParam === 'new') return 'New Arrivals';
+    if (filterParam === 'bestsellers') return 'Best Sellers';
+
+    const searchParam = searchParams.get('search') || searchParams.get('keyword') || searchParams.get('q') || searchParams.get('subCategory') || searchParams.get('tag') || '';
+    if (searchParam) {
+      const lower = searchParam.toLowerCase();
+      if (lower.includes('oversized')) return 'Oversized T-Shirts';
+      if (lower.includes('linen')) return 'Casual Linen Shirts';
+      if (lower.includes('apex')) return 'Apex Stealth Sneakers';
+      if (lower.includes('silver')) return '925 Silver Jewellery';
+      if (lower.includes('anime')) return 'Anime Graphic Hoodies';
+      return searchParam;
+    }
+
+    if (selectedCategories.length === 1) {
+      const catVal = selectedCategories[0];
+      const found = (dbCategories || []).find(c => String(c.id) === String(catVal) || c.name === catVal);
+      if (found) return found.name;
+      return catVal;
+    }
     if (selectedBrands.length === 1) return selectedBrands[0];
     if (slug) return slug;
     return 'All Products';
-  }, [selectedCategories, selectedBrands, slug]);
+  }, [selectedCategories, selectedBrands, slug, searchParams, dbCategories]);
 
   // Render Filter Sidebar
   const renderFilterSidebar = () => {
