@@ -673,25 +673,38 @@ exports.updateAdminHomepageSections = async (req, res, next) => {
       return res.status(400).json(ApiResponse.error('Invalid sections data format. Expected array.'));
     }
 
-    const cleanedSections = sections.map((sec, idx) => ({
-      id: sec.id || `sec_${idx + 1}`,
-      section_key: sec.section_key || sec.id || `sec_${idx + 1}`,
-      title: String(sec.title || '').trim() || 'Featured Section',
-      subtitle: String(sec.subtitle || '').trim(),
-      enabled: sec.enabled !== false,
-      position: parseInt(sec.position || sec.display_order) || (idx + 1),
-      desktop_layout: ['carousel', 'carousel_2_rows', 'grid'].includes(sec.desktop_layout) ? sec.desktop_layout : 'carousel',
-      desktop_product_count: parseInt(sec.desktop_product_count) || 6,
-      desktop_max_products: parseInt(sec.desktop_max_products) || 12,
-      mobile_layout: ['carousel', 'grid_2_col'].includes(sec.mobile_layout) ? sec.mobile_layout : 'carousel',
-      mobile_product_count: parseInt(sec.mobile_product_count) || 6,
-      mobile_max_products: parseInt(sec.mobile_max_products) || 12,
-      show_view_all: sec.show_view_all !== false,
-      view_all_text: String(sec.view_all_text || 'View All →').trim(),
-      view_all_link: String(sec.view_all_link || '/shop').trim(),
-      selection_mode: ['auto', 'custom', 'hybrid'].includes(sec.selection_mode) ? sec.selection_mode : 'auto',
-      custom_product_ids: Array.isArray(sec.custom_product_ids) ? sec.custom_product_ids : []
-    }));
+    const cleanedSections = sections.map((sec, idx) => {
+      const desktopLayout = ['carousel', 'carousel_2_rows', 'grid'].includes(sec.desktop_layout)
+        ? sec.desktop_layout
+        : (sec.display_type === 'grid' ? 'grid' : 'carousel');
+
+      const mobileLayout = ['carousel', 'grid_2_col'].includes(sec.mobile_layout)
+        ? sec.mobile_layout
+        : (sec.display_type === 'grid' ? 'grid_2_col' : 'carousel');
+
+      const deskCount = parseInt(sec.desktop_product_count) || parseInt(sec.limit) || 6;
+      const mobCount = parseInt(sec.mobile_product_count) || parseInt(sec.limit) || 6;
+
+      return {
+        id: sec.id || sec.section_key || `sec_${idx + 1}`,
+        section_key: sec.section_key || sec.id || `sec_${idx + 1}`,
+        title: String(sec.title || '').trim() || 'Featured Section',
+        subtitle: String(sec.subtitle || '').trim(),
+        enabled: sec.enabled !== false,
+        position: parseInt(sec.position || sec.display_order) || (idx + 1),
+        desktop_layout: desktopLayout,
+        desktop_product_count: deskCount,
+        desktop_max_products: parseInt(sec.desktop_max_products) || 12,
+        mobile_layout: mobileLayout,
+        mobile_product_count: mobCount,
+        mobile_max_products: parseInt(sec.mobile_max_products) || 12,
+        show_view_all: sec.show_view_all !== false,
+        view_all_text: String(sec.view_all_text || 'View All →').trim(),
+        view_all_link: String(sec.view_all_link || '/shop').trim(),
+        selection_mode: ['auto', 'custom', 'hybrid'].includes(sec.selection_mode) ? sec.selection_mode : 'auto',
+        custom_product_ids: Array.isArray(sec.custom_product_ids) ? sec.custom_product_ids : []
+      };
+    });
 
     const jsonValue = JSON.stringify(cleanedSections);
 

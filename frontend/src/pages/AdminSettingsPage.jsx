@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import { broadcastSyncEvent } from '../services/api';
 
 const DEFAULT_MOBILE_SECTIONS = [
   { id: 'parent_categories', title: 'Quick Categories', subtitle: '', enabled: true, layout: 'horizontal', order: 1 },
@@ -104,6 +105,7 @@ export default function AdminSettingsPage() {
       setProductSections(reordered);
       toast.success('Product Section Layout Controls saved successfully!');
       window.dispatchEvent(new Event('karviyam_homepage_sections_updated'));
+      broadcastSyncEvent('karviyam_homepage_sections_updated');
     } catch (e) {
       toast.error('Failed to save section configurations.');
     } finally {
@@ -117,6 +119,7 @@ export default function AdminSettingsPage() {
       await api.post('/homepage-sections/admin', { sections: DEFAULT_PRODUCT_SECTIONS });
       toast.success('Reset to default section layout settings!');
       window.dispatchEvent(new Event('karviyam_homepage_sections_updated'));
+      broadcastSyncEvent('karviyam_homepage_sections_updated');
     } catch (e) {}
   };
 
