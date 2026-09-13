@@ -574,19 +574,19 @@ export default function ShopPage() {
   };
 
   return (
-    <div className="w-full bg-[#FAFAFA] min-h-screen py-4 text-left font-sans">
+    <div className="w-full bg-[#FAFAFA] py-4 text-left font-sans">
       <div className="max-w-[1640px] mx-auto px-3 sm:px-6">
         {/* ========================================================= */}
-        {/* DESKTOP LAYOUT (≥ 1024px / lg) — INDEPENDENT SCROLLING    */}
+        {/* DESKTOP LAYOUT (≥ 1024px / lg) — NATURAL CONTENT FLOW     */}
         {/* ========================================================= */}
-        <div className="hidden lg:flex gap-6 items-start h-[calc(100vh-140px)] overflow-hidden">
-          {/* 1. LEFT FILTER SIDEBAR: INDEPENDENT VERTICAL SCROLL */}
-          <aside className="w-[250px] xl:w-[270px] shrink-0 h-full overflow-y-auto overscroll-contain no-scrollbar pr-1.5 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
+        <div className="hidden lg:flex gap-6 items-start">
+          {/* 1. LEFT FILTER SIDEBAR: STICKY NATURAL HEIGHT */}
+          <aside className="w-[250px] xl:w-[270px] shrink-0 sticky top-4 max-h-[calc(100vh-32px)] overflow-y-auto no-scrollbar bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
             {renderFilterSidebar()}
           </aside>
 
-          {/* 2. MAIN PRODUCT CATALOG: INDEPENDENT VERTICAL SCROLL */}
-          <main className="flex-1 min-w-0 h-full overflow-y-auto overscroll-contain no-scrollbar pr-1.5 space-y-4">
+          {/* 2. MAIN PRODUCT CATALOG: NATURAL VERTICAL FLOW */}
+          <main className="flex-1 min-w-0 space-y-4">
             {/* Results Header Bar */}
             <div className="flex items-center justify-between bg-white px-5 py-3 rounded-2xl border border-slate-200/90 shadow-2xs sticky top-0 z-10">
               <div>
@@ -666,7 +666,7 @@ export default function ShopPage() {
                 </button>
               </div>
             ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 items-start w-full">
                 {products.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
