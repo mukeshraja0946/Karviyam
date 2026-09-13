@@ -442,12 +442,13 @@ exports.exportEmailLogsExcel = async (req, res, next) => {
 
     const excelRows = logs.map(r => ({
       'Email ID': r.id,
-      'Event Type': r.event_type || r.email_type || 'N/A',
+      'From Email': r.from_email || 'vanakkam@karviyam.com',
       'Recipient Email': r.recipient_email || r.customer_email || 'N/A',
+      'Event Type': r.event_type || r.email_type || 'N/A',
       'Order ID': r.order_id ? `#ORD-${r.order_id}` : 'N/A',
       'Subject': r.subject || 'N/A',
       'Status': r.status || 'N/A',
-      'Sent At': r.created_at ? new Date(r.created_at).toLocaleString('en-IN') : 'N/A',
+      'Sent At': r.created_at || r.sent_at ? new Date(r.created_at || r.sent_at).toLocaleString('en-IN') : 'N/A',
       'Failure Reason': r.failure_reason || r.error_message || 'None'
     }));
 
@@ -886,10 +887,7 @@ exports.sendTestEmail = async (req, res, next) => {
       supportEmail: 'vanakkam@karviyam.com'
     });
 
-    const smtpConfig = await getSmtpConfig();
-    const fromName = smtpConfig.fromName || 'Karviyam Admin';
-    const fromEmail = smtpConfig.fromEmail || smtpConfig.user || 'vanakkam@karviyam.com';
-    const fromHeader = `"${fromName}" <${fromEmail}>`;
+    const fromHeader = `"Karviyam Admin" <vanakkam@karviyam.com>`;
 
     const transporters = await getTransporters();
     let sentInfo = null;
@@ -898,8 +896,8 @@ exports.sendTestEmail = async (req, res, next) => {
     if (!transporters || transporters.length === 0) {
       try {
         await pool.query(
-          `INSERT INTO email_logs (email_type, customer_email, order_id, subject, status, failure_reason)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO email_logs (email_type, from_email, customer_email, order_id, subject, status, failure_reason)
+           VALUES (?, 'vanakkam@karviyam.com', ?, ?, ?, ?, ?)`,
           [`TEST_${templateKey}`, recipientEmail, null, finalSubject, 'FAILED', 'No SMTP transporters available']
         );
       } catch (eLog) {
@@ -913,6 +911,7 @@ exports.sendTestEmail = async (req, res, next) => {
         sentInfo = await transporter.sendMail({
           from: fromHeader,
           to: recipientEmail,
+          replyTo: 'vanakkam@karviyam.com',
           subject: `[TEST] ${finalSubject}`,
           html: fullHtml,
           attachments
@@ -927,8 +926,8 @@ exports.sendTestEmail = async (req, res, next) => {
 
     try {
       await pool.query(
-        `INSERT INTO email_logs (email_type, customer_email, order_id, subject, status, failure_reason)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO email_logs (email_type, from_email, customer_email, order_id, subject, status, failure_reason)
+         VALUES (?, 'vanakkam@karviyam.com', ?, ?, ?, ?, ?)`,
         [
           `TEST_${templateKey}`,
           recipientEmail,

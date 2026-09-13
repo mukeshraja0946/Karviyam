@@ -214,8 +214,8 @@ const triggerOrderEmailNotification = async ({ orderId, eventType = 'ORDER_PLACE
 
     // 8. Generate Complete HTML Email
     const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
-    const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
-    const supportEmail = process.env.SUPPORT_EMAIL || 'vanakkam@karviyam.com';
+    const VERIFIED_FROM_EMAIL = 'vanakkam@karviyam.com';
+    const supportEmail = 'vanakkam@karviyam.com';
 
     const fullHtml = generateFullOrderEmailHtml({
       logoHeaderHtml,
@@ -244,9 +244,9 @@ const triggerOrderEmailNotification = async ({ orderId, eventType = 'ORDER_PLACE
 
     // 9. Dispatch Email via Nodemailer Transporter Cascade
     const mailOptions = {
-      from: `"Karviyam Orders" <${fromUser}>`,
+      from: `"Karviyam Orders" <${VERIFIED_FROM_EMAIL}>`,
       to: customerEmail,
-      replyTo: supportEmail,
+      replyTo: VERIFIED_FROM_EMAIL,
       subject: emailSubject,
       html: fullHtml,
       attachments
@@ -323,8 +323,8 @@ const checkDuplicateEmailLog = async (orderId, emailType, statusKey) => {
 const logEmailRecord = async ({ orderId, userId, customerEmail, emailType, statusKey, subject, status, failureReason }) => {
   try {
     await pool.query(
-      `INSERT INTO email_logs (order_id, user_id, customer_email, email_type, status_key, subject, status, failure_reason, sent_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      `INSERT INTO email_logs (order_id, user_id, from_email, customer_email, email_type, status_key, subject, status, failure_reason, sent_at)
+       VALUES (?, ?, 'vanakkam@karviyam.com', ?, ?, ?, ?, ?, ?, NOW())`,
       [orderId || null, userId || null, customerEmail || 'UNAVAILABLE', emailType, statusKey || null, subject || '', status, failureReason || null]
     );
   } catch (e) {

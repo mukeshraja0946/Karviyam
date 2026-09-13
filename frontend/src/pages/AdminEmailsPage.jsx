@@ -570,8 +570,39 @@ export default function AdminEmailsPage() {
         </button>
       </div>
 
-      {/* EMAIL BRANDING & AUTO-SEND ORDER PLACED CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* EMAIL BRANDING, VERIFIED SENDER & AUTO-SEND ORDER PLACED CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* VERIFIED SENDER EMAIL CARD */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900">VERIFIED SENDER EMAIL</h3>
+                <p className="text-[11px] text-slate-500">Backend Enforced Mailbox</p>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-500">SENDER EMAIL</span>
+                <span className="font-mono font-bold text-slate-900">vanakkam@karviyam.com</span>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
+                <span className="font-semibold text-slate-500">SENDER NAME</span>
+                <span className="font-bold text-slate-900">Karviyam</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-xs font-bold">
+            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>✓ All customer emails are sent from this verified address.</span>
+          </div>
+        </div>
+
         {/* EMAIL BRANDING CARD */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
           <div className="flex items-center gap-2">
@@ -908,6 +939,7 @@ export default function AdminEmailsPage() {
                   <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase">
                     <th className="p-3">Log ID</th>
                     <th className="p-3">Event Type</th>
+                    <th className="p-3">From Email</th>
                     <th className="p-3">Recipient Email</th>
                     <th className="p-3">Order ID</th>
                     <th className="p-3">Subject</th>
@@ -919,13 +951,13 @@ export default function AdminEmailsPage() {
                 <tbody className="divide-y divide-slate-100 text-xs">
                   {logsLoading ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-8 text-slate-400">
+                      <td colSpan="9" className="text-center py-8 text-slate-400">
                         Loading email audit logs...
                       </td>
                     </tr>
                   ) : logs.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-8 text-slate-400 font-semibold">
+                      <td colSpan="9" className="text-center py-8 text-slate-400 font-semibold">
                         No email logs recorded matching filters.
                       </td>
                     </tr>
@@ -934,6 +966,7 @@ export default function AdminEmailsPage() {
                       <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="p-3 font-mono font-bold text-slate-500">#{log.id}</td>
                         <td className="p-3 font-mono font-bold text-slate-900">{log.event_type || log.email_type}</td>
+                        <td className="p-3 font-mono font-semibold text-slate-600">{log.from_email || 'vanakkam@karviyam.com'}</td>
                         <td className="p-3 font-semibold text-slate-800">{log.recipient_email || log.customer_email || '—'}</td>
                         <td className="p-3 font-mono text-slate-600">{log.order_id ? `#ORD-${log.order_id}` : '—'}</td>
                         <td className="p-3 font-medium text-slate-700 truncate max-w-xs">{log.subject || '—'}</td>
@@ -951,7 +984,7 @@ export default function AdminEmailsPage() {
                           </span>
                         </td>
                         <td className="p-3 text-slate-500 text-[11px]">
-                          {log.created_at ? new Date(log.created_at).toLocaleString('en-IN') : '—'}
+                          {log.created_at || log.sent_at ? new Date(log.created_at || log.sent_at).toLocaleString('en-IN') : '—'}
                         </td>
                         <td className="p-3 text-rose-500 text-[11px] truncate max-w-xs">
                           {log.failure_reason || log.error_message || '—'}

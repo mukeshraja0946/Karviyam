@@ -3,17 +3,18 @@ const pool = require('../config/db');
 const fs = require('fs');
 const path = require('path');
 
+const VERIFIED_SENDER_EMAIL = 'vanakkam@karviyam.com';
+const VERIFIED_SENDER_NAME = 'Karviyam';
+
 const getSmtpConfig = async () => {
   let host = process.env.SMTP_HOST || '';
   let port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : null;
-  let user = process.env.SMTP_USER || process.env.MAIL_FROM || '';
+  let user = process.env.SMTP_USER || process.env.MAIL_FROM || VERIFIED_SENDER_EMAIL;
   let pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.HOSTINGER_SMTP_PASS || process.env.MAIL_PASS || '';
-  let fromName = process.env.SMTP_FROM_NAME || process.env.MAIL_FROM_NAME || 'Karviyam';
-  let fromEmail = process.env.SMTP_FROM_EMAIL || process.env.MAIL_FROM_EMAIL || '';
 
   try {
     const [rows] = await pool.query(
-      "SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_password', 'email_password', 'smtp_from_email', 'smtp_from_name') AND setting_value IS NOT NULL AND setting_value != ''"
+      "SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_password', 'email_password') AND setting_value IS NOT NULL AND setting_value != ''"
     );
     const dbMap = {};
     rows.forEach(r => { dbMap[r.setting_key] = r.setting_value; });
@@ -24,18 +25,17 @@ const getSmtpConfig = async () => {
     if (!pass && (dbMap.smtp_pass || dbMap.smtp_password || dbMap.email_password)) {
       pass = dbMap.smtp_pass || dbMap.smtp_password || dbMap.email_password;
     }
-    if (!fromName && dbMap.smtp_from_name) fromName = dbMap.smtp_from_name;
-    if (!fromEmail && dbMap.smtp_from_email) fromEmail = dbMap.smtp_from_email;
   } catch (eDb) {
     console.error('Failed to load SMTP settings from DB:', eDb.message);
   }
 
-  // Safe Fallback defaults
-  if (!host) host = 'smtp.gmail.com';
-  if (!port) port = 587;
-  if (!user) user = 'mukeshraja0946@gmail.com';
-  if (!fromEmail) fromEmail = user;
+  // Strict Karviyam defaults
+  if (!host) host = 'smtp.hostinger.com';
+  if (!port) port = 465;
+  if (!user) user = VERIFIED_SENDER_EMAIL;
 
+  const fromName = VERIFIED_SENDER_NAME;
+  const fromEmail = VERIFIED_SENDER_EMAIL;
   const secure = port === 465;
 
   return { host, port, secure, user, pass, fromName, fromEmail };
@@ -250,14 +250,14 @@ const getEmailLogoHeader = async (options = {}) => {
 
 const sendContactEmail = async ({ name, email, subject, message }) => {
   try {
-    const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
-    const supportEmail = process.env.SUPPORT_EMAIL || 'vanakkam@karviyam.com';
+    const fromUser = VERIFIED_SENDER_EMAIL;
+    const supportEmail = VERIFIED_SENDER_EMAIL;
     const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
 
     const mailOptions = {
       from: `"Karviyam Contact Form" <${fromUser}>`,
       to: supportEmail,
-      replyTo: email,
+      replyTo: VERIFIED_SENDER_EMAIL,
       subject: `New Contact Submission: ${subject || 'Customer Inquiry'}`,
       text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\nMessage:\n${message}`,
       attachments,
@@ -294,8 +294,8 @@ const sendContactEmail = async ({ name, email, subject, message }) => {
 };
 
 const sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMessage, originalMessage = '', orderId = '' }) => {
-  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
-  const supportEmail = process.env.SUPPORT_EMAIL || 'vanakkam@karviyam.com';
+  const fromUser = VERIFIED_SENDER_EMAIL;
+  const supportEmail = VERIFIED_SENDER_EMAIL;
 
   const now = new Date();
   const formattedTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
@@ -309,7 +309,7 @@ const sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMessag
   const mailOptions = {
     from: `"Karviyam Support" <${fromUser}>`,
     to: toEmail,
-    replyTo: supportEmail,
+    replyTo: VERIFIED_SENDER_EMAIL,
     subject: `Re: ${subject || 'Karviyam Support Request'}`,
     text: `Hello ${cleanCustomerName},\n\n${replyMessage}\n\n----------------------------\nKarviyam Support Team\n${supportEmail}`,
     attachments,
@@ -542,7 +542,7 @@ const sendSubscriptionSuccessEmail = async (subscription) => {
   if (!subscription || !subscription.email) return;
 
   const toEmail = subscription.email;
-  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+  const fromUser = VERIFIED_SENDER_EMAIL;
   const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
 
   const amountText = `${subscription.currency || '₹'} ${subscription.amount || '99'}`;
@@ -611,7 +611,7 @@ const sendSubscriptionSuccessEmail = async (subscription) => {
               </div>
 
               <p style="margin:0;font-size:13px;color:#64748B;line-height:1.5;">
-                Thank you for supporting KARVIYAM. Should you have any questions, feel free to contact our customer care at <a href="mailto:support@karviyam.com" style="color:#B71C1C;text-decoration:none;font-weight:bold;">support@karviyam.com</a>.
+                Thank you for supporting KARVIYAM. Should you have any questions, feel free to contact our customer care at <a href="mailto:vanakkam@karviyam.com" style="color:#B71C1C;text-decoration:none;font-weight:bold;">vanakkam@karviyam.com</a>.
               </p>
             </td>
           </tr>
@@ -629,8 +629,9 @@ const sendSubscriptionSuccessEmail = async (subscription) => {
   `;
 
   const mailOptions = {
-    from: `"KARVIYAM VIP Club" <${fromUser}>`,
+    from: `"Karviyam VIP Club" <${fromUser}>`,
     to: toEmail,
+    replyTo: VERIFIED_SENDER_EMAIL,
     subject: '🎉 Subscription Confirmed! Welcome to KARVIYAM VIP Drop Alerts',
     html,
     attachments
@@ -651,7 +652,7 @@ const sendSubscriptionSuccessEmail = async (subscription) => {
 const sendCampaignEmail = async ({ toEmail, subject, content, couponCode }) => {
   if (!toEmail) return;
 
-  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+  const fromUser = VERIFIED_SENDER_EMAIL;
   const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
 
   const formattedContent = String(content || '').replace(/\n/g, '<br/>');
@@ -709,8 +710,9 @@ const sendCampaignEmail = async ({ toEmail, subject, content, couponCode }) => {
   `;
 
   const mailOptions = {
-    from: `"KARVIYAM Offers" <${fromUser}>`,
+    from: `"Karviyam Offers" <${fromUser}>`,
     to: toEmail,
+    replyTo: VERIFIED_SENDER_EMAIL,
     subject: subject,
     html,
     attachments
@@ -728,7 +730,7 @@ const sendCampaignEmail = async ({ toEmail, subject, content, couponCode }) => {
 };
 
 const sendTestEmail = async (toEmail) => {
-  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+  const fromUser = VERIFIED_SENDER_EMAIL;
   const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
 
   const html = `
@@ -745,8 +747,9 @@ const sendTestEmail = async (toEmail) => {
   `;
 
   const mailOptions = {
-    from: `"KARVIYAM Admin" <${fromUser}>`,
+    from: `"Karviyam Admin" <${fromUser}>`,
     to: toEmail,
+    replyTo: VERIFIED_SENDER_EMAIL,
     subject: '✅ KARVIYAM SMTP Email Connection Test Successful',
     html,
     attachments
@@ -773,7 +776,7 @@ const sendTestEmail = async (toEmail) => {
 };
 
 const sendLoginOTPEmail = async ({ toEmail, otp }) => {
-  const fromUser = process.env.SMTP_USER || process.env.MAIL_FROM || 'vanakkam@karviyam.com';
+  const fromUser = VERIFIED_SENDER_EMAIL;
   const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
 
   const html = `
@@ -812,6 +815,7 @@ const sendLoginOTPEmail = async ({ toEmail, otp }) => {
   const mailOptions = {
     from: `"Karviyam Security" <${fromUser}>`,
     to: toEmail,
+    replyTo: VERIFIED_SENDER_EMAIL,
     subject: "Karviyam Login OTP",
     html,
     attachments

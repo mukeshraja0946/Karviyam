@@ -1232,6 +1232,7 @@ async function initShopFiltersAndNotificationsSchema() {
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
         order_id BIGINT NULL,
         user_id BIGINT NULL,
+        from_email VARCHAR(150) NOT NULL DEFAULT 'vanakkam@karviyam.com',
         customer_email VARCHAR(150) NOT NULL,
         email_type VARCHAR(50) NOT NULL,
         status_key VARCHAR(50) NULL,
@@ -1242,6 +1243,16 @@ async function initShopFiltersAndNotificationsSchema() {
         INDEX idx_el_order_type (order_id, email_type, status_key)
       );
     `);
+
+    try {
+      const [elCols] = await pool.query("SHOW COLUMNS FROM email_logs LIKE 'from_email'");
+      if (!elCols || elCols.length === 0) {
+        await pool.query("ALTER TABLE email_logs ADD COLUMN from_email VARCHAR(150) NOT NULL DEFAULT 'vanakkam@karviyam.com' AFTER user_id");
+        console.log('✅ Added from_email column to email_logs table.');
+      }
+    } catch (eEl) {
+      console.warn('Notice: Could not add from_email column to email_logs:', eEl.message);
+    }
 
     // Seed default Email Notification settings in settings table
     const defaultEmailSettings = [
