@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-const { getTransporters, getEmailLogoHeader } = require('../utils/emailService');
+const { getTransporters, getEmailLogoHeader, getPublicImageUrl } = require('../utils/emailService');
 
 /**
  * Helper to get a setting value from settings table
@@ -154,14 +154,14 @@ const triggerOrderEmailNotification = async ({ orderId, eventType = 'ORDER_PLACE
     const productListHtml = items.map(item => {
       const pName = item.product_name || `Product #${item.product_id}`;
       const pSku = item.product_sku || item.product_sku_str || `KV-PROD-${item.product_id || 'X'}`;
-      const pImg = item.image_url || item.product_image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=200';
+      const pImg = getPublicImageUrl(item.image_url || item.product_image || item.image || item.img);
       const sizeStr = item.selected_size ? `<span style="display:inline-block; margin-right:8px; background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:11px;">Size: ${item.selected_size}</span>` : '';
       const colorStr = item.selected_color ? `<span style="display:inline-block; background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:11px;">Color: ${item.selected_color}</span>` : '';
 
       return `
         <tr>
-          <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; width: 64px;">
-            <img src="${pImg}" alt="${pName}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0;" />
+          <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; width: 90px;">
+            <img src="${pImg}" alt="${pName}" width="90" height="110" style="display: block; width: 90px; height: 110px; object-fit: contain; border-radius: 8px; border: 0; outline: none; text-decoration: none;" />
           </td>
           <td style="padding: 12px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top;">
             <strong style="color: #0f172a; font-size: 13.5px; display: block; margin-bottom: 3px;">${pName}</strong>
@@ -213,7 +213,7 @@ const triggerOrderEmailNotification = async ({ orderId, eventType = 'ORDER_PLACE
     const buttonUrl = template.button_url || `${process.env.FRONTEND_URL || 'https://karviyam.com'}/profile`;
 
     // 8. Generate Complete HTML Email
-    const { logoHeaderHtml, attachments } = await getEmailLogoHeader();
+    const { logoHeaderHtml, attachments } = await getEmailLogoHeader({ useCid: true });
     const VERIFIED_FROM_EMAIL = 'vanakkam@karviyam.com';
     const supportEmail = 'vanakkam@karviyam.com';
 

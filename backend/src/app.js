@@ -154,7 +154,24 @@ if (!fs.existsSync(uploadsDir)) {
   });
 }
 
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(uploadsDir, {
+  maxAge: '30d',
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
+
+// Fallback for missing upload files: return default product placeholder image instead of SPA index.html
+app.use('/uploads/*', (req, res) => {
+  const placeholderPath = path.join(__dirname, '../uploads/karviyam_product_placeholder.png');
+  if (fs.existsSync(placeholderPath)) {
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.sendFile(placeholderPath);
+  }
+  return res.status(404).set('Content-Type', 'image/png').end();
+});
 
 // --------------------------------------------------
 // ROOT ASSETS

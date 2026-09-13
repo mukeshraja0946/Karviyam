@@ -141,8 +141,49 @@ const verifySmtpConnection = async () => {
   }
 };
 
+/**
+ * Convert any product or asset image path/URL stored in DB into a production-safe absolute HTTPS URL.
+ * Never returns relative paths, localhost, 127.0.0.1, null, or undefined.
+ */
+const getPublicImageUrl = (imagePath) => {
+  const DEFAULT_PLACEHOLDER = 'https://karviyam.com/uploads/karviyam_product_placeholder.png';
+
+  if (!imagePath || typeof imagePath !== 'string') {
+    return DEFAULT_PLACEHOLDER;
+  }
+
+  let clean = imagePath.trim();
+  if (!clean || clean === 'undefined' || clean === 'null' || clean === 'false') {
+    return DEFAULT_PLACEHOLDER;
+  }
+
+  // Strip localhost / 127.0.0.1 origins
+  if (clean.startsWith('http://localhost') || clean.startsWith('https://localhost') || clean.startsWith('http://127.0.0.1')) {
+    clean = clean.replace(/^https?:\/\/[^\/]+/, '');
+  }
+
+  // Absolute HTTPS / HTTP URLs (e.g. Unsplash, Cloudinary, external CDN)
+  if (clean.startsWith('http://') || clean.startsWith('https://')) {
+    return clean;
+  }
+
+  // Normalize relative upload paths
+  if (clean.includes('/uploads/')) {
+    const match = clean.match(/\/uploads\/.+$/);
+    if (match) clean = match[0];
+  }
+
+  let baseUrl = (process.env.PUBLIC_APP_URL || process.env.PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com').replace(/\/$/, '');
+  if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
+    baseUrl = 'https://karviyam.com';
+  }
+
+  const normalizedPath = clean.startsWith('/') ? clean : '/' + clean;
+  return `${baseUrl}${normalizedPath}`;
+};
+
 const getEmailLogoHeader = async (options = {}) => {
-  const { isPreview = false, req = null } = options;
+  const { isPreview = false, req = null, useCid = false } = options;
   let customEmailLogoUrl = '';
   try {
     const [logoRows] = await pool.query(
@@ -164,31 +205,29 @@ const getEmailLogoHeader = async (options = {}) => {
       if (match) cleanPath = match[0];
     }
 
-    if (cleanPath.startsWith('http://localhost') || cleanPath.startsWith('https://localhost') || cleanPath.startsWith('http://127.0.0.1')) {
-      cleanPath = cleanPath.replace(/^https?:\/\/[^\/]+/, '');
-    }
+    const localFileName = cleanPath.replace(/^\/uploads\//, '');
+    const localFilePath = path.join(__dirname, '../../uploads', localFileName);
 
-    let logoSrc = '';
-    if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
-      logoSrc = cleanPath;
-    } else if (cleanPath.startsWith('data:image/')) {
-      logoSrc = cleanPath;
+    // If inline CID requested for Nodemailer dispatches and local file exists on disk
+    if (useCid && !isPreview && fs.existsSync(localFilePath)) {
+      attachments.push({
+        filename: path.basename(localFilePath) || 'karviyam-logo.png',
+        path: localFilePath,
+        cid: 'karviyam-logo',
+        contentDisposition: 'inline'
+      });
+
+      logoHeaderHtml = `
+        <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto; text-align: center;">
+          <tr>
+            <td align="center" style="padding: 10px 0 6px 0;">
+              <img src="cid:karviyam-logo" alt="Karviyam" width="220" style="max-width: 220px; width: 220px; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none;" />
+            </td>
+          </tr>
+        </table>
+      `;
     } else {
-      let publicBaseUrl = process.env.PUBLIC_BASE_URL || process.env.BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com';
-      if (publicBaseUrl.includes('localhost') || publicBaseUrl.includes('127.0.0.1')) {
-        publicBaseUrl = 'https://karviyam.com';
-      }
-      if (isPreview && req) {
-        const host = req.get('host');
-        const protocol = req.protocol || 'http';
-        if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
-          publicBaseUrl = `${protocol}://${host}`;
-        }
-      }
-      logoSrc = `${publicBaseUrl.replace(/\/$/, '')}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
-    }
-
-    if (logoSrc) {
+      const logoSrc = getPublicImageUrl(cleanPath);
       logoHeaderHtml = `
         <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto; text-align: center;">
           <tr>
@@ -827,6 +866,7 @@ module.exports = {
   getSmtpConfig,
   getTransporters,
   verifySmtpConnection,
+  getPublicImageUrl,
   getEmailLogoHeader,
   sendContactEmail,
   sendAdminReplyEmail,
