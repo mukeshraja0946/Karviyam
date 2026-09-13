@@ -1,6 +1,9 @@
 const pool = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
 const { mapProductRowToDTO } = require('./productController');
+const { getPublicImageUrl } = require('../utils/urlUtils');
+const fs = require('fs');
+const path = require('path');
 
 exports.getDashboardStats = async (req, res, next) => {
   try {
@@ -1948,13 +1951,15 @@ exports.getAdminProfile = async (req, res, next) => {
     const [rows] = await pool.query(
       "SELECT setting_value FROM settings WHERE setting_key IN ('admin_profile_photo', 'adminPhotoUrl') AND setting_value IS NOT NULL AND setting_value != '' ORDER BY id DESC LIMIT 1"
     );
-    let photoUrl = rows.length > 0 ? rows[0].setting_value : null;
+    let rawPath = rows.length > 0 ? rows[0].setting_value : null;
+    let photoUrl = rawPath ? getPublicImageUrl(rawPath, null) : null;
 
     return res.status(200).json(ApiResponse.success({
       fullName: 'Karviyam Admin',
       email: 'vanakkam@karviyam.com',
       role: 'Super Admin',
-      photoUrl
+      photoUrl,
+      rawPath
     }, 'Admin profile fetched successfully'));
   } catch (err) {
     next(err);
@@ -1967,14 +1972,25 @@ exports.uploadAdminProfilePhoto = async (req, res, next) => {
       return res.status(400).json(ApiResponse.error('No image file uploaded'));
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    const relativeUrl = `/uploads/${req.file.filename}`;
 
     await pool.query(
       `INSERT INTO settings (setting_key, setting_value) VALUES ('admin_profile_photo', ?) ON DUPLICATE KEY UPDATE setting_value = ?`,
-      [fileUrl, fileUrl]
+      [relativeUrl, relativeUrl]
+    );
+    await pool.query(
+      `INSERT INTO settings (setting_key, setting_value) VALUES ('adminPhotoUrl', ?) ON DUPLICATE KEY UPDATE setting_value = ?`,
+      [relativeUrl, relativeUrl]
     );
 
-    return res.status(200).json(ApiResponse.success({ photoUrl: fileUrl, filename: req.file.filename }, 'Admin profile photo uploaded successfully'));
+    const publicUrl = getPublicImageUrl(relativeUrl);
+    const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
+
+    return res.status(200).json(ApiResponse.success({
+      photoUrl: cacheBustedUrl,
+      rawPath: relativeUrl,
+      filename: req.file.filename
+    }, 'Admin profile photo uploaded successfully'));
   } catch (err) {
     next(err);
   }
@@ -1982,11 +1998,84 @@ exports.uploadAdminProfilePhoto = async (req, res, next) => {
 
 exports.removeAdminProfilePhoto = async (req, res, next) => {
   try {
+    const [rows] = await pool.query(
+      "SELECT setting_value FROM settings WHERE setting_key IN ('admin_profile_photo', 'adminPhotoUrl') AND setting_value IS NOT NULL AND setting_value != '' LIMIT 1"
+    );
+    if (rows.length > 0 && rows[0].setting_value) {
+      const oldPath = rows[0].setting_value;
+      if (oldPath.includes('/uploads/')) {
+        const filename = oldPath.split('/uploads/').pop();
+        const diskPath = path.join(process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads'), filename);
+        if (fs.existsSync(diskPath)) {
+          try { fs.unlinkSync(diskPath); } catch (e) {}
+        }
+      }
+    }
+
     await pool.query(
       `UPDATE settings SET setting_value = '' WHERE setting_key IN ('admin_profile_photo', 'adminPhotoUrl')`
     );
-    return res.status(200).json(ApiResponse.success({ photoUrl: null }, 'Admin profile photo removed'));
+    return res.status(200).json(ApiResponse.success({ photoUrl: null, rawPath: null }, 'Admin profile photo removed'));
   } catch (err) {
     next(err);
   }
 };
+
+exports.getSystemHealth = async (req, res, next) => {
+  try {
+    let dbStatus = 'FAIL';
+    try {
+      const conn = await pool.getConnection();
+      await conn.ping();
+      conn.release();
+      dbStatus = 'OK';
+    } catch (e) {
+      dbStatus = 'FAIL';
+    }
+
+    let uploadsStatus = 'FAIL';
+    try {
+      const uDir = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
+      if (!fs.existsSync(uDir)) {
+        fs.mkdirSync(uDir, { recursive: true });
+      }
+      const testFile = path.join(uDir, '.health_test');
+      fs.writeFileSync(testFile, 'ok');
+      if (fs.existsSync(testFile)) {
+        fs.unlinkSync(testFile);
+        uploadsStatus = 'OK';
+      }
+    } catch (e) {
+      uploadsStatus = 'FAIL';
+    }
+
+    let smtpStatus = 'UNKNOWN';
+    try {
+      const { verifySmtpConnection } = require('../utils/emailService');
+      const verifyRes = await verifySmtpConnection();
+      smtpStatus = verifyRes.success ? 'OK' : 'FAIL';
+    } catch (e) {
+      smtpStatus = 'FAIL';
+    }
+
+    const testPublicUrl = getPublicImageUrl('/uploads/admin-avatar.png');
+
+    return res.status(200).json(ApiResponse.success({
+      frontendApi: 'OK',
+      backend: 'OK',
+      database: dbStatus,
+      authentication: 'OK',
+      uploads: uploadsStatus,
+      publicImageUrl: testPublicUrl ? 'OK' : 'FAIL',
+      smtp: smtpStatus,
+      environment: process.env.NODE_ENV || 'production',
+      publicAppUrl: process.env.PUBLIC_APP_URL || 'https://karviyam.com',
+      backendUrl: process.env.BACKEND_URL || 'https://karviyam.com/api',
+      uploadDirConfigured: Boolean(process.env.UPLOAD_DIR),
+      timestamp: new Date().toISOString()
+    }, 'System health diagnostics fetched successfully'));
+  } catch (err) {
+    next(err);
+  }
+};
+

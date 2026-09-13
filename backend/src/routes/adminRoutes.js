@@ -147,4 +147,8 @@ router.post('/profile/photo', upload.single('file'), adminController.uploadAdmin
 router.post('/profile/photo/remove', adminController.removeAdminProfilePhoto);
 router.delete('/profile/photo', adminController.removeAdminProfilePhoto);
 
+// Admin System Health & Production Diagnostics Route
+router.get('/system-health', adminController.getSystemHealth);
+router.get('/diagnostics', adminController.getSystemHealth);
+
 module.exports = router;
