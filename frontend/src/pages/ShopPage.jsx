@@ -225,8 +225,15 @@ export default function ShopPage() {
       const urlIsNew = searchParams.get('isNewArrival');
       const urlIsBest = searchParams.get('isBestSeller');
 
+      const urlPromotion = searchParams.get('promotion') || searchParams.get('promo') || '';
+      const urlMaxDiscount = searchParams.get('maxDiscount') || '';
+      const urlMinDiscount = searchParams.get('minDiscount') || '';
+
       if (urlSearch) queryParts.push(`keyword=${encodeURIComponent(urlSearch)}`);
       if (urlFilter) queryParts.push(`filter=${encodeURIComponent(urlFilter)}`);
+      if (urlPromotion) queryParts.push(`promotion=${encodeURIComponent(urlPromotion)}`);
+      if (urlMaxDiscount) queryParts.push(`maxDiscount=${encodeURIComponent(urlMaxDiscount)}`);
+      if (urlMinDiscount) queryParts.push(`minDiscount=${encodeURIComponent(urlMinDiscount)}`);
       if (urlTag) queryParts.push(`tag=${encodeURIComponent(urlTag)}`);
       if (urlSubCat) queryParts.push(`subCategory=${encodeURIComponent(urlSubCat)}`);
       if (urlIsNew) queryParts.push(`isNewArrival=${encodeURIComponent(urlIsNew)}`);
@@ -722,6 +729,37 @@ export default function ShopPage() {
 
           {/* 2. MAIN PRODUCT CATALOG: NATURAL VERTICAL FLOW */}
           <main className="flex-1 min-w-0 space-y-4">
+            {Boolean(searchParams.get('promotion') || searchParams.get('promo') || searchParams.get('maxDiscount')) && (
+              <div className="bg-red-50 border border-red-200/90 rounded-2xl px-5 py-3 flex items-center justify-between shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <span className="bg-[#C91C1C] text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-full shadow-2xs">
+                    ✨ ACTIVE PROMOTION
+                  </span>
+                  <span className="font-display font-extrabold text-xs text-[#C91C1C]">
+                    {searchParams.get('promotion') || searchParams.get('promo')
+                      ? (searchParams.get('promotion') || searchParams.get('promo')).replace(/-/g, ' ').toUpperCase()
+                      : 'FESTIVE SPECIAL'}
+                    {searchParams.get('maxDiscount') ? ` — UP TO ${searchParams.get('maxDiscount')}% OFF` : ''}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = new URLSearchParams(searchParams);
+                    p.delete('promotion');
+                    p.delete('promo');
+                    p.delete('maxDiscount');
+                    p.delete('minDiscount');
+                    setSearchParams(p, { replace: true });
+                  }}
+                  className="text-xs font-black text-[#C91C1C] hover:bg-red-100/80 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-red-200"
+                >
+                  <span>Clear Promotion Filter</span>
+                  <span>✕</span>
+                </button>
+              </div>
+            )}
+
             {/* Results Header Bar (Sticks below Navbar) */}
             <div className="flex items-center justify-between bg-white px-5 py-3 rounded-2xl border border-slate-200/90 shadow-2xs sticky top-[132px] z-20">
               <div>

@@ -1076,7 +1076,7 @@ async function initShopFiltersAndNotificationsSchema() {
           { id: 'support', label: 'Customer Support', subtitle: '24/7 dedicated help', icon: 'Headphones', link: '/contact', badge: '', enabled: true, order: 8 }
         ])],
         ['offer_card_left', 'LEFT', 'OFFER_CARD', 'EXTRA 10% OFF', 'On Prepaid Orders', null, null, 'Percent', 'INSTANT DISCOUNT', 'GIFT CODE', 'PRODUCT_FILTER', '/shop?filter=offers', '#FFF1F2', '#991B1B', 1, 2, JSON.stringify({ couponCode: 'PREPAID10', discountPercent: '%' })],
-        ['promo_card_left', 'LEFT', 'PROMO_BANNER', 'UP TO 60% OFF', 'On Bestsellers', 'Limited time festive drops & trending styles.', 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600', 'Sparkles', '✨ FESTIVE SPECIAL', 'SHOP NOW', 'SHOP', '/shop', '#800000', '#FFFFFF', 1, 3, null],
+        ['promo_card_left', 'LEFT', 'PROMO_BANNER', 'UP TO 60% OFF', 'On Bestsellers', 'Limited time festive drops & trending styles.', 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600', 'Sparkles', '✨ FESTIVE SPECIAL', 'SHOP NOW', 'PROMOTION', '/shop?promotion=festive-special&maxDiscount=60', '#800000', '#FFFFFF', 1, 3, JSON.stringify({ promotionName: 'Festive Special', maxDiscount: 60, minDiscount: 0, discountCondition: 'UP_TO' })],
         ['shop_by_price_left', 'LEFT', 'SHOP_BY_PRICE', 'SHOP BY PRICE', null, null, null, 'Tag', null, null, 'SHOP', '/shop', null, null, 1, 4, JSON.stringify([
           { id: 'p1', label: 'Under ₹499', link: '/shop?maxPrice=499', enabled: true },
           { id: 'p2', label: 'Under ₹999', link: '/shop?maxPrice=999', enabled: true },

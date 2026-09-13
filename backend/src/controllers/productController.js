@@ -516,7 +516,37 @@ const buildProductFilterConditions = (queryParams) => {
     }
   }
 
-  // 10. DISCOUNT FILTER
+  // 10. DISCOUNT & PROMOTION FILTER
+  const maxDiscVal = queryParams.maxDiscount !== undefined && queryParams.maxDiscount !== '' ? parseFloat(queryParams.maxDiscount) : null;
+  const exactDiscVal = queryParams.exactDiscount !== undefined && queryParams.exactDiscount !== '' ? parseFloat(queryParams.exactDiscount) : null;
+  const promoVal = queryParams.promotion || queryParams.promo;
+
+  if (maxDiscVal !== null && !isNaN(maxDiscVal) && maxDiscVal > 0) {
+    // Up to maxDiscVal% OFF (product must be discounted and discount <= maxDiscVal)
+    conditions.push(`(
+      (p.discount_percentage IS NOT NULL AND p.discount_percentage > 0 AND p.discount_percentage <= ?)
+      OR (p.old_price IS NOT NULL AND p.old_price > p.price AND ((p.old_price - p.price)/p.old_price)*100 <= ?)
+    )`);
+    params.push(maxDiscVal, maxDiscVal);
+  }
+
+  if (exactDiscVal !== null && !isNaN(exactDiscVal) && exactDiscVal > 0) {
+    conditions.push(`(
+      (p.discount_percentage IS NOT NULL AND ROUND(p.discount_percentage) = ?)
+      OR (p.old_price IS NOT NULL AND p.old_price > p.price AND ROUND(((p.old_price - p.price)/p.old_price)*100) = ?)
+    )`);
+    params.push(exactDiscVal, exactDiscVal);
+  }
+
+  if (promoVal && (promoVal.toLowerCase().includes('festive') || promoVal.toLowerCase().includes('60-off'))) {
+    if (maxDiscVal === null && exactDiscVal === null) {
+      conditions.push(`(
+        (p.discount_percentage IS NOT NULL AND p.discount_percentage > 0 AND p.discount_percentage <= 60)
+        OR (p.old_price IS NOT NULL AND p.old_price > p.price AND ((p.old_price - p.price)/p.old_price)*100 <= 60)
+      )`);
+    }
+  }
+
   const rawDiscounts = discounts || discount || minDiscount;
   if (rawDiscounts) {
     const discArray = (Array.isArray(rawDiscounts) ? rawDiscounts : String(rawDiscounts).split(','))
