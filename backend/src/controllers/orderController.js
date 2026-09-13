@@ -24,7 +24,7 @@ const mapOrderRowToDTO = async (order) => {
   await ensureOrderTrackingColumns();
 
   const [items] = await pool.query(
-    `SELECT oi.*, p.name as product_name, p.image_url 
+    `SELECT oi.*, p.name as product_name, p.sku, p.image_url 
      FROM order_items oi 
      LEFT JOIN products p ON oi.product_id = p.id 
      WHERE oi.order_id = ?`,
@@ -36,6 +36,7 @@ const mapOrderRowToDTO = async (order) => {
     orderId: item.order_id,
     productId: item.product_id,
     productName: item.product_name || `Product #${item.product_id}`,
+    sku: item.sku || `KV-PRD-${item.product_id}`,
     imageUrl: item.image_url || null,
     quantity: item.quantity,
     priceAtTime: parseFloat(item.price_at_time || 0),
@@ -468,3 +469,15 @@ exports.deleteOrder = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.getInvoice = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const html = await generateInvoiceHtml(id);
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(html);
+  } catch (err) {
+    next(err);
+  }
+};
+

@@ -3,7 +3,7 @@ import api from '../utils/api';
 import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
 
-const CartContext = createContext();
+export const CartContext = createContext();
 
 const DEFAULT_SAMPLE_ITEMS = [];
 
