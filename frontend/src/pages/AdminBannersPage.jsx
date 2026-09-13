@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Image as ImageIcon, Plus, Trash2, Edit2, X, Eye, Upload, Link as LinkIcon, Power, CheckCircle, AlertCircle, Loader2, FileSpreadsheet } from 'lucide-react';
+import { Image as ImageIcon, Plus, Trash2, Edit2, X, Eye, Upload, Link as LinkIcon, Power, CheckCircle, AlertCircle, Loader2, FileSpreadsheet, Zap } from 'lucide-react';
 import ExportDropdown from '../components/ExportDropdown';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
