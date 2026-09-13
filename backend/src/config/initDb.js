@@ -1061,19 +1061,30 @@ async function initShopFiltersAndNotificationsSchema() {
       );
     `);
 
+    // Ensure product_selling_types table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS product_selling_types (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        product_id BIGINT NOT NULL,
+        selling_type VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_prod_selling_type (product_id, selling_type),
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      );
+    `);
+
     // Seed default sidebar sections if table is empty
     const [sbCount] = await pool.query('SELECT COUNT(*) as count FROM homepage_sidebar_sections');
     if (!sbCount || sbCount[0].count === 0) {
       const defaultLeft = [
         ['nav_items_menu', 'LEFT', 'NAV_MENU', 'Quick Navigation', 'Browse top store sections', null, null, 'Layers', null, null, 'SHOP', '/shop', null, null, 1, 1, JSON.stringify([
-          { id: 'offers', label: 'Top Offers', subtitle: 'Best discounts on site', icon: 'Flame', link: '/shop?filter=offers', badge: 'HOT', enabled: true, order: 1 },
-          { id: 'arrivals', label: 'New Arrivals', subtitle: 'Fresh drops & collections', icon: 'Sparkles', link: '/shop?filter=new', badge: 'NEW', enabled: true, order: 2 },
-          { id: 'bestsellers', label: 'Best Sellers', subtitle: 'Customer favorite picks', icon: 'Star', link: '/shop?filter=bestsellers', badge: 'HOT', enabled: true, order: 3 },
-          { id: 'trending', label: 'Trending Now', subtitle: 'Popular style trends', icon: 'TrendingUp', link: '/shop?filter=trending', badge: '', enabled: true, order: 4 },
-          { id: 'premium', label: 'Premium Store', subtitle: '925 Silver & Luxury', icon: 'Crown', link: '/shop?category=Jewellery', badge: 'NEW', enabled: true, order: 5 },
-          { id: 'gifts', label: 'Gift Cards', subtitle: 'Surprise your loved ones', icon: 'Gift', link: '/contact', badge: '', enabled: true, order: 6 },
-          { id: 'track', label: 'Track Order', subtitle: 'Live order tracking', icon: 'Truck', link: '/profile', badge: '', enabled: true, order: 7 },
-          { id: 'support', label: 'Customer Support', subtitle: '24/7 dedicated help', icon: 'Headphones', link: '/contact', badge: '', enabled: true, order: 8 }
+          { id: 'offers', label: 'Top Offers', subtitle: 'Best discounts on site', icon: 'Flame', link: '/shop?sellingType=top-offers', badge: 'HOT', enabled: true, order: 1 },
+          { id: 'arrivals', label: 'New Arrivals', subtitle: 'Fresh drops & collections', icon: 'Sparkles', link: '/shop?sellingType=new-arrivals', badge: 'NEW', enabled: true, order: 2 },
+          { id: 'bestsellers', label: 'Best Sellers', subtitle: 'Customer favorite picks', icon: 'Star', link: '/shop?sellingType=best-sellers', badge: 'HOT', enabled: true, order: 3 },
+          { id: 'trending', label: 'Trending Now', subtitle: 'Popular style trends', icon: 'TrendingUp', link: '/shop?sellingType=trending-now', badge: '', enabled: true, order: 4 },
+          { id: 'track', label: 'Track Order', subtitle: 'Live order tracking', icon: 'Truck', link: '/profile', badge: '', enabled: true, order: 5 },
+          { id: 'support', label: 'Customer Support', subtitle: '24/7 dedicated help', icon: 'Headphones', link: '/contact', badge: '', enabled: true, order: 6 }
         ])],
         ['offer_card_left', 'LEFT', 'OFFER_CARD', 'EXTRA 10% OFF', 'On Prepaid Orders', null, null, 'Percent', 'INSTANT DISCOUNT', 'GIFT CODE', 'PRODUCT_FILTER', '/shop?filter=offers', '#FFF1F2', '#991B1B', 1, 2, JSON.stringify({ couponCode: 'PREPAID10', discountPercent: '%' })],
         ['promo_card_left', 'LEFT', 'PROMO_BANNER', 'UP TO 60% OFF', 'On Bestsellers', 'Limited time festive drops & trending styles.', 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600', 'Sparkles', '✨ FESTIVE SPECIAL', 'SHOP NOW', 'PROMOTION', '/shop?promotion=festive-special&maxDiscount=60', '#800000', '#FFFFFF', 1, 3, JSON.stringify({ promotionName: 'Festive Special', maxDiscount: 60, minDiscount: 0, discountCondition: 'UP_TO' })],

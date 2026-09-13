@@ -484,6 +484,7 @@ export default function AdminProductsPage() {
       isBestSeller: false,
       isNewArrival: false,
       isActive: true,
+      sellingTypes: [],
       images: [],
       colorVariants: [
         {
@@ -616,6 +617,16 @@ export default function AdminProductsPage() {
       if (brandMatch) bName = brandMatch.name;
     }
 
+    let initialSellingTypes = Array.isArray(p.sellingTypes)
+      ? p.sellingTypes
+      : (Array.isArray(p.selling_types) ? p.selling_types : []);
+    if (initialSellingTypes.length === 0) {
+      if (p.isNewArrival) initialSellingTypes.push('NEW_ARRIVALS');
+      if (p.isBestSeller) initialSellingTypes.push('BEST_SELLERS');
+      if (p.isTrending) initialSellingTypes.push('TRENDING_NOW');
+      if (p.oldPrice && parseFloat(p.oldPrice) > parseFloat(p.price || 0)) initialSellingTypes.push('TOP_OFFERS');
+    }
+
     setFormData({
       name: p.name || '',
       sku: p.sku || '',
@@ -644,6 +655,7 @@ export default function AdminProductsPage() {
       isBestSeller: !!p.isBestSeller,
       isNewArrival: !!p.isNewArrival,
       isActive: p.isActive !== false,
+      sellingTypes: initialSellingTypes,
       images: p.images || (p.imageUrl ? [p.imageUrl] : []),
       colorVariants: parsedVariants,
     });
@@ -1597,6 +1609,51 @@ export default function AdminProductsPage() {
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Tags (Comma Separated)</label>
                 <input type="text" value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl outline-none" placeholder="saree, festive, silk, designer" />
+              </div>
+
+              {/* Selling Types Selection Section */}
+              <div className="bg-red-50/50 p-3.5 rounded-xl border border-red-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block font-black text-slate-800 text-xs uppercase tracking-wider">
+                    Selling Type (Homepage Sidebar & Shop Page Filters)
+                  </label>
+                  <span className="text-[10px] text-slate-500 font-bold">Select all that apply</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                  {[
+                    { key: 'TOP_OFFERS', label: 'Top Offers' },
+                    { key: 'NEW_ARRIVALS', label: 'New Arrivals' },
+                    { key: 'BEST_SELLERS', label: 'Best Sellers' },
+                    { key: 'TRENDING_NOW', label: 'Trending Now' }
+                  ].map(st => {
+                    const isChecked = (formData.sellingTypes || []).includes(st.key);
+                    return (
+                      <label key={st.key} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${isChecked ? 'bg-white border-[#B71C1C] text-[#B71C1C] font-black shadow-2xs' : 'bg-white/70 border-slate-200 text-slate-700 font-bold hover:bg-white'}`}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            setFormData(prev => {
+                              const curr = prev.sellingTypes || [];
+                              const nextTypes = curr.includes(st.key)
+                                ? curr.filter(t => t !== st.key)
+                                : [...curr, st.key];
+                              return {
+                                ...prev,
+                                sellingTypes: nextTypes,
+                                isNewArrival: nextTypes.includes('NEW_ARRIVALS'),
+                                isBestSeller: nextTypes.includes('BEST_SELLERS'),
+                                isTrending: nextTypes.includes('TRENDING_NOW')
+                              };
+                            });
+                          }}
+                          className="accent-[#B71C1C] w-4 h-4 cursor-pointer"
+                        />
+                        <span className="text-xs">{st.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Badges Toggles */}

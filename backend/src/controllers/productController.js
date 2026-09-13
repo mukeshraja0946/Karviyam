@@ -143,6 +143,13 @@ const mapProductRowToDTO = async (p) => {
     }
   } catch (e) {}
 
+  // Fetch assigned selling types
+  let sellingTypes = [];
+  try {
+    const [stRows] = await pool.query('SELECT selling_type FROM product_selling_types WHERE product_id = ?', [p.id]);
+    sellingTypes = stRows.map(r => r.selling_type);
+  } catch (e) {}
+
   // Calculate genuine dynamic ratings & reviews from reviews table
   let avgRating = 0;
   let reviewsCount = 0;
@@ -234,6 +241,8 @@ const mapProductRowToDTO = async (p) => {
     colorVariantImages: p.color_variant_images || null,
     variants,
     extraDetails,
+    sellingTypes,
+    selling_types: sellingTypes,
     createdAt: p.created_at
   };
 };
@@ -280,6 +289,10 @@ const buildProductFilterConditions = async (queryParams) => {
     isTrending,
     isBestSeller,
     isNewArrival,
+    sellingType,
+    sellingTypes,
+    selling_type,
+    selling_types,
     includeInactive
   } = queryParams;
 
@@ -687,6 +700,35 @@ const buildProductFilterConditions = async (queryParams) => {
   }
   if (filter === 'offers') {
     conditions.push('(p.old_price > p.price OR p.discount_percentage > 0)');
+  }
+
+  // 14. SELLING TYPE FILTER (TOP_OFFERS, NEW_ARRIVALS, BEST_SELLERS, TRENDING_NOW)
+  const rawSellingType = sellingType || sellingTypes || selling_type || selling_types;
+  if (rawSellingType && rawSellingType !== 'ALL' && rawSellingType !== 'all') {
+    const stArray = (Array.isArray(rawSellingType) ? rawSellingType : String(rawSellingType).split(','))
+      .map(s => s.trim().toUpperCase().replace(/-/g, '_'))
+      .filter(Boolean);
+
+    if (stArray.length > 0) {
+      const stSubClauses = [];
+      stArray.forEach(st => {
+        if (st === 'TOP_OFFERS') {
+          stSubClauses.push('(EXISTS (SELECT 1 FROM product_selling_types pst WHERE pst.product_id = p.id AND pst.selling_type = "TOP_OFFERS") OR p.old_price > p.price OR p.discount_percentage > 0)');
+        } else if (st === 'NEW_ARRIVALS') {
+          stSubClauses.push('(EXISTS (SELECT 1 FROM product_selling_types pst WHERE pst.product_id = p.id AND pst.selling_type = "NEW_ARRIVALS") OR p.is_new_arrival = 1)');
+        } else if (st === 'BEST_SELLERS') {
+          stSubClauses.push('(EXISTS (SELECT 1 FROM product_selling_types pst WHERE pst.product_id = p.id AND pst.selling_type = "BEST_SELLERS") OR p.is_best_seller = 1)');
+        } else if (st === 'TRENDING_NOW') {
+          stSubClauses.push('(EXISTS (SELECT 1 FROM product_selling_types pst WHERE pst.product_id = p.id AND pst.selling_type = "TRENDING_NOW") OR p.is_trending = 1)');
+        } else {
+          stSubClauses.push('EXISTS (SELECT 1 FROM product_selling_types pst WHERE pst.product_id = p.id AND pst.selling_type = ?)');
+          params.push(st);
+        }
+      });
+      if (stSubClauses.length > 0) {
+        conditions.push(`(${stSubClauses.join(' OR ')})`);
+      }
+    }
   }
 
   if (isFeatured === 'true' || isFeatured === '1') conditions.push('p.is_featured = 1');

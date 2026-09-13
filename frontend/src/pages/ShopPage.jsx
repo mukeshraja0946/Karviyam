@@ -78,6 +78,7 @@ export default function ShopPage() {
   const [selectedDiscounts, setSelectedDiscounts] = useState([]);
   const [selectedRatings, setSelectedRatings] = useState([]);
   const [selectedOffers, setSelectedOffers] = useState([]);
+  const [selectedSellingType, setSelectedSellingType] = useState('');
   const [inStockOnly, setInStockOnly] = useState(false);
 
   // Pagination & Sorting States
@@ -132,6 +133,7 @@ export default function ShopPage() {
     const urlDiscount = searchParams.get('discount') || searchParams.get('discounts') || '';
     const urlRating = searchParams.get('rating') || searchParams.get('ratings') || '';
     const urlOffer = searchParams.get('offer') || searchParams.get('offers') || '';
+    const urlSellingTypeParam = searchParams.get('sellingType') || searchParams.get('sellingTypes') || searchParams.get('selling_type') || searchParams.get('selling_types') || '';
     const urlStock = searchParams.get('inStock') === 'true' || searchParams.get('availability') === 'in_stock';
     const urlSort = searchParams.get('sort') || searchParams.get('sortBy') || 'featured';
     const urlPage = parseInt(searchParams.get('page') || '1', 10);
@@ -150,6 +152,7 @@ export default function ShopPage() {
     setSelectedDiscounts(parseList(urlDiscount));
     setSelectedRatings(parseList(urlRating));
     setSelectedOffers(parseList(urlOffer));
+    setSelectedSellingType(urlSellingTypeParam);
     setInStockOnly(urlStock);
     setSortBy(urlSort);
     setCurrentPage(isNaN(urlPage) || urlPage < 1 ? 1 : urlPage);
@@ -170,6 +173,7 @@ export default function ShopPage() {
       const dscs = newFilters.discounts !== undefined ? newFilters.discounts : selectedDiscounts;
       const rts = newFilters.ratings !== undefined ? newFilters.ratings : selectedRatings;
       const offs = newFilters.offers !== undefined ? newFilters.offers : selectedOffers;
+      const st = newFilters.sellingType !== undefined ? newFilters.sellingType : selectedSellingType;
       const stock = newFilters.inStock !== undefined ? newFilters.inStock : inStockOnly;
       const sort = newFilters.sortBy !== undefined ? newFilters.sortBy : sortBy;
       const page = newFilters.page !== undefined ? newFilters.page : currentPage;
@@ -187,6 +191,7 @@ export default function ShopPage() {
       if (dscs.length > 0) params.set('discounts', dscs.join(','));
       if (rts.length > 0) params.set('ratings', rts.join(','));
       if (offs.length > 0) params.set('offers', offs.join(','));
+      if (st) params.set('sellingType', st);
       if (stock) params.set('inStock', 'true');
       if (sort && sort !== 'featured') params.set('sortBy', sort);
       if (page > 1) params.set('page', page);
@@ -206,6 +211,7 @@ export default function ShopPage() {
       selectedDiscounts,
       selectedRatings,
       selectedOffers,
+      selectedSellingType,
       inStockOnly,
       sortBy,
       currentPage,
@@ -230,6 +236,7 @@ export default function ShopPage() {
       const urlMinDiscount = searchParams.get('minDiscount') || '';
       const urlMaxPriceParam = searchParams.get('maxPrice') || '';
       const urlMinPriceParam = searchParams.get('minPrice') || '';
+      const urlSellingTypeParam = searchParams.get('sellingType') || searchParams.get('sellingTypes') || searchParams.get('selling_type') || searchParams.get('selling_types') || selectedSellingType || '';
 
       if (urlSearch) queryParts.push(`keyword=${encodeURIComponent(urlSearch)}`);
       if (urlFilter) queryParts.push(`filter=${encodeURIComponent(urlFilter)}`);
@@ -242,6 +249,7 @@ export default function ShopPage() {
       if (urlSubCat) queryParts.push(`subCategory=${encodeURIComponent(urlSubCat)}`);
       if (urlIsNew) queryParts.push(`isNewArrival=${encodeURIComponent(urlIsNew)}`);
       if (urlIsBest) queryParts.push(`isBestSeller=${encodeURIComponent(urlIsBest)}`);
+      if (urlSellingTypeParam) queryParts.push(`sellingType=${encodeURIComponent(urlSellingTypeParam)}`);
 
       if (selectedCategories.length > 0) queryParts.push(`categories=${encodeURIComponent(selectedCategories.join(','))}`);
       if (selectedBrands.length > 0) queryParts.push(`brands=${encodeURIComponent(selectedBrands.join(','))}`);
@@ -453,6 +461,7 @@ export default function ShopPage() {
     setSelectedDiscounts([]);
     setSelectedRatings([]);
     setSelectedOffers([]);
+    setSelectedSellingType('');
     setInStockOnly(false);
     setSortBy('featured');
     setCurrentPage(1);
@@ -462,6 +471,16 @@ export default function ShopPage() {
 
   // Page Title Label
   const pageTitleLabel = useMemo(() => {
+    const stParam = searchParams.get('sellingType') || searchParams.get('sellingTypes') || selectedSellingType || '';
+    if (stParam) {
+      const norm = stParam.toLowerCase().replace(/_/g, '-');
+      if (norm === 'top-offers') return 'Top Offers';
+      if (norm === 'new-arrivals') return 'New Arrivals';
+      if (norm === 'best-sellers') return 'Best Sellers';
+      if (norm === 'trending-now') return 'Trending Now';
+      return stParam.replace(/_/g, ' ').replace(/-/g, ' ').toUpperCase();
+    }
+
     const filterParam = searchParams.get('filter') || '';
     if (filterParam === 'new') return 'New Arrivals';
     if (filterParam === 'bestsellers') return 'Best Sellers';

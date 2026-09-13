@@ -305,6 +305,15 @@ exports.getAdminProducts = async (req, res, next) => {
        ORDER BY p.id DESC`
     );
 
+    let stMap = {};
+    try {
+      const [stRows] = await pool.query('SELECT product_id, selling_type FROM product_selling_types');
+      stRows.forEach(r => {
+        if (!stMap[r.product_id]) stMap[r.product_id] = [];
+        stMap[r.product_id].push(r.selling_type);
+      });
+    } catch (eSt) {}
+
     const productDTOs = rows.map(p => ({
       id: p.id,
       name: p.name,
@@ -332,6 +341,8 @@ exports.getAdminProducts = async (req, res, next) => {
       isActive: p.is_active !== undefined ? Boolean(p.is_active) : true,
       categoryId: p.category_id,
       categoryName: p.category_name || null,
+      sellingTypes: stMap[p.id] || [],
+      selling_types: stMap[p.id] || [],
       createdAt: p.created_at
     }));
 
@@ -418,6 +429,12 @@ exports.createProduct = async (req, res, next) => {
       }
     }
 
+    // Save selling types
+    if (dto.sellingTypes !== undefined || dto.selling_types !== undefined) {
+      const stList = dto.sellingTypes !== undefined ? dto.sellingTypes : dto.selling_types;
+      await saveSellingTypesForProduct(productId, stList);
+    }
+
     const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [productId]);
     if (rows.length > 0) {
       const fullDto = await mapProductRowToDTO(rows[0]);
@@ -488,6 +505,12 @@ exports.updateProduct = async (req, res, next) => {
       }
     }
 
+    // Save selling types if provided
+    if (dto.sellingTypes !== undefined || dto.selling_types !== undefined) {
+      const stList = dto.sellingTypes !== undefined ? dto.sellingTypes : dto.selling_types;
+      await saveSellingTypesForProduct(id, stList);
+    }
+
     // Update color variants & dedicated image galleries if provided
     let variantsToSave = dto.colorVariants || dto.color_variants || dto.colors;
     if (typeof variantsToSave === 'string') {
@@ -520,6 +543,30 @@ exports.updateProduct = async (req, res, next) => {
     return res.status(200).json(ApiResponse.success(updated[0], 'Product updated successfully'));
   } catch (err) {
     next(err);
+  }
+};
+
+const saveSellingTypesForProduct = async (productId, sellingTypes) => {
+  if (!productId) return;
+  try {
+    await pool.query('DELETE FROM product_selling_types WHERE product_id = ?', [productId]);
+    let typesArray = [];
+    if (Array.isArray(sellingTypes)) {
+      typesArray = sellingTypes;
+    } else if (typeof sellingTypes === 'string') {
+      try {
+        typesArray = JSON.parse(sellingTypes);
+      } catch (e) {
+        typesArray = sellingTypes.split(',').map(s => s.trim());
+      }
+    }
+    const validTypes = ['TOP_OFFERS', 'NEW_ARRIVALS', 'BEST_SELLERS', 'TRENDING_NOW'];
+    const uniqueTypes = [...new Set(typesArray.map(t => String(t).toUpperCase().replace(/-/g, '_')))].filter(t => validTypes.includes(t));
+    for (const st of uniqueTypes) {
+      await pool.query('INSERT INTO product_selling_types (product_id, selling_type) VALUES (?, ?)', [productId, st]);
+    }
+  } catch (err) {
+    console.error('Error saving selling types for product', productId, err);
   }
 };
 
