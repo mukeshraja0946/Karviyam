@@ -87,7 +87,7 @@ export default function FindYourPrice() {
   if (activeButtons.length === 0) return null;
 
   return (
-    <div className="w-full h-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs px-3 py-2.5 xl:px-3.5 xl:py-3 flex flex-col justify-center transition-all">
+    <div className="w-full h-full flex flex-col justify-center transition-all">
       {/* STRICT SINGLE HORIZONTAL LINE (NO WRAP) WITH COMPACT GAP */}
       <div className="flex items-center justify-start gap-1.5 xl:gap-2 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap flex-nowrap w-full">
         {activeButtons.map((btn, idx) => {

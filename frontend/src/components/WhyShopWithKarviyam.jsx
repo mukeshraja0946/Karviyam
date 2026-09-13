@@ -111,7 +111,7 @@ export default function WhyShopWithKarviyam() {
   if (activeBenefits.length === 0) return null;
 
   return (
-    <div className="w-full h-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs px-3.5 py-3 xl:px-4 xl:py-3.5 flex flex-col justify-center transition-all">
+    <div className="w-full h-full flex flex-col justify-center transition-all">
       {/* Grid of Benefit Cards */}
       <div className="flex items-center justify-between gap-1.5 xl:gap-2 overflow-x-auto no-scrollbar py-0.5 w-full">
         {activeBenefits.map((item, idx) => (
