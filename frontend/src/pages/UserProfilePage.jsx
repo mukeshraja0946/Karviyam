@@ -483,7 +483,7 @@ export default function UserProfilePage() {
             </div>
             <button
               onClick={() => navigate('/shop')}
-              className="px-6 py-2.5 bg-[#FFD814] hover:bg-[#F7CA00] text-slate-900 text-xs font-bold rounded-full shadow-xs transition-colors cursor-pointer inline-block border border-[#FCD200]"
+              className="px-6 py-2.5 bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-xs font-bold rounded-full shadow-xs transition-colors cursor-pointer inline-block border border-[#D32F2F]"
             >
               Continue Shopping
             </button>
@@ -640,7 +640,7 @@ export default function UserProfilePage() {
                                   <button
                                     onClick={() => handleBuyItAgain(item)}
                                     disabled={buyAgainLoading[buyAgainKey]}
-                                    className="px-4 py-1.5 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] text-xs font-semibold rounded-full border border-[#FCD200] shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+                                    className="px-4 py-1.5 bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-xs font-semibold rounded-full border border-[#D32F2F] shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
                                   >
                                     <ShoppingCart className="w-3.5 h-3.5" />
                                     <span>{buyAgainLoading[buyAgainKey] ? 'Adding...' : 'Buy It Again'}</span>
@@ -663,7 +663,7 @@ export default function UserProfilePage() {
                               {!isCancelled && (
                                 <button
                                   onClick={() => setTrackingModal({ open: true, order: ord })}
-                                  className="w-full py-2 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] text-xs font-semibold rounded-full border border-[#FCD200] shadow-2xs transition-colors cursor-pointer text-center"
+                                  className="w-full py-2 bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-xs font-semibold rounded-full border border-[#D32F2F] shadow-2xs transition-colors cursor-pointer text-center"
                                 >
                                   Track Order
                                 </button>
@@ -673,7 +673,7 @@ export default function UserProfilePage() {
                               {activeReturn && (
                                 <button
                                   onClick={() => setReturnStatusModal({ open: true, returnReq: activeReturn, order: ord })}
-                                  className="w-full py-2 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] text-xs font-semibold rounded-full border border-[#FCD200] shadow-2xs transition-colors cursor-pointer text-center"
+                                  className="w-full py-2 bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-xs font-semibold rounded-full border border-[#D32F2F] shadow-2xs transition-colors cursor-pointer text-center"
                                 >
                                   View Return/Refund Status
                                 </button>
@@ -917,7 +917,7 @@ export default function UserProfilePage() {
                 <p className="text-[11px] text-slate-400 italic">This is a computer-generated tax invoice from Karviyam.</p>
                 <button
                   onClick={() => window.open(`/api/orders/${invoiceModal.order.id}/invoice`, '_blank')}
-                  className="px-5 py-2 bg-[#FFD814] hover:bg-[#F7CA00] text-slate-900 text-xs font-bold rounded-full border border-[#FCD200] shadow-xs cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-2 bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-xs font-bold rounded-full border border-[#D32F2F] shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Download / Print Invoice</span>
@@ -937,7 +937,7 @@ export default function UserProfilePage() {
             <div className="bg-[#131921] px-6 py-4 text-white flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-lg flex items-center gap-2">
-                  <Truck className="w-5 h-5 text-[#FFD814]" />
+                  <Truck className="w-5 h-5 text-red-400" />
                   <span>Track Package</span>
                 </h3>
                 <p className="text-xs text-slate-300">Order #{trackingModal.order.orderCode}</p>
@@ -1020,7 +1020,7 @@ export default function UserProfilePage() {
             <div className="bg-[#131921] px-6 py-4 text-white flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-lg flex items-center gap-2">
-                  <RotateCcw className="w-5 h-5 text-[#FFD814]" />
+                  <RotateCcw className="w-5 h-5 text-red-400" />
                   <span>Return / Replace Item</span>
                 </h3>
                 <p className="text-xs text-slate-300">Order #{returnModal.order.orderCode}</p>
@@ -1320,7 +1320,7 @@ export default function UserProfilePage() {
                 <button
                   type="submit"
                   disabled={submittingReview}
-                  className="px-6 py-2 bg-[#FFD814] hover:bg-[#F7CA00] text-slate-900 font-bold rounded-full border border-[#FCD200] shadow-xs cursor-pointer flex items-center gap-2"
+                  className="px-6 py-2 bg-[#D32F2F] hover:bg-[#B71C1C] text-white font-bold rounded-full border border-[#D32F2F] shadow-xs cursor-pointer flex items-center gap-2"
                 >
                   {submittingReview && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   <span>Submit Review</span>
