@@ -394,11 +394,15 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
             {!reportLog && (
               <button
                 onClick={handleExecuteImport}
-                disabled={!file || processing}
-                className="px-6 py-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold rounded-xl shadow-md disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                disabled={!file || processing || !previewData || (previewData.newCount || 0) === 0}
+                className="px-6 py-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold rounded-xl shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
               >
                 {processing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                <span>Execute Import ({previewData?.totalRows || 0} Rows)</span>
+                <span>
+                  {(!previewData || (previewData.newCount || 0) === 0)
+                    ? 'No New Products to Import'
+                    : `Execute Import (${previewData.newCount} Rows)`}
+                </span>
               </button>
             )}
           </div>
