@@ -43,9 +43,9 @@ export default function ProductCard({ product }) {
     <>
       {/* ========================================================= */}
       {/* DESKTOP PRODUCT CARD (>= 768px) - AMAZON-STYLE KARVIYAM    */}
-      {/* STRICT EQUAL HEIGHT (515px) & BOTTOM ALIGNED ADD TO CART   */}
+      {/* STRICT EQUAL HEIGHT (425px) & BOTTOM ALIGNED ADD TO CART   */}
       {/* ========================================================= */}
-      <div className="hidden md:flex group relative bg-white w-full h-[465px] min-h-[465px] max-h-[465px] rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all duration-200 flex-col justify-between overflow-hidden p-3 text-left">
+      <div className="hidden md:flex group relative bg-white w-full h-[425px] min-h-[425px] max-h-[425px] rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all duration-200 flex-col justify-between overflow-hidden p-3 text-left">
         
         {/* 1. Image Container (Fixed 230px Height) */}
         <div 
@@ -59,7 +59,6 @@ export default function ProductCard({ product }) {
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
-
 
           {/* Wishlist Button (Top-Right) */}
           <button
@@ -155,19 +154,6 @@ export default function ProductCard({ product }) {
                 Up to 5% back with Karviyam Pay ICCI
               </p>
             </div>
-
-            {/* Delivery Info */}
-            <div className="text-[10px] space-y-0.5 pt-0.5 text-slate-700">
-              <p className="font-medium truncate">
-                <span className="font-bold text-slate-900">FREE delivery </span>
-                <span className="font-bold text-slate-900">Thu, 27 Aug </span>
-                <span>on first order</span>
-              </p>
-              <p className="text-slate-600 font-medium truncate">
-                Or fastest delivery <span className="font-bold text-slate-900">Tomorrow 8 am – 12 pm</span>
-              </p>
-            </div>
-
           </div>
 
           {/* 4. Full-Width Add to Cart Button (Aligned at the exact bottom of every card) */}
