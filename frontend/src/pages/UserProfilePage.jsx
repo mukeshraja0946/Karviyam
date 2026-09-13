@@ -11,6 +11,7 @@ export default function UserProfilePage() {
   const [orders, setOrders] = useState([]);
   const [returnRequests, setReturnRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
 
   // Return Modal State
   const [returnModalOpen, setReturnModalOpen] = useState(false);
@@ -31,38 +32,61 @@ export default function UserProfilePage() {
     fetchOrdersAndReturns();
   }, [user]);
 
+  const resolveImageUrl = (url) => {
+    if (!url || typeof url !== 'string' || url === 'null' || url === 'undefined') {
+      return 'https://karviyam.com/uploads/karviyam_product_placeholder.png';
+    }
+    let clean = url.trim();
+    if (clean.startsWith('http://localhost') || clean.startsWith('https://localhost') || clean.startsWith('http://127.0.0.1')) {
+      clean = clean.replace(/^https?:\/\/[^\/]+/, '');
+    }
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      return clean;
+    }
+    if (clean.includes('/uploads/')) {
+      const match = clean.match(/\/uploads\/.+$/);
+      if (match) clean = match[0];
+    }
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://karviyam.com').replace(/\/api\/?$/, '').replace(/\/$/, '');
+    const cleanBase = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1') ? 'https://karviyam.com' : baseUrl;
+    return `${cleanBase}${clean.startsWith('/') ? clean : '/' + clean}`;
+  };
+
   const fetchOrdersAndReturns = async () => {
     setLoading(true);
+    setFetchError(null);
     let allOrders = [];
 
-    // Fetch Orders & My Return Requests
     try {
-      const [ordRes, retRes] = await Promise.all([
-        api.get('/orders').catch(() => null),
-        api.get('/returns/my-requests').catch(() => null)
-      ]);
+      // Primary: GET /orders/my-orders, Fallback: GET /orders
+      let ordRes = await api.get('/orders/my-orders').catch(() => null);
+      if (!ordRes) {
+        ordRes = await api.get('/orders').catch(() => null);
+      }
 
-      if (ordRes) {
+      const retRes = await api.get('/returns/my-requests').catch(() => null);
+
+      if (ordRes && (ordRes.status === 200 || ordRes.status === 304 || ordRes.data?.success)) {
         const apiData = ordRes.data ? ordRes.data : ordRes;
         const list = Array.isArray(apiData.data) ? apiData.data : (Array.isArray(apiData) ? apiData : []);
         
-        if (list.length > 0) {
-          allOrders = list.map(o => ({
-            id: o.id,
-            orderCode: o.orderCode || o.trackingNumber || `#ORD${o.id}`,
-            trackingNumber: o.trackingNumber || o.orderCode || `KV-TRK-${o.id}`,
-            status: o.status || 'PENDING',
-            items: Array.isArray(o.items) ? o.items.map(i => ({
-              id: i.id || Date.now(),
-              productName: i.productName || (i.product ? i.product.name : 'Item'),
-              productImage: i.productImage || (i.product ? i.product.imageUrl : ''),
-              priceAtTime: i.priceAtTime != null ? i.priceAtTime : (i.price != null ? i.price : (i.product ? i.product.price : 0)),
-              quantity: i.quantity || 1
-            })) : [],
-            totalAmount: o.totalAmount != null ? o.totalAmount : o.total_amount || 0,
-            createdAt: o.createdAt || o.created_at || o.orderDate || Date.now()
-          }));
-        }
+        allOrders = list.map(o => ({
+          id: o.id,
+          orderCode: o.orderCode || o.trackingNumber || `#ORD-${o.id}`,
+          trackingNumber: o.trackingNumber || o.orderCode || `KV-TRK-${o.id}`,
+          status: o.status || 'PENDING',
+          items: Array.isArray(o.items || o.orderItems) ? (o.items || o.orderItems).map(i => ({
+            id: i.id || Date.now(),
+            productName: i.productName || i.product_name || (i.product ? i.product.name : `Product #${i.productId || i.product_id}`),
+            productImage: resolveImageUrl(i.productImage || i.imageUrl || i.image_url || (i.product ? i.product.imageUrl || i.product.image_url : '')),
+            priceAtTime: i.priceAtTime != null ? i.priceAtTime : (i.price_at_time != null ? i.price_at_time : 0),
+            quantity: i.quantity || 1
+          })) : [],
+          totalAmount: o.totalAmount != null ? o.totalAmount : o.total_amount || 0,
+          createdAt: o.createdAt || o.created_at || o.orderDate || Date.now()
+        }));
+      } else if (!ordRes) {
+        setFetchError('Unable to load your orders. Please check your session or try again.');
       }
 
       if (retRes) {
@@ -71,6 +95,7 @@ export default function UserProfilePage() {
       }
     } catch (e) {
       console.error('Failed to load orders:', e);
+      setFetchError('Unable to load your orders. Please try again.');
     } finally {
       setOrders(allOrders);
       setLoading(false);
@@ -175,10 +200,28 @@ export default function UserProfilePage() {
               <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#B71C1C]" />
               <p className="text-xs text-slate-500 font-medium">Loading your placed orders...</p>
             </div>
+          ) : fetchError ? (
+            <div className="bg-white p-10 rounded-3xl text-center border border-slate-200/80 shadow-xs space-y-3">
+              <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+              <p className="text-xs text-slate-600 font-medium">{fetchError}</p>
+              <button
+                onClick={fetchOrdersAndReturns}
+                className="px-4 py-2 bg-[#B71C1C] text-white text-xs font-bold rounded-xl hover:bg-red-800 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Retry Order Fetch</span>
+              </button>
+            </div>
           ) : orders.length === 0 ? (
-            <div className="bg-white p-10 rounded-3xl text-center border border-slate-200/80 shadow-xs">
-              <Package className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+            <div className="bg-white p-10 rounded-3xl text-center border border-slate-200/80 shadow-xs space-y-3">
+              <Package className="w-10 h-10 text-slate-400 mx-auto" />
               <p className="text-xs text-slate-500 font-medium">No orders placed yet.</p>
+              <button
+                onClick={() => navigate('/shop')}
+                className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition-colors cursor-pointer inline-block"
+              >
+                Explore Shop
+              </button>
             </div>
           ) : (
             <div className="space-y-4">

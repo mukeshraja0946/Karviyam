@@ -7,6 +7,7 @@ const { requireAdmin } = require('../middleware/adminMiddleware');
 router.post('/checkout', optionalToken, orderController.checkout);
 router.post('/', optionalToken, orderController.checkout);
 router.post('/verify-payment', optionalToken, orderController.verifyOrderPayment);
+router.get('/', authenticateToken, orderController.getMyOrders);
 router.get('/my-orders', authenticateToken, orderController.getMyOrders);
 router.get('/:id', optionalToken, orderController.getOrderById);
 router.put('/:id/cancel', optionalToken, orderController.cancelOrder);

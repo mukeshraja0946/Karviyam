@@ -309,8 +309,21 @@ exports.verifyOrderPayment = async (req, res, next) => {
 
 exports.getMyOrders = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const [orders] = await pool.query('SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC', [userId]);
+    const userId = req.user ? req.user.id : null;
+    const userEmail = req.user ? String(req.user.email || '').trim() : '';
+
+    if (!userId && !userEmail) {
+      return res.status(401).json(ApiResponse.error('Authentication required to view order history.'));
+    }
+
+    const [orders] = await pool.query(
+      `SELECT * FROM orders 
+       WHERE (user_id IS NOT NULL AND user_id = ?) 
+          OR (email IS NOT NULL AND email != '' AND LOWER(email) = LOWER(?)) 
+       ORDER BY id DESC`,
+      [userId, userEmail]
+    );
+
     const dtos = await Promise.all(orders.map(mapOrderRowToDTO));
     return res.status(200).json(ApiResponse.success(dtos, 'User orders retrieved successfully'));
   } catch (err) {
