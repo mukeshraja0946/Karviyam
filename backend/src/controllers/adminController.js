@@ -549,6 +549,17 @@ exports.updateProduct = async (req, res, next) => {
 const saveSellingTypesForProduct = async (productId, sellingTypes) => {
   if (!productId) return;
   try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS product_selling_types (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id INT NOT NULL,
+        selling_type VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_prod_type (product_id, selling_type),
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      );
+    `);
     await pool.query('DELETE FROM product_selling_types WHERE product_id = ?', [productId]);
     let typesArray = [];
     if (Array.isArray(sellingTypes)) {

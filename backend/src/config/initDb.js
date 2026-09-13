@@ -208,6 +208,41 @@ async function initDb() {
       );
     `);
 
+    // 7. Product Selling Types table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS product_selling_types (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id INT NOT NULL,
+        selling_type VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_prod_type (product_id, selling_type),
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      );
+    `);
+
+    // Auto-migrate existing product flags to product_selling_types if empty
+    try {
+      const [stCheck] = await pool.query('SELECT COUNT(*) as cnt FROM product_selling_types');
+      if (stCheck[0]?.cnt === 0) {
+        const [allProds] = await pool.query('SELECT id, is_best_seller, is_new_arrival, is_trending, price, old_price, discount_percentage FROM products');
+        for (const p of allProds) {
+          if (p.is_best_seller) {
+            await pool.query('INSERT IGNORE INTO product_selling_types (product_id, selling_type) VALUES (?, ?)', [p.id, 'BEST_SELLERS']);
+          }
+          if (p.is_new_arrival) {
+            await pool.query('INSERT IGNORE INTO product_selling_types (product_id, selling_type) VALUES (?, ?)', [p.id, 'NEW_ARRIVALS']);
+          }
+          if (p.is_trending) {
+            await pool.query('INSERT IGNORE INTO product_selling_types (product_id, selling_type) VALUES (?, ?)', [p.id, 'TRENDING_NOW']);
+          }
+          if ((p.old_price && parseFloat(p.old_price) > parseFloat(p.price)) || (p.discount_percentage && parseFloat(p.discount_percentage) > 0)) {
+            await pool.query('INSERT IGNORE INTO product_selling_types (product_id, selling_type) VALUES (?, ?)', [p.id, 'TOP_OFFERS']);
+          }
+        }
+      }
+    } catch (eMig) {}
+
     // 7b. Bank Account Settings table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS bank_account_settings (
