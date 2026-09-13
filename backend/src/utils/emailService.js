@@ -39,8 +39,8 @@ const getSmtpConfig = async () => {
     console.error('Failed to load SMTP settings from DB:', eDb.message);
   }
 
-  // Strict Karviyam defaults
-  if (!host) host = 'smtp.gmail.com';
+  // Strict Karviyam defaults — force Google Workspace SMTP and reject legacy Hostinger SMTP host
+  if (!host || host === 'smtp.hostinger.com') host = 'smtp.gmail.com';
   if (!port) port = 465;
   if (!user) user = VERIFIED_SENDER_EMAIL;
 
