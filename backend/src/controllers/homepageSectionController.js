@@ -581,7 +581,7 @@ exports.getPublicHomepageSections = async (req, res, next) => {
               autoProducts = newProds;
             } else if (sec.id === 'best_sellers' || sec.section_key === 'best_sellers') {
               const [bestProds] = await pool.query(
-                `SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_active = true AND p.stock_quantity > 0 ORDER BY p.ratings_count DESC, p.id DESC LIMIT ?`,
+                `SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_active = true AND p.stock_quantity > 0 ORDER BY p.is_best_seller DESC, p.rating DESC, p.id DESC LIMIT ?`,
                 [needed]
               );
               autoProducts = bestProds;

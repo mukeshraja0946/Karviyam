@@ -194,6 +194,8 @@ async function initDb() {
       try { await pool.query(`ALTER TABLE products ADD COLUMN category_name_str VARCHAR(100)`); } catch (e2) {}
       try { await pool.query(`ALTER TABLE products ADD COLUMN sizes VARCHAR(255)`); } catch (e2) {}
       try { await pool.query(`ALTER TABLE products ADD COLUMN seo_title VARCHAR(255)`); } catch (e2) {}
+      try { await pool.query(`ALTER TABLE products ADD COLUMN ratings_count INT DEFAULT 0`); } catch (e2) {}
+      try { await pool.query(`ALTER TABLE products ADD COLUMN review_count INT DEFAULT 0`); } catch (e2) {}
     }
 
     // 7. Product Images table
