@@ -112,14 +112,17 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      try {
-        localStorage.removeItem('karviyam_token');
-        localStorage.removeItem('karviyam_user');
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('karviyam_auth_unauthorized'));
-        }
-      } catch (e) {}
+    if (error.response && error.response.status === 401) {
+      const requestUrl = error.config?.url || '';
+      if (!requestUrl.includes('/footer') && !requestUrl.includes('/categories') && !requestUrl.includes('/products') && !requestUrl.includes('/maintenance')) {
+        try {
+          localStorage.removeItem('karviyam_token');
+          localStorage.removeItem('karviyam_user');
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('karviyam_auth_unauthorized'));
+          }
+        } catch (e) {}
+      }
     }
     return Promise.reject(error);
   }

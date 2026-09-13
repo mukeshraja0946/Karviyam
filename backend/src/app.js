@@ -92,14 +92,13 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests without an Origin
-      // and allow configured origins.
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
         return callback(null, true);
       }
-
-      // Keep compatibility with your existing configuration.
-      return callback(null, true);
+      if (allowedOrigins.includes(origin) || allowedOrigins.some(o => o && origin.startsWith(o))) {
+        return callback(null, origin);
+      }
+      return callback(null, origin);
     },
     credentials: true
   })
