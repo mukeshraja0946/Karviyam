@@ -380,14 +380,24 @@ exports.uploadEmailLogo = async (req, res, next) => {
       return res.status(400).json(ApiResponse.error('No image file uploaded'));
     }
 
+    const validMimeTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/svg+xml'];
+    if (!validMimeTypes.includes(req.file.mimetype)) {
+      return res.status(400).json(ApiResponse.error('Invalid image type. Please upload a PNG, JPG, WebP, GIF, or SVG image.'));
+    }
+
     const fileUrl = `/uploads/${req.file.filename}`;
+    const publicBaseUrl = (process.env.PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com').replace(/\/$/, '');
+    const absoluteLogoUrl = fileUrl.startsWith('http') ? fileUrl : `${publicBaseUrl}${fileUrl}`;
 
-    await pool.query(
-      `INSERT INTO settings (setting_key, setting_value) VALUES ('email_logo_url', ?) ON DUPLICATE KEY UPDATE setting_value = ?`,
-      [fileUrl, fileUrl]
-    );
+    const logoKeys = ['email_logo_url', 'emailLogoUrl', 'logo_url', 'logoUrl'];
+    for (const key of logoKeys) {
+      await pool.query(
+        `INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?`,
+        [key, fileUrl, fileUrl]
+      );
+    }
 
-    return res.status(200).json(ApiResponse.success({ logoUrl: fileUrl, filename: req.file.filename }, 'Email logo uploaded and saved successfully'));
+    return res.status(200).json(ApiResponse.success({ logoUrl: fileUrl, absoluteLogoUrl, filename: req.file.filename }, 'Email logo uploaded and saved successfully'));
   } catch (err) {
     next(err);
   }
@@ -909,9 +919,13 @@ exports.sendTestEmail = async (req, res, next) => {
     for (const transporter of transporters) {
       try {
         sentInfo = await transporter.sendMail({
-          from: fromHeader,
+          from: `"Karviyam" <vanakkam@karviyam.com>`,
           to: recipientEmail,
           replyTo: 'vanakkam@karviyam.com',
+          envelope: {
+            from: 'vanakkam@karviyam.com',
+            to: recipientEmail
+          },
           subject: `[TEST] ${finalSubject}`,
           html: fullHtml,
           attachments

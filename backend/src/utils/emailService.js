@@ -7,10 +7,11 @@ const VERIFIED_SENDER_EMAIL = 'vanakkam@karviyam.com';
 const VERIFIED_SENDER_NAME = 'Karviyam';
 
 const getSmtpConfig = async () => {
+  let envPass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.HOSTINGER_SMTP_PASS || process.env.MAIL_PASS || '';
   let host = process.env.SMTP_HOST || '';
   let port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : null;
   let user = process.env.SMTP_USER || process.env.MAIL_FROM || VERIFIED_SENDER_EMAIL;
-  let pass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.HOSTINGER_SMTP_PASS || process.env.MAIL_PASS || '';
+  let pass = envPass;
 
   try {
     const [rows] = await pool.query(
@@ -135,14 +136,18 @@ const getEmailLogoHeader = async (options = {}) => {
   } catch (eLogo) {}
 
   let logoHeaderHtml = '';
-
   const attachments = [];
+
   if (customEmailLogoUrl) {
     let cleanPath = customEmailLogoUrl;
 
     if (cleanPath.includes('/uploads/')) {
       const match = cleanPath.match(/\/uploads\/.+$/);
       if (match) cleanPath = match[0];
+    }
+
+    if (cleanPath.startsWith('http://localhost') || cleanPath.startsWith('https://localhost') || cleanPath.startsWith('http://127.0.0.1')) {
+      cleanPath = cleanPath.replace(/^https?:\/\/[^\/]+/, '');
     }
 
     let logoSrc = '';
@@ -152,20 +157,25 @@ const getEmailLogoHeader = async (options = {}) => {
       logoSrc = cleanPath;
     } else {
       let publicBaseUrl = process.env.PUBLIC_BASE_URL || process.env.BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com';
+      if (publicBaseUrl.includes('localhost') || publicBaseUrl.includes('127.0.0.1')) {
+        publicBaseUrl = 'https://karviyam.com';
+      }
       if (isPreview && req) {
         const host = req.get('host');
         const protocol = req.protocol || 'http';
-        publicBaseUrl = `${protocol}://${host}`;
+        if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+          publicBaseUrl = `${protocol}://${host}`;
+        }
       }
       logoSrc = `${publicBaseUrl.replace(/\/$/, '')}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
     }
 
     if (logoSrc) {
       logoHeaderHtml = `
-        <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+        <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto; text-align: center;">
           <tr>
-            <td align="center" style="padding: 6px 0 2px 0;">
-              <img src="${logoSrc}" alt="Karviyam" style="max-width: 260px; max-height: 95px; width: auto; height: auto; display: block; border: 0; outline: none; text-decoration: none;" />
+            <td align="center" style="padding: 10px 0 6px 0;">
+              <img src="${logoSrc}" alt="Karviyam" width="220" style="max-width: 220px; width: 220px; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none;" />
             </td>
           </tr>
         </table>
@@ -210,6 +220,7 @@ const sendContactEmail = async ({ name, email, subject, message }) => {
       from: `"Karviyam Contact Form" <${fromUser}>`,
       to: supportEmail,
       replyTo: VERIFIED_SENDER_EMAIL,
+      envelope: { from: VERIFIED_SENDER_EMAIL, to: supportEmail },
       subject: `New Contact Submission: ${subject || 'Customer Inquiry'}`,
       text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\nMessage:\n${message}`,
       attachments,
@@ -262,6 +273,7 @@ const sendAdminReplyEmail = async ({ toEmail, customerName, subject, replyMessag
     from: `"Karviyam Support" <${fromUser}>`,
     to: toEmail,
     replyTo: VERIFIED_SENDER_EMAIL,
+    envelope: { from: VERIFIED_SENDER_EMAIL, to: toEmail },
     subject: `Re: ${subject || 'Karviyam Support Request'}`,
     text: `Hello ${cleanCustomerName},\n\n${replyMessage}\n\n----------------------------\nKarviyam Support Team\n${supportEmail}`,
     attachments,
