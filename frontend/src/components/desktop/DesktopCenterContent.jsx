@@ -688,80 +688,94 @@ export default function DesktopCenterContent() {
         </div>
       </div>
 
-      {/* 4. RECOMMENDED FOR YOU CONTAINER WITH SINGLE HORIZONTAL PRODUCT CAROUSEL */}
-      <div className="w-full bg-white rounded-2xl px-3.5 py-2.5 xl:px-4 xl:py-3 border border-slate-200/80 shadow-xs flex flex-col gap-2.5 relative">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display font-black text-xs xl:text-sm text-slate-900 tracking-tight">
-              Recommended For You
-            </h2>
-            <p className="text-[10.5px] text-slate-500 font-medium">
-              Handpicked selections based on your style
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/shop')}
-            className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5"
-          >
-            View All →
-          </button>
-        </div>
+      {/* DYNAMIC ADMIN-CONTROLLED HOMEPAGE PRODUCT SECTIONS */}
+      {Array.isArray(homepageSections) && homepageSections.length > 0 ? (
+        homepageSections.map((sec) => {
+          if (!sec || sec.enabled === false || !Array.isArray(sec.products) || sec.products.length === 0) return null;
+          
+          const maxCount = Number(sec.desktop_product_count) || 6;
+          const displayProds = sec.products.slice(0, maxCount);
 
-        {/* HORIZONTAL CAROUSEL */}
-        <div className="relative group">
-          <div
-            ref={row1ScrollRef}
-            onScroll={checkRow1ScrollBoundary}
-            className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap"
-          >
+          const layout = sec.desktop_layout || sec.display_type || 'carousel';
+          const isGrid = layout === 'grid';
+          const isTwoRows = layout === 'carousel_2_rows';
+
+          // For 2 rows, split displayProds into half
+          const halfIdx = Math.ceil(displayProds.length / 2);
+          const row1Prods = isTwoRows ? displayProds.slice(0, halfIdx) : displayProds;
+          const row2Prods = isTwoRows ? displayProds.slice(halfIdx) : [];
+
+          return (
+            <div key={sec.id || sec.section_key} className="w-full bg-white rounded-2xl px-3.5 py-2.5 xl:px-4 xl:py-3 border border-slate-200/80 shadow-xs flex flex-col gap-2.5 relative">
+              {/* Section Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-display font-black text-xs xl:text-sm text-slate-900 tracking-tight">
+                    {sec.title}
+                  </h2>
+                  {sec.subtitle ? (
+                    <p className="text-[10.5px] text-slate-500 font-medium">
+                      {sec.subtitle}
+                    </p>
+                  ) : null}
+                </div>
+
+                {sec.show_view_all !== false && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(sec.view_all_link || '/shop')}
+                    className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5"
+                  >
+                    {sec.view_all_text || 'View All →'}
+                  </button>
+                )}
+              </div>
+
+              {/* Products Layout */}
+              {isGrid ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 xl:gap-2.5">
+                  {displayProds.map((prod, idx) => renderProductCard(prod, idx))}
+                </div>
+              ) : isTwoRows ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap">
+                    {row1Prods.map((prod, idx) => renderProductCard(prod, idx))}
+                  </div>
+                  {row2Prods.length > 0 && (
+                    <div className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap">
+                      {row2Prods.map((prod, idx) => renderProductCard(prod, idx + halfIdx))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap">
+                  {displayProds.map((prod, idx) => renderProductCard(prod, idx))}
+                </div>
+              )}
+            </div>
+          );
+        })
+      ) : (
+        /* Fallback Recommended Section if API loading */
+        <div className="w-full bg-white rounded-2xl px-3.5 py-2.5 xl:px-4 xl:py-3 border border-slate-200/80 shadow-xs flex flex-col gap-2.5 relative">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-display font-black text-xs xl:text-sm text-slate-900 tracking-tight">
+                Recommended For You
+              </h2>
+              <p className="text-[10.5px] text-slate-500 font-medium">
+                Handpicked selections based on your style
+              </p>
+            </div>
+            <button onClick={() => navigate('/shop')} className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer">
+              View All →
+            </button>
+          </div>
+          <div className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap">
             {productsRow1.map((prod, idx) => renderProductCard(prod, idx))}
           </div>
         </div>
-
-      </div>
-
-      {/* 5. DYNAMIC ADMIN-CONTROLLED HOMEPAGE SECTIONS (Trending, Most-Loved Fashion for You, Starting @ ₹199) */}
-      {homepageSections.map((sec) => {
-        if (!sec || sec.enabled === false || !Array.isArray(sec.products) || sec.products.length === 0) return null;
-        const isGrid = sec.display_type === 'grid';
-
-        return (
-          <div key={sec.id || sec.section_key} className="w-full bg-white rounded-2xl px-3.5 py-2.5 xl:px-4 xl:py-3 border border-slate-200/80 shadow-xs flex flex-col gap-2.5 relative">
-            {/* Section Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-display font-black text-xs xl:text-sm text-slate-900 tracking-tight">
-                  {sec.title}
-                </h2>
-                {sec.subtitle && (
-                  <p className="text-[10.5px] text-slate-500 font-medium">
-                    {sec.subtitle}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={() => navigate(sec.view_all_link || '/shop')}
-                className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5"
-              >
-                {sec.view_all_text || 'View All →'}
-              </button>
-            </div>
-
-            {/* Products Layout (Grid vs Horizontal Scroll) */}
-            {isGrid ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 xl:gap-2.5">
-                {sec.products.map((prod, idx) => renderProductCard(prod, idx))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 xl:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap">
-                {sec.products.map((prod, idx) => renderProductCard(prod, idx))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      )}
 
     </main>
   );

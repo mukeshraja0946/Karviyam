@@ -16,7 +16,18 @@ import {
   Building2,
   FileText,
   Hash,
-  UserCheck
+  UserCheck,
+  Search,
+  ArrowUp,
+  ArrowDown,
+  RefreshCw,
+  Sparkles,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  Grid,
+  Layers,
+  Loader2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -37,9 +48,95 @@ const DEFAULT_MOBILE_SECTIONS = [
   { id: 'continue_shopping', title: 'Continue Shopping', subtitle: '', enabled: true, layout: 'horizontal', order: 13 }
 ];
 
+const DEFAULT_PRODUCT_SECTIONS = [
+  { id: 'recommended', section_key: 'recommended', title: 'Recommended For You', subtitle: 'Handpicked selections based on your style', enabled: true, position: 1, desktop_layout: 'carousel_2_rows', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'View All →', view_all_link: '/shop' },
+  { id: 'new_arrivals', section_key: 'new_arrivals', title: 'New Arrivals', subtitle: 'Explore the latest fashion drops & arrivals', enabled: true, position: 2, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'View All →', view_all_link: '/shop?filter=new' },
+  { id: 'featured', section_key: 'featured', title: 'Featured Products', subtitle: 'Curated premium items handpicked for you', enabled: true, position: 3, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'View All →', view_all_link: '/shop?filter=featured' },
+  { id: 'trending', section_key: 'trending', title: 'Trending Now', subtitle: 'Popular styles customers are loving right now', enabled: true, position: 4, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'grid_2_col', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'View All →', view_all_link: '/shop?filter=trending' },
+  { id: 'most_loved', section_key: 'most_loved', title: 'Most-Loved Fashion for You', subtitle: 'Top-rated favorites handpicked for your style', enabled: true, position: 5, desktop_layout: 'grid', desktop_product_count: 8, desktop_max_products: 16, mobile_layout: 'grid_2_col', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'View All →', view_all_link: '/shop?filter=loved' },
+  { id: 'starting_199', section_key: 'starting_199', title: 'Starting @ ₹199', subtitle: 'Unbeatable value on budget-friendly fashion & essentials', enabled: true, position: 6, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'Explore Under ₹199 →', view_all_link: '/shop?maxPrice=399' },
+  { id: 'best_sellers', section_key: 'best_sellers', title: 'Best Sellers', subtitle: 'Customer favorite picks & top-rated items', enabled: true, position: 7, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'grid_2_col', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'View All →', view_all_link: '/shop?filter=bestsellers' },
+  { id: 'flash_picks', section_key: 'flash_picks', title: 'Flash Picks', subtitle: 'Limited-time deals on trending products', enabled: true, position: 8, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'View All Deals →', view_all_link: '/shop?filter=offers' },
+  { id: 'complete_look', section_key: 'complete_look', title: 'Complete The Look', subtitle: 'Curated style combos matched for you', enabled: true, position: 9, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'View Combos →', view_all_link: '/shop?filter=combos' },
+  { id: 'popular_picks', section_key: 'popular_picks', title: 'Popular Products', subtitle: 'Most viewed & saved items this week', enabled: true, position: 10, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'View All →', view_all_link: '/shop?filter=popular' },
+  { id: 'top_offers', section_key: 'top_offers', title: 'Top Offers & Discounts', subtitle: 'Steal deals with up to 60% off', enabled: true, position: 11, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'Shop Offers →', view_all_link: '/shop?filter=offers' },
+  { id: 'todays_deal', section_key: 'todays_deal', title: "Today's Special Deal", subtitle: 'Exclusive 24-hour price drop on selected items', enabled: true, position: 12, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: "Today's Deals →", view_all_link: '/shop?filter=offers' },
+  { id: 'shop_by_occasion', section_key: 'shop_by_occasion', title: 'Shop by Occasion', subtitle: 'Outfits & accessories for every event', enabled: true, position: 13, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'Explore Occasions →', view_all_link: '/shop' },
+  { id: 'find_your_price', section_key: 'find_your_price', title: 'Find Your Price Range', subtitle: 'Shop products grouped by budget', enabled: true, position: 14, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'All Price Ranges →', view_all_link: '/shop' },
+  { id: 'premium_collection', section_key: 'premium_collection', title: 'Premium Store & 925 Silver', subtitle: 'Luxury high-end fashion & hallmarked silver', enabled: true, position: 15, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'Explore Premium →', view_all_link: '/shop?category=Jewellery' },
+  { id: 'mens_collection', section_key: 'mens_collection', title: "Men's Collection", subtitle: 'T-Shirts, Shirts, Sneakers & Casual Wear for Men', enabled: true, position: 16, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: "Shop Men's →", view_all_link: '/shop?category=Men' },
+  { id: 'womens_collection', section_key: 'womens_collection', title: "Women's Collection", subtitle: 'Ethic wear, Kurtas, Sarees & Western outfits', enabled: true, position: 17, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: "Shop Women's →", view_all_link: '/shop?category=Women' },
+  { id: 'kids_collection', section_key: 'kids_collection', title: 'Kids & Baby Collection', subtitle: 'Cute prints & comfortable clothing for kids', enabled: true, position: 18, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'Shop Kids →', view_all_link: '/shop?category=Kids' },
+  { id: 'unisex_collection', section_key: 'unisex_collection', title: 'Unisex Collection', subtitle: 'Streetwear & oversized fits designed for everyone', enabled: true, position: 19, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'Shop Unisex →', view_all_link: '/shop?category=Unisex' },
+  { id: 'jewellery_collection', section_key: 'jewellery_collection', title: 'Jewellery & Jewels', subtitle: '925 Sterling Silver rings, pendants & accessories', enabled: true, position: 20, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'Shop Jewellery →', view_all_link: '/shop?category=Jewellery' },
+  { id: 'accessories_collection', section_key: 'accessories_collection', title: 'Accessories Collection', subtitle: 'Bags, Sunglasses, Caps & Lifestyle Essentials', enabled: true, position: 21, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'Shop Accessories →', view_all_link: '/shop?category=Accessories' },
+  { id: 'fresh_summer', section_key: 'fresh_summer', title: 'Fresh Summer Looks', subtitle: 'Lightweight linen & vibrant summer apparel', enabled: true, position: 22, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'Shop Summer →', view_all_link: '/shop?filter=summer' },
+  { id: 'recently_viewed', section_key: 'recently_viewed', title: 'Recently Viewed', subtitle: 'Pick up right where you left off', enabled: true, position: 23, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'View All →', view_all_link: '/shop' },
+  { id: 'related_products', section_key: 'related_products', title: 'Related & Similar Products', subtitle: 'Matches based on items you explored', enabled: true, position: 24, desktop_layout: 'carousel', desktop_product_count: 6, desktop_max_products: 12, mobile_layout: 'carousel', mobile_product_count: 6, mobile_max_products: 12, show_view_all: true, view_all_text: 'View All →', view_all_link: '/shop' }
+];
+
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState('company');
   const [showEmailPreviewModal, setShowEmailPreviewModal] = useState(false);
+
+  const [productSections, setProductSections] = useState(DEFAULT_PRODUCT_SECTIONS);
+  const [productSectionSearch, setProductSectionSearch] = useState('');
+  const [savingProductSections, setSavingProductSections] = useState(false);
+
+  const fetchProductSections = async () => {
+    try {
+      const res = await api.get('/homepage-sections/admin').catch(() => null);
+      const data = res?.data?.data || res?.data;
+      const list = data?.sections || data;
+      if (Array.isArray(list) && list.length > 0) {
+        setProductSections(list.sort((a, b) => (Number(a.position || a.display_order) || 0) - (Number(b.position || b.display_order) || 0)));
+      }
+    } catch (e) {
+      console.error('Error fetching product sections:', e);
+    }
+  };
+
+  const handleSaveProductSections = async () => {
+    setSavingProductSections(true);
+    try {
+      const reordered = productSections.map((sec, idx) => ({ ...sec, position: idx + 1, display_order: idx + 1 }));
+      await api.post('/homepage-sections/admin', { sections: reordered });
+      setProductSections(reordered);
+      toast.success('Product Section Layout Controls saved successfully!');
+      window.dispatchEvent(new Event('karviyam_homepage_sections_updated'));
+    } catch (e) {
+      toast.error('Failed to save section configurations.');
+    } finally {
+      setSavingProductSections(false);
+    }
+  };
+
+  const handleResetProductSections = async () => {
+    setProductSections(DEFAULT_PRODUCT_SECTIONS);
+    try {
+      await api.post('/homepage-sections/admin', { sections: DEFAULT_PRODUCT_SECTIONS });
+      toast.success('Reset to default section layout settings!');
+      window.dispatchEvent(new Event('karviyam_homepage_sections_updated'));
+    } catch (e) {}
+  };
+
+  const handleMoveProductSection = (idx, direction) => {
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= productSections.length) return;
+    const updated = [...productSections];
+    const [moved] = updated.splice(idx, 1);
+    updated.splice(targetIdx, 0, moved);
+    const reordered = updated.map((sec, i) => ({ ...sec, position: i + 1, display_order: i + 1 }));
+    setProductSections(reordered);
+  };
+
+  const handleUpdateProductSection = (id, patch) => {
+    setProductSections(prev => prev.map(s => (s.id === id || s.section_key === id) ? { ...s, ...patch } : s));
+  };
+
+  useEffect(() => {
+    fetchProductSections();
+  }, []);
 
   const [mobileSections, setMobileSections] = useState(() => {
     try {
@@ -1079,291 +1176,335 @@ export default function AdminSettingsPage() {
         {/* Tab: Product Layout & Scroll Controls */}
         {activeTab === 'layout' && (
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-6 text-xs text-left">
-            <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3 flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-[#B71C1C]" />
-              <span>Product Section Scroll & Layout Controls (Managed by Admin)</span>
-            </h3>
-
-            <div className="space-y-6">
-              {/* BLOCK 1: DESKTOP PRODUCT LAYOUT & SCROLL CONTROLS */}
-              <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4 shadow-2xs">
-                <div className="border-b border-slate-100 pb-3">
-                  <h4 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-slate-700" />
-                    <span>DESKTOP PRODUCT LAYOUT & SCROLL CONTROLS (≥1024px)</span>
-                  </h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Configure product section layouts for desktop storefront view. Desktop settings are completely separate from mobile.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Desktop Recommended */}
-                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                    <label className="font-extrabold text-slate-800 block text-xs">Recommended For You (Desktop)</label>
-                    <div className="space-y-1.5">
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="desktopRecommended"
-                          value="carousel"
-                          checked={(settings.desktopRecommendedMode || 'carousel') === 'carousel'}
-                          onChange={() => setSettings({ ...settings, desktopRecommendedMode: 'carousel' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Horizontal Carousel (2 Rows)</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="desktopRecommended"
-                          value="grid"
-                          checked={settings.desktopRecommendedMode === 'grid'}
-                          onChange={() => setSettings({ ...settings, desktopRecommendedMode: 'grid' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Vertical Grid</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Desktop New Arrivals */}
-                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                    <label className="font-extrabold text-slate-800 block text-xs">New Arrivals (Desktop)</label>
-                    <div className="space-y-1.5">
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="desktopNewArrivals"
-                          value="carousel"
-                          checked={(settings.desktopNewArrivalsMode || 'carousel') === 'carousel'}
-                          onChange={() => setSettings({ ...settings, desktopNewArrivalsMode: 'carousel' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Horizontal Carousel</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="desktopNewArrivals"
-                          value="grid"
-                          checked={settings.desktopNewArrivalsMode === 'grid'}
-                          onChange={() => setSettings({ ...settings, desktopNewArrivalsMode: 'grid' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Vertical Grid</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Desktop Featured */}
-                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                    <label className="font-extrabold text-slate-800 block text-xs">Featured Products (Desktop)</label>
-                    <div className="space-y-1.5">
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="desktopFeatured"
-                          value="carousel"
-                          checked={(settings.desktopFeaturedMode || 'carousel') === 'carousel'}
-                          onChange={() => setSettings({ ...settings, desktopFeaturedMode: 'carousel' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Horizontal Carousel</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="desktopFeatured"
-                          value="grid"
-                          checked={settings.desktopFeaturedMode === 'grid'}
-                          onChange={() => setSettings({ ...settings, desktopFeaturedMode: 'grid' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Vertical Grid</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
+            
+            {/* Header & Save Action Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <Sliders className="w-5 h-5 text-[#B71C1C]" />
+                  <span>Product Section Scroll & Layout Controls (Managed by Admin)</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                  Configure desktop & mobile layouts, reorder homepage sections, edit titles, and control product limits. All changes persist to MySQL database.
+                </p>
               </div>
 
-              {/* BLOCK 2: MOBILE PRODUCT LAYOUT & SCROLL CONTROLS */}
-              <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4 shadow-2xs">
-                <div className="border-b border-slate-100 pb-3">
-                  <h4 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-[#B71C1C]" />
-                    <span>MOBILE PRODUCT LAYOUT & SCROLL CONTROLS (&lt;1024px)</span>
-                  </h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Configure product section layouts for mobile storefront view. Mobile settings mirror desktop controls independently.
-                  </p>
-                </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetProductSections}
+                  className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Reset Defaults</span>
+                </button>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Mobile Recommended */}
-                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                    <label className="font-extrabold text-slate-800 block text-xs">Recommended For You (Mobile)</label>
-                    <div className="space-y-1.5">
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="mobileRecommended"
-                          value="carousel"
-                          checked={(settings.mobileRecommendedMode || 'carousel') === 'carousel'}
-                          onChange={() => setSettings({ ...settings, mobileRecommendedMode: 'carousel' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Horizontal Carousel / Swipe</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="mobileRecommended"
-                          value="grid"
-                          checked={settings.mobileRecommendedMode === 'grid'}
-                          onChange={() => setSettings({ ...settings, mobileRecommendedMode: 'grid' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Vertical 2-Col Grid</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Mobile New Arrivals */}
-                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                    <label className="font-extrabold text-slate-800 block text-xs">New Arrivals (Mobile)</label>
-                    <div className="space-y-1.5">
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="mobileNewArrivals"
-                          value="carousel"
-                          checked={(settings.mobileNewArrivalsMode || 'carousel') === 'carousel'}
-                          onChange={() => setSettings({ ...settings, mobileNewArrivalsMode: 'carousel' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Horizontal Carousel / Swipe</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="mobileNewArrivals"
-                          value="grid"
-                          checked={settings.mobileNewArrivalsMode === 'grid'}
-                          onChange={() => setSettings({ ...settings, mobileNewArrivalsMode: 'grid' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Vertical 2-Col Grid</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Mobile Featured */}
-                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                    <label className="font-extrabold text-slate-800 block text-xs">Featured Products (Mobile)</label>
-                    <div className="space-y-1.5">
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="mobileFeatured"
-                          value="carousel"
-                          checked={(settings.mobileFeaturedMode || 'carousel') === 'carousel'}
-                          onChange={() => setSettings({ ...settings, mobileFeaturedMode: 'carousel' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Horizontal Carousel / Swipe</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-xs">
-                        <input
-                          type="radio"
-                          name="mobileFeatured"
-                          value="grid"
-                          checked={settings.mobileFeaturedMode === 'grid'}
-                          onChange={() => setSettings({ ...settings, mobileFeaturedMode: 'grid' })}
-                          className="text-[#B71C1C]"
-                        />
-                        <span className="font-bold text-slate-700">Vertical 2-Col Grid</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveProductSections}
+                  disabled={savingProductSections}
+                  className="px-5 py-2 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+                >
+                  {savingProductSections ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  <span>{savingProductSections ? 'Saving Changes...' : 'SAVE ALL CHANGES'}</span>
+                </button>
               </div>
+            </div>
 
-              {/* BLOCK 3: MOBILE HOMEPAGE SECTIONS & LAYOUT EDITOR */}
-              <div className="border border-red-200 bg-red-50/20 rounded-2xl p-5 space-y-4 shadow-2xs">
-                <div className="border-b border-red-100 pb-3">
-                  <h4 className="font-extrabold text-[#B71C1C] text-sm uppercase tracking-wider flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-[#B71C1C]" />
-                    <span>MOBILE HOMEPAGE SECTIONS & LAYOUT EDITOR (&lt;1024px)</span>
-                  </h4>
-                  <p className="text-[11px] text-slate-600 mt-0.5 font-medium">
-                    Enable, disable, and set scroll layout (Horizontal Carousel / Swipe vs Vertical 2-Col Grid) for every mobile homepage section independently. Desktop view remains 100% untouched.
-                  </p>
-                </div>
+            {/* Search Filter Bar */}
+            <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={productSectionSearch}
+                  onChange={(e) => setProductSectionSearch(e.target.value)}
+                  placeholder="Search Product Sections (e.g. Recommended, Trending, New, Premium, Starting @ 199)..."
+                  className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs font-semibold text-slate-800 outline-none focus:border-[#B71C1C]"
+                />
+              </div>
+              <span className="text-xs font-extrabold text-slate-500 shrink-0">
+                {productSections.filter(s => (s.title || s.section_key).toLowerCase().includes(productSectionSearch.toLowerCase())).length} Sections Found
+              </span>
+            </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {mobileSections.map((sec) => (
+            {/* Product Sections Cards List */}
+            <div className="space-y-4">
+              {productSections
+                .filter(sec => (sec.title || sec.section_key || '').toLowerCase().includes(productSectionSearch.toLowerCase()))
+                .map((sec, idx) => {
+                  const isEnabled = sec.enabled !== false;
+                  return (
                     <div
-                      key={sec.id}
-                      className={`p-3.5 bg-slate-50 rounded-xl border space-y-2.5 transition-all flex flex-col justify-between ${
-                        sec.enabled !== false ? 'border-slate-200 shadow-2xs' : 'border-slate-200/60 opacity-60'
+                      key={sec.id || sec.section_key}
+                      className={`bg-white border rounded-2xl p-5 space-y-4 transition-all ${
+                        isEnabled ? 'border-slate-200 shadow-2xs' : 'border-slate-200/60 opacity-60 bg-slate-50/50'
                       }`}
                     >
-                      {/* Card Header: Section Title on left, ON/OFF Toggle Switch on Top-Right */}
-                      <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 pb-2">
-                        <label className="font-extrabold text-slate-900 text-xs truncate" title={sec.title || sec.name}>
-                          {sec.title || sec.name}
-                        </label>
+                      {/* Section Card Top Header */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-3">
+                          {/* Reordering Buttons */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveProductSection(idx, -1)}
+                              disabled={idx === 0}
+                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 cursor-pointer"
+                              title="Move Up"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveProductSection(idx, 1)}
+                              disabled={idx === productSections.length - 1}
+                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 cursor-pointer"
+                              title="Move Down"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
 
-                        {/* ON / OFF Toggle Switch */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className={`text-[9.5px] font-black uppercase tracking-wider ${sec.enabled !== false ? 'text-[#B71C1C]' : 'text-slate-400'}`}>
-                            {sec.enabled !== false ? 'ON' : 'OFF'}
+                          {/* Order Position Badge & Key */}
+                          <span className="px-2.5 py-1 bg-slate-900 text-white font-black text-[10px] rounded-lg">
+                            #{idx + 1}
+                          </span>
+
+                          <div>
+                            <h4 className="font-extrabold text-slate-900 text-sm">{sec.title}</h4>
+                            <span className="font-mono text-[10px] text-slate-400">Key: {sec.section_key || sec.id}</span>
+                          </div>
+                        </div>
+
+                        {/* Enable / Disable Toggle Switch */}
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-extrabold uppercase tracking-wider ${isEnabled ? 'text-[#B71C1C]' : 'text-slate-400'}`}>
+                            {isEnabled ? 'ENABLED [ON]' : 'DISABLED [OFF]'}
                           </span>
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input
                               type="checkbox"
-                              checked={sec.enabled !== false}
-                              onChange={() => handleToggleSection(sec.id)}
+                              checked={isEnabled}
+                              onChange={(e) => handleUpdateProductSection(sec.id || sec.section_key, { enabled: e.target.checked })}
                               className="sr-only peer"
                             />
-                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#B71C1C]" />
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#B71C1C]" />
                           </label>
                         </div>
                       </div>
 
-                      {/* Layout Radio Options (Matching Mobile Product Layout & Scroll Controls) */}
-                      <div className="space-y-1.5 pt-0.5">
-                        <label className="flex items-center gap-2 cursor-pointer text-xs">
+                      {/* Section Title & Subtitle Edit Row */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Display Title</label>
                           <input
-                            type="radio"
-                            name={`mob_sec_layout_${sec.id}`}
-                            value="horizontal"
-                            checked={(sec.layout || 'horizontal') === 'horizontal' || sec.layout === 'carousel'}
-                            onChange={() => handleChangeSectionLayout(sec.id, 'horizontal')}
-                            className="text-[#B71C1C]"
+                            type="text"
+                            value={sec.title}
+                            onChange={(e) => handleUpdateProductSection(sec.id || sec.section_key, { title: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-900"
                           />
-                          <span className="font-bold text-slate-700">Horizontal Carousel / Swipe</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer text-xs">
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Display Subtitle</label>
                           <input
-                            type="radio"
-                            name={`mob_sec_layout_${sec.id}`}
-                            value="vertical"
-                            checked={sec.layout === 'vertical' || sec.layout === 'grid'}
-                            onChange={() => handleChangeSectionLayout(sec.id, 'vertical')}
-                            className="text-[#B71C1C]"
+                            type="text"
+                            value={sec.subtitle || ''}
+                            onChange={(e) => handleUpdateProductSection(sec.id || sec.section_key, { subtitle: e.target.value })}
+                            placeholder="Optional section subtitle description..."
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700"
                           />
-                          <span className="font-bold text-slate-700">Vertical 2-Col Grid</span>
-                        </label>
+                        </div>
                       </div>
+
+                      {/* Side-by-Side Independent Desktop and Mobile Settings */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                        
+                        {/* DESKTOP SETTINGS (≥1024px) */}
+                        <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-3">
+                          <h5 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                            <Sliders className="w-3.5 h-3.5 text-slate-700" />
+                            <span>DESKTOP PRODUCT LAYOUT CONTROLS (≥1024px)</span>
+                          </h5>
+
+                          <div className="space-y-1.5">
+                            <label className="block text-[11px] font-bold text-slate-700">Layout Format</label>
+                            <div className="space-y-1">
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                                <input
+                                  type="radio"
+                                  name={`desktop_layout_${sec.id || sec.section_key}`}
+                                  value="carousel"
+                                  checked={sec.desktop_layout === 'carousel'}
+                                  onChange={() => handleUpdateProductSection(sec.id || sec.section_key, { desktop_layout: 'carousel' })}
+                                  className="text-[#B71C1C]"
+                                />
+                                <span className="font-semibold text-slate-800">Horizontal Carousel (1 Row)</span>
+                              </label>
+
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                                <input
+                                  type="radio"
+                                  name={`desktop_layout_${sec.id || sec.section_key}`}
+                                  value="carousel_2_rows"
+                                  checked={sec.desktop_layout === 'carousel_2_rows'}
+                                  onChange={() => handleUpdateProductSection(sec.id || sec.section_key, { desktop_layout: 'carousel_2_rows' })}
+                                  className="text-[#B71C1C]"
+                                />
+                                <span className="font-semibold text-slate-800">Horizontal Carousel (2 Rows)</span>
+                              </label>
+
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                                <input
+                                  type="radio"
+                                  name={`desktop_layout_${sec.id || sec.section_key}`}
+                                  value="grid"
+                                  checked={sec.desktop_layout === 'grid'}
+                                  onChange={() => handleUpdateProductSection(sec.id || sec.section_key, { desktop_layout: 'grid' })}
+                                  className="text-[#B71C1C]"
+                                />
+                                <span className="font-semibold text-slate-800">Vertical Grid</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 pt-1">
+                            <div>
+                              <label className="block text-[10.5px] font-bold text-slate-700 mb-1">Products Visible</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={50}
+                                value={sec.desktop_product_count || 6}
+                                onChange={(e) => handleUpdateProductSection(sec.id || sec.section_key, { desktop_product_count: parseInt(e.target.value, 10) || 6 })}
+                                className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10.5px] font-bold text-slate-700 mb-1">Max Loaded Products</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={sec.desktop_max_products || 12}
+                                onChange={(e) => handleUpdateProductSection(sec.id || sec.section_key, { desktop_max_products: parseInt(e.target.value, 10) || 12 })}
+                                className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* MOBILE SETTINGS (<1024px) */}
+                        <div className="p-4 bg-red-50/20 rounded-xl border border-red-200/60 space-y-3">
+                          <h5 className="font-extrabold text-[#B71C1C] text-xs uppercase tracking-wider flex items-center gap-1.5">
+                            <Sliders className="w-3.5 h-3.5 text-[#B71C1C]" />
+                            <span>MOBILE PRODUCT LAYOUT CONTROLS (&lt;1024px)</span>
+                          </h5>
+
+                          <div className="space-y-1.5">
+                            <label className="block text-[11px] font-bold text-slate-700">Layout Format</label>
+                            <div className="space-y-1">
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                                <input
+                                  type="radio"
+                                  name={`mobile_layout_${sec.id || sec.section_key}`}
+                                  value="carousel"
+                                  checked={sec.mobile_layout === 'carousel'}
+                                  onChange={() => handleUpdateProductSection(sec.id || sec.section_key, { mobile_layout: 'carousel' })}
+                                  className="text-[#B71C1C]"
+                                />
+                                <span className="font-semibold text-slate-800">Horizontal Carousel / Swipe</span>
+                              </label>
+
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                                <input
+                                  type="radio"
+                                  name={`mobile_layout_${sec.id || sec.section_key}`}
+                                  value="grid_2_col"
+                                  checked={sec.mobile_layout === 'grid_2_col'}
+                                  onChange={() => handleUpdateProductSection(sec.id || sec.section_key, { mobile_layout: 'grid_2_col' })}
+                                  className="text-[#B71C1C]"
+                                />
+                                <span className="font-semibold text-slate-800">Vertical 2-Column Grid</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 pt-1">
+                            <div>
+                              <label className="block text-[10.5px] font-bold text-slate-700 mb-1">Products Visible</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={50}
+                                value={sec.mobile_product_count || 6}
+                                onChange={(e) => handleUpdateProductSection(sec.id || sec.section_key, { mobile_product_count: parseInt(e.target.value, 10) || 6 })}
+                                className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10.5px] font-bold text-slate-700 mb-1">Max Loaded Products</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={sec.mobile_max_products || 12}
+                                onChange={(e) => handleUpdateProductSection(sec.id || sec.section_key, { mobile_max_products: parseInt(e.target.value, 10) || 12 })}
+                                className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+
+                      {/* View All Config Row */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1 border-t border-slate-100">
+                        <div className="flex items-center gap-2 pt-5">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={sec.show_view_all !== false}
+                              onChange={(e) => handleUpdateProductSection(sec.id || sec.section_key, { show_view_all: e.target.checked })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#B71C1C]" />
+                          </label>
+                          <span className="font-extrabold text-xs text-slate-800">Show "View All" Link</span>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">"View All" Button Text</label>
+                          <input
+                            type="text"
+                            value={sec.view_all_text || 'View All →'}
+                            onChange={(e) => handleUpdateProductSection(sec.id || sec.section_key, { view_all_text: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">"View All" Destination Link</label>
+                          <input
+                            type="text"
+                            value={sec.view_all_link || '/shop'}
+                            onChange={(e) => handleUpdateProductSection(sec.id || sec.section_key, { view_all_link: e.target.value })}
+                            placeholder="e.g. /shop?filter=trending"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold"
+                          />
+                        </div>
+                      </div>
+
                     </div>
-                  ))}
-                </div>
-              </div>
+                  );
+                })}
+            </div>
 
               {/* Section 3: Product Card Image Box Settings */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2 mt-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-extrabold text-slate-900 text-xs">Product Card Image Background</h4>
@@ -1439,7 +1580,20 @@ export default function AdminSettingsPage() {
                   </div>
                 </div>
               </div>
+
+            {/* Bottom Save Bar */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={handleSaveProductSections}
+                disabled={savingProductSections}
+                className="px-6 py-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-md transition-all cursor-pointer"
+              >
+                {savingProductSections ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                <span>{savingProductSections ? 'Saving Changes...' : 'SAVE ALL CHANGES'}</span>
+              </button>
             </div>
+
           </div>
         )}
 

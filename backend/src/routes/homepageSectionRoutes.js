@@ -8,5 +8,6 @@ router.get('/', homepageSectionController.getPublicHomepageSections);
 // Admin Management Routes
 router.get('/admin', homepageSectionController.getAdminHomepageSections);
 router.put('/admin', homepageSectionController.updateAdminHomepageSections);
+router.post('/admin', homepageSectionController.updateAdminHomepageSections);
 
 module.exports = router;

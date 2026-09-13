@@ -2,7 +2,7 @@ const pool = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
 const recommendationController = require('./recommendationController');
 
-// Default Homepage Section Configs
+// Default Homepage Section Configs covering ALL Homepage Product Sections
 const DEFAULT_HOMEPAGE_SECTIONS = [
   {
     id: 'recommended',
@@ -10,12 +10,55 @@ const DEFAULT_HOMEPAGE_SECTIONS = [
     title: 'Recommended For You',
     subtitle: 'Handpicked selections based on your style',
     enabled: true,
-    display_type: 'grid', // 'horizontal' or 'grid'
     position: 1,
-    limit: 8,
+    desktop_layout: 'carousel_2_rows', // 'carousel', 'carousel_2_rows', 'grid'
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel', // 'carousel', 'grid_2_col'
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
     view_all_text: 'View All →',
     view_all_link: '/shop',
-    selection_mode: 'auto', // 'auto', 'custom', or 'hybrid'
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'new_arrivals',
+    section_key: 'new_arrivals',
+    title: 'New Arrivals',
+    subtitle: 'Explore the latest fashion drops & arrivals',
+    enabled: true,
+    position: 2,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'View All →',
+    view_all_link: '/shop?filter=new',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'featured',
+    section_key: 'featured',
+    title: 'Featured Products',
+    subtitle: 'Curated premium items handpicked for you',
+    enabled: true,
+    position: 3,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'View All →',
+    view_all_link: '/shop?filter=featured',
+    selection_mode: 'auto',
     custom_product_ids: []
   },
   {
@@ -24,9 +67,14 @@ const DEFAULT_HOMEPAGE_SECTIONS = [
     title: 'Trending Now',
     subtitle: 'Popular styles customers are loving right now',
     enabled: true,
-    display_type: 'horizontal',
-    position: 2,
-    limit: 8,
+    position: 4,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'grid_2_col',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
     view_all_text: 'View All →',
     view_all_link: '/shop?filter=trending',
     selection_mode: 'auto',
@@ -38,9 +86,14 @@ const DEFAULT_HOMEPAGE_SECTIONS = [
     title: 'Most-Loved Fashion for You',
     subtitle: 'Top-rated favorites handpicked for your style',
     enabled: true,
-    display_type: 'grid',
-    position: 3,
-    limit: 8,
+    position: 5,
+    desktop_layout: 'grid',
+    desktop_product_count: 8,
+    desktop_max_products: 16,
+    mobile_layout: 'grid_2_col',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
     view_all_text: 'View All →',
     view_all_link: '/shop?filter=loved',
     selection_mode: 'auto',
@@ -52,25 +105,16 @@ const DEFAULT_HOMEPAGE_SECTIONS = [
     title: 'Starting @ ₹199',
     subtitle: 'Unbeatable value on budget-friendly fashion & essentials',
     enabled: true,
-    display_type: 'horizontal',
-    position: 4,
-    limit: 8,
+    position: 6,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
     view_all_text: 'Explore Under ₹199 →',
-    view_all_link: '/shop?max_price=399',
-    selection_mode: 'auto',
-    custom_product_ids: []
-  },
-  {
-    id: 'new_arrivals',
-    section_key: 'new_arrivals',
-    title: 'New Arrivals',
-    subtitle: 'Explore the latest fashion drops & arrivals',
-    enabled: true,
-    display_type: 'horizontal',
-    position: 5,
-    limit: 8,
-    view_all_text: 'View All →',
-    view_all_link: '/shop?filter=new',
+    view_all_link: '/shop?maxPrice=399',
     selection_mode: 'auto',
     custom_product_ids: []
   },
@@ -80,11 +124,339 @@ const DEFAULT_HOMEPAGE_SECTIONS = [
     title: 'Best Sellers',
     subtitle: 'Customer favorite picks & top-rated items',
     enabled: true,
-    display_type: 'horizontal',
-    position: 6,
-    limit: 8,
+    position: 7,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'grid_2_col',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
     view_all_text: 'View All →',
     view_all_link: '/shop?filter=bestsellers',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'flash_picks',
+    section_key: 'flash_picks',
+    title: 'Flash Picks',
+    subtitle: 'Limited-time deals on trending products',
+    enabled: true,
+    position: 8,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'View All Deals →',
+    view_all_link: '/shop?filter=offers',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'complete_look',
+    section_key: 'complete_look',
+    title: 'Complete The Look',
+    subtitle: 'Curated style combos matched for you',
+    enabled: true,
+    position: 9,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'View Combos →',
+    view_all_link: '/shop?filter=combos',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'popular_picks',
+    section_key: 'popular_picks',
+    title: 'Popular Products',
+    subtitle: 'Most viewed & saved items this week',
+    enabled: true,
+    position: 10,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'View All →',
+    view_all_link: '/shop?filter=popular',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'top_offers',
+    section_key: 'top_offers',
+    title: 'Top Offers & Discounts',
+    subtitle: 'Steal deals with up to 60% off',
+    enabled: true,
+    position: 11,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'Shop Offers →',
+    view_all_link: '/shop?filter=offers',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'todays_deal',
+    section_key: 'todays_deal',
+    title: "Today's Special Deal",
+    subtitle: 'Exclusive 24-hour price drop on selected items',
+    enabled: true,
+    position: 12,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: "Today's Deals →",
+    view_all_link: '/shop?filter=offers',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'shop_by_occasion',
+    section_key: 'shop_by_occasion',
+    title: 'Shop by Occasion',
+    subtitle: 'Outfits & accessories for every event',
+    enabled: true,
+    position: 13,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'Explore Occasions →',
+    view_all_link: '/shop',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'find_your_price',
+    section_key: 'find_your_price',
+    title: 'Find Your Price Range',
+    subtitle: 'Shop products grouped by budget',
+    enabled: true,
+    position: 14,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'All Price Ranges →',
+    view_all_link: '/shop',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'premium_collection',
+    section_key: 'premium_collection',
+    title: 'Premium Store & 925 Silver',
+    subtitle: 'Luxury high-end fashion & hallmarked silver',
+    enabled: true,
+    position: 15,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'Explore Premium →',
+    view_all_link: '/shop?category=Jewellery',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'mens_collection',
+    section_key: 'mens_collection',
+    title: "Men's Collection",
+    subtitle: 'T-Shirts, Shirts, Sneakers & Casual Wear for Men',
+    enabled: true,
+    position: 16,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: "Shop Men's →",
+    view_all_link: '/shop?category=Men',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'womens_collection',
+    section_key: 'womens_collection',
+    title: "Women's Collection",
+    subtitle: 'Ethic wear, Kurtas, Sarees & Western outfits',
+    enabled: true,
+    position: 17,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: "Shop Women's →",
+    view_all_link: '/shop?category=Women',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'kids_collection',
+    section_key: 'kids_collection',
+    title: 'Kids & Baby Collection',
+    subtitle: 'Cute prints & comfortable clothing for kids',
+    enabled: true,
+    position: 18,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'Shop Kids →',
+    view_all_link: '/shop?category=Kids',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'unisex_collection',
+    section_key: 'unisex_collection',
+    title: 'Unisex Collection',
+    subtitle: 'Streetwear & oversized fits designed for everyone',
+    enabled: true,
+    position: 19,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'Shop Unisex →',
+    view_all_link: '/shop?category=Unisex',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'jewellery_collection',
+    section_key: 'jewellery_collection',
+    title: 'Jewellery & Jewels',
+    subtitle: '925 Sterling Silver rings, pendants & accessories',
+    enabled: true,
+    position: 20,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'Shop Jewellery →',
+    view_all_link: '/shop?category=Jewellery',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'accessories_collection',
+    section_key: 'accessories_collection',
+    title: 'Accessories Collection',
+    subtitle: 'Bags, Sunglasses, Caps & Lifestyle Essentials',
+    enabled: true,
+    position: 21,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'Shop Accessories →',
+    view_all_link: '/shop?category=Accessories',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'fresh_summer',
+    section_key: 'fresh_summer',
+    title: 'Fresh Summer Looks',
+    subtitle: 'Lightweight linen & vibrant summer apparel',
+    enabled: true,
+    position: 22,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'Shop Summer →',
+    view_all_link: '/shop?filter=summer',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'recently_viewed',
+    section_key: 'recently_viewed',
+    title: 'Recently Viewed',
+    subtitle: 'Pick up right where you left off',
+    enabled: true,
+    position: 23,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'View All →',
+    view_all_link: '/shop',
+    selection_mode: 'auto',
+    custom_product_ids: []
+  },
+  {
+    id: 'related_products',
+    section_key: 'related_products',
+    title: 'Related & Similar Products',
+    subtitle: 'Matches based on items you explored',
+    enabled: true,
+    position: 24,
+    desktop_layout: 'carousel',
+    desktop_product_count: 6,
+    desktop_max_products: 12,
+    mobile_layout: 'carousel',
+    mobile_product_count: 6,
+    mobile_max_products: 12,
+    show_view_all: true,
+    view_all_text: 'View All →',
+    view_all_link: '/shop',
     selection_mode: 'auto',
     custom_product_ids: []
   }
@@ -130,13 +502,13 @@ exports.getPublicHomepageSections = async (req, res, next) => {
 
     const activeSections = configs
       .filter(sec => sec.enabled !== false)
-      .sort((a, b) => (parseInt(a.position) || 0) - (parseInt(b.position) || 0));
+      .sort((a, b) => (parseInt(a.position || a.display_order) || 0) - (parseInt(b.position || b.display_order) || 0));
 
     const resultSections = [];
     const usedProductIds = new Set();
 
     for (const sec of activeSections) {
-      const limit = parseInt(sec.limit) || 8;
+      const limit = parseInt(sec.desktop_max_products || sec.limit) || 12;
       let products = [];
       let pinnedProducts = [];
 
@@ -176,36 +548,28 @@ exports.getPublicHomepageSections = async (req, res, next) => {
             if (sec.id === 'recommended' || sec.section_key === 'recommended') {
               const resMock = {
                 status: () => ({
-                  json: (payload) => {
-                    autoProducts = payload.data || [];
-                  }
+                  json: (payload) => { autoProducts = payload.data || []; }
                 })
               };
               await recommendationController.getPersonalizedRecommendations(reqMock, resMock, () => {});
             } else if (sec.id === 'trending' || sec.section_key === 'trending') {
               const resMock = {
                 status: () => ({
-                  json: (payload) => {
-                    autoProducts = payload.data || [];
-                  }
+                  json: (payload) => { autoProducts = payload.data || []; }
                 })
               };
               await recommendationController.getTrendingProducts(reqMock, resMock, () => {});
             } else if (sec.id === 'most_loved' || sec.section_key === 'most_loved') {
               const resMock = {
                 status: () => ({
-                  json: (payload) => {
-                    autoProducts = payload.data || [];
-                  }
+                  json: (payload) => { autoProducts = payload.data || []; }
                 })
               };
               await recommendationController.getMostLovedProducts(reqMock, resMock, () => {});
             } else if (sec.id === 'starting_199' || sec.section_key === 'starting_199') {
               const resMock = {
                 status: () => ({
-                  json: (payload) => {
-                    autoProducts = payload.data || [];
-                  }
+                  json: (payload) => { autoProducts = payload.data || []; }
                 })
               };
               await recommendationController.getStartingPriceProducts(reqMock, resMock, () => {});
@@ -221,6 +585,20 @@ exports.getPublicHomepageSections = async (req, res, next) => {
                 [needed]
               );
               autoProducts = bestProds;
+            } else if (sec.id.includes('collection') || sec.id.includes('mens') || sec.id.includes('womens') || sec.id.includes('kids') || sec.id.includes('jewellery') || sec.id.includes('accessories')) {
+              let catName = 'FASHION';
+              if (sec.id.includes('mens')) catName = 'Men';
+              else if (sec.id.includes('womens')) catName = 'Women';
+              else if (sec.id.includes('kids')) catName = 'Kids';
+              else if (sec.id.includes('jewellery')) catName = 'Jewellery';
+              else if (sec.id.includes('accessories')) catName = 'Accessories';
+              else if (sec.id.includes('unisex')) catName = 'Unisex';
+
+              const [catProds] = await pool.query(
+                `SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_active = true AND (c.name LIKE ? OR p.category_name_str LIKE ?) ORDER BY p.id DESC LIMIT ?`,
+                [`%${catName}%`, `%${catName}%`, needed]
+              );
+              autoProducts = catProds;
             } else {
               const [fallbackProds] = await pool.query(
                 `SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_active = true AND p.stock_quantity > 0 ORDER BY p.id DESC LIMIT ?`,
@@ -245,12 +623,17 @@ exports.getPublicHomepageSections = async (req, res, next) => {
         title: sec.title,
         subtitle: sec.subtitle || '',
         enabled: sec.enabled !== false,
-        display_type: sec.display_type || 'horizontal',
-        position: parseInt(sec.position) || 1,
-        limit: limit,
-        selection_mode: sec.selection_mode || 'auto',
+        position: parseInt(sec.position || sec.display_order) || 1,
+        desktop_layout: sec.desktop_layout || 'carousel',
+        desktop_product_count: parseInt(sec.desktop_product_count) || 6,
+        desktop_max_products: parseInt(sec.desktop_max_products) || 12,
+        mobile_layout: sec.mobile_layout || 'carousel',
+        mobile_product_count: parseInt(sec.mobile_product_count) || 6,
+        mobile_max_products: parseInt(sec.mobile_max_products) || 12,
+        show_view_all: sec.show_view_all !== false,
         view_all_text: sec.view_all_text || 'View All →',
         view_all_link: sec.view_all_link || '/shop',
+        selection_mode: sec.selection_mode || 'auto',
         products
       });
     }
@@ -265,7 +648,7 @@ exports.getPublicHomepageSections = async (req, res, next) => {
 exports.getAdminHomepageSections = async (req, res, next) => {
   try {
     const configs = await getSectionConfigsFromDb();
-    const sortedConfigs = [...configs].sort((a, b) => (parseInt(a.position) || 0) - (parseInt(b.position) || 0));
+    const sortedConfigs = [...configs].sort((a, b) => (parseInt(a.position || a.display_order) || 0) - (parseInt(b.position || b.display_order) || 0));
 
     const [allProducts] = await pool.query(
       `SELECT id, name, price, old_price, image_url, category_name_str, rating FROM products WHERE is_active = true ORDER BY id DESC LIMIT 200`
@@ -296,9 +679,14 @@ exports.updateAdminHomepageSections = async (req, res, next) => {
       title: String(sec.title || '').trim() || 'Featured Section',
       subtitle: String(sec.subtitle || '').trim(),
       enabled: sec.enabled !== false,
-      display_type: sec.display_type === 'grid' ? 'grid' : 'horizontal',
-      position: parseInt(sec.position) || (idx + 1),
-      limit: parseInt(sec.limit) || 8,
+      position: parseInt(sec.position || sec.display_order) || (idx + 1),
+      desktop_layout: ['carousel', 'carousel_2_rows', 'grid'].includes(sec.desktop_layout) ? sec.desktop_layout : 'carousel',
+      desktop_product_count: parseInt(sec.desktop_product_count) || 6,
+      desktop_max_products: parseInt(sec.desktop_max_products) || 12,
+      mobile_layout: ['carousel', 'grid_2_col'].includes(sec.mobile_layout) ? sec.mobile_layout : 'carousel',
+      mobile_product_count: parseInt(sec.mobile_product_count) || 6,
+      mobile_max_products: parseInt(sec.mobile_max_products) || 12,
+      show_view_all: sec.show_view_all !== false,
       view_all_text: String(sec.view_all_text || 'View All →').trim(),
       view_all_link: String(sec.view_all_link || '/shop').trim(),
       selection_mode: ['auto', 'custom', 'hybrid'].includes(sec.selection_mode) ? sec.selection_mode : 'auto',

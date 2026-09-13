@@ -665,9 +665,14 @@ export default function MobileHomePage() {
       )}
 
       {/* 7. DYNAMIC ADMIN-CONTROLLED HOMEPAGE SECTIONS IN EXACT ORDER (Desktop Source of Truth: /homepage-sections) */}
-      {homepageSections.map((sec) => {
+      {Array.isArray(homepageSections) && homepageSections.map((sec) => {
         if (!sec || sec.enabled === false || !Array.isArray(sec.products) || sec.products.length === 0) return null;
-        const isGrid = sec.display_type === 'grid';
+        
+        const mobMaxCount = Number(sec.mobile_product_count) || 6;
+        const displayProds = sec.products.slice(0, mobMaxCount);
+
+        const mobLayout = sec.mobile_layout || sec.display_type || 'carousel';
+        const isGrid = mobLayout === 'grid_2_col' || mobLayout === 'grid' || mobLayout === 'vertical';
 
         return (
           <div key={sec.id || sec.section_key} className="px-3 my-2.5">
@@ -677,21 +682,24 @@ export default function MobileHomePage() {
                   <h3 className="font-display font-black text-sm text-slate-900 tracking-tight">{sec.title}</h3>
                   {sec.subtitle && <p className="text-[10.5px] text-slate-500 font-medium">{sec.subtitle}</p>}
                 </div>
-                <button
-                  onClick={() => navigate(sec.view_all_link || '/shop')}
-                  className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5"
-                >
-                  <span>{sec.view_all_text || 'View All →'}</span>
-                </button>
+                {sec.show_view_all !== false && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(sec.view_all_link || '/shop')}
+                    className="text-xs font-bold text-[#B71C1C] hover:underline cursor-pointer flex items-center gap-0.5"
+                  >
+                    <span>{sec.view_all_text || 'View All →'}</span>
+                  </button>
+                )}
               </div>
 
               {isGrid ? (
                 <div className="grid grid-cols-2 gap-2.5">
-                  {sec.products.map((prod) => renderProductCardItem(prod, true))}
+                  {displayProds.map((prod) => renderProductCardItem(prod, true))}
                 </div>
               ) : (
                 <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap snap-x snap-mandatory">
-                  {sec.products.map((prod) => renderProductCardItem(prod, false))}
+                  {displayProds.map((prod) => renderProductCardItem(prod, false))}
                 </div>
               )}
             </div>
