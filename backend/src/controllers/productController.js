@@ -234,7 +234,7 @@ const mapProductRowToDTO = async (p) => {
   };
 };
 
-const buildProductFilterConditions = (queryParams) => {
+const buildProductFilterConditions = async (queryParams) => {
   const {
     keyword,
     category,
@@ -521,13 +521,56 @@ const buildProductFilterConditions = (queryParams) => {
   const exactDiscVal = queryParams.exactDiscount !== undefined && queryParams.exactDiscount !== '' ? parseFloat(queryParams.exactDiscount) : null;
   const promoVal = queryParams.promotion || queryParams.promo;
 
-  if (maxDiscVal !== null && !isNaN(maxDiscVal) && maxDiscVal > 0) {
-    // Up to maxDiscVal% OFF (product must be discounted and discount <= maxDiscVal)
-    conditions.push(`(
-      (p.discount_percentage IS NOT NULL AND p.discount_percentage > 0 AND p.discount_percentage <= ?)
-      OR (p.old_price IS NOT NULL AND p.old_price > p.price AND ((p.old_price - p.price)/p.old_price)*100 <= ?)
-    )`);
-    params.push(maxDiscVal, maxDiscVal);
+  if (promoVal) {
+    try {
+      const [secRows] = await pool.query(
+        "SELECT config_json FROM homepage_sidebar_sections WHERE id = 'promo_card_left' OR section_type = 'PROMO_BANNER' LIMIT 1"
+      );
+      let promoCfg = null;
+      if (secRows.length > 0 && secRows[0].config_json) {
+        promoCfg = typeof secRows[0].config_json === 'string'
+          ? JSON.parse(secRows[0].config_json)
+          : secRows[0].config_json;
+      }
+
+      if (promoCfg && Array.isArray(promoCfg.productIds) && promoCfg.productIds.length > 0) {
+        const validIds = promoCfg.productIds.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+        if (validIds.length > 0) {
+          conditions.push(`p.id IN (${validIds.map(() => '?').join(',')})`);
+          params.push(...validIds);
+        }
+      } else {
+        const minD = queryParams.minDiscount !== undefined && queryParams.minDiscount !== ''
+          ? parseFloat(queryParams.minDiscount)
+          : (promoCfg && promoCfg.minDiscount !== undefined ? parseFloat(promoCfg.minDiscount) : 40);
+        const maxD = maxDiscVal !== null
+          ? maxDiscVal
+          : (promoCfg && promoCfg.maxDiscount !== undefined ? parseFloat(promoCfg.maxDiscount) : 60);
+
+        conditions.push(`(
+          (p.discount_percentage IS NOT NULL AND p.discount_percentage >= ? AND p.discount_percentage <= ?)
+          OR (p.old_price IS NOT NULL AND p.old_price > p.price AND ((p.old_price - p.price)/p.old_price)*100 >= ? AND ((p.old_price - p.price)/p.old_price)*100 <= ?)
+        )`);
+        params.push(minD, maxD, minD, maxD);
+      }
+    } catch (ePromo) {
+      console.error('Error fetching promo card config for filter:', ePromo);
+    }
+  } else if (maxDiscVal !== null && !isNaN(maxDiscVal) && maxDiscVal > 0) {
+    const minD = queryParams.minDiscount !== undefined && queryParams.minDiscount !== '' ? parseFloat(queryParams.minDiscount) : 0;
+    if (minD > 0) {
+      conditions.push(`(
+        (p.discount_percentage IS NOT NULL AND p.discount_percentage >= ? AND p.discount_percentage <= ?)
+        OR (p.old_price IS NOT NULL AND p.old_price > p.price AND ((p.old_price - p.price)/p.old_price)*100 >= ? AND ((p.old_price - p.price)/p.old_price)*100 <= ?)
+      )`);
+      params.push(minD, maxDiscVal, minD, maxDiscVal);
+    } else {
+      conditions.push(`(
+        (p.discount_percentage IS NOT NULL AND p.discount_percentage > 0 AND p.discount_percentage <= ?)
+        OR (p.old_price IS NOT NULL AND p.old_price > p.price AND ((p.old_price - p.price)/p.old_price)*100 <= ?)
+      )`);
+      params.push(maxDiscVal, maxDiscVal);
+    }
   }
 
   if (exactDiscVal !== null && !isNaN(exactDiscVal) && exactDiscVal > 0) {
@@ -536,15 +579,6 @@ const buildProductFilterConditions = (queryParams) => {
       OR (p.old_price IS NOT NULL AND p.old_price > p.price AND ROUND(((p.old_price - p.price)/p.old_price)*100) = ?)
     )`);
     params.push(exactDiscVal, exactDiscVal);
-  }
-
-  if (promoVal && (promoVal.toLowerCase().includes('festive') || promoVal.toLowerCase().includes('60-off'))) {
-    if (maxDiscVal === null && exactDiscVal === null) {
-      conditions.push(`(
-        (p.discount_percentage IS NOT NULL AND p.discount_percentage > 0 AND p.discount_percentage <= 60)
-        OR (p.old_price IS NOT NULL AND p.old_price > p.price AND ((p.old_price - p.price)/p.old_price)*100 <= 60)
-      )`);
-    }
   }
 
   const rawDiscounts = discounts || discount || minDiscount;
@@ -685,7 +719,7 @@ exports.getProducts = async (req, res, next) => {
       limit: reqLimit
     } = req.query;
 
-    const { conditions, params } = buildProductFilterConditions(req.query);
+    const { conditions, params } = await buildProductFilterConditions(req.query);
 
     // Dynamic sorting
     const activeSort = sortBy || sort || 'featured';
