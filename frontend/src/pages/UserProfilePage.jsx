@@ -345,67 +345,67 @@ export default function UserProfilePage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F7F8F9] py-8 px-4 sm:px-6 lg:px-8 font-sans text-slate-800">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#F7F8F9] py-4 px-3 sm:px-6 lg:px-8 font-sans text-slate-800">
+      <div className="max-w-6xl mx-auto space-y-3.5">
 
         {/* User Account Banner */}
-        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-[#131921] text-white flex items-center justify-center font-bold text-xl shadow-sm">
+        <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#131921] text-white flex items-center justify-center font-bold text-base shadow-2xs shrink-0">
               {user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'U'}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-bold text-xl text-slate-900">
+                <h1 className="font-bold text-base text-slate-900 leading-tight">
                   {user?.fullName || user?.name || 'Customer Account'}
                 </h1>
-                <span className="bg-emerald-50 text-emerald-700 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                <span className="bg-emerald-50 text-emerald-700 text-[10px] font-semibold px-2 py-0.2 rounded-full border border-emerald-200 flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3" /> Verified Customer
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium">{user?.email}</p>
+              <p className="text-[11px] text-slate-500 font-medium">{user?.email}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => navigate('/settings')}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
             >
               Account Settings
             </button>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3 h-3" />
               <span>Logout</span>
             </button>
           </div>
         </div>
 
         {/* Page Title & Search Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Your Orders</h2>
-            <p className="text-xs text-slate-500 font-medium">Manage and track your recent purchases, returns, and invoices</p>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Your Orders</h2>
+            <p className="text-[11px] text-slate-500 font-medium">Manage and track your recent purchases, returns, and invoices</p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {/* Search Input */}
-            <div className="relative flex-1 sm:w-80">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative flex-1 sm:w-72">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search all orders, items or SKU"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white border border-slate-300 rounded-lg pl-9 pr-4 py-2 text-xs text-slate-900 outline-none focus:border-[#007185] focus:ring-1 focus:ring-[#007185] shadow-xs"
+                className="w-full bg-white border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 outline-none focus:border-[#007185] focus:ring-1 focus:ring-[#007185] shadow-2xs"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -416,7 +416,7 @@ export default function UserProfilePage() {
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
-              className="bg-white border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg px-3 py-2 outline-none focus:border-[#007185] cursor-pointer shadow-xs"
+              className="bg-white border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg px-2.5 py-1.5 outline-none focus:border-[#007185] cursor-pointer shadow-2xs"
             >
               <option value="NEWEST">Sort by: Newest</option>
               <option value="OLDEST">Sort by: Oldest</option>
@@ -490,7 +490,7 @@ export default function UserProfilePage() {
           </div>
         ) : (
           /* Order Cards List */
-          <div className="space-y-6">
+          <div className="space-y-3.5">
             {filteredOrders.map(ord => {
               const activeReturn = returnRequests.find(r => String(r.order_id) === String(ord.id));
               const statusUpper = String(ord.status).toUpperCase();
@@ -500,10 +500,10 @@ export default function UserProfilePage() {
               const formattedDate = new Date(ord.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
               return (
-                <div key={ord.id} className="bg-white rounded-xl border border-[#D5D9D9] shadow-2xs overflow-hidden">
+                <div key={ord.id} className="bg-white rounded-lg border border-[#D5D9D9] shadow-2xs overflow-hidden">
                   
                   {/* Amazon Order Header */}
-                  <div className="bg-[#F0F2F2] border-b border-[#D5D9D9] px-4 py-3 sm:px-6 flex flex-wrap items-center justify-between gap-y-3 gap-x-6 text-xs text-[#565959]">
+                  <div className="bg-[#F0F2F2] border-b border-[#D5D9D9] px-4 py-2 sm:px-5 flex flex-wrap items-center justify-between gap-y-2 gap-x-5 text-xs text-[#565959]">
                     <div className="flex flex-wrap items-center gap-6 sm:gap-10">
                       <div>
                         <span className="block text-[10px] uppercase font-bold text-[#565959]">ORDER PLACED</span>
@@ -563,10 +563,10 @@ export default function UserProfilePage() {
                   </div>
 
                   {/* Order Body */}
-                  <div className="p-4 sm:p-6 space-y-6">
+                  <div className="p-3.5 sm:p-4 space-y-3.5">
 
                     {/* Status Heading Banner */}
-                    <div className="space-y-1 border-b border-slate-100 pb-4">
+                    <div className="space-y-0.5 border-b border-slate-100 pb-2.5">
                       {isDelivered ? (
                         <div>
                           <h3 className="font-bold text-base text-[#0F1111] flex items-center gap-2">
@@ -605,51 +605,51 @@ export default function UserProfilePage() {
                     </div>
 
                     {/* Order Products & Action Buttons Grid */}
-                    <div className="space-y-6">
+                    <div className="space-y-3.5">
                       {ord.items.map((item, idx) => {
                         const returnEligible = isEligibleForReturn(ord, item);
                         const buyAgainKey = `${item.productId}-${item.selectedSize}-${item.selectedColor}`;
 
                         return (
-                          <div key={item.id || idx} className="flex flex-col sm:flex-row items-start justify-between gap-6 pb-6 border-b border-slate-100 last:border-0 last:pb-0">
+                          <div key={item.id || idx} className="flex flex-col sm:flex-row items-start justify-between gap-4 pb-3.5 border-b border-slate-100 last:border-0 last:pb-0">
                             
                             {/* Product Info Left */}
-                            <div className="flex items-start gap-4 flex-1">
+                            <div className="flex items-start gap-3.5 flex-1">
                               <img
                                 src={item.productImage}
                                 alt={item.productName}
-                                className="w-20 h-20 sm:w-24 sm:h-24 object-contain rounded-md border border-slate-200 shrink-0 bg-white p-1"
+                                className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-md border border-slate-200 shrink-0 bg-white p-0.5"
                               />
 
-                              <div className="space-y-1 text-xs">
+                              <div className="space-y-0.5 text-xs">
                                 <button
                                   onClick={() => navigate(`/product/${item.productId}`)}
-                                  className="font-bold text-[#007185] hover:text-[#C7511F] hover:underline text-sm leading-snug text-left cursor-pointer"
+                                  className="font-bold text-[#007185] hover:text-[#C7511F] hover:underline text-xs leading-snug text-left cursor-pointer"
                                 >
                                   {item.productName}
                                 </button>
-                                <p className="text-slate-500 font-mono text-[11px]">SKU: {item.sku}</p>
-                                <p className="text-slate-600 font-medium">
+                                <p className="text-slate-500 font-mono text-[10px]">SKU: {item.sku}</p>
+                                <p className="text-slate-600 font-medium text-[11px]">
                                   Size: <span className="font-bold text-slate-800">{item.selectedSize}</span> | Colour: <span className="font-bold text-slate-800">{item.selectedColor}</span> | Qty: <span className="font-bold text-slate-800">{item.quantity}</span>
                                 </p>
-                                <p className="font-bold text-slate-900 text-xs mt-1">₹{item.priceAtTime?.toLocaleString('en-IN')}</p>
+                                <p className="font-bold text-slate-900 text-xs mt-0.5">₹{item.priceAtTime?.toLocaleString('en-IN')}</p>
 
                                 {/* Item Quick Action Buttons */}
-                                <div className="flex flex-wrap items-center gap-2 pt-2">
+                                <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
                                   {/* Buy It Again Button */}
                                   <button
                                     onClick={() => handleBuyItAgain(item)}
                                     disabled={buyAgainLoading[buyAgainKey]}
-                                    className="px-4 py-1.5 bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-xs font-semibold rounded-full border border-[#D32F2F] shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+                                    className="px-3 py-1 bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-[11px] font-semibold rounded-full border border-[#D32F2F] shadow-2xs transition-colors cursor-pointer flex items-center gap-1"
                                   >
-                                    <ShoppingCart className="w-3.5 h-3.5" />
+                                    <ShoppingCart className="w-3 h-3" />
                                     <span>{buyAgainLoading[buyAgainKey] ? 'Adding...' : 'Buy It Again'}</span>
                                   </button>
 
                                   {/* View your item Button */}
                                   <button
                                     onClick={() => navigate(`/product/${item.productId}`)}
-                                    className="px-4 py-1.5 bg-white hover:bg-slate-50 text-slate-800 text-xs font-medium rounded-full border border-[#D5D9D9] shadow-2xs transition-colors cursor-pointer"
+                                    className="px-3 py-1 bg-white hover:bg-slate-50 text-slate-800 text-[11px] font-medium rounded-full border border-[#D5D9D9] shadow-2xs transition-colors cursor-pointer"
                                   >
                                     View your item
                                   </button>
@@ -658,12 +658,12 @@ export default function UserProfilePage() {
                             </div>
 
                             {/* Order & Item Action Buttons Right */}
-                            <div className="w-full sm:w-56 shrink-0 flex flex-col gap-2">
+                            <div className="w-full sm:w-48 shrink-0 flex flex-col gap-1.5">
                               {/* Track Order Button */}
                               {!isCancelled && (
                                 <button
                                   onClick={() => setTrackingModal({ open: true, order: ord })}
-                                  className="w-full py-2 bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-xs font-semibold rounded-full border border-[#D32F2F] shadow-2xs transition-colors cursor-pointer text-center"
+                                  className="w-full py-1.5 bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-xs font-semibold rounded-full border border-[#D32F2F] shadow-2xs transition-colors cursor-pointer text-center"
                                 >
                                   Track Order
                                 </button>
@@ -673,7 +673,7 @@ export default function UserProfilePage() {
                               {activeReturn && (
                                 <button
                                   onClick={() => setReturnStatusModal({ open: true, returnReq: activeReturn, order: ord })}
-                                  className="w-full py-2 bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-xs font-semibold rounded-full border border-[#D32F2F] shadow-2xs transition-colors cursor-pointer text-center"
+                                  className="w-full py-1.5 bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-xs font-semibold rounded-full border border-[#D32F2F] shadow-2xs transition-colors cursor-pointer text-center"
                                 >
                                   View Return/Refund Status
                                 </button>
@@ -685,7 +685,7 @@ export default function UserProfilePage() {
                                   onClick={() => handleOpenReturnModal(ord, item)}
                                   disabled={!returnEligible.eligible}
                                   title={!returnEligible.eligible ? returnEligible.reason : 'Return or Replace item'}
-                                  className={`w-full py-2 text-xs font-medium rounded-full border shadow-2xs transition-colors cursor-pointer text-center ${
+                                  className={`w-full py-1.5 text-xs font-medium rounded-full border shadow-2xs transition-colors cursor-pointer text-center ${
                                     returnEligible.eligible
                                       ? 'bg-white hover:bg-slate-50 text-slate-800 border-[#D5D9D9]'
                                       : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
@@ -699,7 +699,7 @@ export default function UserProfilePage() {
                               {isDelivered && (
                                 <button
                                   onClick={() => setReviewModal({ open: true, order: ord, item: item })}
-                                  className="w-full py-2 bg-white hover:bg-slate-50 text-slate-800 text-xs font-medium rounded-full border border-[#D5D9D9] shadow-2xs transition-colors cursor-pointer text-center"
+                                  className="w-full py-1.5 bg-white hover:bg-slate-50 text-slate-800 text-xs font-medium rounded-full border border-[#D5D9D9] shadow-2xs transition-colors cursor-pointer text-center"
                                 >
                                   Write a product review
                                 </button>
@@ -709,7 +709,7 @@ export default function UserProfilePage() {
                               {isProcessing && !isCancelled && (
                                 <button
                                   onClick={() => handleCancelOrder(ord.id)}
-                                  className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold rounded-full border border-red-200 transition-colors cursor-pointer text-center"
+                                  className="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold rounded-full border border-red-200 transition-colors cursor-pointer text-center"
                                 >
                                   Cancel Order
                                 </button>
