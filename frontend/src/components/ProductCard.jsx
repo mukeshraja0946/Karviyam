@@ -45,7 +45,7 @@ export default function ProductCard({ product }) {
       {/* DESKTOP PRODUCT CARD (>= 768px) - AMAZON-STYLE KARVIYAM    */}
       {/* STANDARDIZED 3:4 PORTRAIT IMAGE CONTAINER & COMPACT LAYOUT */}
       {/* ========================================================= */}
-      <div className="hidden md:flex group relative bg-white w-full h-full rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all duration-200 flex-col justify-between overflow-hidden p-3 text-left">
+      <div className="hidden md:flex group relative bg-white w-full rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-shadow duration-200 flex-col justify-between overflow-hidden p-3 text-left isolate">
         
         {/* 1. Standardized 3:4 Portrait Image Container */}
         <div 
@@ -67,7 +67,7 @@ export default function ProductCard({ product }) {
               e.stopPropagation();
               toggleWishlist(product.id);
             }}
-            className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-md transition-all shadow-xs cursor-pointer ${
+            className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-md transition-colors shadow-xs cursor-pointer z-10 ${
               isLiked
                 ? 'bg-[#B71C1C] text-white border-[#B71C1C]'
                 : 'bg-white/95 text-slate-600 hover:text-[#B71C1C] hover:bg-red-50 border border-slate-200'
@@ -93,7 +93,7 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* 3. Product Info Content Box */}
-        <div className="flex-1 flex flex-col justify-between pt-1 overflow-hidden space-y-1">
+        <div className="flex-1 flex flex-col justify-between pt-1 space-y-1">
           
           <div className="space-y-1">
             {/* Brand Header */}
@@ -172,7 +172,7 @@ export default function ProductCard({ product }) {
       {/* ========================================================= */}
       {/* MOBILE PRODUCT CARD (< 768px)                             */}
       {/* ========================================================= */}
-      <div className="flex md:hidden group relative bg-white w-full h-full rounded-xl border border-slate-200/80 shadow-2xs flex-col justify-between overflow-hidden p-1.5">
+      <div className="flex md:hidden group relative bg-white w-full rounded-xl border border-slate-200/80 shadow-2xs flex-col justify-between overflow-hidden p-1.5 isolate">
         <div
           className="relative w-full aspect-[3/4] bg-slate-50 rounded-lg flex items-center justify-center cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
@@ -190,7 +190,7 @@ export default function ProductCard({ product }) {
               e.stopPropagation();
               toggleWishlist(product.id);
             }}
-            className={`absolute top-1 right-1 p-1 rounded-full backdrop-blur-md transition-all shadow-xs cursor-pointer ${
+            className={`absolute top-1 right-1 p-1 rounded-full backdrop-blur-md transition-colors shadow-xs cursor-pointer z-10 ${
               isLiked ? 'bg-[#B71C1C] text-white' : 'bg-white/95 text-slate-600 border border-slate-200'
             }`}
           >
@@ -198,7 +198,7 @@ export default function ProductCard({ product }) {
           </button>
         </div>
 
-        <div className="flex-1 flex flex-col justify-between pt-1 px-0.5 overflow-hidden">
+        <div className="flex-1 flex flex-col justify-between pt-1 px-0.5">
           <div>
             <div className="flex items-center justify-between text-[9px] text-slate-500 font-bold leading-none mb-0.5">
               <span className="uppercase text-[#B71C1C] tracking-tight truncate max-w-[60px]">{brandName}</span>
