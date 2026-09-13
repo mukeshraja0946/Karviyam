@@ -119,6 +119,18 @@ export default function AdminFooterPage() {
   const [newColTitle, setNewColTitle] = useState('');
   const [showAddColInput, setShowAddColInput] = useState(false);
 
+  const [dbCategories, setDbCategories] = useState([]);
+
+  const fetchDbCategories = async () => {
+    try {
+      const res = await api.get('/categories');
+      const data = res.data?.data || res.data;
+      if (Array.isArray(data)) {
+        setDbCategories(data);
+      }
+    } catch (e) {}
+  };
+
   const fetchFooterData = async () => {
     setLoading(true);
     try {
@@ -156,6 +168,7 @@ export default function AdminFooterPage() {
 
   useEffect(() => {
     fetchFooterData();
+    fetchDbCategories();
   }, []);
 
   const handleLogoUpload = (e) => {
@@ -1011,7 +1024,7 @@ export default function AdminFooterPage() {
                   onChange={(e) => {
                     const type = e.target.value;
                     let defaultDest = '/shop';
-                    if (type === 'Category') defaultDest = '/shop?category=Clothing';
+                    if (type === 'Category') defaultDest = dbCategories.length > 0 ? `/shop?category=${dbCategories[0].id}` : '/shop?category=Clothing';
                     else if (type === 'Product Filter') defaultDest = '/shop?filter=new';
                     else if (type === 'Popup Modal') defaultDest = 'return_policy';
                     else if (type === 'Page') defaultDest = '/contact';
@@ -1025,13 +1038,74 @@ export default function AdminFooterPage() {
                   }}
                   className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-[#B71C1C] cursor-pointer"
                 >
-                  <option value="Category">Category (/shop?category=...)</option>
+                  <option value="Category">Category (Database Category ID / Slug)</option>
                   <option value="Product Filter">Product Filter (/shop?filter=...)</option>
                   <option value="Popup Modal">Popup Modal (Return Policy, Terms, About, Privacy)</option>
-                  <option value="Page">Page (/contact, /profile, etc.)</option>
+                  <option value="Page">Page (/contact, /profile, /faq, etc.)</option>
                   <option value="External URL">External URL (https://...)</option>
                 </select>
               </div>
+
+              {linkForm.destinationType === 'Category' && dbCategories.length > 0 && (
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">Select Database Category</label>
+                  <select
+                    onChange={(e) => {
+                      const selectedCatId = e.target.value;
+                      const catObj = dbCategories.find(c => String(c.id) === String(selectedCatId));
+                      if (catObj) {
+                        const newDest = `/shop?category=${catObj.id}`;
+                        setLinkForm(prev => ({
+                          ...prev,
+                          destination: newDest,
+                          targetCategoryId: catObj.id,
+                          title: prev.title || catObj.name
+                        }));
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-[#B71C1C] cursor-pointer"
+                  >
+                    <option value="">-- Choose Category from Database --</option>
+                    {dbCategories.map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name} (ID: {cat.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {linkForm.destinationType === 'Popup Modal' && (
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">Select Popup Modal Content</label>
+                  <select
+                    value={linkForm.destination}
+                    onChange={(e) => setLinkForm(prev => ({ ...prev, destination: e.target.value }))}
+                    className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-[#B71C1C] cursor-pointer"
+                  >
+                    <option value="return_policy">Return & Replacement Policy</option>
+                    <option value="terms">Terms of Service</option>
+                    <option value="privacy">Privacy Policy</option>
+                    <option value="about_us">About KARVIYAM Story</option>
+                  </select>
+                </div>
+              )}
+
+              {linkForm.destinationType === 'Product Filter' && (
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">Select Product Filter Preset</label>
+                  <select
+                    value={linkForm.destination}
+                    onChange={(e) => setLinkForm(prev => ({ ...prev, destination: e.target.value }))}
+                    className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-[#B71C1C] cursor-pointer"
+                  >
+                    <option value="/shop?filter=new">New Arrivals (is_new_arrival = 1)</option>
+                    <option value="/shop?filter=bestsellers">Best Sellers (is_best_seller = 1)</option>
+                    <option value="/shop?filter=trending">Trending Products</option>
+                    <option value="/shop?filter=offers">Special Offers / Discounts</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block font-bold text-slate-800 mb-1">Destination Route / Query / Key</label>
@@ -1039,7 +1113,7 @@ export default function AdminFooterPage() {
                   type="text"
                   value={linkForm.destination}
                   onChange={(e) => setLinkForm(prev => ({ ...prev, destination: e.target.value }))}
-                  placeholder="/shop?category=Clothing or return_policy"
+                  placeholder="/shop?category=123 or return_policy"
                   className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl font-mono text-[11px] outline-none focus:border-[#B71C1C]"
                 />
               </div>
