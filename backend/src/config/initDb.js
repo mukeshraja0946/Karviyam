@@ -371,6 +371,8 @@ async function initDb() {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
     `);
+    try { await pool.query(`ALTER TABLE orders ADD COLUMN order_date TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP`); } catch (e) {}
+    try { await pool.query(`UPDATE orders SET order_date = created_at WHERE order_date IS NULL OR order_date = '0000-00-00 00:00:00'`); } catch (e) {}
     await pool.query(`
       CREATE TABLE IF NOT EXISTS order_items (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,

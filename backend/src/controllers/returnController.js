@@ -79,7 +79,7 @@ exports.getCustomerReturnRequests = async (req, res, next) => {
     }
 
     const [rows] = await pool.query(
-      `SELECT r.*, o.order_date, o.total_amount as order_total, o.status as order_status
+      `SELECT r.*, COALESCE(o.order_date, o.created_at) as order_date, o.created_at, o.total_amount as order_total, o.status as order_status
        FROM return_requests r
        JOIN orders o ON r.order_id = o.id
        WHERE r.user_id = ?
@@ -103,7 +103,7 @@ exports.getAdminReturnRequests = async (req, res, next) => {
   try {
     const { status, search } = req.query;
     let sql = `
-      SELECT r.*, o.full_name as customer_name, o.email as customer_email, o.phone as customer_phone, o.total_amount as order_total
+      SELECT r.*, COALESCE(o.order_date, o.created_at) as order_date, o.created_at, o.full_name as customer_name, o.email as customer_email, o.phone as customer_phone, o.total_amount as order_total
       FROM return_requests r
       LEFT JOIN orders o ON r.order_id = o.id
       WHERE 1=1
