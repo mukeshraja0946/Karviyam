@@ -146,7 +146,7 @@ const verifySmtpConnection = async () => {
  * Never returns relative paths, localhost, 127.0.0.1, null, or undefined.
  */
 const getPublicImageUrl = (imagePath) => {
-  const DEFAULT_PLACEHOLDER = 'https://karviyam.com/uploads/karviyam_product_placeholder.png';
+  const DEFAULT_PLACEHOLDER = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800';
 
   if (!imagePath || typeof imagePath !== 'string') {
     return DEFAULT_PLACEHOLDER;
@@ -154,6 +154,11 @@ const getPublicImageUrl = (imagePath) => {
 
   let clean = imagePath.trim();
   if (!clean || clean === 'undefined' || clean === 'null' || clean === 'false') {
+    return DEFAULT_PLACEHOLDER;
+  }
+
+  // Detect known broken/404 external domains
+  if (clean.includes('fabfunda.com')) {
     return DEFAULT_PLACEHOLDER;
   }
 
@@ -183,7 +188,7 @@ const getPublicImageUrl = (imagePath) => {
 };
 
 const getEmailLogoHeader = async (options = {}) => {
-  const { isPreview = false, req = null, useCid = false } = options;
+  const { isPreview = false, req = null, useCid = true } = options;
   let customEmailLogoUrl = '';
   try {
     const [logoRows] = await pool.query(
