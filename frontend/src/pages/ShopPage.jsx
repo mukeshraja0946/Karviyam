@@ -727,7 +727,7 @@ export default function ShopPage() {
         {/* ========================================================= */}
         <div className="hidden lg:flex gap-6 items-start">
           {/* 1. LEFT FILTER SIDEBAR: STICKY WITH INDEPENDENT SCROLL BELOW NAVBAR */}
-          <aside className="w-[250px] xl:w-[270px] shrink-0 sticky top-[140px] z-30 max-h-[calc(100vh-155px)] overflow-y-auto overscroll-contain bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
+          <aside className="w-[250px] xl:w-[270px] shrink-0 sticky top-[140px] z-30 max-h-[calc(100vh-155px)] overflow-y-auto overscroll-contain no-scrollbar bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
             {renderFilterSidebar()}
           </aside>
 
