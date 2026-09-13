@@ -14,7 +14,9 @@ if (!fs.existsSync(frontendDist)) {
 
 const copyTargets = [
   path.join(rootDir, 'dist'),
-  path.join(rootDir, 'backend', 'dist')
+  path.join(rootDir, 'backend', 'dist'),
+  path.join(rootDir, 'backend', 'public'),
+  path.join(rootDir, 'public')
 ];
 
 for (const target of copyTargets) {
