@@ -866,7 +866,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* COLUMN 3: RIGHT SPECIFICATIONS & DETAILS */}
-            <div className="col-span-4 space-y-4 h-[calc(100vh-160px)] overflow-y-auto overscroll-contain pr-2 scrollbar-thin text-xs">
+            <div className="col-span-4 space-y-4 text-xs">
               <div className="space-y-3">
                 {/* 1. TOP HIGHLIGHTS */}
                 {(() => {
@@ -968,7 +968,7 @@ export default function ProductDetailPage() {
 
           </div>
 
-          <div id="reviews-section-desktop" className="pt-10">
+          <div id="reviews-section-desktop" className="pt-6">
             <ProductReviewsSection
               productId={product.id}
               onRatingUpdated={({ rating, reviewsCount }) => {
