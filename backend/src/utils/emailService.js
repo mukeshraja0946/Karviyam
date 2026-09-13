@@ -7,11 +7,20 @@ const VERIFIED_SENDER_EMAIL = 'vanakkam@karviyam.com';
 const VERIFIED_SENDER_NAME = 'Karviyam';
 
 const getSmtpConfig = async () => {
+  // Reload dotenv if needed to catch live .env updates
+  try {
+    require('dotenv').config({ override: true });
+  } catch (e) {}
+
+  let envHost = process.env.SMTP_HOST || '';
+  let envPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : null;
+  let envUser = process.env.SMTP_USER || process.env.MAIL_FROM || '';
   let envPass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.HOSTINGER_SMTP_PASS || process.env.MAIL_PASS || '';
-  let host = process.env.SMTP_HOST || '';
-  let port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : null;
-  let user = process.env.SMTP_USER || process.env.MAIL_FROM || VERIFIED_SENDER_EMAIL;
-  let pass = envPass;
+
+  let host = envHost;
+  let port = envPort;
+  let user = envUser;
+  let pass = envPass ? envPass.replace(/\s+/g, '') : '';
 
   try {
     const [rows] = await pool.query(
@@ -24,20 +33,38 @@ const getSmtpConfig = async () => {
     if (!port && dbMap.smtp_port) port = Number(dbMap.smtp_port);
     if (!user && dbMap.smtp_user) user = dbMap.smtp_user;
     if (!pass && (dbMap.smtp_pass || dbMap.smtp_password || dbMap.email_password)) {
-      pass = dbMap.smtp_pass || dbMap.smtp_password || dbMap.email_password;
+      pass = (dbMap.smtp_pass || dbMap.smtp_password || dbMap.email_password).replace(/\s+/g, '');
     }
   } catch (eDb) {
     console.error('Failed to load SMTP settings from DB:', eDb.message);
   }
 
   // Strict Karviyam defaults
-  if (!host) host = 'smtp.hostinger.com';
+  if (!host) host = 'smtp.gmail.com';
   if (!port) port = 465;
   if (!user) user = VERIFIED_SENDER_EMAIL;
 
   const fromName = VERIFIED_SENDER_NAME;
   const fromEmail = VERIFIED_SENDER_EMAIL;
   const secure = port === 465;
+
+  // Sync working config to DB settings table so DB is always aligned
+  if (host && user && pass) {
+    try {
+      const syncKeys = [
+        ['smtp_host', host],
+        ['smtp_port', String(port)],
+        ['smtp_user', user],
+        ['smtp_pass', pass]
+      ];
+      for (const [k, v] of syncKeys) {
+        await pool.query(
+          `INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?`,
+          [k, v, v]
+        );
+      }
+    } catch (eSync) {}
+  }
 
   return { host, port, secure, user, pass, fromName, fromEmail };
 };
