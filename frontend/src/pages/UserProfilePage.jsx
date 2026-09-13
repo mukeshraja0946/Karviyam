@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
 import api from '../utils/api';
-import { isValidAvatarUrl, resolveImageUrl } from '../utils/imageUtils';
+import { isValidAvatarUrl, resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import {
   Package, Search, Truck, RotateCcw, FileText, CheckCircle2, Clock,
@@ -608,6 +608,7 @@ export default function UserProfilePage() {
                                 src={item.productImage}
                                 alt={item.productName}
                                 className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-md border border-slate-200 shrink-0 bg-white p-0.5"
+                                onError={(e) => handleImageError(e, idx)}
                               />
 
                               <div className="space-y-0.5 text-xs">
