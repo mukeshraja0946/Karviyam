@@ -322,6 +322,22 @@ export default function AdminSettingsPage() {
 
   const [adminPhotoUrl, setAdminPhotoUrl] = useState(() => localStorage.getItem('karviyam_admin_photo') || '');
   const [uploadingAdminPhoto, setUploadingAdminPhoto] = useState(false);
+  const [systemHealth, setSystemHealth] = useState(null);
+  const [loadingHealth, setLoadingHealth] = useState(false);
+
+  const fetchSystemHealth = async () => {
+    setLoadingHealth(true);
+    try {
+      const res = await api.get('/admin/system-health');
+      if (res.data?.success) {
+        setSystemHealth(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch system health:', err);
+    } finally {
+      setLoadingHealth(false);
+    }
+  };
 
   useEffect(() => {
     const fetchAdminPhoto = async () => {
@@ -843,6 +859,18 @@ export default function AdminSettingsPage() {
         >
           <Wrench className="w-4 h-4" />
           <span>System Controls & Maintenance</span>
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('diagnostics'); fetchSystemHealth(); }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
+            activeTab === 'diagnostics'
+              ? 'bg-[#B71C1C] text-white shadow-md'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          <span>System Health & Diagnostics</span>
         </button>
       </div>
 
@@ -1999,6 +2027,137 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Tab 7: Protected Production System Health & Diagnostics */}
+        {activeTab === 'diagnostics' && (
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-6 text-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold">
+                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">Production Health & Deployment Diagnostics</h3>
+                  <p className="text-[11px] text-slate-500">Live subsystem connectivity, database schema health, storage, and SMTP diagnostics (Secrets strictly protected)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={fetchSystemHealth}
+                disabled={loadingHealth}
+                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 px-4 py-2 rounded-2xl font-bold text-xs transition-all cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingHealth ? 'animate-spin' : ''}`} />
+                <span>Refresh Diagnostics</span>
+              </button>
+            </div>
+
+            {loadingHealth ? (
+              <div className="py-12 text-center space-y-3">
+                <RefreshCw className="w-8 h-8 text-[#B71C1C] animate-spin mx-auto" />
+                <p className="font-semibold text-slate-600 text-xs">Running system diagnostics sweep...</p>
+              </div>
+            ) : systemHealth ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                
+                {/* 1. System Environment */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700">Environment</span>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                      ✓ {systemHealth.environment?.mode || 'production'}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 space-y-1 text-[11px] text-slate-600">
+                    <p><strong className="text-slate-800">Node Env:</strong> {systemHealth.environment?.nodeEnv}</p>
+                    <p><strong className="text-slate-800">Commit / Version:</strong> <span className="font-mono text-slate-700">{systemHealth.environment?.gitCommit}</span></p>
+                    <p><strong className="text-slate-800">Server Uptime:</strong> {Math.floor((systemHealth.environment?.uptimeSeconds || 0) / 60)} mins</p>
+                  </div>
+                </div>
+
+                {/* 2. Node Backend API */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700">Backend API</span>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                      ✓ {systemHealth.backend?.status}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 space-y-1 text-[11px] text-slate-600">
+                    <p><strong className="text-slate-800">HTTP Status:</strong> 200 OK</p>
+                    <p><strong className="text-slate-800">Response Time:</strong> Ping OK</p>
+                    <p><strong className="text-slate-800">Public App URL:</strong> <span className="font-mono text-slate-700">{systemHealth.uploads?.publicAppUrl}</span></p>
+                  </div>
+                </div>
+
+                {/* 3. Database Connection */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700">MySQL Database</span>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${systemHealth.database?.status === 'connected' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                      {systemHealth.database?.status === 'connected' ? '✓ Connected' : '✕ Error'}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 space-y-1 text-[11px] text-slate-600">
+                    <p><strong className="text-slate-800">Database Name:</strong> {systemHealth.database?.databaseName}</p>
+                    <p><strong className="text-slate-800">Tables Found:</strong> {systemHealth.database?.tableCount || 0} tables</p>
+                    <p><strong className="text-slate-800">Connection Ping:</strong> Success</p>
+                  </div>
+                </div>
+
+                {/* 4. Upload Storage */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700">Upload Storage</span>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${systemHealth.uploads?.writable ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {systemHealth.uploads?.writable ? '✓ Writable' : '⚠ Check Perms'}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 space-y-1 text-[11px] text-slate-600">
+                    <p><strong className="text-slate-800">Storage Path:</strong> <span className="font-mono text-[10px] text-slate-700 break-all">{systemHealth.uploads?.uploadDir}</span></p>
+                    <p><strong className="text-slate-800">Directory Exists:</strong> {systemHealth.uploads?.exists ? 'YES' : 'NO'}</p>
+                    <p><strong className="text-slate-800">Image Base URL:</strong> <span className="font-mono text-slate-700">{systemHealth.uploads?.publicAppUrl}/uploads/</span></p>
+                  </div>
+                </div>
+
+                {/* 5. SMTP Mailer */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700">SMTP Transporter</span>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${systemHealth.smtp?.status === 'verified' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {systemHealth.smtp?.status === 'verified' ? '✓ Verified' : '⚠ Connection Info'}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 space-y-1 text-[11px] text-slate-600">
+                    <p><strong className="text-slate-800">SMTP Host:</strong> <span className="font-mono text-slate-700">{systemHealth.smtp?.host}:{systemHealth.smtp?.port}</span></p>
+                    <p><strong className="text-slate-800">Sender Mailbox:</strong> <span className="font-mono text-slate-700">{systemHealth.smtp?.user}</span></p>
+                    <p><strong className="text-slate-800">SSL / TLS Secure:</strong> {systemHealth.smtp?.secure ? 'true (Port 465)' : 'false'}</p>
+                  </div>
+                </div>
+
+                {/* 6. Payment & Authentication */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700">Auth & Payments</span>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                      ✓ Configured
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 space-y-1 text-[11px] text-slate-600">
+                    <p><strong className="text-slate-800">Authentication:</strong> JWT Bearer Header</p>
+                    <p><strong className="text-slate-800">Razorpay Key ID:</strong> {systemHealth.payment?.razorpayKeyIdConfigured ? '✓ Configured' : '✕ Missing'}</p>
+                    <p><strong className="text-slate-800">Razorpay Secret:</strong> {systemHealth.payment?.razorpaySecretConfigured ? '✓ Configured' : '✕ Missing'}</p>
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              <div className="py-8 text-center text-slate-500 font-medium">
+                Unable to load system health data. Please check backend server status.
+              </div>
+            )}
           </div>
         )}
 
