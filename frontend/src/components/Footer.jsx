@@ -304,11 +304,11 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Main 4-Column Balanced Grid Desktop & Responsive Mobile Footer Content */}
-      <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-8 xl:px-12 pt-10 pb-12 grid grid-cols-1 md:grid-cols-4 gap-8 xl:gap-12 items-start">
+      {/* Main 5-Column Grid Desktop & Responsive Mobile Footer Content */}
+      <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-8 xl:px-12 pt-10 pb-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 xl:gap-8 items-start">
         
         {/* Column 1: Brand Information Section */}
-        <div className="flex flex-col gap-4 text-left items-start">
+        <div className="flex flex-col gap-4 text-left items-start w-full">
           <Link to="/" className="inline-flex items-center gap-2.5">
             {footerConfig.logoUrl && isValidImageUrl(footerConfig.logoUrl) && !logoFailed ? (
               <img
@@ -386,8 +386,8 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Columns 2 & 3: CATEGORIES & CUSTOMER CARE */}
-        {activeColumns.slice(0, 2).map((col) => {
+        {/* Columns 2, 3 & 4: CATEGORIES, CUSTOMER CARE, QUICK LINKS */}
+        {activeColumns.map((col) => {
           const activeLinks = (col.links || [])
             .filter(l => l && l.enabled !== false)
             .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -432,36 +432,9 @@ export default function Footer() {
           );
         })}
 
-        {/* Column 4: QUICK LINKS & STAY UPDATED */}
-        <div className="flex flex-col gap-6 text-left items-start w-full">
-          {activeColumns.length > 2 && (
-            <div className="w-full space-y-4">
-              <h3 className="font-display font-black text-base sm:text-[17px] text-slate-900 uppercase tracking-wider border-b border-slate-200 pb-2.5 w-full">
-                {activeColumns[2].title}
-              </h3>
-              <ul className="space-y-3 text-sm sm:text-[14.5px] font-semibold text-slate-700 w-full flex flex-col gap-0.5">
-                {(activeColumns[2].links || [])
-                  .filter(l => l && l.enabled !== false)
-                  .sort((a, b) => (a.order || 0) - (b.order || 0))
-                  .map((link) => {
-                    const dest = resolveLinkDestination(link);
-                    return (
-                      <li key={link.id || link.title}>
-                        <Link
-                          to={dest}
-                          className="hover:text-[#B71C1C] transition-colors block font-semibold py-0.5"
-                          onClick={(e) => handleLinkClick(e, link)}
-                        >
-                          {link.title}
-                        </Link>
-                      </li>
-                    );
-                  })}
-              </ul>
-            </div>
-          )}
-
-          {footerConfig.newsletterEnabled !== false && (
+        {/* Column 5: STAY UPDATED Newsletter Card */}
+        {footerConfig.newsletterEnabled !== false && (
+          <div className="flex flex-col gap-4 text-left items-start w-full">
             <div className="space-y-3 bg-slate-50/90 p-5 rounded-3xl border border-slate-200/90 text-left w-full shadow-2xs">
               <h3 className="font-display font-black text-base sm:text-[16px] text-slate-900 uppercase tracking-wider">
                 {footerConfig.stayUpdatedTitle || 'STAY UPDATED'}
@@ -520,8 +493,8 @@ export default function Footer() {
                 </button>
               </form>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
       </div>
 
