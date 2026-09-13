@@ -84,64 +84,69 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="w-full px-4 sm:px-8 lg:px-12 py-12 max-w-7xl mx-auto space-y-12">
-      <div className="text-center space-y-2">
-        <span className="text-[#B71C1C] font-extrabold tracking-widest uppercase text-xs">Customer Support</span>
-        <h1 className="text-3xl sm:text-4xl font-display font-black text-slate-900">Get In Touch With Karviyam</h1>
-        <p className="text-slate-600 text-sm max-w-2xl mx-auto">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 max-w-5xl mx-auto space-y-6">
+      {/* Top Header Section */}
+      <div className="text-center space-y-1">
+        <span className="text-[#B71C1C] font-extrabold tracking-wider uppercase text-[11px]">
+          Customer Support
+        </span>
+        <h1 className="text-2xl sm:text-3xl font-display font-black text-slate-900 tracking-tight">
+          Get In Touch With Karviyam
+        </h1>
+        <p className="text-slate-600 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">
           Have questions about your order, shipping, or custom jewellery sizing? Our customer care team is here 24/7 to assist you.
         </p>
       </div>
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-xs text-center flex flex-col items-center hover:shadow-md transition-shadow">
-          <div className="w-14 h-14 bg-red-50 text-[#B71C1C] rounded-2xl flex items-center justify-center mb-4">
-            <Phone className="w-6 h-6" />
+      {/* Info Cards (Compact Horizontal Row) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs text-center flex flex-col items-center hover:border-red-200 hover:shadow-xs transition-all">
+          <div className="w-10 h-10 bg-red-50 text-[#B71C1C] rounded-xl flex items-center justify-center mb-2.5">
+            <Phone className="w-5 h-5" />
           </div>
-          <h3 className="text-base font-bold text-slate-900">Call Us</h3>
-          <p className="text-slate-500 text-xs mt-1 font-medium">Mon-Sat from 9am to 8pm</p>
-          <a href={`tel:${storePhone.replace(/\s+/g, '')}`} className="text-[#B71C1C] font-extrabold text-sm mt-3 hover:underline">
+          <h3 className="text-sm font-extrabold text-slate-900">Call Us</h3>
+          <p className="text-slate-500 text-[11px] mt-0.5 font-medium">Mon-Sat from 9am to 8pm</p>
+          <a href={`tel:${storePhone.replace(/\s+/g, '')}`} className="text-[#B71C1C] font-extrabold text-xs sm:text-sm mt-1.5 hover:underline block leading-snug">
             {storePhone}
           </a>
         </div>
 
-        <div className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-xs text-center flex flex-col items-center hover:shadow-md transition-shadow">
-          <div className="w-14 h-14 bg-red-50 text-[#B71C1C] rounded-2xl flex items-center justify-center mb-4">
-            <Mail className="w-6 h-6" />
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs text-center flex flex-col items-center hover:border-red-200 hover:shadow-xs transition-all">
+          <div className="w-10 h-10 bg-red-50 text-[#B71C1C] rounded-xl flex items-center justify-center mb-2.5">
+            <Mail className="w-5 h-5" />
           </div>
-          <h3 className="text-base font-bold text-slate-900">Email Us</h3>
-          <p className="text-slate-500 text-xs mt-1 font-medium">We respond within 24 hours</p>
-          <a href="mailto:vanakkam@karviyam.com" className="text-[#B71C1C] font-extrabold text-sm mt-3 hover:underline">
-            vanakkam@karviyam.com
+          <h3 className="text-sm font-extrabold text-slate-900">Email Us</h3>
+          <p className="text-slate-500 text-[11px] mt-0.5 font-medium">We respond within 24 hours</p>
+          <a href={`mailto:${storeEmail}`} className="text-[#B71C1C] font-extrabold text-xs sm:text-sm mt-1.5 hover:underline block leading-snug">
+            {storeEmail}
           </a>
         </div>
 
-        <div className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-xs text-center flex flex-col items-center hover:shadow-md transition-shadow">
-          <div className="w-14 h-14 bg-red-50 text-[#B71C1C] rounded-2xl flex items-center justify-center mb-4">
-            <MapPin className="w-6 h-6" />
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs text-center flex flex-col items-center hover:border-red-200 hover:shadow-xs transition-all">
+          <div className="w-10 h-10 bg-red-50 text-[#B71C1C] rounded-xl flex items-center justify-center mb-2.5">
+            <MapPin className="w-5 h-5" />
           </div>
-          <h3 className="text-base font-bold text-slate-900">Flagship Store & HQ</h3>
-          <p className="text-slate-500 text-xs mt-1 font-medium">Official Business Address</p>
-          <span className="text-[#B71C1C] font-extrabold text-sm mt-3 leading-snug">
+          <h3 className="text-sm font-extrabold text-slate-900">Flagship Store & HQ</h3>
+          <p className="text-slate-500 text-[11px] mt-0.5 font-medium">Official Business Address</p>
+          <span className="text-[#B71C1C] font-extrabold text-xs sm:text-sm mt-1.5 leading-snug block">
             {storeAddress}
           </span>
         </div>
       </div>
 
       {/* Message Form Box */}
-      <div className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200/80 shadow-xs">
-        <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-[#B71C1C]" /> Send Us A Message
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs">
+        <h2 className="text-base font-extrabold text-slate-900 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
+          <MessageSquare className="w-4 h-4 text-[#B71C1C]" /> Send Us A Message
         </h2>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold text-slate-700 mb-2">Full Name *</label>
+              <label className="block font-extrabold text-slate-700 text-xs mb-1">Full Name *</label>
               <input
                 type="text"
-                className={`w-full px-4 py-3 rounded-xl border ${errors.name ? 'border-red-500 bg-red-50/40' : 'border-slate-200 bg-slate-50'} text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-medium transition-all`}
+                className={`w-full px-3.5 py-2.5 rounded-xl border ${errors.name ? 'border-red-500 bg-red-50/40' : 'border-slate-200 bg-slate-50'} text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-semibold text-xs transition-all`}
                 value={formData.name}
                 onChange={(e) => {
                   setFormData({ ...formData, name: e.target.value });
@@ -152,10 +157,10 @@ export default function ContactPage() {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-2">Email Address *</label>
+              <label className="block font-extrabold text-slate-700 text-xs mb-1">Email Address *</label>
               <input
                 type="email"
-                className={`w-full px-4 py-3 rounded-xl border ${errors.email ? 'border-red-500 bg-red-50/40' : 'border-slate-200 bg-slate-50'} text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-medium transition-all`}
+                className={`w-full px-3.5 py-2.5 rounded-xl border ${errors.email ? 'border-red-500 bg-red-50/40' : 'border-slate-200 bg-slate-50'} text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-semibold text-xs transition-all`}
                 value={formData.email}
                 onChange={(e) => {
                   setFormData({ ...formData, email: e.target.value });
@@ -166,21 +171,21 @@ export default function ContactPage() {
             </div>
           </div>
 
-          <div className="text-xs">
-            <label className="block font-bold text-slate-700 mb-2">Subject</label>
+          <div>
+            <label className="block font-extrabold text-slate-700 text-xs mb-1">Subject</label>
             <input
               type="text"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-medium transition-all"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-semibold text-xs transition-all"
               value={formData.subject}
               onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
             />
           </div>
 
-          <div className="text-xs">
-            <label className="block font-bold text-slate-700 mb-2">Message *</label>
+          <div>
+            <label className="block font-extrabold text-slate-700 text-xs mb-1">Message *</label>
             <textarea
-              rows="5"
-              className={`w-full px-4 py-3 rounded-xl border ${errors.message ? 'border-red-500 bg-red-50/40' : 'border-slate-200 bg-slate-50'} text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-medium transition-all`}
+              rows="3"
+              className={`w-full px-3.5 py-2.5 rounded-xl border ${errors.message ? 'border-red-500 bg-red-50/40' : 'border-slate-200 bg-slate-50'} text-slate-900 focus:bg-white focus:border-[#B71C1C] outline-none font-semibold text-xs transition-all resize-y min-h-[90px]`}
               value={formData.message}
               onChange={(e) => {
                 setFormData({ ...formData, message: e.target.value });
@@ -190,14 +195,16 @@ export default function ContactPage() {
             {errors.message && <p className="text-red-600 text-[11px] mt-1 font-bold">{errors.message}</p>}
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full md:w-auto px-8 py-3.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-wider cursor-pointer"
-          >
-            <Send className="w-4 h-4" />
-            {loading ? 'Sending...' : 'Send Message'}
-          </button>
+          <div className="pt-1">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full md:w-auto px-6 py-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 uppercase tracking-wider cursor-pointer"
+            >
+              <Send className="w-3.5 h-3.5" />
+              {loading ? 'Sending...' : 'Send Message'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
