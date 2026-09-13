@@ -727,7 +727,7 @@ export default function ShopPage() {
         {/* ========================================================= */}
         <div className="hidden lg:flex gap-6 items-start">
           {/* 1. LEFT FILTER SIDEBAR: STICKY WITH INDEPENDENT SCROLL BELOW NAVBAR */}
-          <aside className="w-[250px] xl:w-[270px] shrink-0 sticky top-[132px] max-h-[calc(100vh-145px)] overflow-y-auto overscroll-contain no-scrollbar bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
+          <aside className="w-[250px] xl:w-[270px] shrink-0 sticky top-[140px] z-30 max-h-[calc(100vh-155px)] overflow-y-auto overscroll-contain bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
             {renderFilterSidebar()}
           </aside>
 
@@ -791,7 +791,7 @@ export default function ShopPage() {
             )}
 
             {/* Results Header Bar (Sticks below Navbar) */}
-            <div className="flex items-center justify-between bg-white px-5 py-3 rounded-2xl border border-slate-200/90 shadow-2xs sticky top-[132px] z-20">
+            <div className="flex items-center justify-between bg-white px-5 py-3 rounded-2xl border border-slate-200/90 shadow-2xs sticky top-[140px] z-20">
               <div>
                 <h1 className="font-display font-black text-lg text-slate-900 tracking-tight">
                   {pageTitleLabel}

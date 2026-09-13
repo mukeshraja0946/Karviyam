@@ -233,7 +233,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white shadow-xs">
+    <header className="sticky top-0 z-50 bg-white shadow-xs w-full">
       
       {/* ========================================================= */}
       {/* MOBILE HEADER (< 1024px / lg)                             */}
