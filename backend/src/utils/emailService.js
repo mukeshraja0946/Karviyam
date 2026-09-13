@@ -73,16 +73,6 @@ const getTransporters = async () => {
     }));
   }
 
-  try {
-    if (fs.existsSync('/usr/sbin/sendmail')) {
-      list.push(nodemailer.createTransport({
-        sendmail: true,
-        newline: 'unix',
-        path: '/usr/sbin/sendmail'
-      }));
-    }
-  } catch (e) {}
-
   return list;
 };
 
@@ -144,11 +134,10 @@ const getEmailLogoHeader = async (options = {}) => {
     }
   } catch (eLogo) {}
 
-  const attachments = [];
   let logoHeaderHtml = '';
 
+  const attachments = [];
   if (customEmailLogoUrl) {
-    let logoSrc = '';
     let cleanPath = customEmailLogoUrl;
 
     if (cleanPath.includes('/uploads/')) {
@@ -156,56 +145,19 @@ const getEmailLogoHeader = async (options = {}) => {
       if (match) cleanPath = match[0];
     }
 
-    if (customEmailLogoUrl.startsWith('data:image/')) {
-      const matches = customEmailLogoUrl.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
-      if (matches) {
-        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-        attachments.push({
-          filename: `email-logo.${ext}`,
-          content: Buffer.from(matches[2], 'base64'),
-          cid: 'admin_custom_email_logo'
-        });
-        logoSrc = isPreview ? customEmailLogoUrl : 'cid:admin_custom_email_logo';
-      }
+    let logoSrc = '';
+    if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+      logoSrc = cleanPath;
+    } else if (cleanPath.startsWith('data:image/')) {
+      logoSrc = cleanPath;
     } else {
-      const possibleDirs = [
-        path.join(process.cwd(), cleanPath),
-        path.join(process.cwd(), 'backend', cleanPath),
-        path.join(__dirname, '../..', cleanPath),
-        path.join(__dirname, '..', cleanPath)
-      ];
-      let foundPath = null;
-      for (const p of possibleDirs) {
-        if (fs.existsSync(p)) {
-          foundPath = p;
-          break;
-        }
+      let publicBaseUrl = process.env.PUBLIC_BASE_URL || process.env.BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com';
+      if (isPreview && req) {
+        const host = req.get('host');
+        const protocol = req.protocol || 'http';
+        publicBaseUrl = `${protocol}://${host}`;
       }
-
-      if (isPreview) {
-        if (req) {
-          const host = req.get('host');
-          const protocol = req.protocol || 'http';
-          logoSrc = `${protocol}://${host}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
-        } else {
-          const publicBaseUrl = process.env.BASE_URL || process.env.FRONTEND_URL || 'http://localhost:8080';
-          logoSrc = `${publicBaseUrl.replace(/\/$/, '')}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
-        }
-      } else {
-        if (foundPath) {
-          attachments.push({
-            filename: path.basename(foundPath),
-            path: foundPath,
-            cid: 'admin_custom_email_logo'
-          });
-          logoSrc = 'cid:admin_custom_email_logo';
-        } else if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
-          logoSrc = cleanPath;
-        } else {
-          const publicBaseUrl = process.env.BASE_URL || process.env.FRONTEND_URL || 'https://karviyam.com';
-          logoSrc = `${publicBaseUrl.replace(/\/$/, '')}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
-        }
-      }
+      logoSrc = `${publicBaseUrl.replace(/\/$/, '')}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
     }
 
     if (logoSrc) {
@@ -213,7 +165,7 @@ const getEmailLogoHeader = async (options = {}) => {
         <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
           <tr>
             <td align="center" style="padding: 6px 0 2px 0;">
-              <img src="${logoSrc}" alt="Karviyam Logo" style="max-width: 285px; max-height: 105px; width: auto; height: auto; display: block; border: 0; outline: none; text-decoration: none;" />
+              <img src="${logoSrc}" alt="Karviyam" style="max-width: 260px; max-height: 95px; width: auto; height: auto; display: block; border: 0; outline: none; text-decoration: none;" />
             </td>
           </tr>
         </table>
@@ -632,6 +584,7 @@ const sendSubscriptionSuccessEmail = async (subscription) => {
     from: `"Karviyam VIP Club" <${fromUser}>`,
     to: toEmail,
     replyTo: VERIFIED_SENDER_EMAIL,
+    envelope: { from: VERIFIED_SENDER_EMAIL, to: toEmail },
     subject: '🎉 Subscription Confirmed! Welcome to KARVIYAM VIP Drop Alerts',
     html,
     attachments
@@ -713,6 +666,7 @@ const sendCampaignEmail = async ({ toEmail, subject, content, couponCode }) => {
     from: `"Karviyam Offers" <${fromUser}>`,
     to: toEmail,
     replyTo: VERIFIED_SENDER_EMAIL,
+    envelope: { from: VERIFIED_SENDER_EMAIL, to: toEmail },
     subject: subject,
     html,
     attachments
@@ -750,6 +704,7 @@ const sendTestEmail = async (toEmail) => {
     from: `"Karviyam Admin" <${fromUser}>`,
     to: toEmail,
     replyTo: VERIFIED_SENDER_EMAIL,
+    envelope: { from: VERIFIED_SENDER_EMAIL, to: toEmail },
     subject: '✅ KARVIYAM SMTP Email Connection Test Successful',
     html,
     attachments
@@ -816,6 +771,7 @@ const sendLoginOTPEmail = async ({ toEmail, otp }) => {
     from: `"Karviyam Security" <${fromUser}>`,
     to: toEmail,
     replyTo: VERIFIED_SENDER_EMAIL,
+    envelope: { from: VERIFIED_SENDER_EMAIL, to: toEmail },
     subject: "Karviyam Login OTP",
     html,
     attachments

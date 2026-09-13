@@ -244,9 +244,13 @@ const triggerOrderEmailNotification = async ({ orderId, eventType = 'ORDER_PLACE
 
     // 9. Dispatch Email via Nodemailer Transporter Cascade
     const mailOptions = {
-      from: `"Karviyam Orders" <${VERIFIED_FROM_EMAIL}>`,
+      from: `"Karviyam" <${VERIFIED_FROM_EMAIL}>`,
       to: customerEmail,
       replyTo: VERIFIED_FROM_EMAIL,
+      envelope: {
+        from: VERIFIED_FROM_EMAIL,
+        to: customerEmail
+      },
       subject: emailSubject,
       html: fullHtml,
       attachments

@@ -601,6 +601,12 @@ export default function AdminEmailsPage() {
             <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>✓ All customer emails are sent from this verified address.</span>
           </div>
+
+          <div className="text-[10px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1">
+            <div className="font-bold text-slate-700">DNS Anti-Spam Alignment (Hostinger):</div>
+            <div>• <strong>SPF:</strong> <code className="font-mono bg-white px-1 py-0.5 rounded border">v=spf1 include:_spf.mail.hostinger.com ~all</code></div>
+            <div>• <strong>DMARC:</strong> <code className="font-mono bg-white px-1 py-0.5 rounded border">v=DMARC1; p=none; rua=mailto:vanakkam@karviyam.com</code></div>
+          </div>
         </div>
 
         {/* EMAIL BRANDING CARD */}
