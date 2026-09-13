@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
 import api from '../utils/api';
-import { isValidAvatarUrl } from '../utils/imageUtils';
+import { isValidAvatarUrl, resolveImageUrl } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import {
   Package, Search, Truck, RotateCcw, FileText, CheckCircle2, Clock,
@@ -64,25 +64,7 @@ export default function UserProfilePage() {
     navigate('/login');
   };
 
-  const resolveImageUrl = (url) => {
-    if (!url || typeof url !== 'string' || url === 'null' || url === 'undefined') {
-      return 'https://karviyam.com/uploads/karviyam_product_placeholder.png';
-    }
-    let clean = url.trim();
-    if (clean.startsWith('http://localhost') || clean.startsWith('https://localhost') || clean.startsWith('http://127.0.0.1')) {
-      clean = clean.replace(/^https?:\/\/[^\/]+/, '');
-    }
-    if (clean.startsWith('http://') || clean.startsWith('https://')) {
-      return clean;
-    }
-    if (clean.includes('/uploads/')) {
-      const match = clean.match(/\/uploads\/.+$/);
-      if (match) clean = match[0];
-    }
-    const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://karviyam.com').replace(/\/api\/?$/, '').replace(/\/$/, '');
-    const cleanBase = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1') ? 'https://karviyam.com' : baseUrl;
-    return `${cleanBase}${clean.startsWith('/') ? clean : '/' + clean}`;
-  };
+
 
   const fetchOrdersAndReturns = async () => {
     setLoading(true);
