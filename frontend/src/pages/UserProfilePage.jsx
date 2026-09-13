@@ -352,11 +352,13 @@ export default function UserProfilePage() {
         {/* User Account Banner */}
         <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#131921] text-white flex items-center justify-center font-bold text-base shadow-2xs shrink-0 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-white text-slate-800 flex items-center justify-center font-bold text-base shadow-2xs shrink-0 overflow-hidden border border-slate-200 p-0.5">
               {isValidAvatarUrl(user?.profilePicture) || isValidAvatarUrl(user?.avatar) ? (
-                <img src={resolveImageUrl(user?.profilePicture || user?.avatar)} alt="" className="w-full h-full object-cover" />
+                <img src={resolveImageUrl(user?.profilePicture || user?.avatar)} alt="" className="w-full h-full object-contain object-center block" />
               ) : (
-                <span>{user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'U'}</span>
+                <div className="w-full h-full bg-[#131921] text-white flex items-center justify-center rounded-full">
+                  <span>{user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'U'}</span>
+                </div>
               )}
             </div>
             <div>

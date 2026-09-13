@@ -485,13 +485,23 @@ export default function AdminLayout() {
 
           {/* Admin User Profile Header */}
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-black text-xs flex items-center justify-center shadow-2xs overflow-hidden border border-[#B71C1C] shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-white text-slate-800 font-black text-xs flex items-center justify-center shadow-2xs overflow-hidden border border-slate-200 shrink-0 p-0.5">
               {isValidAvatarUrl(adminPhoto) || isValidAvatarUrl(user?.profilePicture) || isValidAvatarUrl(user?.avatar) ? (
-                <img src={resolveImageUrl(adminPhoto || user?.profilePicture || user?.avatar)} alt="Admin Avatar" className="w-full h-full object-cover" />
+                <img
+                  src={resolveImageUrl(adminPhoto || user?.profilePicture || user?.avatar)}
+                  alt="Admin Avatar"
+                  className="w-full h-full object-contain object-center block"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.style.display = 'none';
+                  }}
+                />
               ) : (
-                <span className="font-display font-black text-xs uppercase text-white">
-                  {user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'K'}
-                </span>
+                <div className="w-full h-full bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] flex items-center justify-center rounded-lg">
+                  <span className="font-display font-black text-xs uppercase text-white">
+                    {user?.fullName?.charAt(0) || user?.name?.charAt(0) || 'K'}
+                  </span>
+                </div>
               )}
             </div>
             <div className="hidden sm:block text-left">

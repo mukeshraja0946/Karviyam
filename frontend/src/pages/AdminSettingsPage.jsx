@@ -860,11 +860,21 @@ export default function AdminSettingsPage() {
 
               <div className="flex flex-col sm:flex-row items-center gap-6 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-black text-2xl flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
+                  <div className="w-20 h-20 rounded-2xl bg-white text-slate-800 font-black text-2xl flex items-center justify-center overflow-hidden border-2 border-slate-200 shadow-md p-1">
                     {isValidAvatarUrl(adminPhotoUrl) ? (
-                      <img src={resolveImageUrl(adminPhotoUrl)} alt="Admin Avatar" className="w-full h-full object-cover" />
+                      <img
+                        src={resolveImageUrl(adminPhotoUrl)}
+                        alt="Admin Avatar"
+                        className="w-full h-full object-contain object-center block"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.style.display = 'none';
+                        }}
+                      />
                     ) : (
-                      <span className="font-display font-black text-2xl uppercase text-white">K</span>
+                      <div className="w-full h-full bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] flex items-center justify-center rounded-xl">
+                        <span className="font-display font-black text-2xl uppercase text-white">K</span>
+                      </div>
                     )}
                   </div>
                 </div>
