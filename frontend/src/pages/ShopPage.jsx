@@ -71,6 +71,13 @@ export default function ShopPage() {
   const [selectedPriceRanges, setSelectedPriceRanges] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
+  const [selectedMaterials, setSelectedMaterials] = useState([]);
+  const [selectedProductTypes, setSelectedProductTypes] = useState([]);
+  const [selectedGenders, setSelectedGenders] = useState([]);
+  const [selectedFits, setSelectedFits] = useState([]);
+  const [selectedDiscounts, setSelectedDiscounts] = useState([]);
+  const [selectedRatings, setSelectedRatings] = useState([]);
+  const [selectedOffers, setSelectedOffers] = useState([]);
   const [inStockOnly, setInStockOnly] = useState(false);
 
   // Pagination & Sorting States
@@ -79,18 +86,7 @@ export default function ShopPage() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
 
   // Accordion Expand/Collapse State
-  const [collapsedGroups, setCollapsedGroups] = useState({
-    category: false,
-    brand: false,
-    price: false,
-    size: false,
-    colour: false,
-    availability: false
-  });
-
-  // Show More / Show Less States
-  const [showMoreCategories, setShowMoreCategories] = useState(false);
-  const [showMoreBrands, setShowMoreBrands] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState({});
 
   // Mobile Filter Drawer State
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -129,21 +125,31 @@ export default function ShopPage() {
     const urlPrice = searchParams.get('price') || searchParams.get('priceRanges') || '';
     const urlSize = searchParams.get('size') || searchParams.get('sizes') || '';
     const urlColor = searchParams.get('color') || searchParams.get('colors') || '';
+    const urlMaterial = searchParams.get('material') || searchParams.get('materials') || searchParams.get('fabric') || '';
+    const urlProductType = searchParams.get('productType') || searchParams.get('productTypes') || searchParams.get('type') || '';
+    const urlGender = searchParams.get('gender') || searchParams.get('genders') || '';
+    const urlFit = searchParams.get('fit') || searchParams.get('fits') || '';
+    const urlDiscount = searchParams.get('discount') || searchParams.get('discounts') || '';
+    const urlRating = searchParams.get('rating') || searchParams.get('ratings') || '';
+    const urlOffer = searchParams.get('offer') || searchParams.get('offers') || '';
     const urlStock = searchParams.get('inStock') === 'true' || searchParams.get('availability') === 'in_stock';
     const urlSort = searchParams.get('sort') || searchParams.get('sortBy') || 'featured';
     const urlPage = parseInt(searchParams.get('page') || '1', 10);
 
-    const parsedCats = urlCat ? urlCat.split(',').map(s => s.trim()).filter(Boolean) : [];
-    const parsedBrands = urlBrand ? urlBrand.split(',').map(s => s.trim()).filter(Boolean) : [];
-    const parsedPrices = urlPrice ? urlPrice.split(',').map(s => s.trim()).filter(Boolean) : [];
-    const parsedSizes = urlSize ? urlSize.split(',').map(s => s.trim()).filter(Boolean) : [];
-    const parsedColors = urlColor ? urlColor.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const parseList = (str) => str ? str.split(',').map(s => s.trim()).filter(Boolean) : [];
 
-    setSelectedCategories(parsedCats);
-    setSelectedBrands(parsedBrands);
-    setSelectedPriceRanges(parsedPrices);
-    setSelectedSizes(parsedSizes);
-    setSelectedColors(parsedColors);
+    setSelectedCategories(parseList(urlCat));
+    setSelectedBrands(parseList(urlBrand));
+    setSelectedPriceRanges(parseList(urlPrice));
+    setSelectedSizes(parseList(urlSize));
+    setSelectedColors(parseList(urlColor));
+    setSelectedMaterials(parseList(urlMaterial));
+    setSelectedProductTypes(parseList(urlProductType));
+    setSelectedGenders(parseList(urlGender));
+    setSelectedFits(parseList(urlFit));
+    setSelectedDiscounts(parseList(urlDiscount));
+    setSelectedRatings(parseList(urlRating));
+    setSelectedOffers(parseList(urlOffer));
     setInStockOnly(urlStock);
     setSortBy(urlSort);
     setCurrentPage(isNaN(urlPage) || urlPage < 1 ? 1 : urlPage);
@@ -157,6 +163,13 @@ export default function ShopPage() {
       const prices = newFilters.priceRanges !== undefined ? newFilters.priceRanges : selectedPriceRanges;
       const szs = newFilters.sizes !== undefined ? newFilters.sizes : selectedSizes;
       const cols = newFilters.colors !== undefined ? newFilters.colors : selectedColors;
+      const mats = newFilters.materials !== undefined ? newFilters.materials : selectedMaterials;
+      const types = newFilters.productTypes !== undefined ? newFilters.productTypes : selectedProductTypes;
+      const gnds = newFilters.genders !== undefined ? newFilters.genders : selectedGenders;
+      const fts = newFilters.fits !== undefined ? newFilters.fits : selectedFits;
+      const dscs = newFilters.discounts !== undefined ? newFilters.discounts : selectedDiscounts;
+      const rts = newFilters.ratings !== undefined ? newFilters.ratings : selectedRatings;
+      const offs = newFilters.offers !== undefined ? newFilters.offers : selectedOffers;
       const stock = newFilters.inStock !== undefined ? newFilters.inStock : inStockOnly;
       const sort = newFilters.sortBy !== undefined ? newFilters.sortBy : sortBy;
       const page = newFilters.page !== undefined ? newFilters.page : currentPage;
@@ -167,6 +180,13 @@ export default function ShopPage() {
       if (prices.length > 0) params.set('priceRanges', prices.join(','));
       if (szs.length > 0) params.set('sizes', szs.join(','));
       if (cols.length > 0) params.set('colors', cols.join(','));
+      if (mats.length > 0) params.set('materials', mats.join(','));
+      if (types.length > 0) params.set('productTypes', types.join(','));
+      if (gnds.length > 0) params.set('genders', gnds.join(','));
+      if (fts.length > 0) params.set('fits', fts.join(','));
+      if (dscs.length > 0) params.set('discounts', dscs.join(','));
+      if (rts.length > 0) params.set('ratings', rts.join(','));
+      if (offs.length > 0) params.set('offers', offs.join(','));
       if (stock) params.set('inStock', 'true');
       if (sort && sort !== 'featured') params.set('sortBy', sort);
       if (page > 1) params.set('page', page);
@@ -179,6 +199,13 @@ export default function ShopPage() {
       selectedPriceRanges,
       selectedSizes,
       selectedColors,
+      selectedMaterials,
+      selectedProductTypes,
+      selectedGenders,
+      selectedFits,
+      selectedDiscounts,
+      selectedRatings,
+      selectedOffers,
       inStockOnly,
       sortBy,
       currentPage,
@@ -210,6 +237,13 @@ export default function ShopPage() {
       if (selectedPriceRanges.length > 0) queryParts.push(`priceRanges=${encodeURIComponent(selectedPriceRanges.join(','))}`);
       if (selectedSizes.length > 0) queryParts.push(`sizes=${encodeURIComponent(selectedSizes.join(','))}`);
       if (selectedColors.length > 0) queryParts.push(`colors=${encodeURIComponent(selectedColors.join(','))}`);
+      if (selectedMaterials.length > 0) queryParts.push(`materials=${encodeURIComponent(selectedMaterials.join(','))}`);
+      if (selectedProductTypes.length > 0) queryParts.push(`productTypes=${encodeURIComponent(selectedProductTypes.join(','))}`);
+      if (selectedGenders.length > 0) queryParts.push(`genders=${encodeURIComponent(selectedGenders.join(','))}`);
+      if (selectedFits.length > 0) queryParts.push(`fits=${encodeURIComponent(selectedFits.join(','))}`);
+      if (selectedDiscounts.length > 0) queryParts.push(`discounts=${encodeURIComponent(selectedDiscounts.join(','))}`);
+      if (selectedRatings.length > 0) queryParts.push(`ratings=${encodeURIComponent(selectedRatings.join(','))}`);
+      if (selectedOffers.length > 0) queryParts.push(`offers=${encodeURIComponent(selectedOffers.join(','))}`);
       if (inStockOnly) queryParts.push('inStock=true');
       if (sortBy) queryParts.push(`sortBy=${encodeURIComponent(sortBy)}`);
       queryParts.push(`page=${currentPage - 1}`);
@@ -253,6 +287,13 @@ export default function ShopPage() {
     selectedPriceRanges,
     selectedSizes,
     selectedColors,
+    selectedMaterials,
+    selectedProductTypes,
+    selectedGenders,
+    selectedFits,
+    selectedDiscounts,
+    selectedRatings,
+    selectedOffers,
     inStockOnly,
     sortBy,
     currentPage,
@@ -313,6 +354,69 @@ export default function ShopPage() {
     updateUrlAndFetch({ colors: updated, page: 1 });
   };
 
+  const handleMaterialToggle = (matVal) => {
+    const updated = selectedMaterials.includes(matVal)
+      ? selectedMaterials.filter(m => m !== matVal)
+      : [...selectedMaterials, matVal];
+    setSelectedMaterials(updated);
+    setCurrentPage(1);
+    updateUrlAndFetch({ materials: updated, page: 1 });
+  };
+
+  const handleProductTypeToggle = (typeVal) => {
+    const updated = selectedProductTypes.includes(typeVal)
+      ? selectedProductTypes.filter(t => t !== typeVal)
+      : [...selectedProductTypes, typeVal];
+    setSelectedProductTypes(updated);
+    setCurrentPage(1);
+    updateUrlAndFetch({ productTypes: updated, page: 1 });
+  };
+
+  const handleGenderToggle = (genderVal) => {
+    const updated = selectedGenders.includes(genderVal)
+      ? selectedGenders.filter(g => g !== genderVal)
+      : [...selectedGenders, genderVal];
+    setSelectedGenders(updated);
+    setCurrentPage(1);
+    updateUrlAndFetch({ genders: updated, page: 1 });
+  };
+
+  const handleFitToggle = (fitVal) => {
+    const updated = selectedFits.includes(fitVal)
+      ? selectedFits.filter(f => f !== fitVal)
+      : [...selectedFits, fitVal];
+    setSelectedFits(updated);
+    setCurrentPage(1);
+    updateUrlAndFetch({ fits: updated, page: 1 });
+  };
+
+  const handleDiscountToggle = (discVal) => {
+    const updated = selectedDiscounts.includes(discVal)
+      ? selectedDiscounts.filter(d => d !== discVal)
+      : [...selectedDiscounts, discVal];
+    setSelectedDiscounts(updated);
+    setCurrentPage(1);
+    updateUrlAndFetch({ discounts: updated, page: 1 });
+  };
+
+  const handleRatingToggle = (ratingVal) => {
+    const updated = selectedRatings.includes(ratingVal)
+      ? selectedRatings.filter(r => r !== ratingVal)
+      : [...selectedRatings, ratingVal];
+    setSelectedRatings(updated);
+    setCurrentPage(1);
+    updateUrlAndFetch({ ratings: updated, page: 1 });
+  };
+
+  const handleOfferToggle = (offerVal) => {
+    const updated = selectedOffers.includes(offerVal)
+      ? selectedOffers.filter(o => o !== offerVal)
+      : [...selectedOffers, offerVal];
+    setSelectedOffers(updated);
+    setCurrentPage(1);
+    updateUrlAndFetch({ offers: updated, page: 1 });
+  };
+
   const handleStockToggle = () => {
     const updated = !inStockOnly;
     setInStockOnly(updated);
@@ -331,6 +435,13 @@ export default function ShopPage() {
     setSelectedPriceRanges([]);
     setSelectedSizes([]);
     setSelectedColors([]);
+    setSelectedMaterials([]);
+    setSelectedProductTypes([]);
+    setSelectedGenders([]);
+    setSelectedFits([]);
+    setSelectedDiscounts([]);
+    setSelectedRatings([]);
+    setSelectedOffers([]);
     setInStockOnly(false);
     setSortBy('featured');
     setCurrentPage(1);
@@ -395,6 +506,9 @@ export default function ShopPage() {
             const isExpandedShowMore = Boolean(showMoreStates[key]);
             const limit = isExpandedShowMore ? (sec.showMoreLimit || 20) : (sec.displayLimit || 5);
             const visibleOpts = opts.slice(0, limit);
+
+            // Skip empty section (Rule 25)
+            if (opts.length === 0) return null;
 
             return (
               <div key={sec.id || key} className="border-b border-slate-200 pb-3.5">
@@ -504,6 +618,27 @@ export default function ShopPage() {
                           } else if (key === 'price') {
                             isChecked = selectedPriceRanges.includes(optKey);
                             onToggle = () => handlePriceRangeToggle(optKey);
+                          } else if (key === 'material') {
+                            isChecked = selectedMaterials.includes(optKey) || selectedMaterials.includes(optLabel);
+                            onToggle = () => handleMaterialToggle(optKey);
+                          } else if (key === 'product_type') {
+                            isChecked = selectedProductTypes.includes(optKey) || selectedProductTypes.includes(optLabel);
+                            onToggle = () => handleProductTypeToggle(optKey);
+                          } else if (key === 'gender') {
+                            isChecked = selectedGenders.includes(optKey) || selectedGenders.includes(optLabel);
+                            onToggle = () => handleGenderToggle(optKey);
+                          } else if (key === 'fit') {
+                            isChecked = selectedFits.includes(optKey) || selectedFits.includes(optLabel);
+                            onToggle = () => handleFitToggle(optKey);
+                          } else if (key === 'discount') {
+                            isChecked = selectedDiscounts.includes(optKey);
+                            onToggle = () => handleDiscountToggle(optKey);
+                          } else if (key === 'rating') {
+                            isChecked = selectedRatings.includes(optKey);
+                            onToggle = () => handleRatingToggle(optKey);
+                          } else if (key === 'offers') {
+                            isChecked = selectedOffers.includes(optKey);
+                            onToggle = () => handleOfferToggle(optKey);
                           }
 
                           return (

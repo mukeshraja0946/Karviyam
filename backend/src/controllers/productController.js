@@ -252,15 +252,30 @@ const buildProductFilterConditions = (queryParams) => {
     colors,
     color,
     colour,
+    materials,
+    material,
+    fabric,
+    productTypes,
+    productType,
+    type,
+    genders,
+    gender,
+    fits,
+    fit,
+    discounts,
+    discount,
+    minDiscount,
+    ratings,
+    rating,
+    minRating,
+    offers,
+    offer,
     inStock,
     availability,
-    gender,
-    type,
     isFeatured,
     isTrending,
     isBestSeller,
     isNewArrival,
-    rating,
     includeInactive
   } = queryParams;
 
@@ -422,27 +437,173 @@ const buildProductFilterConditions = (queryParams) => {
     }
   }
 
-  // 6. AVAILABILITY FILTER (In Stock)
+  // 6. MATERIAL / FABRIC FILTER (OR logic within materials group)
+  const rawMaterials = materials || material || fabric;
+  if (rawMaterials) {
+    const matArray = (Array.isArray(rawMaterials) ? rawMaterials : String(rawMaterials).split(','))
+      .map(m => m.trim())
+      .filter(Boolean);
+
+    if (matArray.length > 0) {
+      const matSubClauses = [];
+      matArray.forEach(mVal => {
+        const term = `%${mVal}%`;
+        matSubClauses.push('(LOWER(p.fabric) LIKE LOWER(?) OR LOWER(p.material) LIKE LOWER(?))');
+        params.push(term, term);
+      });
+      if (matSubClauses.length > 0) {
+        conditions.push(`(${matSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  // 7. PRODUCT TYPE FILTER (OR logic within product types group)
+  const rawTypes = productTypes || productType || type;
+  if (rawTypes && rawTypes !== 'All' && rawTypes !== 'ALL') {
+    const typeArray = (Array.isArray(rawTypes) ? rawTypes : String(rawTypes).split(','))
+      .map(t => t.trim())
+      .filter(Boolean);
+
+    if (typeArray.length > 0) {
+      const typeSubClauses = [];
+      typeArray.forEach(tVal => {
+        const term = `%${tVal}%`;
+        typeSubClauses.push('LOWER(p.type) LIKE LOWER(?)');
+        params.push(term);
+      });
+      if (typeSubClauses.length > 0) {
+        conditions.push(`(${typeSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  // 8. GENDER FILTER (OR logic within genders group)
+  const rawGenders = genders || gender;
+  if (rawGenders && rawGenders !== 'All' && rawGenders !== 'ALL') {
+    const genderArray = (Array.isArray(rawGenders) ? rawGenders : String(rawGenders).split(','))
+      .map(g => g.trim())
+      .filter(Boolean);
+
+    if (genderArray.length > 0) {
+      const genderSubClauses = [];
+      genderArray.forEach(gVal => {
+        genderSubClauses.push('LOWER(p.gender) = LOWER(?)');
+        params.push(gVal);
+      });
+      if (genderSubClauses.length > 0) {
+        conditions.push(`(${genderSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  // 9. FIT / STYLE FILTER
+  const rawFits = fits || fit;
+  if (rawFits) {
+    const fitArray = (Array.isArray(rawFits) ? rawFits : String(rawFits).split(','))
+      .map(f => f.trim())
+      .filter(Boolean);
+
+    if (fitArray.length > 0) {
+      const fitSubClauses = [];
+      fitArray.forEach(fVal => {
+        const term = `%${fVal}%`;
+        fitSubClauses.push('LOWER(p.fit) LIKE LOWER(?)');
+        params.push(term);
+      });
+      if (fitSubClauses.length > 0) {
+        conditions.push(`(${fitSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  // 10. DISCOUNT FILTER
+  const rawDiscounts = discounts || discount || minDiscount;
+  if (rawDiscounts) {
+    const discArray = (Array.isArray(rawDiscounts) ? rawDiscounts : String(rawDiscounts).split(','))
+      .map(d => d.trim())
+      .filter(Boolean);
+
+    if (discArray.length > 0) {
+      const discSubClauses = [];
+      discArray.forEach(dVal => {
+        let pct = 0;
+        if (dVal === '10_above' || dVal === '10') pct = 10;
+        else if (dVal === '20_above' || dVal === '20') pct = 20;
+        else if (dVal === '30_above' || dVal === '30') pct = 30;
+        else if (dVal === '40_above' || dVal === '40') pct = 40;
+        else if (dVal === '50_above' || dVal === '50') pct = 50;
+        else if (!isNaN(dVal)) pct = parseFloat(dVal);
+
+        if (pct > 0) {
+          discSubClauses.push('(p.discount_percentage >= ? OR ((p.old_price - p.price)/p.old_price)*100 >= ?)');
+          params.push(pct, pct);
+        }
+      });
+      if (discSubClauses.length > 0) {
+        conditions.push(`(${discSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  // 11. CUSTOMER RATING FILTER
+  const rawRatings = ratings || rating || minRating;
+  if (rawRatings) {
+    const ratingArray = (Array.isArray(rawRatings) ? rawRatings : String(rawRatings).split(','))
+      .map(r => r.trim())
+      .filter(Boolean);
+
+    if (ratingArray.length > 0) {
+      const ratingSubClauses = [];
+      ratingArray.forEach(rVal => {
+        let minR = 0;
+        if (rVal === '4_above' || rVal === '4') minR = 4.0;
+        else if (rVal === '3_above' || rVal === '3') minR = 3.0;
+        else if (rVal === '2_above' || rVal === '2') minR = 2.0;
+        else if (rVal === '1_above' || rVal === '1') minR = 1.0;
+        else if (!isNaN(rVal)) minR = parseFloat(rVal);
+
+        if (minR > 0) {
+          ratingSubClauses.push('p.rating >= ?');
+          params.push(minR);
+        }
+      });
+      if (ratingSubClauses.length > 0) {
+        conditions.push(`(${ratingSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  // 12. OFFERS FILTER
+  const rawOffers = offers || offer;
+  if (rawOffers) {
+    const offerArray = (Array.isArray(rawOffers) ? rawOffers : String(rawOffers).split(','))
+      .map(o => o.trim())
+      .filter(Boolean);
+
+    if (offerArray.length > 0) {
+      const offerSubClauses = [];
+      offerArray.forEach(oVal => {
+        if (oVal === 'on_sale' || oVal === 'discount') {
+          offerSubClauses.push('(p.old_price > p.price OR p.discount_percentage > 0)');
+        } else if (oVal === 'new_arrivals' || oVal === 'new') {
+          offerSubClauses.push('(p.is_new_arrival = 1 OR p.created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY))');
+        } else if (oVal === 'best_sellers' || oVal === 'bestsellers') {
+          offerSubClauses.push('(p.is_best_seller = 1 OR p.rating >= 4.0)');
+        }
+      });
+      if (offerSubClauses.length > 0) {
+        conditions.push(`(${offerSubClauses.join(' OR ')})`);
+      }
+    }
+  }
+
+  // 13. AVAILABILITY FILTER (In Stock)
   if (inStock === 'true' || inStock === '1' || availability === 'in_stock' || availability === 'true') {
     conditions.push(`(
       (p.stock_quantity IS NOT NULL AND p.stock_quantity > 0)
       OR (p.stock IS NOT NULL AND p.stock > 0)
       OR EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id AND pv.stock > 0)
     )`);
-  }
-
-  // Gender & Type
-  if (gender && gender !== 'All' && gender !== 'ALL') {
-    conditions.push('LOWER(p.gender) = LOWER(?)');
-    params.push(gender);
-  }
-  if (type && type !== 'All' && type !== 'ALL') {
-    conditions.push('LOWER(p.type) = LOWER(?)');
-    params.push(type);
-  }
-  if (rating && !isNaN(rating)) {
-    conditions.push('p.rating >= ?');
-    params.push(parseFloat(rating));
   }
 
   const { filter, tag, subCategory, search } = queryParams;
@@ -456,7 +617,7 @@ const buildProductFilterConditions = (queryParams) => {
   if (filter === 'trending' || isTrending === 'true' || isTrending === '1') {
     conditions.push('(p.is_trending = 1 OR p.rating >= 4.5)');
   }
-  if (filter === 'offers' || filter === 'discount') {
+  if (filter === 'offers') {
     conditions.push('(p.old_price > p.price OR p.discount_percentage > 0)');
   }
 

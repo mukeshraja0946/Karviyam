@@ -11,7 +11,7 @@ exports.getShopFilterConfig = async (req, res, next) => {
       `SELECT * FROM shop_filter_sections WHERE is_enabled = 1 ORDER BY display_order ASC`
     );
 
-    // Fetch enabled options
+    // Fetch enabled options from database if any
     const [allOptions] = await pool.query(
       `SELECT * FROM shop_filter_options WHERE is_enabled = 1 ORDER BY display_order ASC`
     );
@@ -27,10 +27,10 @@ exports.getShopFilterConfig = async (req, res, next) => {
         const [cats] = await pool.query(`
           SELECT c.id, c.name, c.parent_id, COUNT(p.id) as product_count
           FROM categories c
-          LEFT JOIN products p ON (p.category_id = c.id OR p.subcategory_id = c.id) AND p.is_active = 1
+          LEFT JOIN products p ON (p.category_id = c.id OR p.subcategory_id = c.id) AND (p.is_active = 1 OR p.is_active IS NULL)
           WHERE c.is_active = 1 OR c.is_active IS NULL
           GROUP BY c.id, c.name, c.parent_id
-          HAVING product_count > 0 OR c.parent_id IS NOT NULL
+          HAVING product_count > 0
           ORDER BY c.name ASC
         `);
         optionsList = cats.map(c => ({
@@ -42,124 +42,298 @@ exports.getShopFilterConfig = async (req, res, next) => {
           isEnabled: true
         }));
       } else if (sectionKey === 'brand') {
-        // Dynamic Brands from products table and custom options with counts
+        // Dynamic Brands from products table
         const [brandCounts] = await pool.query(`
           SELECT brand, COUNT(id) as product_count 
           FROM products 
-          WHERE is_active = 1 AND brand IS NOT NULL AND TRIM(brand) != ''
+          WHERE (is_active = 1 OR is_active IS NULL) AND brand IS NOT NULL AND TRIM(brand) != ''
           GROUP BY brand 
           ORDER BY brand ASC
         `);
-
-        const brandMap = {};
-        brandCounts.forEach(b => {
-          if (b.brand) brandMap[b.brand.toUpperCase()] = parseInt(b.product_count || 0, 10);
-        });
-
-        const customBrandOpts = allOptions.filter(o => o.section_key === 'brand');
-        if (customBrandOpts.length > 0) {
-          optionsList = customBrandOpts.map(o => {
-            const bName = o.label || o.option_key;
-            return {
-              id: String(o.id),
-              key: bName,
-              name: bName,
-              label: bName,
-              count: brandMap[bName.toUpperCase()] || 0,
-              isEnabled: Boolean(o.is_enabled)
-            };
-          });
-        } else {
-          optionsList = Object.keys(brandMap).map((bName, idx) => ({
-            id: `brand_${idx}`,
-            key: bName,
-            name: bName,
-            label: bName,
-            count: brandMap[bName],
-            isEnabled: true
-          }));
-        }
+        optionsList = brandCounts.map((b, idx) => ({
+          id: `brand_${idx}`,
+          key: b.brand,
+          name: b.brand,
+          label: b.brand,
+          count: parseInt(b.product_count || 0, 10),
+          isEnabled: true
+        }));
       } else if (sectionKey === 'price') {
-        const priceOpts = allOptions.filter(o => o.section_key === 'price');
-        for (const pOpt of priceOpts) {
-          const min = parseFloat(pOpt.min_price || 0);
-          const max = parseFloat(pOpt.max_price || 999999);
+        const priceDefaults = [
+          { key: 'under_499', label: 'Under ₹499', min: 0, max: 499 },
+          { key: '500_999', label: '₹500 – ₹999', min: 500, max: 999 },
+          { key: '1000_1999', label: '₹1,000 – ₹1,999', min: 1000, max: 1999 },
+          { key: '2000_2999', label: '₹2,000 – ₹2,999', min: 2000, max: 2999 },
+          { key: 'above_3000', label: 'Above ₹3,000', min: 3000, max: 999999 }
+        ];
+        const customPriceOpts = allOptions.filter(o => o.section_key === 'price');
+        const priceListToUse = customPriceOpts.length > 0 ? customPriceOpts.map(p => ({
+          key: p.option_key,
+          label: p.label,
+          min: parseFloat(p.min_price || 0),
+          max: parseFloat(p.max_price || 999999)
+        })) : priceDefaults;
 
+        for (const pOpt of priceListToUse) {
           const [pCount] = await pool.query(
-            `SELECT COUNT(id) as count FROM products WHERE is_active = 1 AND price >= ? AND price <= ?`,
-            [min, max]
+            `SELECT COUNT(id) as count FROM products WHERE (is_active = 1 OR is_active IS NULL) AND price >= ? AND price <= ?`,
+            [pOpt.min, pOpt.max]
           );
-
-          optionsList.push({
-            id: String(pOpt.id),
-            key: pOpt.option_key,
-            label: pOpt.label,
-            minPrice: min,
-            maxPrice: max,
-            count: parseInt(pCount[0]?.count || 0, 10),
-            isEnabled: Boolean(pOpt.is_enabled)
-          });
+          const count = parseInt(pCount[0]?.count || 0, 10);
+          if (count > 0) {
+            optionsList.push({
+              id: pOpt.key,
+              key: pOpt.key,
+              label: pOpt.label,
+              minPrice: pOpt.min,
+              maxPrice: pOpt.max,
+              count,
+              isEnabled: true
+            });
+          }
         }
       } else if (sectionKey === 'size') {
-        const sizeOpts = allOptions.filter(o => o.section_key === 'size');
-        for (const sOpt of sizeOpts) {
-          const szLabel = sOpt.label;
+        const [sizeRows] = await pool.query(`
+          SELECT DISTINCT TRIM(size) as size_val FROM products WHERE (is_active = 1 OR is_active IS NULL) AND size IS NOT NULL AND TRIM(size) != ''
+        `);
+        const distinctSizesSet = new Set();
+        sizeRows.forEach(r => {
+          if (r.size_val) {
+            r.size_val.split(',').forEach(s => {
+              const clean = s.trim();
+              if (clean) distinctSizesSet.add(clean);
+            });
+          }
+        });
+        if (distinctSizesSet.size === 0) {
+          ['S', 'M', 'L', 'XL', 'XXL'].forEach(s => distinctSizesSet.add(s));
+        }
+
+        for (const szLabel of Array.from(distinctSizesSet)) {
           const [sCount] = await pool.query(
-            `SELECT COUNT(id) as count FROM products WHERE is_active = 1 AND (size LIKE ? OR size LIKE ?)`,
-            [`%${szLabel}%`, `%${szLabel.toLowerCase()}%`]
+            `SELECT COUNT(id) as count FROM products WHERE (is_active = 1 OR is_active IS NULL) AND (size LIKE ? OR sizes LIKE ?)`,
+            [`%${szLabel}%`, `%${szLabel}%`]
           );
-          optionsList.push({
-            id: String(sOpt.id),
-            key: sOpt.option_key,
-            label: sOpt.label,
-            count: parseInt(sCount[0]?.count || 0, 10),
-            isEnabled: Boolean(sOpt.is_enabled)
-          });
+          const count = parseInt(sCount[0]?.count || 0, 10);
+          if (count > 0) {
+            optionsList.push({
+              id: `size_${szLabel}`,
+              key: szLabel,
+              label: szLabel,
+              count,
+              isEnabled: true
+            });
+          }
         }
       } else if (sectionKey === 'colour') {
-        const colOpts = allOptions.filter(o => o.section_key === 'colour');
-        for (const cOpt of colOpts) {
-          const colName = cOpt.label;
+        const [colorRows] = await pool.query(`
+          SELECT DISTINCT TRIM(color) as color_val FROM products WHERE (is_active = 1 OR is_active IS NULL) AND color IS NOT NULL AND TRIM(color) != ''
+        `);
+        const colorHexMap = {
+          'Black': '#000000', 'Classic Black': '#000000',
+          'White': '#FFFFFF', 'Ivory White': '#FFFFFF',
+          'Red': '#B71C1C', 'Crimson Red': '#B71C1C',
+          'Blue': '#1D4ED8', 'Navy Blue': '#1E3A8A', 'Royal Blue': '#1D4ED8',
+          'Green': '#15803D', 'Emerald Green': '#047857',
+          'Yellow': '#EAB308', 'Golden Yellow': '#D97706', 'Mustard': '#CA8A04',
+          'Pink': '#EC4899', 'Pastel Pink': '#F472B6',
+          'Maroon': '#800000',
+          'Beige': '#F5F5DC', 'Brown': '#78350F'
+        };
+
+        for (const r of colorRows) {
+          const colName = r.color_val;
           const [cCount] = await pool.query(
-            `SELECT COUNT(id) as count FROM products WHERE is_active = 1 AND (color LIKE ? OR color LIKE ?)`,
-            [`%${colName}%`, `%${colName.toLowerCase()}%`]
+            `SELECT COUNT(id) as count FROM products WHERE (is_active = 1 OR is_active IS NULL) AND color LIKE ?`,
+            [`%${colName}%`]
           );
-          optionsList.push({
-            id: String(cOpt.id),
-            key: cOpt.option_key,
-            label: cOpt.label,
-            hex: cOpt.color_hex || '#000000',
-            count: parseInt(cCount[0]?.count || 0, 10),
-            isEnabled: Boolean(cOpt.is_enabled)
-          });
+          const count = parseInt(cCount[0]?.count || 0, 10);
+          if (count > 0) {
+            optionsList.push({
+              id: `col_${colName}`,
+              key: colName,
+              label: colName,
+              hex: colorHexMap[colName] || '#6B7280',
+              count,
+              isEnabled: true
+            });
+          }
+        }
+      } else if (sectionKey === 'material') {
+        const [matRows] = await pool.query(`
+          SELECT DISTINCT TRIM(val) as mat_val FROM (
+            SELECT fabric as val FROM products WHERE (is_active = 1 OR is_active IS NULL) AND fabric IS NOT NULL AND TRIM(fabric) != ''
+            UNION
+            SELECT material as val FROM products WHERE (is_active = 1 OR is_active IS NULL) AND material IS NOT NULL AND TRIM(material) != ''
+          ) AS combined
+          ORDER BY mat_val ASC
+        `);
+
+        for (const m of matRows) {
+          const matName = m.mat_val;
+          const [mCount] = await pool.query(
+            `SELECT COUNT(id) as count FROM products WHERE (is_active = 1 OR is_active IS NULL) AND (fabric LIKE ? OR material LIKE ?)`,
+            [`%${matName}%`, `%${matName}%`]
+          );
+          const count = parseInt(mCount[0]?.count || 0, 10);
+          if (count > 0) {
+            optionsList.push({
+              id: `mat_${matName}`,
+              key: matName,
+              label: matName,
+              count,
+              isEnabled: true
+            });
+          }
+        }
+      } else if (sectionKey === 'product_type') {
+        const [typeRows] = await pool.query(`
+          SELECT type, COUNT(id) as product_count
+          FROM products
+          WHERE (is_active = 1 OR is_active IS NULL) AND type IS NOT NULL AND TRIM(type) != ''
+          GROUP BY type
+          ORDER BY type ASC
+        `);
+        optionsList = typeRows.map((t, idx) => ({
+          id: `type_${idx}`,
+          key: t.type,
+          label: t.type,
+          count: parseInt(t.product_count || 0, 10),
+          isEnabled: true
+        }));
+      } else if (sectionKey === 'gender') {
+        const [genderRows] = await pool.query(`
+          SELECT gender, COUNT(id) as product_count
+          FROM products
+          WHERE (is_active = 1 OR is_active IS NULL) AND gender IS NOT NULL AND TRIM(gender) != ''
+          GROUP BY gender
+          ORDER BY gender ASC
+        `);
+        optionsList = genderRows.map((g, idx) => ({
+          id: `gender_${idx}`,
+          key: g.gender,
+          label: g.gender,
+          count: parseInt(g.product_count || 0, 10),
+          isEnabled: true
+        }));
+      } else if (sectionKey === 'fit') {
+        const [fitRows] = await pool.query(`
+          SELECT fit, COUNT(id) as product_count
+          FROM products
+          WHERE (is_active = 1 OR is_active IS NULL) AND fit IS NOT NULL AND TRIM(fit) != ''
+          GROUP BY fit
+          ORDER BY fit ASC
+        `);
+        optionsList = fitRows.map((f, idx) => ({
+          id: `fit_${idx}`,
+          key: f.fit,
+          label: f.fit,
+          count: parseInt(f.product_count || 0, 10),
+          isEnabled: true
+        }));
+      } else if (sectionKey === 'discount') {
+        const discountRanges = [
+          { key: '10_above', label: '10% and above', min: 10 },
+          { key: '20_above', label: '20% and above', min: 20 },
+          { key: '30_above', label: '30% and above', min: 30 },
+          { key: '40_above', label: '40% and above', min: 40 },
+          { key: '50_above', label: '50% and above', min: 50 }
+        ];
+
+        for (const dOpt of discountRanges) {
+          const [dCount] = await pool.query(
+            `SELECT COUNT(id) as count FROM products WHERE (is_active = 1 OR is_active IS NULL) AND (discount_percentage >= ? OR ((old_price - price)/old_price)*100 >= ?)`,
+            [dOpt.min, dOpt.min]
+          );
+          const count = parseInt(dCount[0]?.count || 0, 10);
+          if (count > 0) {
+            optionsList.push({
+              id: `disc_${dOpt.key}`,
+              key: dOpt.key,
+              label: dOpt.label,
+              minDiscount: dOpt.min,
+              count,
+              isEnabled: true
+            });
+          }
+        }
+      } else if (sectionKey === 'rating') {
+        const ratingRanges = [
+          { key: '4_above', label: '4★ & above', min: 4.0 },
+          { key: '3_above', label: '3★ & above', min: 3.0 },
+          { key: '2_above', label: '2★ & above', min: 2.0 },
+          { key: '1_above', label: '1★ & above', min: 1.0 }
+        ];
+
+        for (const rOpt of ratingRanges) {
+          const [rCount] = await pool.query(
+            `SELECT COUNT(id) as count FROM products WHERE (is_active = 1 OR is_active IS NULL) AND rating >= ?`,
+            [rOpt.min]
+          );
+          const count = parseInt(rCount[0]?.count || 0, 10);
+          if (count > 0) {
+            optionsList.push({
+              id: `rate_${rOpt.key}`,
+              key: rOpt.key,
+              label: rOpt.label,
+              minRating: rOpt.min,
+              count,
+              isEnabled: true
+            });
+          }
+        }
+      } else if (sectionKey === 'offers') {
+        const offerDefs = [
+          { key: 'on_sale', label: 'On Sale / Discount Available', query: 'old_price > price OR discount_percentage > 0' },
+          { key: 'new_arrivals', label: 'New Arrivals', query: 'is_new_arrival = 1' },
+          { key: 'best_sellers', label: 'Best Sellers', query: 'is_best_seller = 1' }
+        ];
+
+        for (const oOpt of offerDefs) {
+          const [oCount] = await pool.query(
+            `SELECT COUNT(id) as count FROM products WHERE (is_active = 1 OR is_active IS NULL) AND (${oOpt.query})`
+          );
+          const count = parseInt(oCount[0]?.count || 0, 10);
+          if (count > 0) {
+            optionsList.push({
+              id: `off_${oOpt.key}`,
+              key: oOpt.key,
+              label: oOpt.label,
+              count,
+              isEnabled: true
+            });
+          }
         }
       } else if (sectionKey === 'availability') {
-        const availOpts = allOptions.filter(o => o.section_key === 'availability');
-        for (const aOpt of availOpts) {
-          const [stkCount] = await pool.query(
-            `SELECT COUNT(id) as count FROM products WHERE is_active = 1 AND stock_quantity > 0`
-          );
+        const [stkCount] = await pool.query(
+          `SELECT COUNT(id) as count FROM products WHERE (is_active = 1 OR is_active IS NULL) AND (stock_quantity > 0 OR stock > 0)`
+        );
+        const count = parseInt(stkCount[0]?.count || 0, 10);
+        if (count > 0) {
           optionsList.push({
-            id: String(aOpt.id),
-            key: aOpt.option_key,
-            label: aOpt.label,
-            count: parseInt(stkCount[0]?.count || 0, 10),
-            isEnabled: Boolean(aOpt.is_enabled)
+            id: 'avail_in_stock',
+            key: 'in_stock',
+            label: 'In Stock',
+            count,
+            isEnabled: true
           });
         }
       }
 
-      filterConfig.push({
-        id: sec.id,
-        key: sec.section_key,
-        title: sec.title,
-        isEnabled: Boolean(sec.is_enabled),
-        displayOrder: sec.display_order,
-        displayLimit: sec.display_limit || 5,
-        enableShowMore: Boolean(sec.enable_show_more),
-        showMoreLimit: sec.show_more_limit || 10,
-        options: optionsList
-      });
+      // DO NOT DISPLAY SECTIONS THAT HAVE NO VALID OPTIONS (Rule 25)
+      if (optionsList.length > 0) {
+        filterConfig.push({
+          id: sec.id,
+          key: sec.section_key,
+          title: sec.title,
+          isEnabled: Boolean(sec.is_enabled),
+          displayOrder: sec.display_order,
+          displayLimit: sec.display_limit || 5,
+          enableShowMore: Boolean(sec.enable_show_more),
+          showMoreLimit: sec.show_more_limit || 15,
+          options: optionsList
+        });
+      }
     }
 
     return res.status(200).json(ApiResponse.success(filterConfig, 'Shop filter configuration retrieved successfully'));
