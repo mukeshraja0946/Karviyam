@@ -245,6 +245,9 @@ app.get('/api/sidebar-config', sidebarController.getSidebarConfig);
 app.get('/api/admin/sidebar-config', sidebarController.getSidebarConfig);
 app.post('/api/admin/sidebar-config', optionalToken, requireAdmin, sidebarController.updateSidebarConfig);
 app.put('/api/admin/sidebar-config', optionalToken, requireAdmin, sidebarController.updateSidebarConfig);
+app.post('/api/admin/sidebar-config/section', optionalToken, requireAdmin, sidebarController.saveSection);
+app.delete('/api/admin/sidebar-config/section/:id', optionalToken, requireAdmin, sidebarController.deleteSection);
+app.post('/api/admin/sidebar-config/reorder', optionalToken, requireAdmin, sidebarController.reorderSections);
 
 app.get('/api/footer-settings', settingController.getFooterSettings);
 app.get('/api/footer', settingController.getFooterSettings);

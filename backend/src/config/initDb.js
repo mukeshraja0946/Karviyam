@@ -1035,6 +1035,134 @@ async function initShopFiltersAndNotificationsSchema() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);
+
+    // 8. Homepage Sidebar Sections Table (Single Source of Truth for Left & Right Sidebars)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS homepage_sidebar_sections (
+        id VARCHAR(100) PRIMARY KEY,
+        side VARCHAR(20) NOT NULL,
+        section_type VARCHAR(50) NOT NULL,
+        title VARCHAR(255),
+        subtitle VARCHAR(255),
+        description TEXT,
+        image_url LONGTEXT,
+        icon VARCHAR(100),
+        badge_text VARCHAR(100),
+        button_text VARCHAR(100),
+        action_type VARCHAR(50) DEFAULT 'SHOP',
+        action_value VARCHAR(255) DEFAULT '/shop',
+        background_color VARCHAR(50),
+        text_color VARCHAR(50),
+        is_enabled TINYINT(1) DEFAULT 1,
+        display_order INT DEFAULT 0,
+        config_json LONGTEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed default sidebar sections if table is empty
+    const [sbCount] = await pool.query('SELECT COUNT(*) as count FROM homepage_sidebar_sections');
+    if (!sbCount || sbCount[0].count === 0) {
+      const defaultLeft = [
+        ['nav_items_menu', 'LEFT', 'NAV_MENU', 'Quick Navigation', 'Browse top store sections', null, null, 'Layers', null, null, 'SHOP', '/shop', null, null, 1, 1, JSON.stringify([
+          { id: 'offers', label: 'Top Offers', subtitle: 'Best discounts on site', icon: 'Flame', link: '/shop?filter=offers', badge: 'HOT', enabled: true, order: 1 },
+          { id: 'arrivals', label: 'New Arrivals', subtitle: 'Fresh drops & collections', icon: 'Sparkles', link: '/shop?filter=new', badge: 'NEW', enabled: true, order: 2 },
+          { id: 'bestsellers', label: 'Best Sellers', subtitle: 'Customer favorite picks', icon: 'Star', link: '/shop?filter=bestsellers', badge: 'HOT', enabled: true, order: 3 },
+          { id: 'trending', label: 'Trending Now', subtitle: 'Popular style trends', icon: 'TrendingUp', link: '/shop?filter=trending', badge: '', enabled: true, order: 4 },
+          { id: 'premium', label: 'Premium Store', subtitle: '925 Silver & Luxury', icon: 'Crown', link: '/shop?category=Jewellery', badge: 'NEW', enabled: true, order: 5 },
+          { id: 'gifts', label: 'Gift Cards', subtitle: 'Surprise your loved ones', icon: 'Gift', link: '/contact', badge: '', enabled: true, order: 6 },
+          { id: 'track', label: 'Track Order', subtitle: 'Live order tracking', icon: 'Truck', link: '/profile', badge: '', enabled: true, order: 7 },
+          { id: 'support', label: 'Customer Support', subtitle: '24/7 dedicated help', icon: 'Headphones', link: '/contact', badge: '', enabled: true, order: 8 }
+        ])],
+        ['offer_card_left', 'LEFT', 'OFFER_CARD', 'EXTRA 10% OFF', 'On Prepaid Orders', null, null, 'Percent', 'INSTANT DISCOUNT', 'GIFT CODE', 'PRODUCT_FILTER', '/shop?filter=offers', '#FFF1F2', '#991B1B', 1, 2, JSON.stringify({ couponCode: 'PREPAID10', discountPercent: '%' })],
+        ['promo_card_left', 'LEFT', 'PROMO_BANNER', 'UP TO 60% OFF', 'On Bestsellers', 'Limited time festive drops & trending styles.', 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600', 'Sparkles', '✨ FESTIVE SPECIAL', 'SHOP NOW', 'SHOP', '/shop', '#800000', '#FFFFFF', 1, 3, null],
+        ['shop_by_price_left', 'LEFT', 'SHOP_BY_PRICE', 'SHOP BY PRICE', null, null, null, 'Tag', null, null, 'SHOP', '/shop', null, null, 1, 4, JSON.stringify([
+          { id: 'p1', label: 'Under ₹499', link: '/shop?maxPrice=499', enabled: true },
+          { id: 'p2', label: 'Under ₹999', link: '/shop?maxPrice=999', enabled: true },
+          { id: 'p3', label: 'Under ₹1499', link: '/shop?maxPrice=1499', enabled: true },
+          { id: 'p4', label: 'Under ₹1999', link: '/shop?maxPrice=1999', enabled: true },
+          { id: 'p5', label: 'Under ₹2999', link: '/shop?maxPrice=2999', enabled: true },
+          { id: 'p6', label: 'Under ₹3999', link: '/shop?maxPrice=3999', enabled: true }
+        ])],
+        ['quick_categories_left', 'LEFT', 'CATEGORIES_GRID', 'QUICK CATEGORIES', null, null, null, 'Grid', null, null, 'SHOP', '/shop', null, null, 1, 5, JSON.stringify([
+          { id: 'qc1', name: 'T-Shirts', link: '/shop?category=T-Shirts', enabled: true },
+          { id: 'qc2', name: 'Sneakers', link: '/shop?category=Sneakers', enabled: true },
+          { id: 'qc3', name: 'Kurta Sets', link: '/shop?category=Kurta+Sets', enabled: true },
+          { id: 'qc4', name: 'Men', link: '/shop?category=Men', enabled: true },
+          { id: 'qc5', name: 'Women', link: '/shop?category=Women', enabled: true },
+          { id: 'qc6', name: 'Kids', link: '/shop?category=Kids', enabled: true },
+          { id: 'qc7', name: 'Accessories', link: '/shop?category=Accessories', enabled: true },
+          { id: 'qc8', name: 'Jewellery', link: '/shop?category=Jewellery', enabled: true }
+        ])],
+        ['why_shop_left', 'LEFT', 'WHY_KARVIYAM', 'WHY SHOP WITH KARVIYAM?', null, null, null, 'ShieldCheck', null, null, 'SHOP', '/shop', null, null, 1, 6, JSON.stringify([
+          { id: '1', title: 'Free Delivery', subtitle: 'On orders above ₹499', icon: 'Truck', enabled: true },
+          { id: '2', title: 'Secure Payments', subtitle: '100% safe & secure', icon: 'ShieldCheck', enabled: true },
+          { id: '3', title: 'Easy Returns', subtitle: '30 days return policy', icon: 'RotateCcw', enabled: true },
+          { id: '4', title: 'Best Price Guarantee', subtitle: 'Unbeatable value', icon: 'Heart', enabled: true },
+          { id: '5', title: '24/7 Support', subtitle: 'Dedicated assistance', icon: 'Headphones', enabled: true }
+        ])],
+        ['popular_picks_left', 'LEFT', 'POPULAR_PICKS', 'POPULAR PICKS', null, null, null, 'Flame', 'FEATURED', null, 'SHOP', '/shop', null, null, 1, 7, null],
+        ['deals_under_left', 'LEFT', 'DEALS_UNDER', 'DEALS UNDER ₹1100', 'Unbeatable budget fashion picks.', null, null, 'BadgePercent', 'BUDGET PICKS', 'VIEW DEALS →', 'PRODUCT_FILTER', '/shop?maxPrice=1100', '#FFFBEB', '#B45309', 1, 8, null],
+        ['why_karviyam_checklist_left', 'LEFT', 'CHECKLIST_CARD', 'WHY KARVIYAM?', null, null, null, 'CheckCircle2', null, null, 'SHOP', '/shop', '#F0FDF4', '#15803D', 1, 9, JSON.stringify([
+          'Quality materials', 'Verified shopping', 'Secure checkout', 'Easy returns'
+        ])],
+        ['trending_styles_left', 'LEFT', 'TRENDING_STYLES', 'TRENDING STYLES 🔥', null, null, null, 'TrendingUp', null, null, 'SHOP', '/shop', null, null, 1, 10, null],
+        ['top_collections_left', 'LEFT', 'TOP_COLLECTIONS', 'TOP COLLECTIONS', null, null, null, 'Layers', null, null, 'SHOP', '/shop', null, null, 1, 11, JSON.stringify([
+          { label: 'FESTIVE SILKS', subtitle: 'Handcrafted', link: '/shop?category=Sarees' },
+          { label: 'MEN\'S KURTAS', subtitle: 'Royal Edition', link: '/shop?category=Kurtas' },
+          { label: 'MODERN SNEAKERS', subtitle: 'Trendy Steps', link: '/shop?category=Sneakers' },
+          { label: '925 SILVER', subtitle: 'Pure Shine', link: '/shop?category=Jewellery' }
+        ])],
+        ['fresh_summer_left', 'LEFT', 'PROMO_CARD_MINI', 'FRESH SUMMER LOOKS', 'Lightweight fabrics & modern silhouettes.', null, null, 'Sparkles', 'COLORFUL SHOP', 'SHOP SUMMER →', 'PRODUCT_FILTER', '/shop?filter=summer', '#EFF6FF', '#1D4ED8', 1, 12, null],
+        ['guarantee_card_left', 'LEFT', 'GUARANTEE_CARD', '100% ORIGINAL', 'Verified authentic fashion directly from top manufacturers.', null, null, 'Award', null, 'QUALITY ASSURED', 'SHOP', '/shop', '#ECFDF5', '#047857', 1, 13, null],
+        ['final_left_promo', 'LEFT', 'FINAL_PROMO', 'SHOP MORE. SAVE MORE.', 'Discover everyday fashion styles.', null, null, 'Sparkles', 'EXPLORE STYLES', 'EXPLORE NOW →', 'SHOP', '/shop', '#FFF7ED', '#C2410C', 1, 14, null]
+      ];
+
+      const defaultRight = [
+        ['today_special_right', 'RIGHT', 'TODAYS_DEAL', 'TODAY\'S SPECIAL DEAL', 'Limited Time Only', 'Stylish & Comfortable Sports Sneakers.', 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600', 'Flame', 'TODAY\'S SPECIAL DEAL', 'SHOP NOW →', 'PRODUCT_CATEGORY', '/shop?category=Sneakers', '#FFF1F2', '#991B1B', 1, 1, JSON.stringify({ productName: 'Sports Sneakers', price: 1499, originalPrice: 2499, discountText: '40% OFF' })],
+        ['quick_deals_right', 'RIGHT', 'QUICK_DEALS', 'QUICK DEALS 🔥', null, null, null, 'Zap', null, null, 'SHOP', '/shop', null, null, 1, 2, JSON.stringify([
+          { id: 'qd1', icon: '🔥', title: 'Sneakers', tag: 'Up to 50% OFF', link: '/shop?category=Sneakers', enabled: true },
+          { id: 'qd2', icon: '👕', title: 'T-Shirts', tag: 'From ₹499', link: '/shop?category=T-Shirts', enabled: true },
+          { id: 'qd3', icon: '👗', title: "Women's Wear", tag: 'Up to 60% OFF', link: '/shop?category=Women', enabled: true },
+          { id: 'qd4', icon: '🎒', title: 'Bags & Accessories', tag: 'Starting ₹399', link: '/shop?category=Accessories', enabled: true }
+        ])],
+        ['popular_picks_right', 'RIGHT', 'POPULAR_PICKS', 'POPULAR PICKS 🔥', null, null, null, 'Flame', null, null, 'SHOP', '/shop', null, null, 1, 3, null],
+        ['coupon_savings_right', 'RIGHT', 'COUPON_SAVINGS', 'UNLOCK EXTRA SAVINGS', 'Use available coupons and promo codes at checkout.', null, null, 'Gift', 'EXTRA SAVINGS', 'VIEW OFFERS →', 'PRODUCT_FILTER', '/shop?filter=offers', '#FFFBEB', '#B45309', 1, 4, null],
+        ['shop_by_category_right', 'RIGHT', 'CATEGORIES_GRID', 'SHOP BY CATEGORY', null, null, null, 'Grid', null, null, 'SHOP', '/shop', null, null, 1, 5, JSON.stringify([
+          { id: 'rc1', name: 'Men', link: '/shop?category=Men', enabled: true },
+          { id: 'rc2', name: 'Women', link: '/shop?category=Women', enabled: true },
+          { id: 'rc3', name: 'Kids', link: '/shop?category=Kids', enabled: true },
+          { id: 'rc4', name: 'Sneakers', link: '/shop?category=Sneakers', enabled: true },
+          { id: 'rc5', name: 'Jewellery', link: '/shop?category=Jewellery', enabled: true },
+          { id: 'rc6', name: 'Accessories', link: '/shop?category=Accessories', enabled: true },
+          { id: 'rc7', name: 'Kitchen & Home', link: '/shop?category=Kitchen', enabled: true },
+          { id: 'rc8', name: 'School & Office', link: '/shop?category=School', enabled: true }
+        ])],
+        ['style_inspiration_right', 'RIGHT', 'STYLE_INSPIRATION', 'Look Good.', 'Feel Confident.', 'CASUAL LOOKS - For Everyday', 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600', 'Sparkles', 'STYLE INSPIRATION', 'EXPLORE NOW →', 'SHOP', '/shop', '#FFFBEB', '#92400E', 1, 6, null],
+        ['community_join_right', 'RIGHT', 'COMMUNITY_JOIN', 'JOIN OUR COMMUNITY', 'Get exclusive offers, new arrivals and style inspiration.', null, null, 'Heart', 'FEEL SPECIAL', 'SUBSCRIBE 🚀', 'SHOP', '/shop', '#FFF1F2', '#991B1B', 1, 7, null],
+        ['upi_discount_right', 'RIGHT', 'UPI_DISCOUNT', '5% OFF ON UPI PAYMENTS', 'Instant automatic discount applied at checkout.', null, null, 'Percent', 'INSTANT DISCOUNT', 'PAY VIA UPI & SAVE →', 'SHOP', '/shop', '#FEF2F2', '#B91C1C', 1, 8, null],
+        ['budget_shopping_right', 'RIGHT', 'BUDGET_SHOPPING', 'BUDGET SHOPPING ⚡', null, null, null, 'Tag', null, null, 'SHOP', '/shop', null, null, 1, 9, JSON.stringify([
+          { label: 'UNDER ₹499', subtitle: 'Super Value', link: '/shop?maxPrice=499' },
+          { label: 'UNDER ₹999', subtitle: 'Best Sellers', link: '/shop?maxPrice=999' }
+        ])],
+        ['style_tip_right', 'RIGHT', 'STYLE_TIP', 'PASSION STYLE TIP 💡', 'Pair neutral printed tees with dark wash denim for an effortless daily look.', null, null, 'Sparkles', 'DAILY STYLE TIP', 'SHOP MATCHING LOOKS →', 'SHOP', '/shop', '#FEFCE8', '#854D0E', 1, 10, null],
+        ['need_assistance_right', 'RIGHT', 'NEED_ASSISTANCE', 'NEED ASSISTANCE?', 'Have a question? Our customer support team is available 24/7.', null, null, 'Headphones', '24/7 HELP', 'GET FAST SUPPORT →', 'CONTACT', '/contact', '#F8FAFC', '#334155', 1, 11, null],
+        ['silver_jewellery_right', 'RIGHT', 'SILVER_JEWELLERY', '925 SILVER JEWELLERY', 'Handcrafted authentic silver rings & pendants.', null, null, 'Crown', 'PREMIUM STORE', 'VISIT STORE →', 'PRODUCT_CATEGORY', '/shop?category=Jewellery', '#EFF6FF', '#1E40AF', 1, 12, null],
+        ['discover_style_right', 'RIGHT', 'DISCOVER_STYLE', 'DISCOVER YOUR STYLE', 'New drops. Fresh looks. Better prices.', null, null, 'Sparkles', 'NEW COLLECTION', 'SHOP NOW →', 'SHOP', '/shop', '#FFF7ED', '#C2410C', 1, 13, null]
+      ];
+
+      for (const item of [...defaultLeft, ...defaultRight]) {
+        await pool.query(
+          `INSERT INTO homepage_sidebar_sections (
+            id, side, section_type, title, subtitle, description, image_url, icon, badge_text, button_text,
+            action_type, action_value, background_color, text_color, is_enabled, display_order, config_json
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          item
+        );
+      }
+      console.log('[initDb] Seeded default Left & Right Sidebar Sections into homepage_sidebar_sections table.');
+    }
   } catch (errSchema) {
     console.warn('⚠️ initShopFiltersAndNotificationsSchema warning:', errSchema.message);
   }
