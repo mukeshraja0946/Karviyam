@@ -318,20 +318,13 @@ exports.getSmtpStatus = async (req, res, next) => {
     const config = await getSmtpConfig();
 
     const diagnosticPayload = {
-      environment: process.env.NODE_ENV || 'production',
-      smtpHost: process.env.SMTP_HOST || null,
-      smtpPort: process.env.SMTP_PORT || null,
-      smtpSecure: process.env.SMTP_SECURE || null,
-      smtpUser: process.env.SMTP_USER || null,
-      smtpPasswordConfigured: Boolean(process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASSWORD),
-      activeConfig: {
-        host: config.host,
-        port: config.port,
-        secure: config.secure,
-        user: config.user,
-        passwordConfigured: Boolean(config.pass)
-      },
-      smtpVerification
+      host: process.env.SMTP_HOST || config.host,
+      port: process.env.SMTP_PORT || String(config.port),
+      secure: process.env.SMTP_SECURE || String(config.secure),
+      user: process.env.SMTP_USER || config.user,
+      passwordConfigured: Boolean(process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || config.pass),
+      verified: smtpVerification.verified,
+      verification: smtpVerification
     };
 
     return res.status(200).json(ApiResponse.success(diagnosticPayload, 'SMTP diagnostic status retrieved'));

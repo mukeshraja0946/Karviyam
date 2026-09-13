@@ -119,6 +119,7 @@ const verifySmtpConnection = async () => {
   try {
     await transporter.verify();
     return {
+      verified: true,
       status: 'CONNECTED',
       message: 'SMTP connection verified successfully',
       host: config.host,
@@ -128,7 +129,10 @@ const verifySmtpConnection = async () => {
   } catch (err) {
     const isAuthErr = err.message.includes('535') || err.message.toLowerCase().includes('authentication') || err.message.toLowerCase().includes('login');
     return {
+      verified: false,
       status: isAuthErr ? 'AUTH_FAILED' : 'CONNECTION_FAILED',
+      errorCode: err.code || (isAuthErr ? 'EAUTH' : 'ECONNECTION'),
+      responseCode: err.responseCode || (isAuthErr ? 535 : null),
       message: err.message,
       host: config.host,
       port: config.port,
