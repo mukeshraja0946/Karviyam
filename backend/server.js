@@ -39,7 +39,7 @@ const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log(`\n========================================`);
   console.log(`[EMAIL SMTP RUNTIME CONFIG]`);
-  console.log(`Git Commit: ${process.env.GIT_COMMIT_HASH || 'bdba17d'}`);
+  console.log(`Git Commit: ${process.env.GIT_COMMIT_HASH || '896d56b'}`);
   console.log(`Node ENV: ${process.env.NODE_ENV || 'production'}`);
   console.log(`SMTP_HOST = ${process.env.SMTP_HOST || 'smtp.gmail.com'}`);
   console.log(`SMTP_PORT = ${process.env.SMTP_PORT || '465'}`);
