@@ -43,20 +43,20 @@ export default function ProductCard({ product }) {
     <>
       {/* ========================================================= */}
       {/* DESKTOP PRODUCT CARD (>= 768px) - AMAZON-STYLE KARVIYAM    */}
-      {/* STRICT EQUAL HEIGHT (425px) & BOTTOM ALIGNED ADD TO CART   */}
+      {/* STANDARDIZED 3:4 PORTRAIT IMAGE CONTAINER & COMPACT LAYOUT */}
       {/* ========================================================= */}
-      <div className="hidden md:flex group relative bg-white w-full h-[425px] min-h-[425px] max-h-[425px] rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all duration-200 flex-col justify-between overflow-hidden p-3 text-left">
+      <div className="hidden md:flex group relative bg-white w-full h-full rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all duration-200 flex-col justify-between overflow-hidden p-3 text-left">
         
-        {/* 1. Image Container (Fixed 230px Height) */}
+        {/* 1. Standardized 3:4 Portrait Image Container */}
         <div 
-          className="relative w-full h-[230px] min-h-[230px] max-h-[230px] bg-white rounded-lg overflow-hidden flex items-center justify-center cursor-pointer shrink-0"
+          className="relative w-full aspect-[3/4] bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer shrink-0"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
             src={resolveImageUrl(product?.imageUrl || product?.image || (Array.isArray(product?.images) && product?.images[0]), product?.id, product?.updatedAt || product?.updated_at)}
             alt={product?.name || 'Product'}
             onError={(e) => handleImageError(e, product?.id)}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
 
@@ -172,16 +172,16 @@ export default function ProductCard({ product }) {
       {/* ========================================================= */}
       {/* MOBILE PRODUCT CARD (< 768px)                             */}
       {/* ========================================================= */}
-      <div className="flex md:hidden group relative bg-white w-full h-[240px] min-h-[240px] max-h-[240px] rounded-xl border border-slate-200/80 shadow-2xs flex-col justify-between overflow-hidden p-1.5">
+      <div className="flex md:hidden group relative bg-white w-full h-full rounded-xl border border-slate-200/80 shadow-2xs flex-col justify-between overflow-hidden p-1.5">
         <div
-          className="relative w-full h-[105px] max-h-[105px] bg-white rounded-lg flex items-center justify-center cursor-pointer shrink-0 overflow-hidden"
+          className="relative w-full aspect-[3/4] bg-slate-50 rounded-lg flex items-center justify-center cursor-pointer shrink-0 overflow-hidden"
           onClick={() => navigate(`/product/${product.id}`)}
         >
           <img
             src={resolveImageUrl(product.imageUrl || product.image, product.id)}
             alt={product.name}
             onError={(e) => handleImageError(e, product.id)}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover object-center"
             loading="lazy"
           />
           <button
