@@ -138,13 +138,28 @@ export default function DesktopSidebarRight() {
 
   const formatNumber = (num) => String(num).padStart(2, '0');
 
+  const handleItemNavigation = (dest, actionType) => {
+    if (!dest) dest = '/shop';
+    if (actionType === 'EXTERNAL_URL' && dest.startsWith('http')) {
+      window.open(dest, '_blank');
+      return;
+    }
+    if (actionType === 'TRACK_ORDER' || dest === '/profile' || dest.includes('/profile')) {
+      const token = localStorage.getItem('karviyam_token');
+      if (token) {
+        navigate('/profile');
+      } else {
+        toast.error('Please log in to track your live orders! 🔒');
+        navigate('/login?redirect=/profile');
+      }
+      return;
+    }
+    navigate(dest);
+  };
+
   const handleAction = (sec) => {
     const dest = sec.actionValue || sec.link || '/shop';
-    if (sec.actionType === 'EXTERNAL_URL' && dest.startsWith('http')) {
-      window.open(dest, '_blank');
-    } else {
-      navigate(dest);
-    }
+    handleItemNavigation(dest, sec.actionType);
   };
 
   return (

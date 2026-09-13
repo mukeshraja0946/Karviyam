@@ -122,13 +122,28 @@ export default function DesktopSidebarLeft() {
     return <IconComp className="w-3.5 h-3.5 text-[#C91C1C]" />;
   };
 
+  const handleItemNavigation = (dest, actionType) => {
+    if (!dest) dest = '/shop';
+    if (actionType === 'EXTERNAL_URL' && dest.startsWith('http')) {
+      window.open(dest, '_blank');
+      return;
+    }
+    if (actionType === 'TRACK_ORDER' || dest === '/profile' || dest.includes('/profile')) {
+      const token = localStorage.getItem('karviyam_token');
+      if (token) {
+        navigate('/profile');
+      } else {
+        toast.error('Please log in to track your live orders! 🔒');
+        navigate('/login?redirect=/profile');
+      }
+      return;
+    }
+    navigate(dest);
+  };
+
   const handleAction = (sec) => {
     const dest = sec.actionValue || sec.link || '/shop';
-    if (sec.actionType === 'EXTERNAL_URL' && dest.startsWith('http')) {
-      window.open(dest, '_blank');
-    } else {
-      navigate(dest);
-    }
+    handleItemNavigation(dest, sec.actionType);
   };
 
   return (
@@ -145,7 +160,11 @@ export default function DesktopSidebarLeft() {
               {items.map((item, idx) => (
                 <div
                   key={item.id || idx}
-                  onClick={() => navigate(item.link || '/shop')}
+                  onClick={() => {
+                    const dest = item.link || (item.id === 'track' ? '/profile' : (item.id === 'support' ? '/contact' : '/shop'));
+                    const actType = item.id === 'track' ? 'TRACK_ORDER' : (item.id === 'support' ? 'CONTACT' : null);
+                    handleItemNavigation(dest, actType);
+                  }}
                   className={`h-[40px] xl:h-[42px] px-3 flex items-center justify-between cursor-pointer transition-all hover:bg-red-50/40 text-slate-800 group ${
                     idx !== items.length - 1 ? 'border-b border-slate-100/90' : ''
                   }`}

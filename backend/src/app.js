@@ -326,6 +326,8 @@ app.get('/api/maintenance-status', settingController.getSettings);
 // --------------------------------------------------
 
 const potentialDistDirs = [
+  path.join(__dirname, '../public'),
+  path.join(process.cwd(), 'backend/public'),
   path.join(__dirname, '../../frontend/dist'),
   path.join(__dirname, '../../dist'),
   path.join(__dirname, '../dist'),

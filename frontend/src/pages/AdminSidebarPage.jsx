@@ -58,6 +58,19 @@ const ACTION_TYPES = [
   { label: 'External Web Link', value: 'EXTERNAL_URL' }
 ];
 
+const DESTINATION_PRESETS = [
+  { label: '-- Select Preset Destination (Optional) --', value: '' },
+  { label: 'New Arrivals (/shop?filter=new)', actionType: 'PRODUCT_FILTER', actionValue: '/shop?filter=new' },
+  { label: 'Best Sellers (/shop?filter=bestsellers)', actionType: 'PRODUCT_FILTER', actionValue: '/shop?filter=bestsellers' },
+  { label: 'Top Offers (/shop?filter=offers)', actionType: 'PRODUCT_FILTER', actionValue: '/shop?filter=offers' },
+  { label: 'Trending Now (/shop?filter=trending)', actionType: 'PRODUCT_FILTER', actionValue: '/shop?filter=trending' },
+  { label: 'Festive Special 60% Off (/shop?promotion=festive-60)', actionType: 'PRODUCT_FILTER', actionValue: '/shop?promotion=festive-60' },
+  { label: 'Fresh Summer Looks (/shop?filter=summer)', actionType: 'PRODUCT_FILTER', actionValue: '/shop?filter=summer' },
+  { label: 'Jewellery Category (/shop?category=Jewellery)', actionType: 'PRODUCT_CATEGORY', actionValue: '/shop?category=Jewellery' },
+  { label: 'Contact Us (/contact)', actionType: 'CONTACT', actionValue: '/contact' },
+  { label: 'Track Order / Profile (/profile)', actionType: 'TRACK_ORDER', actionValue: '/profile' }
+];
+
 const SECTION_TYPES = [
   { label: 'Quick Navigation List', value: 'NAV_MENU' },
   { label: 'Discount Offer Card (Prepaid/Coupon)', value: 'OFFER_CARD' },
@@ -610,6 +623,28 @@ export default function AdminSidebarPage() {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold"
                   />
                 </div>
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2">
+                <label className="block text-xs font-bold text-slate-700">Quick Destination Preset (Auto-fills Action & Link)</label>
+                <select
+                  onChange={(e) => {
+                    const selected = DESTINATION_PRESETS.find(p => p.actionValue === e.target.value);
+                    if (selected && selected.actionValue) {
+                      setSectionForm(prev => ({
+                        ...prev,
+                        actionType: selected.actionType,
+                        actionValue: selected.actionValue
+                      }));
+                    }
+                  }}
+                  defaultValue=""
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800"
+                >
+                  {DESTINATION_PRESETS.map((p, idx) => (
+                    <option key={idx} value={p.actionValue}>{p.label}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
