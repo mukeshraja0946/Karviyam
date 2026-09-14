@@ -1,21 +1,32 @@
-DirectoryIndex index.html /frontend/dist/index.html /dist/index.html index.php
+DirectoryIndex index.html
+
+<IfModule mod_passenger.c>
+  PassengerEnabled On
+  PassengerAppType node
+  PassengerStartupFile server.js
+</IfModule>
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # 1. REDIRECT LEGACY MAINTENANCE.PHP URL TO REACT ROUTE /maintenance
+  # 1. Redirect legacy maintenance.php URL to React route /maintenance
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 2. ALLOW PHYSICAL FILES, API ENDPOINTS AND STATIC ASSET DIRECTORIES TO PASS THROUGH DIRECTLY
+  # 2. Forward API requests to Node.js / Express backend
+  RewriteCond %{REQUEST_URI} ^/api/ [NC]
+  RewriteRule ^ server.js [QSA,L]
+
+  # 3. Serve existing physical files directly (css, js, png, jpg, etc.)
   RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule ^ - [L]
 
-  RewriteCond %{REQUEST_URI} ^/(api|uploads|assets)/ [NC]
+  # 4. Serve uploads and assets directories directly
+  RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
   RewriteRule ^ - [L]
 
-  # 3. PRODUCTION SPA FALLBACK FOR REACT ROUTES (/maintenance, /shop, /product/*, /admin/*, /wishlist, /cart)
+  # 5. SPA Fallback: Route all client-side paths (/checkout, /shop, /admin/*, /cart, /wishlist) to index.html
   RewriteCond %{DOCUMENT_ROOT}/frontend/dist/index.html -f
   RewriteRule ^ /frontend/dist/index.html [L]
 

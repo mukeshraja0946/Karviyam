@@ -46,4 +46,12 @@ if (fs.existsSync(frontendAssets)) {
   console.log(`✅ Copied assets directory to root: ${rootAssets}`);
 }
 
+// Copy .htaccess to root and target directories
+const distHtaccess = path.join(frontendDist, '.htaccess');
+const rootHtaccess = path.join(rootDir, '.htaccess');
+if (fs.existsSync(distHtaccess)) {
+  fs.copyFileSync(distHtaccess, rootHtaccess);
+  console.log(`✅ Copied frontend .htaccess to root: ${rootHtaccess}`);
+}
+
 console.log('✨ Karviyam post-build step completed successfully!');

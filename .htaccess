@@ -1,3 +1,5 @@
+DirectoryIndex index.html
+
 <IfModule mod_passenger.c>
   PassengerEnabled On
   PassengerAppType node
@@ -12,15 +14,24 @@
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
   RewriteRule ^(.*)$ /maintenance [R=301,L]
 
-  # 2. Allow api, uploads and assets directories to serve directly
-  RewriteCond %{REQUEST_URI} ^/(api|uploads|assets)/ [NC]
-  RewriteRule ^ - [L]
-
-  # 3. Allow physical asset files (images, css, js, fonts) to serve directly
-  RewriteCond %{REQUEST_FILENAME} -f
-  RewriteCond %{REQUEST_URI} \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json)$ [NC]
-  RewriteRule ^ - [L]
-
-  # 4. Forward all other requests (including root / and SPA routes) to Express
+  # 2. Forward API requests to Node.js / Express backend
+  RewriteCond %{REQUEST_URI} ^/api/ [NC]
   RewriteRule ^ server.js [QSA,L]
+
+  # 3. Serve existing physical files directly (css, js, png, jpg, etc.)
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  # 4. Serve uploads and assets directories directly
+  RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
+  RewriteRule ^ - [L]
+
+  # 5. SPA Fallback: Route all client-side paths (/checkout, /shop, /admin/*, /cart, /wishlist) to index.html
+  RewriteCond %{DOCUMENT_ROOT}/frontend/dist/index.html -f
+  RewriteRule ^ /frontend/dist/index.html [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/dist/index.html -f
+  RewriteRule ^ /dist/index.html [L]
+
+  RewriteRule ^ /index.html [L]
 </IfModule>
