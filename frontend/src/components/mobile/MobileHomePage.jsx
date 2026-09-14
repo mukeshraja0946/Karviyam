@@ -446,21 +446,21 @@ export default function MobileHomePage() {
               <div
                 key={cat.id || idx}
                 onClick={() => navigate(cat.link || `/shop?category=${encodeURIComponent(cat.name || cat.title)}`)}
-                className="w-[76px] sm:w-[86px] min-w-[76px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-1.5 flex flex-col items-center justify-between cursor-pointer active:scale-95 transition-transform group"
+                className="w-[68px] sm:w-[78px] min-w-[68px] shrink-0 snap-start flex flex-col items-center cursor-pointer active:scale-95 transition-transform group"
               >
                 {/* Category Image Box - Full Rounded Cover */}
-                <div className="w-full h-[58px] sm:h-[66px] rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                <div className="w-[66px] h-[66px] sm:w-[76px] sm:h-[76px] rounded-2xl overflow-hidden bg-slate-100 shadow-2xs border border-slate-200/60 shrink-0">
                   <img
                     src={catImage}
                     alt={catName}
                     onError={(e) => handleImageError(e, cat.id || idx)}
-                    className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"
                   />
                 </div>
 
-                {/* Category Text - Outside Image, Directly Below Image */}
-                <div className="w-full text-center mt-1.5 mb-0.5 px-0.5">
+                {/* Category Text - Directly Below Image on Page Background */}
+                <div className="w-full text-center mt-1.5 px-0.5">
                   <p className="font-extrabold text-[9px] sm:text-[9.5px] text-slate-800 leading-tight uppercase tracking-tight truncate w-full">
                     {catName}
                   </p>
