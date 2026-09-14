@@ -52,6 +52,11 @@ export const resolveImageUrl = (path, fallbackSeed = 0, updatedAt = null) => {
 
   let trimmed = path.trim();
 
+  // Strip localhost/127.0.0.1 prefixes so URLs resolve against production base URL
+  if (trimmed.startsWith('http://localhost') || trimmed.startsWith('https://localhost') || trimmed.startsWith('http://127.0.0.1') || trimmed.startsWith('https://127.0.0.1')) {
+    trimmed = trimmed.replace(/^https?:\/\/[^\/]+/, '');
+  }
+
   // If path is an absolute URL containing /uploads/ (e.g. legacy https://karviyam.com/uploads/file.png),
   // extract /uploads/... so it resolves against current environment's API base URL.
   if ((trimmed.startsWith('http://') || trimmed.startsWith('https://')) && trimmed.includes('/uploads/')) {

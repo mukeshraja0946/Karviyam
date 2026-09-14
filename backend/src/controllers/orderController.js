@@ -24,7 +24,7 @@ const mapOrderRowToDTO = async (order) => {
   await ensureOrderTrackingColumns();
 
   const [items] = await pool.query(
-    `SELECT oi.*, p.name as product_name, p.sku, p.image_url as product_image_url 
+    `SELECT oi.*, p.name as product_name, p.sku, p.image_url 
      FROM order_items oi 
      LEFT JOIN products p ON oi.product_id = p.id 
      WHERE oi.order_id = ?`,
@@ -37,9 +37,7 @@ const mapOrderRowToDTO = async (order) => {
     productId: item.product_id,
     productName: item.product_name || `Product #${item.product_id}`,
     sku: item.sku || `KV-PRD-${item.product_id}`,
-    imageUrl: item.product_image_url || item.image_url || item.product_image || null,
-    image_url: item.product_image_url || item.image_url || item.product_image || null,
-    productImage: item.product_image_url || item.image_url || item.product_image || null,
+    imageUrl: item.image_url || null,
     quantity: item.quantity,
     priceAtTime: parseFloat(item.price_at_time || 0),
     selectedSize: item.selected_size || null,
