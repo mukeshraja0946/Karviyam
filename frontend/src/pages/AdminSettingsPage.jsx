@@ -29,7 +29,8 @@ import {
   Layers,
   Loader2,
   Clock,
-  User
+  User,
+  Lock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
