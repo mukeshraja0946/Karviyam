@@ -335,7 +335,7 @@ export default function MobileHomePage() {
   };
 
   return (
-    <div className="w-full bg-[#FAF7F2] pb-24 text-slate-900 select-none font-sans text-left min-h-screen">
+    <div className="w-full bg-[#FAF7F2] text-slate-900 select-none font-sans text-left pb-4">
       
 
 
@@ -583,8 +583,6 @@ export default function MobileHomePage() {
         );
       })}
 
-      {/* Bottom padding ensures content scrolls cleanly above fixed bottom navigation bar */}
-      <div className="h-8" />
     </div>
   );
 }

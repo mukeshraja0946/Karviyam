@@ -305,7 +305,7 @@ export default function Footer() {
       </div>
 
       {/* Main 5-Column Grid Desktop & 2x2 Responsive Mobile Footer Content */}
-      <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-8 xl:px-12 pt-8 sm:pt-10 pb-10 sm:pb-12 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-x-4 sm:gap-x-6 gap-y-8 xl:gap-8 items-start">
+      <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-8 xl:px-12 pt-6 sm:pt-10 pb-8 sm:pb-12 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-x-4 sm:gap-x-6 gap-y-6 xl:gap-8 items-start">
         
         {/* Column 1: Brand Information Section (TOP LEFT on Mobile) */}
         <div className="flex flex-col gap-3 sm:gap-4 text-left items-start w-full min-w-0">
