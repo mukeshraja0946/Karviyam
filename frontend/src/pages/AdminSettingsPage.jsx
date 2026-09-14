@@ -310,6 +310,9 @@ export default function AdminSettingsPage() {
     productImageAutoChange: false,
     productImageChangeInterval: 3,
 
+    loginPopupEnabled: true,
+    loginPopupDelaySeconds: 5,
+
     maintenanceMode: false,
     maintenanceTitle: "We'll Be Right Back!",
     maintenanceSubtitle: "SYSTEM UNDER MAINTENANCE",
@@ -498,6 +501,9 @@ export default function AdminSettingsPage() {
           productImageAutoChange: checkB(dataMap.productImageAutoChange !== undefined ? dataMap.productImageAutoChange : dataMap.product_image_auto_change, false),
           productImageChangeInterval: parseInt(dataMap.productImageChangeInterval || dataMap.product_image_change_interval || 3, 10) || 3,
 
+          loginPopupEnabled: checkB(dataMap.loginPopupEnabled !== undefined ? dataMap.loginPopupEnabled : dataMap.login_popup_enabled, true),
+          loginPopupDelaySeconds: parseInt(dataMap.loginPopupDelaySeconds || dataMap.login_popup_delay_seconds || 5, 10) || 5,
+
           footerAbout: dataMap.footerAbout || prev.footerAbout,
           announcementText: dataMap.announcementText || prev.announcementText,
           logoUrl: dataMap.logoUrl || prev.logoUrl,
@@ -667,6 +673,11 @@ export default function AdminSettingsPage() {
         product_image_auto_change: String(settings.productImageAutoChange),
         productImageChangeInterval: String(settings.productImageChangeInterval),
         product_image_change_interval: String(settings.productImageChangeInterval),
+
+        loginPopupEnabled: String(settings.loginPopupEnabled),
+        login_popup_enabled: String(settings.loginPopupEnabled),
+        loginPopupDelaySeconds: String(settings.loginPopupDelaySeconds),
+        login_popup_delay_seconds: String(settings.loginPopupDelaySeconds),
 
         footerAbout: settings.footerAbout,
         announcementText: settings.announcementText,
@@ -1293,6 +1304,68 @@ export default function AdminSettingsPage() {
             </h3>
 
             <div className="space-y-4">
+              {/* Customer Login Popup Settings Box */}
+              <div className="border border-slate-200 p-5 rounded-2xl bg-white space-y-4 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-[#B71C1C]" />
+                      <span>Customer Login Popup Settings</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Automatically prompt unauthenticated visitors with a login modal after a configurable delay. Logged-in users will never see this popup.
+                    </p>
+                  </div>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
+                    settings.loginPopupEnabled ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  }`}>
+                    {settings.loginPopupEnabled ? '✓ Popup Enabled (ON)' : '✕ Popup Disabled (OFF)'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div>
+                      <label className="font-bold text-slate-900 text-xs block">Enable Login Popup</label>
+                      <span className="text-[10px] text-slate-500 font-medium">Toggle popup for non-logged-in visitors</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={settings.loginPopupEnabled}
+                        onChange={(e) => setSettings(s => ({ ...s, loginPopupEnabled: e.target.checked }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#B71C1C]" />
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-1 text-slate-700">
+                      Display Delay (Seconds)
+                    </label>
+                    <div className="relative flex items-center">
+                      <Clock className="absolute left-3 w-4 h-4 text-slate-400" />
+                      <input
+                        type="number"
+                        min="1"
+                        max="300"
+                        value={settings.loginPopupDelaySeconds}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          setSettings(s => ({
+                            ...s,
+                            loginPopupDelaySeconds: isNaN(val) ? 5 : Math.max(1, Math.min(300, val))
+                          }));
+                        }}
+                        className="w-full bg-[#F5F5F5] text-slate-900 text-xs pl-9 pr-4 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#B71C1C] focus:bg-white outline-none font-bold"
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium mt-1 block">Default: 5 seconds (Min: 1s, Max: 300s)</span>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Footer About Description</label>
                 <textarea

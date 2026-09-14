@@ -7,6 +7,8 @@ import MaintenancePage from '../pages/MaintenancePage';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
+import CustomerLoginPopup from '../components/CustomerLoginPopup';
+
 export default function MainLayout() {
   const { isAdmin } = useAuth();
   const location = useLocation();
@@ -65,6 +67,7 @@ export default function MainLayout() {
       </main>
       <Footer />
       <MobileBottomNav />
+      <CustomerLoginPopup />
     </div>
   );
 }

@@ -7,6 +7,7 @@ const { requireAdmin } = require('../middleware/adminMiddleware');
 // General key-value settings
 router.get('/', settingController.getSettings);
 router.get('/maintenance-status', settingController.getSettings);
+router.get('/login-popup', settingController.getLoginPopupSettings);
 router.post('/', optionalToken, requireAdmin, settingController.updateSettings);
 router.put('/', optionalToken, requireAdmin, settingController.updateSettings);
 

@@ -107,10 +107,54 @@ exports.getSettings = async (req, res, next) => {
     settingsObj.productImageChangeInterval = finalPInterval;
     settingsObj.product_image_change_interval = finalPInterval;
 
+    // Login Popup Settings
+    const lpEnabledVal = settingsObj.loginPopupEnabled !== undefined
+      ? settingsObj.loginPopupEnabled
+      : settingsObj.login_popup_enabled;
+    const isLpEnabled = lpEnabledVal === undefined ? true : (lpEnabledVal === true || lpEnabledVal === 'true' || lpEnabledVal === 1 || lpEnabledVal === '1');
+    settingsObj.loginPopupEnabled = isLpEnabled;
+    settingsObj.login_popup_enabled = isLpEnabled;
+
+    const rawLpDelay = settingsObj.loginPopupDelaySeconds || settingsObj.login_popup_delay_seconds;
+    const parsedLpDelay = rawLpDelay !== undefined ? parseInt(rawLpDelay, 10) : 5;
+    const finalLpDelay = isNaN(parsedLpDelay) || parsedLpDelay < 1 ? 5 : parsedLpDelay;
+    settingsObj.loginPopupDelaySeconds = finalLpDelay;
+    settingsObj.login_popup_delay_seconds = finalLpDelay;
+
     return res.status(200).json(ApiResponse.success(settingsObj, 'Settings retrieved successfully'));
   } catch (err) {
     console.error('[getSettings Fallback Catch]:', err);
     return res.status(200).json(ApiResponse.success({}, 'Settings fallback retrieved'));
+  }
+};
+
+exports.getLoginPopupSettings = async (req, res, next) => {
+  try {
+    await ensureSettingsTable();
+    const [rows] = await pool.query("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('loginPopupEnabled', 'login_popup_enabled', 'loginPopupDelaySeconds', 'login_popup_delay_seconds')");
+    const map = {};
+    (rows || []).forEach(r => { map[r.setting_key] = r.setting_value; });
+
+    const enabledVal = map.loginPopupEnabled !== undefined ? map.loginPopupEnabled : map.login_popup_enabled;
+    const enabled = enabledVal === undefined ? true : (enabledVal === true || enabledVal === 'true' || enabledVal === 1 || enabledVal === '1');
+
+    const delayVal = map.loginPopupDelaySeconds !== undefined ? map.loginPopupDelaySeconds : map.login_popup_delay_seconds;
+    const parsedDelay = delayVal !== undefined ? parseInt(delayVal, 10) : 5;
+    const delaySeconds = isNaN(parsedDelay) || parsedDelay < 1 ? 5 : parsedDelay;
+
+    return res.status(200).json(ApiResponse.success({
+      enabled,
+      delaySeconds,
+      loginPopupEnabled: enabled,
+      loginPopupDelaySeconds: delaySeconds
+    }, 'Login popup settings retrieved successfully'));
+  } catch (err) {
+    return res.status(200).json(ApiResponse.success({
+      enabled: false,
+      delaySeconds: 5,
+      loginPopupEnabled: false,
+      loginPopupDelaySeconds: 5
+    }, 'Login popup settings fallback retrieved'));
   }
 };
 
