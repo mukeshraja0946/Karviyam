@@ -2040,30 +2040,29 @@ export default function AdminSettingsPage() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={async (e) => {
+                      onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
+                          // 1. Instant local preview (0ms UI lag)
+                          const reader = new window.FileReader();
+                          reader.onloadend = () => {
+                            setSettings(prev => ({ ...prev, maintenanceLogoUrl: reader.result }));
+                          };
+                          reader.readAsDataURL(file);
+
+                          // 2. Non-blocking background upload to server
                           const formData = new FormData();
                           formData.append('file', file);
-                          try {
-                            toast.loading('Uploading maintenance logo...', { id: 'm-logo-upload' });
-                            const res = await api.post('/upload', formData, {
-                              headers: { 'Content-Type': 'multipart/form-data' }
-                            });
+                          api.post('/upload', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                          }).then(res => {
                             const url = res.data?.data?.url || res.data?.url || res.data?.filePath || res.data?.data?.filePath;
                             if (url) {
                               setSettings(prev => ({ ...prev, maintenanceLogoUrl: url }));
-                              toast.success('Maintenance logo uploaded successfully!', { id: 'm-logo-upload' });
                             }
-                          } catch (err) {
-                            console.error('File upload error:', err);
-                            toast.error('Upload failed. Using fallback file reader.', { id: 'm-logo-upload' });
-                            const reader = new window.FileReader();
-                            reader.onloadend = () => {
-                              setSettings(prev => ({ ...prev, maintenanceLogoUrl: reader.result }));
-                            };
-                            reader.readAsDataURL(file);
-                          }
+                          }).catch(err => {
+                            console.warn('[AdminSettingsPage] Background logo upload note:', err?.message || err);
+                          });
                         }
                       }}
                       className="w-full bg-white border border-slate-200 p-2 rounded-xl text-xs"
