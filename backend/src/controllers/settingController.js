@@ -400,22 +400,26 @@ const saveBase64Image = (base64Str, prefix = 'logo') => {
     const base64Data = matches[2];
     const fileName = `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}.${ext}`;
 
-    const possibleDirs = [
-      path.join(__dirname, '../../uploads'),
-      path.join(__dirname, '../uploads'),
-      path.join(process.cwd(), 'uploads'),
-      path.join(process.cwd(), 'backend/uploads')
+    const targetDirs = [
+      path.resolve(__dirname, '../uploads'),
+      path.resolve(__dirname, '../../uploads'),
+      path.resolve(process.cwd(), 'uploads'),
+      path.resolve(process.cwd(), 'backend/uploads')
     ];
 
-    for (const uDir of possibleDirs) {
+    let saved = false;
+    for (const uDir of targetDirs) {
       try {
         if (!fs.existsSync(uDir)) {
           fs.mkdirSync(uDir, { recursive: true });
         }
         const filePath = path.join(uDir, fileName);
         fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
-        return `/uploads/${fileName}`;
+        saved = true;
       } catch (eWrite) {}
+    }
+    if (saved) {
+      return `/uploads/${fileName}`;
     }
   } catch (e) {
     console.error('[saveBase64Image Error]:', e);
@@ -435,7 +439,7 @@ exports.updateSettings = async (req, res, next) => {
     for (const [key, value] of Object.entries(settingsData)) {
       if (value !== undefined && value !== null) {
         let strVal = typeof value === 'object' ? JSON.stringify(value) : String(value);
-        if (['emailLogoUrl', 'email_logo_url', 'logoUrl', 'maintenanceLogoUrl'].includes(key) && strVal.startsWith('data:image/')) {
+        if (['emailLogoUrl', 'email_logo_url', 'logoUrl', 'maintenanceLogoUrl', 'maintenance_logo_url'].includes(key) && strVal.startsWith('data:image/')) {
           strVal = saveBase64Image(strVal, key.toLowerCase());
         }
         await pool.query(
@@ -443,6 +447,7 @@ exports.updateSettings = async (req, res, next) => {
            ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
           [key, strVal]
         );
+
       }
     }
 

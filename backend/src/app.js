@@ -146,21 +146,31 @@ app.use(morgan('dev'));
 // STATIC UPLOADS
 // --------------------------------------------------
 
-const uploadsDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
+const primaryUploadsDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
+const altUploadsDir = path.join(__dirname, '../../uploads');
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, {
-    recursive: true
-  });
+if (!fs.existsSync(primaryUploadsDir)) {
+  fs.mkdirSync(primaryUploadsDir, { recursive: true });
 }
 
-app.use('/uploads', express.static(uploadsDir, {
+app.use('/uploads', express.static(primaryUploadsDir, {
   maxAge: '30d',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   }
 }));
+
+if (fs.existsSync(altUploadsDir) && altUploadsDir !== primaryUploadsDir) {
+  app.use('/uploads', express.static(altUploadsDir, {
+    maxAge: '30d',
+    setHeaders: (res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+  }));
+}
+
 
 // Fallback for missing upload files: return default product placeholder image instead of SPA index.html
 app.use('/uploads/*', (req, res) => {

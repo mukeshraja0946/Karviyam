@@ -520,6 +520,7 @@ export default function AdminSettingsPage() {
           emailLogoUrl: dataMap.email_logo_url || dataMap.emailLogoUrl || prev.emailLogoUrl,
           maxProductImages: dataMap.maxProductImages || prev.maxProductImages,
           maintenanceMode: dataMap.maintenanceMode === 'true' || dataMap.maintenanceMode === true,
+          maintenanceLogoUrl: dataMap.maintenanceLogoUrl || dataMap.maintenance_logo_url || prev.maintenanceLogoUrl || '',
           maintenanceTitle: dataMap.maintenanceTitle || prev.maintenanceTitle,
           maintenanceSubtitle: dataMap.maintenanceSubtitle || prev.maintenanceSubtitle,
           maintenanceMessage: dataMap.maintenanceMessage || prev.maintenanceMessage,
@@ -528,6 +529,7 @@ export default function AdminSettingsPage() {
           maintenanceShowSocial: dataMap.maintenanceShowSocial !== 'false',
           maintenanceAllowSearchEngines: dataMap.maintenanceAllowSearchEngines !== 'false',
         }));
+
       }
     } catch (e) {
       console.error(e);
@@ -697,6 +699,7 @@ export default function AdminSettingsPage() {
         maxProductImages: String(settings.maxProductImages),
         maintenanceMode: String(settings.maintenanceMode),
         maintenanceLogoUrl: settings.maintenanceLogoUrl || '',
+        maintenance_logo_url: settings.maintenanceLogoUrl || '',
         maintenanceTitle: settings.maintenanceTitle,
         maintenanceSubtitle: settings.maintenanceSubtitle,
         maintenanceMessage: settings.maintenanceMessage,
@@ -2020,7 +2023,7 @@ export default function AdminSettingsPage() {
                   </div>
                   {settings.maintenanceLogoUrl && (
                     <div className="shrink-0 p-2 bg-white border border-slate-200 rounded-xl flex items-center gap-2">
-                      <img src={settings.maintenanceLogoUrl} alt="Maintenance Logo Preview" className="h-10 w-auto max-w-[140px] object-contain" />
+                      <img src={resolveImageUrl(settings.maintenanceLogoUrl)} alt="Maintenance Logo Preview" className="h-10 w-auto max-w-[140px] object-contain" />
                       <button
                         type="button"
                         onClick={() => setSettings({ ...settings, maintenanceLogoUrl: '' })}
