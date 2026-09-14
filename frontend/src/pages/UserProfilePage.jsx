@@ -1226,7 +1226,7 @@ export default function UserProfilePage() {
         productId={reviewModal.item?.productId || reviewModal.item?.id}
         product={reviewModal.item}
         order={reviewModal.order}
-        onSuccess={fetchOrders}
+        onSuccess={fetchOrdersAndReturns}
       />
 
     </div>
