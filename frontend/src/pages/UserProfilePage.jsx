@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
 import api from '../utils/api';
-import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
+import { resolveImageUrl, handleImageError, isValidAvatarUrl } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
 import CreateReviewModal from '../components/CreateReviewModal';
 import {
