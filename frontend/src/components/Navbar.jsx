@@ -24,7 +24,7 @@ import MegaMenu from './MegaMenu';
 import VoiceSearchModal from './VoiceSearchModal';
 import DeliveryLocationModal from './DeliveryLocationModal';
 import api from '../utils/api';
-import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
+import { resolveImageUrl, isValidImageUrl, handleImageError } from '../utils/imageUtils';
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
@@ -109,6 +109,7 @@ export default function Navbar() {
   };
 
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
+  const [logoFailed, setLogoFailed] = useState(false);
 
   // Category Navigation Setting & Dynamic Categories
   const [navEnabled, setNavEnabled] = useState(true);
@@ -118,6 +119,11 @@ export default function Navbar() {
     try {
       const setRes = await api.get('/settings').catch(() => null);
       const setPayload = setRes?.data?.data || setRes?.data || {};
+      const remoteLogo = setPayload.logoUrl || setPayload.logo_url || setPayload.logo;
+      if (remoteLogo && typeof remoteLogo === 'string' && remoteLogo.trim()) {
+        setCustomLogo(remoteLogo.trim());
+      }
+
       const cnVal = setPayload.categoryNavigationEnabled !== undefined 
         ? setPayload.categoryNavigationEnabled 
         : setPayload.category_navigation_enabled;
@@ -164,6 +170,7 @@ export default function Navbar() {
     fetchNavSettingsAndCategories();
     const handleStorageChange = () => {
       setCustomLogo(localStorage.getItem('karviyam_logo') || '');
+      setLogoFailed(false);
     };
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('karviyam_logo_updated', handleStorageChange);
@@ -247,8 +254,13 @@ export default function Navbar() {
           {/* Left: Karviyam Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-1.5 shrink-0">
-              {customLogo ? (
-                <img src={customLogo} alt="Karviyam" className="h-7 w-auto object-contain max-w-[140px]" />
+              {customLogo && isValidImageUrl(customLogo) && !logoFailed ? (
+                <img
+                  src={resolveImageUrl(customLogo)}
+                  alt="Karviyam"
+                  onError={() => setLogoFailed(true)}
+                  className="h-7 w-auto object-contain max-w-[140px]"
+                />
               ) : (
                 <span className="font-serif font-black text-lg text-[#B71C1C] tracking-widest uppercase flex items-center gap-1">
                   <span className="text-[#B71C1C]">🌸</span>
@@ -370,8 +382,13 @@ export default function Navbar() {
             {/* Logo & Deliver to Location */}
             <div className="flex items-center gap-6">
               <Link to="/" className="flex items-center gap-2 group">
-                {customLogo ? (
-                  <img src={customLogo} alt="Karviyam" className="h-9 w-auto object-contain max-w-[180px]" />
+                {customLogo && isValidImageUrl(customLogo) && !logoFailed ? (
+                  <img
+                    src={resolveImageUrl(customLogo)}
+                    alt="Karviyam"
+                    onError={() => setLogoFailed(true)}
+                    className="h-9 w-auto object-contain max-w-[180px]"
+                  />
                 ) : (
                   <div className="flex items-center gap-2">
                     <div className="w-9 h-9 rounded-xl bg-[#B71C1C] text-white font-black text-xl flex items-center justify-center shadow-sm">
