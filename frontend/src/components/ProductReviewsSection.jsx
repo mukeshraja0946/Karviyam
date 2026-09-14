@@ -19,8 +19,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
-import { resolveImageUrl } from '../utils/imageUtils';
 import ImageUploadCropperModal from './ImageUploadCropperModal';
+import CreateReviewModal from './CreateReviewModal';
 
 function formatTimeAgo(dateString) {
   if (!dateString) return '';
@@ -577,135 +577,12 @@ export default function ProductReviewsSection({ productId, onRatingUpdated }) {
       {/* ========================================================= */}
       {/* WRITE CUSTOMER REVIEW MODAL                                */}
       {/* ========================================================= */}
-      {writeModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white w-full max-w-lg rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-6 text-left font-sans">
-            
-            {/* Header */}
-            <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white">
-              <div>
-                <h3 className="font-display font-black text-base flex items-center gap-2">
-                  <Edit3 className="w-4 h-4 text-[#F97316]" />
-                  <span>Write a Customer Review</span>
-                </h3>
-                <p className="text-[10.5px] text-slate-400">Share your honest feedback & photos with other buyers</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setWriteModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitReview} className="p-6 space-y-4">
-              
-              {/* Star Rating Picker */}
-              <div className="space-y-1.5 text-center bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">Overall Rating *</label>
-                <div className="flex items-center justify-center gap-2">
-                  {[1, 2, 3, 4, 5].map((st) => (
-                    <button
-                      key={st}
-                      type="button"
-                      onClick={() => setUserRating(st)}
-                      className="p-1 cursor-pointer transition-transform hover:scale-125"
-                    >
-                      <Star
-                        className={`w-8 h-8 ${st <= userRating ? 'fill-[#F97316] text-[#F97316]' : 'text-slate-300'}`}
-                      />
-                    </button>
-                  ))}
-                </div>
-                <span className="text-xs font-black text-[#F97316] block">
-                  {userRating === 5 ? '★★★★★ (5/5 - Excellent)' :
-                   userRating === 4 ? '★★★★☆ (4/5 - Good)' :
-                   userRating === 3 ? '★★★☆☆ (3/5 - Average)' :
-                   userRating === 2 ? '★★☆☆☆ (2/5 - Fair)' : '★☆☆☆☆ (1/5 - Poor)'}
-                </span>
-              </div>
-
-              {/* Review Headline */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-800 mb-1">Add a Headline / Title</label>
-                <input
-                  type="text"
-                  value={reviewTitle}
-                  onChange={(e) => setReviewTitle(e.target.value)}
-                  placeholder="e.g. Excellent quality and fit!"
-                  className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#B71C1C] focus:bg-white"
-                />
-              </div>
-
-              {/* Written Review */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-800 mb-1">Written Review</label>
-                <textarea
-                  rows={4}
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="What did you like or dislike? How was the fit and quality?"
-                  className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-medium outline-none focus:border-[#B71C1C] focus:bg-white"
-                />
-              </div>
-
-              {/* Upload Customer Photos */}
-              <div className="space-y-2 pt-1 border-t border-slate-100">
-                <label className="block text-[11px] font-bold text-slate-800">Add Customer Photos (Optional)</label>
-                
-                <div className="flex items-center gap-2 flex-wrap">
-                  {uploadedImages.map((img, idx) => (
-                    <div key={idx} className="relative w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 p-1">
-                      <img src={resolveImageUrl(img)} alt="Preview" className="w-full h-full object-cover rounded-lg" />
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePhoto(idx)}
-                        className="absolute top-0.5 right-0.5 bg-slate-900 text-white rounded-full p-0.5 shadow-md hover:bg-red-600"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-
-                  <label className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-[#B71C1C] bg-slate-50 hover:bg-red-50/30 flex flex-col items-center justify-center cursor-pointer transition-colors text-slate-400 hover:text-[#B71C1C]">
-                    <Upload className="w-5 h-5" />
-                    <span className="text-[9px] font-bold mt-0.5">+ Photo</span>
-                    <input type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-                  </label>
-                </div>
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setWriteModalOpen(false)}
-                  className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-900 cursor-pointer"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-6 py-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Publishing...</span>
-                    </>
-                  ) : (
-                    <span>Submit Review</span>
-                  )}
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
-      )}
+      <CreateReviewModal
+        isOpen={writeModalOpen}
+        onClose={() => setWriteModalOpen(false)}
+        productId={productId}
+        onSuccess={fetchReviews}
+      />
 
       {/* ========================================================= */}
       {/* CUSTOMER PHOTO LIGHTBOX MODAL                             */}

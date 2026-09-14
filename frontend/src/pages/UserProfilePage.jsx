@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
 import api from '../utils/api';
-import { isValidAvatarUrl, resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
+import CreateReviewModal from '../components/CreateReviewModal';
 import {
   Package, Search, Truck, RotateCcw, FileText, CheckCircle2, Clock,
   AlertCircle, Star, X, ChevronDown, ShoppingCart, ExternalLink, LogOut,
@@ -1219,107 +1219,14 @@ export default function UserProfilePage() {
       {/* ========================================================= */}
       {/* MODAL 6: WRITE PRODUCT REVIEW MODAL                        */}
       {/* ========================================================= */}
-      {reviewModal.open && reviewModal.item && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
-            <div className="bg-[#131921] px-6 py-4 text-white flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                  <Star className="w-5 h-5 text-[#FFD814] fill-[#FFD814]" />
-                  <span>Write Product Review</span>
-                </h3>
-                <p className="text-xs text-slate-300">{reviewModal.item.productName}</p>
-              </div>
-              <button
-                onClick={() => setReviewModal({ open: false, order: null, item: null })}
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitReview} className="p-6 space-y-4 text-xs text-slate-700">
-              <div className="flex items-center gap-2 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-emerald-800 font-bold">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Verified Purchase</span>
-              </div>
-
-              {/* Rating Star Picker */}
-              <div>
-                <label className="block font-bold text-slate-900 mb-1">Overall Rating</label>
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setReviewRating(star)}
-                      className="p-1 cursor-pointer transition-transform hover:scale-110"
-                    >
-                      <Star className={`w-6 h-6 ${star <= reviewRating ? 'text-[#FFD814] fill-[#FFD814]' : 'text-slate-300'}`} />
-                    </button>
-                  ))}
-                  <span className="font-bold text-slate-800 ml-2">{reviewRating} of 5 Stars</span>
-                </div>
-              </div>
-
-              {/* Review Headline */}
-              <div>
-                <label className="block font-bold text-slate-900 mb-1">Add a headline</label>
-                <input
-                  type="text"
-                  value={reviewTitle}
-                  onChange={(e) => setReviewTitle(e.target.value)}
-                  placeholder="What's most important to know?"
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-semibold outline-none focus:border-[#007185]"
-                />
-              </div>
-
-              {/* Review Comment */}
-              <div>
-                <label className="block font-bold text-slate-900 mb-1">Add a written review</label>
-                <textarea
-                  rows={3}
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="What did you like or dislike? What did you use this product for?"
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:border-[#007185]"
-                />
-              </div>
-
-              {/* Review Image URL */}
-              <div>
-                <label className="block font-bold text-slate-900 mb-1">Photo URL (Optional)</label>
-                <input
-                  type="text"
-                  value={reviewImage}
-                  onChange={(e) => setReviewImage(e.target.value)}
-                  placeholder="https://example.com/product_photo.jpg"
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 outline-none focus:border-[#007185]"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="pt-2 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setReviewModal({ open: false, order: null, item: null })}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingReview}
-                  className="px-6 py-2 bg-[#D32F2F] hover:bg-[#B71C1C] text-white font-bold rounded-full border border-[#D32F2F] shadow-xs cursor-pointer flex items-center gap-2"
-                >
-                  {submittingReview && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Submit Review</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CreateReviewModal
+        isOpen={reviewModal.open}
+        onClose={() => setReviewModal({ open: false, order: null, item: null })}
+        productId={reviewModal.item?.productId || reviewModal.item?.id}
+        product={reviewModal.item}
+        order={reviewModal.order}
+        onSuccess={fetchOrders}
+      />
 
     </div>
   );
