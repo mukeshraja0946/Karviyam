@@ -205,7 +205,9 @@ export default function CreateReviewModal({ isOpen, onClose, productId, product,
 
           {/* Rate Features Section */}
           <div className="space-y-2.5 pt-3 border-t border-slate-200">
-            <h4 className="font-extrabold text-sm text-slate-900">Rate features</h4>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-sm text-slate-900 border border-blue-600 text-blue-700 px-2 py-0.5 rounded-sm text-xs font-semibold">Rate features</span>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 { key: 'giftable', label: 'Giftable' },
@@ -213,7 +215,19 @@ export default function CreateReviewModal({ isOpen, onClose, productId, product,
                 { key: 'valueForMoney', label: 'Value for money' }
               ].map((feat) => (
                 <div key={feat.key} className="space-y-1 bg-slate-50/70 p-2.5 rounded-xl border border-slate-200/80">
-                  <span className="text-xs font-bold text-slate-800 block truncate">{feat.label}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 truncate">{feat.label}</span>
+                    {featureRatings[feat.key] > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFeatureRatings(prev => ({ ...prev, [feat.key]: 0 }))}
+                        className="text-slate-400 hover:text-slate-700 text-xs font-bold cursor-pointer px-1"
+                        title="Clear feature rating"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((st) => (
                       <button
@@ -293,11 +307,11 @@ export default function CreateReviewModal({ isOpen, onClose, productId, product,
           </div>
 
           {/* Submit Footer Button Row */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end">
+          <div className="-mx-6 -mb-6 mt-6 px-6 py-3.5 bg-slate-100/80 border-t border-slate-200 flex items-center justify-end">
             <button
               type="submit"
               disabled={submitting}
-              className="bg-[#FFD814] hover:bg-[#F7CA00] text-slate-900 border border-[#FCD200] font-bold text-xs px-8 py-2.5 rounded-lg shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50"
+              className="bg-[#FFD814] hover:bg-[#F7CA00] text-slate-900 border border-[#FCD200] font-bold text-xs px-8 py-2 rounded-md shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50"
             >
               {submitting ? (
                 <>
