@@ -116,7 +116,7 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
   const resolvedLogoUrl = effectiveLogo ? resolveImageUrl(effectiveLogo) : '';
 
   return (
-    <div className={`w-full flex flex-col items-center justify-start sm:justify-center bg-[#F8FAFC] px-3 sm:px-4 select-none ${previewMode ? 'min-h-full flex-1 py-2 sm:py-6' : 'min-h-[100dvh] pt-3 pb-6 sm:py-12'}`}>
+    <div className={`w-full flex flex-col items-center justify-center bg-[#F8FAFC] px-3 sm:px-4 select-none ${previewMode ? 'min-h-full flex-1 py-2 sm:py-6' : 'min-h-[100dvh] py-6 sm:py-12'}`}>
       <div className="w-full max-w-[460px] bg-white p-4 sm:p-11 rounded-[28px] sm:rounded-[36px] border border-gray-100/90 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] text-center space-y-3.5 sm:space-y-6 mx-auto relative shrink-0">
         
         {previewMode && (
