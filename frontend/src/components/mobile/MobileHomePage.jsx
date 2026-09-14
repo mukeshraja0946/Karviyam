@@ -428,59 +428,43 @@ export default function MobileHomePage() {
       {/* 4. MOBILE MAIN CATEGORIES — SINGLE HORIZONTAL ROW          */}
       {/* ========================================================= */}
       <div className="px-3.5 my-3">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth py-1 w-full flex-nowrap snap-x snap-mandatory">
+        <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-1 w-full flex-nowrap snap-x snap-mandatory">
           {(categories.length > 0 ? categories : [
-            { id: 'cat-1', title: 'NEW BRANDS', subtitle: 'Just Launched', isGold: true, link: '/shop?filter=new' },
-            { id: 'cat-2', title: 'BEST SELLERS', subtitle: 'Popular Picks', isGold: true, link: '/shop?sellingType=best-sellers' },
-            { id: 'cat-3', title: 'FRESH DROPS', subtitle: 'New Collection', isGold: true, link: '/shop?sellingType=new-arrivals' },
-            { id: 'cat-4', title: 'Exclusive', name: 'Exclusive', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300', link: '/shop?category=Exclusive' },
-            { id: 'cat-5', title: 'Bags & Acc.', name: 'Bags & Acc.', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=300', link: '/shop?category=Accessories' },
-            { id: 'cat-6', title: 'KARVIYAM TREND', subtitle: 'Karviyam Trend', isGold: true, link: '/shop?filter=trending' },
-            { id: 'cat-7', title: 'Fandom', name: 'Fandom', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300', link: '/shop?category=Ethnic' },
-            { id: 'cat-8', title: 'FINAL CALL', subtitle: 'Clearance Sale', isGold: true, link: '/shop?filter=clearance' },
-            { id: 'cat-9', title: 'Top Brands', name: 'Top Brands', image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=300', link: '/shop?filter=top-brands' },
-            { id: 'cat-10', title: 'Home & Living', name: 'Home & Living', image: 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=300', link: '/shop?category=Home' }
+            { id: 'cat-1', name: 'T-SHIRTS', image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400', link: '/shop?category=T-Shirts' },
+            { id: 'cat-2', name: 'SNEAKERS', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400', link: '/shop?category=Sneakers' },
+            { id: 'cat-3', name: 'KURTA SETS', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400', link: '/shop?category=Kurta%20Sets' },
+            { id: 'cat-4', name: 'WOMEN', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400', link: '/shop?category=Women' },
+            { id: 'cat-5', name: 'MEN', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400', link: '/shop?category=Men' },
+            { id: 'cat-6', name: 'JEWELLERY', image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400', link: '/shop?category=Jewellery' },
+            { id: 'cat-7', name: 'BAGS', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400', link: '/shop?category=Accessories' },
+            { id: 'cat-8', name: 'HOME & LIVING', image: 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=400', link: '/shop?category=Home' }
           ]).map((cat, idx) => {
-            const isGoldCard = cat.isGold || (!cat.image && !cat.imageUrl);
+            const catName = (cat.name || cat.title || 'Category').toUpperCase();
+            const catImage = resolveImageUrl(cat.image || cat.imageUrl || (Array.isArray(cat.images) ? cat.images[0] : ''), cat.id || idx);
+
             return (
               <div
                 key={cat.id || idx}
                 onClick={() => navigate(cat.link || `/shop?category=${encodeURIComponent(cat.name || cat.title)}`)}
-                className="w-[74px] sm:w-[84px] min-w-[74px] shrink-0 snap-start rounded-xl overflow-hidden shadow-2xs h-[78px] sm:h-[88px] relative flex flex-col items-center justify-between p-1 cursor-pointer active:scale-95 transition-transform border border-slate-200/90 bg-white group"
+                className="w-[76px] sm:w-[86px] min-w-[76px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-1.5 flex flex-col items-center justify-between cursor-pointer active:scale-95 transition-transform group"
               >
-                {isGoldCard ? (
-                  <div className="w-full h-full bg-gradient-to-b from-[#EED3B0] via-[#E7C498] to-[#DAAF7C] rounded-lg p-1 text-center flex flex-col items-center justify-center border border-[#CBA06B]">
-                    <span className="font-serif font-black text-[9px] text-[#5C1D13] leading-tight uppercase truncate max-w-full">
-                      {cat.title || cat.name}
-                    </span>
-                    {cat.subtitle && (
-                      <span className="text-[6.5px] text-slate-700 font-bold mt-0.5 truncate max-w-full">
-                        {cat.subtitle}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <div className="w-full h-[48px] sm:h-[56px] bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center p-0.5 shrink-0">
-                      <img
-                        src={resolveImageUrl(cat.image || cat.imageUrl, cat.id || idx)}
-                        alt={cat.name || cat.title}
-                        onError={(e) => handleImageError(e, cat.id || idx)}
-                        className="w-full h-full object-cover rounded-md group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="w-full text-center px-0.5 py-0.5">
-                      <p className="font-bold text-[8.5px] text-slate-800 leading-tight truncate">
-                        {cat.name || cat.title}
-                      </p>
-                      {cat.subtitle && (
-                        <p className="text-[7px] text-slate-500 font-medium truncate leading-none mt-0.5">
-                          {cat.subtitle}
-                        </p>
-                      )}
-                    </div>
-                  </>
-                )}
+                {/* Category Image Box - Full Rounded Cover */}
+                <div className="w-full h-[58px] sm:h-[66px] rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                  <img
+                    src={catImage}
+                    alt={catName}
+                    onError={(e) => handleImageError(e, cat.id || idx)}
+                    className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                </div>
+
+                {/* Category Text - Outside Image, Directly Below Image */}
+                <div className="w-full text-center mt-1.5 mb-0.5 px-0.5">
+                  <p className="font-extrabold text-[9px] sm:text-[9.5px] text-slate-800 leading-tight uppercase tracking-tight truncate w-full">
+                    {catName}
+                  </p>
+                </div>
               </div>
             );
           })}
