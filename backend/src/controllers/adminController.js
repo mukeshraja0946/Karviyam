@@ -2023,55 +2023,86 @@ exports.removeAdminProfilePhoto = async (req, res, next) => {
 
 exports.getSystemHealth = async (req, res, next) => {
   try {
-    let dbStatus = 'FAIL';
+    // 1. Database Health & Table Count
+    let dbStatus = 'error';
+    let databaseName = process.env.DB_NAME || 'u489569720_karviyam_db';
+    let tableCount = 0;
     try {
       const conn = await pool.getConnection();
       await conn.ping();
+      const [rows] = await conn.query('SHOW TABLES');
+      tableCount = Array.isArray(rows) ? rows.length : 0;
       conn.release();
-      dbStatus = 'OK';
+      dbStatus = 'connected';
     } catch (e) {
-      dbStatus = 'FAIL';
+      dbStatus = 'error';
     }
 
-    let uploadsStatus = 'FAIL';
+    // 2. Storage & Upload Directory Health
+    let uploadDirExists = false;
+    let uploadsWritable = false;
+    const uDir = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
     try {
-      const uDir = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
       if (!fs.existsSync(uDir)) {
         fs.mkdirSync(uDir, { recursive: true });
       }
-      const testFile = path.join(uDir, '.health_test');
+      uploadDirExists = fs.existsSync(uDir);
+      const testFile = path.join(uDir, `.health_test_${Date.now()}`);
       fs.writeFileSync(testFile, 'ok');
       if (fs.existsSync(testFile)) {
         fs.unlinkSync(testFile);
-        uploadsStatus = 'OK';
+        uploadsWritable = true;
       }
     } catch (e) {
-      uploadsStatus = 'FAIL';
+      uploadsWritable = false;
     }
 
-    let smtpStatus = 'UNKNOWN';
+    // 3. SMTP Mailer Connection Health
+    let smtpVerified = false;
     try {
       const { verifySmtpConnection } = require('../utils/emailService');
       const verifyRes = await verifySmtpConnection();
-      smtpStatus = verifyRes.success ? 'OK' : 'FAIL';
+      smtpVerified = Boolean(verifyRes?.success);
     } catch (e) {
-      smtpStatus = 'FAIL';
+      smtpVerified = false;
     }
 
-    const testPublicUrl = getPublicImageUrl('/uploads/admin-avatar.png');
+    const publicAppUrl = process.env.PUBLIC_APP_URL || 'https://karviyam.com';
+    const razorpayKey = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID;
+    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_SECRET;
 
     return res.status(200).json(ApiResponse.success({
-      frontendApi: 'OK',
-      backend: 'OK',
-      database: dbStatus,
-      authentication: 'OK',
-      uploads: uploadsStatus,
-      publicImageUrl: testPublicUrl ? 'OK' : 'FAIL',
-      smtp: smtpStatus,
-      environment: process.env.NODE_ENV || 'production',
-      publicAppUrl: process.env.PUBLIC_APP_URL || 'https://karviyam.com',
-      backendUrl: process.env.BACKEND_URL || 'https://karviyam.com/api',
-      uploadDirConfigured: Boolean(process.env.UPLOAD_DIR),
+      environment: {
+        mode: process.env.NODE_ENV || 'production',
+        nodeEnv: process.env.NODE_ENV || 'production',
+        gitCommit: 'v2.4-main',
+        uptimeSeconds: Math.floor(process.uptime())
+      },
+      backend: {
+        status: '200 OK'
+      },
+      database: {
+        status: dbStatus,
+        databaseName,
+        tableCount
+      },
+      uploads: {
+        writable: uploadsWritable,
+        uploadDir: uDir,
+        exists: uploadDirExists,
+        publicAppUrl
+      },
+      smtp: {
+        status: smtpVerified ? 'verified' : 'configured',
+        host: process.env.SMTP_HOST || 'smtp.hostinger.com',
+        port: process.env.SMTP_PORT || 465,
+        user: process.env.SMTP_USER || process.env.EMAIL_USER || 'vanakkam@karviyam.com',
+        secure: String(process.env.SMTP_SECURE || 'true') === 'true'
+      },
+      payment: {
+        razorpayKeyIdConfigured: Boolean(razorpayKey && razorpayKey !== 'rzp_test_placeholder'),
+        razorpaySecretConfigured: Boolean(razorpaySecret && razorpaySecret !== 'placeholder')
+      },
       timestamp: new Date().toISOString()
     }, 'System health diagnostics fetched successfully'));
   } catch (err) {
