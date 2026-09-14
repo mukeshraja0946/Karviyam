@@ -305,7 +305,7 @@ export default function Footer() {
       </div>
 
       {/* Main 5-Column Grid Desktop & 2x2 Responsive Mobile Footer Content */}
-      <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-8 xl:px-12 pt-6 sm:pt-10 pb-8 sm:pb-12 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-x-4 sm:gap-x-6 gap-y-6 xl:gap-8 items-start">
+      <div className="max-w-[1640px] w-full mx-auto px-4 sm:px-8 xl:px-12 pt-5 sm:pt-10 pb-4 sm:pb-12 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-x-4 sm:gap-x-6 gap-y-5 xl:gap-8 items-start">
         
         {/* Column 1: Brand Information Section (TOP LEFT on Mobile) */}
         <div className="flex flex-col gap-3 sm:gap-4 text-left items-start w-full min-w-0">
@@ -499,7 +499,7 @@ export default function Footer() {
       </div>
 
       {/* Bottom Copyright Bar */}
-      <div className="bg-slate-50 border-t border-slate-200 py-4 px-4 pb-24 lg:pb-4 text-center text-xs sm:text-sm text-slate-600 font-medium">
+      <div className="bg-slate-50 border-t border-slate-200 py-2.5 px-4 pb-16 lg:pb-3 text-center text-xs sm:text-sm text-slate-600 font-medium">
         {footerConfig.copyright}
       </div>
 

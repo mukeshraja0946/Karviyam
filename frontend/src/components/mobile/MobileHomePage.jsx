@@ -446,22 +446,22 @@ export default function MobileHomePage() {
               <div
                 key={cat.id || idx}
                 onClick={() => navigate(cat.link || `/shop?category=${encodeURIComponent(cat.name || cat.title)}`)}
-                className="w-[68px] sm:w-[78px] min-w-[68px] shrink-0 snap-start flex flex-col items-center cursor-pointer active:scale-95 transition-transform group"
+                className="w-[56px] sm:w-[66px] min-w-[56px] shrink-0 snap-start flex flex-col items-center cursor-pointer active:scale-95 transition-transform group"
               >
                 {/* Category Image Box - Full Rounded Cover */}
-                <div className="w-[66px] h-[66px] sm:w-[76px] sm:h-[76px] rounded-2xl overflow-hidden bg-slate-100 shadow-2xs border border-slate-200/60 shrink-0">
+                <div className="w-[54px] h-[54px] sm:w-[64px] sm:h-[64px] rounded-xl overflow-hidden bg-slate-100 shadow-2xs border border-slate-200/60 shrink-0">
                   <img
                     src={catImage}
                     alt={catName}
                     onError={(e) => handleImageError(e, cat.id || idx)}
-                    className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"
                   />
                 </div>
 
                 {/* Category Text - Directly Below Image on Page Background */}
-                <div className="w-full text-center mt-1.5 px-0.5">
-                  <p className="font-extrabold text-[9px] sm:text-[9.5px] text-slate-800 leading-tight uppercase tracking-tight truncate w-full">
+                <div className="w-full text-center mt-1 px-0.5">
+                  <p className="font-extrabold text-[8.5px] sm:text-[9px] text-slate-800 leading-tight uppercase tracking-tight truncate w-full">
                     {catName}
                   </p>
                 </div>
@@ -508,7 +508,7 @@ export default function MobileHomePage() {
       {/* ========================================================= */}
       {/* 6. FEATURED FOR YOU PRODUCT SECTION (Reference Style)     */}
       {/* ========================================================= */}
-      <div className="px-3.5 my-4 space-y-2">
+      <div className="px-3.5 mt-2.5 mb-2.5 space-y-1.5">
         <div className="flex items-center justify-between px-0.5">
           <h2 className="font-extrabold text-sm text-slate-900 tracking-tight">
             Featured For You
@@ -530,7 +530,7 @@ export default function MobileHomePage() {
       {/* ========================================================= */}
       {/* 7. BEST SELLERS PRODUCT SECTION (Reference Style)          */}
       {/* ========================================================= */}
-      <div className="px-3.5 my-4 space-y-2">
+      <div className="px-3.5 mt-2.5 mb-2.5 space-y-1.5">
         <div className="flex items-center justify-between px-0.5">
           <h2 className="font-extrabold text-sm text-slate-900 tracking-tight">
             Best Sellers
@@ -559,7 +559,7 @@ export default function MobileHomePage() {
         const displayProds = sec.products.slice(0, mobMaxCount);
 
         return (
-          <div key={sec.id || sec.section_key} className="px-3.5 my-4 space-y-2">
+          <div key={sec.id || sec.section_key} className="px-3.5 mt-2.5 mb-2.5 space-y-1.5">
             <div className="flex items-center justify-between px-0.5">
               <div>
                 <h3 className="font-extrabold text-sm text-slate-900 tracking-tight">{sec.title}</h3>

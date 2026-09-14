@@ -244,17 +244,8 @@ export default function Navbar() {
         {/* Main Mobile Header Bar */}
         <div className="px-3.5 py-2 flex items-center justify-between gap-2 border-b border-slate-100">
           
-          {/* Left: Hamburger Menu & Karviyam Logo */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-800 hover:bg-slate-100 cursor-pointer active:scale-95 transition-transform"
-              title="Open Navigation Menu"
-            >
-              <Menu className="w-5 h-5 stroke-[2.2]" />
-            </button>
-
+          {/* Left: Karviyam Logo */}
+          <div className="flex items-center">
             <Link to="/" className="flex items-center gap-1.5 shrink-0">
               {customLogo ? (
                 <img src={customLogo} alt="Karviyam" className="h-7 w-auto object-contain max-w-[140px]" />
