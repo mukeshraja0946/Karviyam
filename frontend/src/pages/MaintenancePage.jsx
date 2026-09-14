@@ -57,11 +57,16 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
 
         if (logo) {
           setMaintenanceLogo(logo);
+          setLogoFailed(false);
           localStorage.setItem('karviyam_maintenance_logo', logo);
         } else {
           const generalLogo = localStorage.getItem('karviyam_logo');
-          if (generalLogo) setMaintenanceLogo(generalLogo);
+          if (generalLogo) {
+            setMaintenanceLogo(generalLogo);
+            setLogoFailed(false);
+          }
         }
+
 
         if (t) setTitle(t);
         if (sub) setSubtitle(sub);
