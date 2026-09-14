@@ -26,13 +26,8 @@ const processBase64Images = async (data) => {
         const buffer = Buffer.from(base64Clean, 'base64');
         const filename = `base64-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
         
-        const uploadsDir = path.resolve(__dirname, '../../uploads');
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-
-        const filePath = path.join(uploadsDir, filename);
-        fs.writeFileSync(filePath, buffer);
+        const { syncUploadFile } = require('./fileSync');
+        syncUploadFile(filename, buffer);
 
         return `/uploads/${filename}`;
       }

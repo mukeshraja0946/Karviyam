@@ -401,27 +401,10 @@ const saveBase64Image = (base64Str, prefix = 'logo') => {
     const base64Data = matches[2];
     const fileName = `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}.${ext}`;
 
-    const targetDirs = [
-      path.resolve(__dirname, '../uploads'),
-      path.resolve(__dirname, '../../uploads'),
-      path.resolve(process.cwd(), 'uploads'),
-      path.resolve(process.cwd(), 'backend/uploads')
-    ];
-
-    let saved = false;
-    for (const uDir of targetDirs) {
-      try {
-        if (!fs.existsSync(uDir)) {
-          fs.mkdirSync(uDir, { recursive: true });
-        }
-        const filePath = path.join(uDir, fileName);
-        fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
-        saved = true;
-      } catch (eWrite) {}
-    }
-    if (saved) {
-      return `/uploads/${fileName}`;
-    }
+    const buffer = Buffer.from(base64Data, 'base64');
+    const { syncUploadFile } = require('../utils/fileSync');
+    syncUploadFile(fileName, buffer);
+    return `/uploads/${fileName}`;
   } catch (e) {
     console.error('[saveBase64Image Error]:', e);
   }

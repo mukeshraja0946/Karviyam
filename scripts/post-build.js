@@ -54,4 +54,30 @@ if (fs.existsSync(distHtaccess)) {
   console.log(`✅ Copied frontend .htaccess to root: ${rootHtaccess}`);
 }
 
+// Copy uploads directory to root and all target locations if present
+const uploadSources = [
+  path.join(rootDir, 'uploads'),
+  path.join(rootDir, 'backend', 'uploads')
+];
+
+const uploadTargets = [
+  path.join(rootDir, 'uploads'),
+  path.join(rootDir, 'dist', 'uploads'),
+  path.join(rootDir, 'backend', 'dist', 'uploads'),
+  path.join(rootDir, 'backend', 'public', 'uploads'),
+  path.join(rootDir, 'public', 'uploads')
+];
+
+for (const src of uploadSources) {
+  if (fs.existsSync(src)) {
+    for (const tgt of uploadTargets) {
+      try {
+        fs.mkdirSync(tgt, { recursive: true });
+        fs.cpSync(src, tgt, { recursive: true, force: true });
+        console.log(`✅ Synchronized uploads from ${src} to ${tgt}`);
+      } catch (err) {}
+    }
+  }
+}
+
 console.log('✨ Karviyam post-build step completed successfully!');

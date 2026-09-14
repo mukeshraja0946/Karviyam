@@ -1,4 +1,5 @@
 const ApiResponse = require('../utils/apiResponse');
+const { syncUploadFile } = require('../utils/fileSync');
 
 exports.uploadFile = async (req, res, next) => {
   try {
@@ -7,6 +8,7 @@ exports.uploadFile = async (req, res, next) => {
     }
 
     if (req.file) {
+      syncUploadFile(req.file.filename);
       const fileUrl = `/uploads/${req.file.filename}`;
       return res.status(200).json(ApiResponse.success({
         url: fileUrl,
@@ -17,6 +19,7 @@ exports.uploadFile = async (req, res, next) => {
     }
 
     if (req.files) {
+      req.files.forEach(f => syncUploadFile(f.filename));
       const fileUrls = req.files.map(f => `/uploads/${f.filename}`);
       return res.status(200).json(ApiResponse.success({
         urls: fileUrls
