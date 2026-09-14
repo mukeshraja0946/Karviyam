@@ -307,13 +307,13 @@ export default function MobileHomePage() {
           <Heart className={`w-3.5 h-3.5 ${isWish ? 'fill-current' : ''}`} />
         </button>
 
-        {/* Product Image Box */}
-        <div className="w-full h-[130px] bg-[#F8F8F8] rounded-lg overflow-hidden flex items-center justify-center p-1.5 mb-1.5 relative shrink-0">
+        {/* Product Image Box — No Grey Background, Cover Image */}
+        <div className="w-full h-[130px] rounded-lg overflow-hidden flex items-center justify-center mb-1.5 relative shrink-0 bg-transparent">
           <img
             src={prodImg}
             alt={prod.name}
             onError={(e) => handleImageError(e, prod.id || idx)}
-            className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
         </div>
@@ -508,48 +508,44 @@ export default function MobileHomePage() {
       {/* ========================================================= */}
       {/* 6. FEATURED FOR YOU PRODUCT SECTION (Reference Style)     */}
       {/* ========================================================= */}
-      <div className="px-3.5 my-3">
-        <div className="w-full bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2.5">
-          <div className="flex items-center justify-between">
-            <h2 className="font-extrabold text-sm text-slate-900 tracking-tight">
-              Featured For You
-            </h2>
-            <button
-              onClick={() => navigate('/shop')}
-              className="text-xs font-bold text-[#007185] hover:text-[#C7511F] cursor-pointer flex items-center gap-0.5"
-            >
-              <span>View All</span>
-              <span>&gt;</span>
-            </button>
-          </div>
+      <div className="px-3.5 my-4 space-y-2">
+        <div className="flex items-center justify-between px-0.5">
+          <h2 className="font-extrabold text-sm text-slate-900 tracking-tight">
+            Featured For You
+          </h2>
+          <button
+            onClick={() => navigate('/shop')}
+            className="text-xs font-bold text-[#007185] hover:text-[#C7511F] cursor-pointer flex items-center gap-0.5"
+          >
+            <span>View All</span>
+            <span>&gt;</span>
+          </button>
+        </div>
 
-          <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap snap-x snap-mandatory">
-            {recommendedProducts.map((prod, idx) => renderProductCard(prod, idx))}
-          </div>
+        <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap snap-x snap-mandatory">
+          {recommendedProducts.map((prod, idx) => renderProductCard(prod, idx))}
         </div>
       </div>
 
       {/* ========================================================= */}
       {/* 7. BEST SELLERS PRODUCT SECTION (Reference Style)          */}
       {/* ========================================================= */}
-      <div className="px-3.5 my-3">
-        <div className="w-full bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2.5">
-          <div className="flex items-center justify-between">
-            <h2 className="font-extrabold text-sm text-slate-900 tracking-tight">
-              Best Sellers
-            </h2>
-            <button
-              onClick={() => navigate('/shop?sellingType=best-sellers')}
-              className="text-xs font-bold text-[#007185] hover:text-[#C7511F] cursor-pointer flex items-center gap-0.5"
-            >
-              <span>View All</span>
-              <span>&gt;</span>
-            </button>
-          </div>
+      <div className="px-3.5 my-4 space-y-2">
+        <div className="flex items-center justify-between px-0.5">
+          <h2 className="font-extrabold text-sm text-slate-900 tracking-tight">
+            Best Sellers
+          </h2>
+          <button
+            onClick={() => navigate('/shop?sellingType=best-sellers')}
+            className="text-xs font-bold text-[#007185] hover:text-[#C7511F] cursor-pointer flex items-center gap-0.5"
+          >
+            <span>View All</span>
+            <span>&gt;</span>
+          </button>
+        </div>
 
-          <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap snap-x snap-mandatory">
-            {recommendedProducts.slice().reverse().map((prod, idx) => renderProductCard(prod, idx + 100))}
-          </div>
+        <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap snap-x snap-mandatory">
+          {recommendedProducts.slice().reverse().map((prod, idx) => renderProductCard(prod, idx + 100))}
         </div>
       </div>
 
@@ -563,27 +559,25 @@ export default function MobileHomePage() {
         const displayProds = sec.products.slice(0, mobMaxCount);
 
         return (
-          <div key={sec.id || sec.section_key} className="px-3.5 my-3">
-            <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-extrabold text-sm text-slate-900 tracking-tight">{sec.title}</h3>
-                  {sec.subtitle && <p className="text-[10px] text-slate-500 font-medium">{sec.subtitle}</p>}
-                </div>
-                {sec.show_view_all !== false && (
-                  <button
-                    type="button"
-                    onClick={() => navigate(sec.view_all_link || '/shop')}
-                    className="text-xs font-bold text-[#007185] hover:text-[#C7511F] cursor-pointer flex items-center gap-0.5"
-                  >
-                    <span>{sec.view_all_text || 'View All >'}</span>
-                  </button>
-                )}
+          <div key={sec.id || sec.section_key} className="px-3.5 my-4 space-y-2">
+            <div className="flex items-center justify-between px-0.5">
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 tracking-tight">{sec.title}</h3>
+                {sec.subtitle && <p className="text-[10px] text-slate-500 font-medium">{sec.subtitle}</p>}
               </div>
+              {sec.show_view_all !== false && (
+                <button
+                  type="button"
+                  onClick={() => navigate(sec.view_all_link || '/shop')}
+                  className="text-xs font-bold text-[#007185] hover:text-[#C7511F] cursor-pointer flex items-center gap-0.5"
+                >
+                  <span>{sec.view_all_text || 'View All >'}</span>
+                </button>
+              )}
+            </div>
 
-              <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap snap-x snap-mandatory">
-                {displayProds.map((prod, idx) => renderProductCard(prod, idx))}
-              </div>
+            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full flex-nowrap snap-x snap-mandatory">
+              {displayProds.map((prod, idx) => renderProductCard(prod, idx))}
             </div>
           </div>
         );
