@@ -2454,10 +2454,12 @@ export default function AdminSettingsPage() {
                 </div>
               ) : (
                 <div className="w-full flex-1 flex items-center justify-center bg-slate-200/80 p-4 sm:p-6 overflow-y-auto">
-                  <div className="w-[375px] h-[667px] max-h-[78vh] bg-[#F8FAFC] border-[10px] border-slate-900 rounded-[44px] shadow-2xl overflow-y-auto relative flex flex-col shrink-0 my-auto">
+                  <div className="w-[375px] max-w-[92vw] h-[680px] max-h-[82vh] bg-[#F8FAFC] border-[10px] border-slate-900 rounded-[44px] shadow-2xl overflow-y-auto relative flex flex-col shrink-0 my-auto">
                     {/* Smartphone Notch */}
-                    <div className="w-28 h-4 bg-slate-900 mx-auto rounded-b-2xl shrink-0"></div>
-                    <MaintenancePage previewMode={true} previewSettings={settings} />
+                    <div className="w-28 h-4 bg-slate-900 mx-auto rounded-b-2xl shrink-0 z-10"></div>
+                    <div className="flex-1 flex flex-col items-center justify-center w-full my-auto py-2">
+                      <MaintenancePage previewMode={true} previewSettings={settings} />
+                    </div>
                   </div>
                 </div>
               )}
