@@ -328,24 +328,9 @@ export default function AdminLayout() {
       {/* TOP HEADER */}
       <header className="h-16 shrink-0 bg-white border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center justify-between z-30 shadow-xs">
         
-        {/* Left Section: Logo & Sidebar Toggle */}
-        <div className="flex items-center gap-3 sm:gap-4">
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2 text-slate-500 hover:text-[#B71C1C] hover:bg-red-50 rounded-xl transition-colors hidden lg:block"
-            title="Toggle Sidebar"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-
-          <button
-            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="p-2 text-slate-500 hover:text-[#B71C1C] hover:bg-red-50 rounded-xl transition-colors lg:hidden"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-
-          <Link to="/admin" className="flex items-center gap-2.5">
+        {/* Left Section: Logo */}
+        <div className="flex items-center">
+          <Link to="/admin" className="flex items-center">
             {customLogo ? (
               <img src={customLogo} alt="Karviyam Logo" className="h-10 w-auto object-contain max-w-[180px]" />
             ) : (
@@ -360,10 +345,6 @@ export default function AdminLayout() {
                 </span>
               </div>
             )}
-
-            <span className="text-[10px] font-bold uppercase text-slate-400 border-l border-slate-200 pl-2 hidden sm:inline">
-              Enterprise Admin
-            </span>
           </Link>
         </div>
 
