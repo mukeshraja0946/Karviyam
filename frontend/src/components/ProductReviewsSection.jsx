@@ -428,7 +428,7 @@ export default function ProductReviewsSection({ productId, onRatingUpdated }) {
               <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
               <div className="space-y-1">
                 <h4 className="font-extrabold text-sm text-slate-900">No ratings yet</h4>
-                <p className="text-xs text-slate-500 font-medium">Be the first customer to rate and review this product!</p>
+                <p className="text-xs text-slate-500 font-medium">Customer reviews for this product.</p>
               </div>
               <button
                 type="button"
@@ -436,7 +436,7 @@ export default function ProductReviewsSection({ productId, onRatingUpdated }) {
                 className="bg-[#B71C1C] hover:bg-[#900C0C] text-white text-xs font-extrabold px-5 py-2 rounded-xl shadow-xs transition-colors cursor-pointer inline-flex items-center gap-1.5"
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                <span>Write the first review</span>
+                <span>Write a product review</span>
               </button>
             </div>
           ) : (
