@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Clock } from 'lucide-react';
+import { Clock, Mail } from 'lucide-react';
 import api from '../utils/api';
 import { resolveImageUrl } from '../utils/imageUtils';
 
-export default function MaintenancePage() {
+export default function MaintenancePage({ previewMode = false, previewSettings = null }) {
   const [maintenanceLogo, setMaintenanceLogo] = useState(() => 
     localStorage.getItem('karviyam_maintenance_logo') || localStorage.getItem('karviyam_logo') || ''
   );
@@ -14,8 +14,11 @@ export default function MaintenancePage() {
     localStorage.getItem('karviyam_maintenance_message') || 'Karviyam is currently undergoing scheduled platform maintenance to bring you exciting new drops! We will be back online shortly.'
   );
   const [estimatedTime, setEstimatedTime] = useState("Estimated Uptime: Back Online Soon");
+  const [supportEmail, setSupportEmail] = useState("vanakkam@karviyam.com");
+  const [showTimer, setShowTimer] = useState(true);
 
   useEffect(() => {
+    if (previewMode) return;
     fetchLiveMaintenanceSettings();
     const handleUpdate = () => {
       const storedLogo = localStorage.getItem('karviyam_maintenance_logo') || localStorage.getItem('karviyam_logo') || '';
@@ -32,7 +35,7 @@ export default function MaintenancePage() {
       window.removeEventListener('karviyam_maintenance_updated', handleUpdate);
       window.removeEventListener('karviyam_logo_updated', handleUpdate);
     };
-  }, []);
+  }, [previewMode]);
 
   const fetchLiveMaintenanceSettings = async () => {
     try {
@@ -49,6 +52,8 @@ export default function MaintenancePage() {
         const sub = dataMap.maintenanceSubtitle || dataMap.maintenance_subtitle;
         const msg = dataMap.maintenanceMessage || dataMap.maintenance_message;
         const est = dataMap.maintenanceEstimatedTime || dataMap.maintenance_estimated_time;
+        const email = dataMap.supportEmail || dataMap.support_email;
+        const timer = dataMap.maintenanceShowTimer !== false && dataMap.maintenance_show_timer !== false && dataMap.maintenanceShowTimer !== 'false';
 
         if (logo) {
           setMaintenanceLogo(logo);
@@ -62,18 +67,62 @@ export default function MaintenancePage() {
         if (sub) setSubtitle(sub);
         if (msg) setMessage(msg);
         if (est) setEstimatedTime(est);
+        if (email) setSupportEmail(email);
+        setShowTimer(timer);
       }
     } catch (e) {
       console.error('[MaintenancePage] Settings fetch error:', e);
     }
   };
 
-  const resolvedLogoUrl = maintenanceLogo ? resolveImageUrl(maintenanceLogo) : '';
+  const effectiveLogo = previewMode
+    ? (previewSettings?.maintenanceLogoUrl || previewSettings?.logoUrl || '')
+    : maintenanceLogo;
+
+  const effectiveTitle = previewMode
+    ? (previewSettings?.maintenanceTitle !== undefined ? previewSettings.maintenanceTitle : "We'll Be Right Back!")
+    : title;
+
+  const effectiveSubtitle = previewMode
+    ? (previewSettings?.maintenanceSubtitle !== undefined ? previewSettings.maintenanceSubtitle : "SYSTEM UNDER MAINTENANCE")
+    : subtitle;
+
+  const effectiveMessage = previewMode
+    ? (previewSettings?.maintenanceMessage !== undefined ? previewSettings.maintenanceMessage : 'Karviyam is currently undergoing scheduled platform maintenance to bring you exciting new drops! We will be back online shortly.')
+    : message;
+
+  const effectiveEstimatedTime = previewMode
+    ? (previewSettings?.maintenanceEstimatedTime !== undefined ? previewSettings.maintenanceEstimatedTime : "Estimated Uptime: Back Online Soon")
+    : estimatedTime;
+
+  const effectiveSupportEmail = previewMode
+    ? (previewSettings?.supportEmail || 'vanakkam@karviyam.com')
+    : (supportEmail || 'vanakkam@karviyam.com');
+
+  const effectiveShowTimer = previewMode
+    ? (previewSettings?.maintenanceShowTimer !== false)
+    : showTimer;
+
+  // Reset logo failure state when effectiveLogo changes
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [effectiveLogo]);
+
+  const resolvedLogoUrl = effectiveLogo ? resolveImageUrl(effectiveLogo) : '';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4 py-8 sm:py-12 select-none">
-      <div className="w-full max-w-[460px] bg-white p-7 sm:p-11 rounded-[36px] border border-gray-100/90 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] text-center space-y-6 mx-auto">
+    <div className={`min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4 py-8 sm:py-12 select-none ${previewMode ? 'py-4 min-h-0 bg-transparent' : ''}`}>
+      <div className="w-full max-w-[460px] bg-white p-7 sm:p-11 rounded-[36px] border border-gray-100/90 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] text-center space-y-6 mx-auto relative">
         
+        {previewMode && (
+          <div className="pb-1">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500 text-white font-black text-[10px] uppercase tracking-widest rounded-full shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+              PREVIEW MODE
+            </span>
+          </div>
+        )}
+
         {/* Logo Container Box */}
         <div className="flex justify-center pt-1">
           <div className="flex items-center justify-center min-h-[100px] bg-white w-full max-w-[360px] p-2">
@@ -105,29 +154,37 @@ export default function MaintenancePage() {
         </div>
 
         {/* System Under Maintenance Badge */}
-        <div>
-          <span className="inline-block px-5 py-1.5 bg-[#FEF3D6] text-[#9A5B00] text-[11px] sm:text-xs font-black uppercase tracking-wider rounded-full">
-            {subtitle}
-          </span>
-        </div>
+        {effectiveSubtitle && (
+          <div>
+            <span className="inline-block px-5 py-1.5 bg-[#FEF3D6] text-[#9A5B00] text-[11px] sm:text-xs font-black uppercase tracking-wider rounded-full">
+              {effectiveSubtitle}
+            </span>
+          </div>
+        )}
 
         {/* Heading & Description */}
         <div className="space-y-2 pt-1">
-          <h1 className="text-3xl sm:text-[32px] font-black text-[#0F172A] tracking-tight leading-tight">
-            {title}
-          </h1>
-          <p className="text-xs sm:text-[13px] text-gray-500 leading-relaxed max-w-sm mx-auto font-medium pt-1">
-            {message}
-          </p>
+          {effectiveTitle && (
+            <h1 className="text-3xl sm:text-[32px] font-black text-[#0F172A] tracking-tight leading-tight">
+              {effectiveTitle}
+            </h1>
+          )}
+          {effectiveMessage && (
+            <p className="text-xs sm:text-[13px] text-gray-500 leading-relaxed max-w-sm mx-auto font-medium pt-1">
+              {effectiveMessage}
+            </p>
+          )}
         </div>
 
         {/* Estimated Uptime Box */}
-        <div className="pt-1">
-          <div className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-full py-3 px-6 flex items-center justify-center gap-2.5 text-xs font-bold text-[#334155] shadow-2xs">
-            <Clock className="w-4 h-4 text-[#B91C1C] shrink-0" />
-            <span>{estimatedTime}</span>
+        {effectiveShowTimer && effectiveEstimatedTime && (
+          <div className="pt-1">
+            <div className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-full py-3 px-6 flex items-center justify-center gap-2.5 text-xs font-bold text-[#334155] shadow-2xs">
+              <Clock className="w-4 h-4 text-[#B91C1C] shrink-0" />
+              <span>{effectiveEstimatedTime}</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Bottom Red Status Pill */}
         <div className="pt-1">
@@ -140,8 +197,17 @@ export default function MaintenancePage() {
           </div>
         </div>
 
+        {/* Support Contact Details */}
+        {effectiveSupportEmail && (
+          <div className="pt-1 text-slate-500 text-xs font-medium flex items-center justify-center gap-1.5">
+            <Mail className="w-3.5 h-3.5 text-slate-400" />
+            <span>Need help? <a href={`mailto:${effectiveSupportEmail}`} className="text-[#B91C1C] font-bold hover:underline">{effectiveSupportEmail}</a></span>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
+
 
