@@ -42,10 +42,16 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
       const res = await api.get('/settings');
       const dataObj = res.data?.data || res.data || res;
       
-      if (dataObj && typeof dataObj === 'object') {
-        const dataMap = Array.isArray(dataObj)
-          ? dataObj.reduce((acc, s) => { if (s.settingKey) acc[s.settingKey] = s.settingValue; return acc; }, {})
-          : dataObj;
+        let dataMap = {};
+        if (Array.isArray(dataObj)) {
+          dataObj.forEach(s => {
+            const k = s.settingKey || s.setting_key || s.key;
+            const v = s.settingValue !== undefined ? s.settingValue : (s.setting_value !== undefined ? s.setting_value : s.value);
+            if (k) dataMap[k] = v;
+          });
+        } else {
+          dataMap = dataObj;
+        }
 
         const logo = dataMap.maintenanceLogoUrl || dataMap.maintenance_logo_url || dataMap.logoUrl || dataMap.logo_url;
         const t = dataMap.maintenanceTitle || dataMap.maintenance_title;
@@ -74,7 +80,6 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
         if (est) setEstimatedTime(est);
         if (email) setSupportEmail(email);
         setShowTimer(timer);
-      }
     } catch (e) {
       console.error('[MaintenancePage] Settings fetch error:', e);
     }

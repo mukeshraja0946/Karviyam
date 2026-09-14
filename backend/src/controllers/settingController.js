@@ -102,11 +102,11 @@ exports.getSettings = async (req, res, next) => {
     settingsObj.productImageAutoChange = isPAutoChange;
     settingsObj.product_image_auto_change = isPAutoChange;
 
-    const rawPInterval = settingsObj.productImageChangeInterval || settingsObj.product_image_change_interval;
-    const parsedPInterval = rawPInterval ? parseInt(rawPInterval, 10) : 3;
-    const finalPInterval = isNaN(parsedPInterval) || parsedPInterval <= 0 ? 3 : parsedPInterval;
-    settingsObj.productImageChangeInterval = finalPInterval;
-    settingsObj.product_image_change_interval = finalPInterval;
+    const mainLogoVal = settingsObj.maintenanceLogoUrl || settingsObj.maintenance_logo_url || '';
+    if (mainLogoVal) {
+      settingsObj.maintenanceLogoUrl = mainLogoVal;
+      settingsObj.maintenance_logo_url = mainLogoVal;
+    }
 
     // Login Popup Settings
     const lpEnabledVal = settingsObj.loginPopupEnabled !== undefined
@@ -435,6 +435,12 @@ exports.updateSettings = async (req, res, next) => {
 
     if (settingsData.maintenanceMode !== undefined) {
       settingsData.maintenance_mode = String(settingsData.maintenanceMode);
+    }
+    if (settingsData.maintenanceLogoUrl !== undefined) {
+      settingsData.maintenance_logo_url = String(settingsData.maintenanceLogoUrl);
+    }
+    if (settingsData.maintenance_logo_url !== undefined) {
+      settingsData.maintenanceLogoUrl = String(settingsData.maintenance_logo_url);
     }
 
     for (const [key, value] of Object.entries(settingsData)) {
