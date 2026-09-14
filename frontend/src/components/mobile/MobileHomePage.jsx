@@ -425,126 +425,65 @@ export default function MobileHomePage() {
 
 
       {/* ========================================================= */}
-      {/* 4. QUICK SHOPPING CARDS (2-Row Grid matching reference)   */}
+      {/* 4. MOBILE MAIN CATEGORIES — SINGLE HORIZONTAL ROW          */}
       {/* ========================================================= */}
-      <div className="px-3.5 my-3 space-y-2">
-        {/* Row 1 */}
-        <div className="grid grid-cols-5 gap-2">
-          {/* 1. NEW BRANDS */}
-          <div
-            onClick={() => navigate('/shop?filter=new')}
-            className="bg-gradient-to-b from-[#EED3B0] via-[#E7C498] to-[#DAAF7C] rounded-xl p-1 text-center flex flex-col items-center justify-center border border-[#CBA06B] shadow-2xs h-[74px] cursor-pointer active:scale-95 transition-transform"
-          >
-            <span className="font-serif font-black text-[9.5px] text-[#5C1D13] leading-tight uppercase">NEW<br/>BRANDS</span>
-            <span className="text-[7px] text-slate-700 font-bold mt-0.5 whitespace-nowrap">Just Launched</span>
-          </div>
-
-          {/* 2. BEST SELLERS */}
-          <div
-            onClick={() => navigate('/shop?sellingType=best-sellers')}
-            className="bg-gradient-to-b from-[#EED3B0] via-[#E7C498] to-[#DAAF7C] rounded-xl p-1 text-center flex flex-col items-center justify-center border border-[#CBA06B] shadow-2xs h-[74px] cursor-pointer active:scale-95 transition-transform"
-          >
-            <span className="font-serif font-black text-[9.5px] text-[#5C1D13] leading-tight uppercase">BEST<br/>SELLERS</span>
-            <span className="text-[7px] text-slate-700 font-bold mt-0.5 whitespace-nowrap">Popular Picks</span>
-          </div>
-
-          {/* 3. FRESH DROPS */}
-          <div
-            onClick={() => navigate('/shop?sellingType=new-arrivals')}
-            className="bg-gradient-to-b from-[#EED3B0] via-[#E7C498] to-[#DAAF7C] rounded-xl p-1 text-center flex flex-col items-center justify-center border border-[#CBA06B] shadow-2xs h-[74px] cursor-pointer active:scale-95 transition-transform"
-          >
-            <span className="font-serif font-black text-[9.5px] text-[#5C1D13] leading-tight uppercase">FRESH<br/>DROPS</span>
-            <span className="text-[7px] text-slate-700 font-bold mt-0.5 whitespace-nowrap">New Collection</span>
-          </div>
-
-          {/* 4. Exclusive */}
-          <div
-            onClick={() => navigate('/shop?category=Exclusive')}
-            className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-2xs h-[74px] relative flex flex-col items-center justify-between p-1 cursor-pointer active:scale-95 transition-transform"
-          >
-            <img 
-              src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300" 
-              alt="Exclusive" 
-              className="w-full h-10 object-cover rounded-md"
-            />
-            <span className="text-[8.5px] font-bold text-slate-800 truncate w-full text-center">Exclusive</span>
-          </div>
-
-          {/* 5. Bags & Accessories */}
-          <div
-            onClick={() => navigate('/shop?category=Accessories')}
-            className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-2xs h-[74px] relative flex flex-col items-center justify-between p-1 cursor-pointer active:scale-95 transition-transform"
-          >
-            <img 
-              src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=300" 
-              alt="Bags" 
-              className="w-full h-10 object-cover rounded-md"
-            />
-            <span className="text-[8px] font-bold text-slate-800 truncate w-full text-center">Bags & Acc.</span>
-          </div>
-        </div>
-
-        {/* Row 2 */}
-        <div className="grid grid-cols-5 gap-2">
-          {/* 1. KARVIYAM TREND */}
-          <div
-            onClick={() => navigate('/shop?filter=trending')}
-            className="bg-gradient-to-b from-[#EED3B0] via-[#E7C498] to-[#DAAF7C] rounded-xl p-1 text-center flex flex-col items-center justify-center border border-[#CBA06B] shadow-2xs h-[74px] cursor-pointer active:scale-95 transition-transform"
-          >
-            <span className="text-[7.5px] font-black text-[#B71C1C] uppercase tracking-wider">KARVIYAM</span>
-            <span className="font-serif font-black text-[10px] text-slate-900 leading-tight uppercase">TREND</span>
-            <span className="text-[7px] text-slate-700 font-bold mt-0.5">Karviyam Trend</span>
-          </div>
-
-          {/* 2. Fandom */}
-          <div
-            onClick={() => navigate('/shop?category=Ethnic')}
-            className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-2xs h-[74px] relative flex flex-col items-center justify-between p-1 cursor-pointer active:scale-95 transition-transform"
-          >
-            <img 
-              src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300" 
-              alt="Fandom" 
-              className="w-full h-10 object-cover rounded-md"
-            />
-            <span className="text-[8.5px] font-bold text-slate-800 truncate w-full text-center">Fandom</span>
-          </div>
-
-          {/* 3. FINAL CALL / CLEARANCE */}
-          <div
-            onClick={() => navigate('/shop?filter=clearance')}
-            className="bg-gradient-to-b from-[#EED3B0] via-[#E7C498] to-[#DAAF7C] rounded-xl p-1 text-center flex flex-col items-center justify-center border border-[#CBA06B] shadow-2xs h-[74px] relative cursor-pointer active:scale-95 transition-transform overflow-hidden"
-          >
-            <div className="bg-[#B71C1C] text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter mb-0.5">
-              CLEARANCE SALE
-            </div>
-            <span className="text-[7px] text-slate-800 font-bold">Final Call</span>
-          </div>
-
-          {/* 4. Top Brands */}
-          <div
-            onClick={() => navigate('/shop?filter=top-brands')}
-            className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-2xs h-[74px] relative flex flex-col items-center justify-between p-1 cursor-pointer active:scale-95 transition-transform"
-          >
-            <img 
-              src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=300" 
-              alt="Top Brands" 
-              className="w-full h-10 object-cover rounded-md"
-            />
-            <span className="text-[8.5px] font-bold text-slate-800 truncate w-full text-center">Top Brands</span>
-          </div>
-
-          {/* 5. Home & Living */}
-          <div
-            onClick={() => navigate('/shop?category=Home')}
-            className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-2xs h-[74px] relative flex flex-col items-center justify-between p-1 cursor-pointer active:scale-95 transition-transform"
-          >
-            <img 
-              src="https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=300" 
-              alt="Home & Living" 
-              className="w-full h-10 object-cover rounded-md"
-            />
-            <span className="text-[8px] font-bold text-slate-800 truncate w-full text-center">Home & Living</span>
-          </div>
+      <div className="px-3.5 my-3">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth py-1 w-full flex-nowrap snap-x snap-mandatory">
+          {(categories.length > 0 ? categories : [
+            { id: 'cat-1', title: 'NEW BRANDS', subtitle: 'Just Launched', isGold: true, link: '/shop?filter=new' },
+            { id: 'cat-2', title: 'BEST SELLERS', subtitle: 'Popular Picks', isGold: true, link: '/shop?sellingType=best-sellers' },
+            { id: 'cat-3', title: 'FRESH DROPS', subtitle: 'New Collection', isGold: true, link: '/shop?sellingType=new-arrivals' },
+            { id: 'cat-4', title: 'Exclusive', name: 'Exclusive', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300', link: '/shop?category=Exclusive' },
+            { id: 'cat-5', title: 'Bags & Acc.', name: 'Bags & Acc.', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=300', link: '/shop?category=Accessories' },
+            { id: 'cat-6', title: 'KARVIYAM TREND', subtitle: 'Karviyam Trend', isGold: true, link: '/shop?filter=trending' },
+            { id: 'cat-7', title: 'Fandom', name: 'Fandom', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300', link: '/shop?category=Ethnic' },
+            { id: 'cat-8', title: 'FINAL CALL', subtitle: 'Clearance Sale', isGold: true, link: '/shop?filter=clearance' },
+            { id: 'cat-9', title: 'Top Brands', name: 'Top Brands', image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=300', link: '/shop?filter=top-brands' },
+            { id: 'cat-10', title: 'Home & Living', name: 'Home & Living', image: 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=300', link: '/shop?category=Home' }
+          ]).map((cat, idx) => {
+            const isGoldCard = cat.isGold || (!cat.image && !cat.imageUrl);
+            return (
+              <div
+                key={cat.id || idx}
+                onClick={() => navigate(cat.link || `/shop?category=${encodeURIComponent(cat.name || cat.title)}`)}
+                className="w-[74px] sm:w-[84px] min-w-[74px] shrink-0 snap-start rounded-xl overflow-hidden shadow-2xs h-[78px] sm:h-[88px] relative flex flex-col items-center justify-between p-1 cursor-pointer active:scale-95 transition-transform border border-slate-200/90 bg-white group"
+              >
+                {isGoldCard ? (
+                  <div className="w-full h-full bg-gradient-to-b from-[#EED3B0] via-[#E7C498] to-[#DAAF7C] rounded-lg p-1 text-center flex flex-col items-center justify-center border border-[#CBA06B]">
+                    <span className="font-serif font-black text-[9px] text-[#5C1D13] leading-tight uppercase truncate max-w-full">
+                      {cat.title || cat.name}
+                    </span>
+                    {cat.subtitle && (
+                      <span className="text-[6.5px] text-slate-700 font-bold mt-0.5 truncate max-w-full">
+                        {cat.subtitle}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-full h-[48px] sm:h-[56px] bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center p-0.5 shrink-0">
+                      <img
+                        src={resolveImageUrl(cat.image || cat.imageUrl, cat.id || idx)}
+                        alt={cat.name || cat.title}
+                        onError={(e) => handleImageError(e, cat.id || idx)}
+                        className="w-full h-full object-cover rounded-md group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="w-full text-center px-0.5 py-0.5">
+                      <p className="font-bold text-[8.5px] text-slate-800 leading-tight truncate">
+                        {cat.name || cat.title}
+                      </p>
+                      {cat.subtitle && (
+                        <p className="text-[7px] text-slate-500 font-medium truncate leading-none mt-0.5">
+                          {cat.subtitle}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
