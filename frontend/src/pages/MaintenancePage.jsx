@@ -135,12 +135,12 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
 
         {/* Logo Container Box */}
         <div className="flex justify-center">
-          <div className="flex items-center justify-center min-h-[60px] sm:min-h-[100px] bg-white w-full max-w-[360px] p-1 sm:p-2">
+          <div className="flex items-center justify-center min-h-[85px] sm:min-h-[100px] bg-white w-full max-w-[360px] p-1 sm:p-2">
             {resolvedLogoUrl && !logoFailed ? (
               <img 
                 src={resolvedLogoUrl} 
                 alt="Karviyam Logo" 
-                className="h-20 sm:h-36 max-h-40 w-auto object-contain max-w-full transition-all" 
+                className="h-28 sm:h-36 max-h-44 w-auto object-contain max-w-full transition-all" 
                 onError={(e) => {
                   console.error('[MaintenancePage] Maintenance logo failed to load:', resolvedLogoUrl, e);
                   setLogoFailed(true);
