@@ -92,7 +92,7 @@ export default function UserProfilePage() {
             productId: i.productId || i.product_id || (i.product ? i.product.id : 0),
             productName: i.productName || i.product_name || (i.product ? i.product.name : `Product #${i.productId || i.product_id}`),
             sku: i.sku || i.product_sku || (i.product ? i.product.sku : `KV-PRD-${i.productId || i.product_id || 1}`),
-            productImage: resolveImageUrl(i.imageUrl || i.image_url || i.productImage || (i.product ? i.product.imageUrl || i.product.image_url : '')),
+            productImage: resolveImageUrl(i.imageUrl || i.image_url || i.productImage || i.product_image || (i.product ? i.product.imageUrl || i.product.image_url : ''), i.productId || i.product_id || 1),
             priceAtTime: i.priceAtTime != null ? i.priceAtTime : (i.price_at_time != null ? i.price_at_time : 0),
             quantity: i.quantity || 1,
             selectedSize: i.selectedSize || i.selected_size || 'M',
@@ -607,8 +607,8 @@ export default function UserProfilePage() {
                               <img
                                 src={item.productImage}
                                 alt={item.productName}
+                                onError={(e) => handleImageError(e, item.productId || idx)}
                                 className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-md border border-slate-200 shrink-0 bg-white p-0.5"
-                                onError={(e) => handleImageError(e, idx)}
                               />
 
                               <div className="space-y-0.5 text-xs">
@@ -777,7 +777,7 @@ export default function UserProfilePage() {
                       {orderDetailsModal.order.items.map((item, idx) => (
                         <tr key={idx} className="hover:bg-slate-50">
                           <td className="p-3 font-semibold text-slate-900 flex items-center gap-2">
-                            <img src={item.productImage} alt="" className="w-8 h-8 object-cover rounded border border-slate-200" />
+                            <img src={item.productImage} alt="" onError={(e) => handleImageError(e, item.productId || idx)} className="w-8 h-8 object-contain rounded border border-slate-200" />
                             <div>
                               <span>{item.productName}</span>
                               <span className="block text-[10px] text-slate-400 font-normal">Size: {item.selectedSize} | Colour: {item.selectedColor}</span>
