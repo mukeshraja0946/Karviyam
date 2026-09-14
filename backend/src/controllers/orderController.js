@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
 const { generateInvoiceHtml } = require('../services/invoiceService');
+const { checkPaymentMethodAllowed } = require('./settingController');
 
 const ensureOrderTrackingColumns = async () => {
   try {
@@ -95,6 +96,12 @@ exports.checkout = async (req, res, next) => {
     } = req.body;
 
     const normalizedMethod = String(paymentMethod || 'COD').trim().toUpperCase();
+
+    // Validate payment method availability in DB settings
+    const isPaymentAllowed = await checkPaymentMethodAllowed(normalizedMethod);
+    if (!isPaymentAllowed) {
+      return res.status(400).json(ApiResponse.error(`The selected payment method (${normalizedMethod}) is currently disabled by store administration. Please select an available payment method.`));
+    }
 
     // Validate customer details
     if (!fullName || !String(fullName).trim()) {

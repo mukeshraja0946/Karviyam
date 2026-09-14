@@ -704,3 +704,39 @@ exports.updateFooterSettings = async (req, res, next) => {
   }
 };
 
+exports.checkPaymentMethodAllowed = async (method) => {
+  const norm = String(method || '').trim().toUpperCase();
+  try {
+    const [rows] = await pool.query("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('codEnabled', 'razorpayEnabled', 'upiQrEnabled', 'stripeEnabled', 'onlinePaymentEnabled')");
+    const map = {};
+    (rows || []).forEach(r => { map[r.setting_key] = r.setting_value; });
+
+    let dbRow = {};
+    try {
+      const [pRows] = await pool.query('SELECT * FROM payment_settings ORDER BY id ASC LIMIT 1');
+      if (pRows && pRows.length > 0) dbRow = pRows[0];
+    } catch (e) {}
+
+    const checkB = (val, dbVal, defaultVal = true) => {
+      if (dbVal !== undefined && dbVal !== null) return Number(dbVal) === 1 || String(dbVal) === 'true';
+      if (val === undefined || val === null) return defaultVal;
+      return val === true || val === 'true' || val === 1 || val === '1';
+    };
+
+    const codEnabled = checkB(map.codEnabled, dbRow.enable_cod, true);
+    const rzpEnabled = checkB(map.razorpayEnabled, dbRow.enable_razorpay, true);
+    const upiQrEnabled = checkB(map.upiQrEnabled, dbRow.enable_upi_qr, true);
+    const onlineMaster = checkB(map.onlinePaymentEnabled, dbRow.enable_razorpay, true);
+
+    if (norm === 'COD') return codEnabled;
+    if (norm === 'UPI' || norm === 'RAZORPAY') return onlineMaster && rzpEnabled;
+    if (norm === 'UPI_QR' || norm === 'UPI_QR_CODE' || norm === 'QR') return onlineMaster && upiQrEnabled;
+    if (norm === 'STRIPE') return onlineMaster && checkB(map.stripeEnabled, false, false);
+
+    return true;
+  } catch (e) {
+    return true;
+  }
+};
+
+

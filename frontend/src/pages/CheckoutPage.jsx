@@ -296,10 +296,11 @@ export default function CheckoutPage() {
     };
   }, []);
 
-  // Compute strictly allowed payment methods based on Admin Settings
-  const isCodAvailable = paymentSettings.codEnabled === true;
-  const isRazorpayAvailable = paymentSettings.razorpayEnabled === true;
-  const isUpiQrAvailable = paymentSettings.upiQrEnabled === true;
+  // Compute strictly allowed payment methods based on Admin Settings & Master Toggle
+  const isOnlineMasterEnabled = paymentSettings.onlinePaymentEnabled !== false && paymentSettings.online_payment_enabled !== false;
+  const isCodAvailable = paymentSettings.codEnabled === true || paymentSettings.cod_enabled === true;
+  const isRazorpayAvailable = isOnlineMasterEnabled && (paymentSettings.razorpayEnabled === true || paymentSettings.razorpay_enabled === true);
+  const isUpiQrAvailable = isOnlineMasterEnabled && (paymentSettings.upiQrEnabled === true || paymentSettings.upi_qr_enabled === true || paymentSettings.enable_upi_qr === 1);
 
   const availablePaymentMethods = [];
   if (isCodAvailable) {

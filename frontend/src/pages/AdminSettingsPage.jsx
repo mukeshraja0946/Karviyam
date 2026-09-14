@@ -291,6 +291,7 @@ export default function AdminSettingsPage() {
 
     codEnabled: true,
     razorpayEnabled: true,
+    upiQrEnabled: true,
     stripeEnabled: true,
     onlinePaymentEnabled: true,
     defaultPaymentMethod: 'COD',
@@ -456,6 +457,7 @@ export default function AdminSettingsPage() {
         const codVal = payData.codEnabled !== undefined ? payData.codEnabled : (dataMap.codEnabled !== undefined ? dataMap.codEnabled : payData.cod_enabled);
         const onlineVal = payData.onlinePaymentEnabled !== undefined ? payData.onlinePaymentEnabled : (dataMap.onlinePaymentEnabled !== undefined ? dataMap.onlinePaymentEnabled : payData.online_payment_enabled);
         const rzpVal = payData.razorpayEnabled !== undefined ? payData.razorpayEnabled : (dataMap.razorpayEnabled !== undefined ? dataMap.razorpayEnabled : payData.razorpay_enabled);
+        const upiQrVal = payData.upiQrEnabled !== undefined ? payData.upiQrEnabled : (dataMap.upiQrEnabled !== undefined ? dataMap.upiQrEnabled : (payData.upi_qr_enabled !== undefined ? payData.upi_qr_enabled : payData.enable_upi_qr));
         const stpVal = payData.stripeEnabled !== undefined ? payData.stripeEnabled : (dataMap.stripeEnabled !== undefined ? dataMap.stripeEnabled : payData.stripe_enabled);
         const defVal = payData.defaultPaymentMethod || dataMap.defaultPaymentMethod || payData.default_payment_method;
         const catNavVal = dataMap.categoryNavigationEnabled !== undefined ? dataMap.categoryNavigationEnabled : dataMap.category_navigation_enabled;
@@ -494,6 +496,7 @@ export default function AdminSettingsPage() {
 
           codEnabled: checkB(codVal, true),
           razorpayEnabled: checkB(rzpVal, true),
+          upiQrEnabled: checkB(upiQrVal, true),
           stripeEnabled: checkB(stpVal, true),
           onlinePaymentEnabled: checkB(onlineVal, true),
           defaultPaymentMethod: defVal || prev.defaultPaymentMethod,
@@ -739,6 +742,7 @@ export default function AdminSettingsPage() {
         codEnabled: settings.codEnabled,
         onlinePaymentEnabled: settings.onlinePaymentEnabled,
         razorpayEnabled: settings.razorpayEnabled,
+        upiQrEnabled: settings.upiQrEnabled,
         stripeEnabled: settings.stripeEnabled,
         defaultPaymentMethod: settings.defaultPaymentMethod
       }).catch(() => null);
@@ -1172,7 +1176,7 @@ export default function AdminSettingsPage() {
                 </label>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-slate-900">Razorpay (UPI & NetBanking)</span>
@@ -1189,6 +1193,30 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <p className="text-[11px] text-slate-500">Supports GPay, PhonePe, Paytm & NetBanking</p>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-900">UPI QR Code</span>
+                    <input
+                      type="checkbox"
+                      checked={settings.upiQrEnabled !== false}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        let newDef = settings.defaultPaymentMethod;
+                        if (!isChecked && (newDef === 'UPI_QR' || newDef === 'UPI QR Code')) {
+                          newDef = 'COD';
+                          toast.error('Default payment method reset to Cash on Delivery (COD) since UPI QR Code was disabled.');
+                        }
+                        const updated = { ...settings, upiQrEnabled: isChecked, defaultPaymentMethod: newDef };
+                        setSettings(updated);
+                        localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
+                        window.dispatchEvent(new window.Event('karviyam_settings_updated'));
+                      }}
+                      className="w-4 h-4 accent-[#B71C1C] cursor-pointer"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500">Allow customers to pay using UPI QR Code</p>
                 </div>
 
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
@@ -1215,7 +1243,12 @@ export default function AdminSettingsPage() {
                 <select
                   value={settings.defaultPaymentMethod}
                   onChange={(e) => {
-                    const updated = { ...settings, defaultPaymentMethod: e.target.value };
+                    const val = e.target.value;
+                    if ((val === 'UPI_QR' || val === 'UPI QR Code') && (!settings.upiQrEnabled || !settings.onlinePaymentEnabled)) {
+                      toast.error('UPI QR Code must be enabled (and Online Payment Gateway ON) before selecting it as default payment method.');
+                      return;
+                    }
+                    const updated = { ...settings, defaultPaymentMethod: val };
                     setSettings(updated);
                     localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
                     window.dispatchEvent(new window.Event('karviyam_settings_updated'));
@@ -1224,6 +1257,7 @@ export default function AdminSettingsPage() {
                 >
                   <option value="COD">Cash on Delivery (COD)</option>
                   <option value="Razorpay">Razorpay (UPI, NetBanking)</option>
+                  <option value="UPI_QR">UPI QR Code</option>
                   <option value="Stripe">Stripe Credit/Debit Card</option>
                 </select>
               </div>

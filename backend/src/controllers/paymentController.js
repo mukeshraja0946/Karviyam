@@ -4,6 +4,7 @@ const razorpayConfig = require('../config/razorpay');
 const ApiResponse = require('../utils/apiResponse');
 const { sendSubscriptionSuccessEmail } = require('../utils/emailService');
 const { logPaymentError } = require('../utils/paymentLogger');
+const { checkPaymentMethodAllowed } = require('./settingController');
 
 // Helper: Get Receiving Bank/UPI Account details from DB
 const getAdminBankAccountFromDb = async () => {
@@ -80,6 +81,12 @@ const ensurePaymentColumnsExist = async () => {
 exports.createUpiPaymentRequest = async (req, res, next) => {
   try {
     await ensurePaymentColumnsExist();
+
+    const isUpiQrAllowed = await checkPaymentMethodAllowed('UPI_QR');
+    if (!isUpiQrAllowed) {
+      return res.status(400).json(ApiResponse.error('UPI QR payment option is currently disabled by store administration. Please select an available payment method.'));
+    }
+
     const { type, id, orderId, subscriptionId, upiId } = req.body;
     const targetType = (type || (subscriptionId ? 'SUBSCRIPTION' : 'ORDER')).toUpperCase();
     const targetId = id || orderId || subscriptionId;
