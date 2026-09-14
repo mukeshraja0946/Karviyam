@@ -422,34 +422,7 @@ export default function MobileHomePage() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* 3. PROMOTIONAL / BANK STRIP (Reference Style)              */}
-      {/* ========================================================= */}
-      <div className="mx-3.5 my-2.5">
-        <div 
-          onClick={() => navigate('/offers')}
-          className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-2.5 flex items-center justify-between gap-2.5 cursor-pointer active:scale-98 transition-transform"
-        >
-          <div className="flex items-center gap-2.5 shrink-0">
-            {/* Bank / Offer Logo Badge */}
-            <div className="bg-[#004B8D] text-white font-black text-[11px] px-2 py-1 rounded flex items-center gap-1">
-              <span className="font-serif">HDFC BANK</span>
-            </div>
-            <div className="w-[1px] h-6 bg-slate-200" />
-          </div>
 
-          <div className="flex-1 min-w-0">
-            <h4 className="font-extrabold text-xs text-slate-900 leading-tight truncate">
-              12% INSTANT DISCOUNT*
-            </h4>
-            <p className="text-[9px] text-slate-500 font-medium truncate">
-              With HDFC Bank Cards & EasyEMI <span className="text-[8px] opacity-75">*T&C Apply</span>
-            </p>
-          </div>
-
-          <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-        </div>
-      </div>
 
       {/* ========================================================= */}
       {/* 4. QUICK SHOPPING CARDS (2-Row Grid matching reference)   */}
