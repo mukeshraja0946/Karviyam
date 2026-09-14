@@ -25,7 +25,7 @@ export const contactService = {
         };
         parsed.unshift(newMsg);
         localStorage.setItem('karviyam_admin_messages', JSON.stringify(parsed));
-        window.dispatchEvent(new Event('karviyam_contact_updated'));
+        window.dispatchEvent(new window.Event('karviyam_contact_updated'));
       } catch (eLocal) {}
 
       return {

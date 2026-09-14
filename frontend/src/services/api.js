@@ -3,20 +3,20 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api';
 
 const syncChannel = typeof window !== 'undefined' && 'BroadcastChannel' in window
-  ? new BroadcastChannel('karviyam_cross_tab_sync')
+  ? new window.BroadcastChannel('karviyam_cross_tab_sync')
   : null;
 
 if (syncChannel) {
   syncChannel.onmessage = (event) => {
     if (event && event.data && event.data.eventName) {
-      window.dispatchEvent(new Event(event.data.eventName));
+      window.dispatchEvent(new window.Event(event.data.eventName));
     }
   };
 }
 
 export const broadcastSyncEvent = (eventName) => {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event(eventName));
+    window.dispatchEvent(new window.Event(eventName));
     try {
       localStorage.setItem(`karviyam_event_${eventName}`, String(Date.now()));
     } catch (e) {}
@@ -74,7 +74,7 @@ api.interceptors.response.use(
 
     // Automatically trigger global data synchronization events on any CUD mutation
     if (['post', 'put', 'patch', 'delete'].includes(method)) {
-      window.dispatchEvent(new CustomEvent('karviyam_data_mutated', { detail: { url, method } }));
+      window.dispatchEvent(new window.CustomEvent('karviyam_data_mutated', { detail: { url, method } }));
 
       if (url.includes('/settings')) {
         broadcastSyncEvent('karviyam_settings_updated');
@@ -119,7 +119,7 @@ api.interceptors.response.use(
           localStorage.removeItem('karviyam_token');
           localStorage.removeItem('karviyam_user');
           if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('karviyam_auth_unauthorized'));
+            window.dispatchEvent(new window.CustomEvent('karviyam_auth_unauthorized'));
           }
         } catch (e) {}
       }

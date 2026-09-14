@@ -117,7 +117,7 @@ export default function AdminRightSidebarBannersPage() {
   };
 
   const handleCroppedImageUpload = async (blob) => {
-    const file = new File([blob], `right_banner_${Date.now()}.png`, { type: 'image/png' });
+    const file = new window.File([blob], `right_banner_${Date.now()}.png`, { type: 'image/png' });
     const formDataUpload = new FormData();
     formDataUpload.append('image', file);
 
@@ -168,7 +168,7 @@ export default function AdminRightSidebarBannersPage() {
 
       setModalOpen(false);
       await fetchBanners();
-      window.dispatchEvent(new Event('karviyam_right_sidebar_banners_updated'));
+      window.dispatchEvent(new window.Event('karviyam_right_sidebar_banners_updated'));
     } catch (err) {
       toast.error('Failed to save right sidebar banner');
     } finally {
@@ -182,7 +182,7 @@ export default function AdminRightSidebarBannersPage() {
       await api.patch(`/right-sidebar-banners/${banner.id}/toggle`);
       toast.success(`Banner ${banner.isActive ? 'disabled' : 'enabled'} successfully`);
       await fetchBanners();
-      window.dispatchEvent(new Event('karviyam_right_sidebar_banners_updated'));
+      window.dispatchEvent(new window.Event('karviyam_right_sidebar_banners_updated'));
     } catch (e) {
       toast.error('Failed to update banner status');
     } finally {
@@ -197,7 +197,7 @@ export default function AdminRightSidebarBannersPage() {
       await api.delete(`/right-sidebar-banners/${id}`);
       toast.success('Right sidebar banner deleted');
       await fetchBanners();
-      window.dispatchEvent(new Event('karviyam_right_sidebar_banners_updated'));
+      window.dispatchEvent(new window.Event('karviyam_right_sidebar_banners_updated'));
     } catch (e) {
       toast.error('Failed to delete banner');
     } finally {
@@ -229,7 +229,7 @@ export default function AdminRightSidebarBannersPage() {
       toast.success(`Selected banners ${status ? 'enabled' : 'disabled'}`);
       setSelectedIds([]);
       await fetchBanners();
-      window.dispatchEvent(new Event('karviyam_right_sidebar_banners_updated'));
+      window.dispatchEvent(new window.Event('karviyam_right_sidebar_banners_updated'));
     } catch (e) {
       toast.error('Bulk update failed');
     }
@@ -242,7 +242,7 @@ export default function AdminRightSidebarBannersPage() {
       toast.success('Selected banners deleted');
       setSelectedIds([]);
       await fetchBanners();
-      window.dispatchEvent(new Event('karviyam_right_sidebar_banners_updated'));
+      window.dispatchEvent(new window.Event('karviyam_right_sidebar_banners_updated'));
     } catch (e) {
       toast.error('Bulk delete failed');
     }

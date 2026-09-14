@@ -18,7 +18,7 @@ const compressImage = (file, maxWidth = 400, maxHeight = 400, quality = 0.8) => 
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let width = img.width;

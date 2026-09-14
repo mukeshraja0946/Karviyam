@@ -30,7 +30,7 @@ export default function ImageUploadCropperModal({
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         setImageObj(img);
         setOriginalDimensions({ width: img.width, height: img.height });

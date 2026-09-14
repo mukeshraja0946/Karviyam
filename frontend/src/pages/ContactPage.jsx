@@ -71,7 +71,7 @@ export default function ContactPage() {
         toast.success('Message sent successfully! Our customer support team will respond shortly.', { id: 'contact-toast' });
         setFormData({ name: '', email: '', subject: '', message: '' });
         setErrors({});
-        window.dispatchEvent(new Event('karviyam_contact_updated'));
+        window.dispatchEvent(new window.Event('karviyam_contact_updated'));
       } else {
         throw new Error(res?.message || 'Unable to send message. Please try again.');
       }

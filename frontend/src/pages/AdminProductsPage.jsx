@@ -26,7 +26,7 @@ const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.85) =>
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
@@ -64,7 +64,7 @@ const compressBase64Url = (url) => {
     return Promise.resolve(url);
   }
   return new Promise((resolve) => {
-    const img = new Image();
+    const img = new window.Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
       let width = img.width;

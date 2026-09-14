@@ -86,7 +86,7 @@ export default function CheckoutPage() {
     if (addr.pincode) {
       localStorage.setItem('karviyam_user_pincode', addr.pincode);
       if (addr.city) localStorage.setItem('karviyam_user_city', `${addr.city}, ${addr.state || 'Tamil Nadu'}`);
-      window.dispatchEvent(new CustomEvent('karviyam_location_updated', {
+      window.dispatchEvent(new window.CustomEvent('karviyam_location_updated', {
         detail: { pincode: addr.pincode, city: addr.city }
       }));
     }

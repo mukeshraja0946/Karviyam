@@ -75,7 +75,7 @@ export default function AdminRightSidebarPromoCardPage() {
   };
 
   const handleCroppedUpload = async (blob) => {
-    const file = new File([blob], `sidebar_promo_${Date.now()}.png`, { type: 'image/png' });
+    const file = new window.File([blob], `sidebar_promo_${Date.now()}.png`, { type: 'image/png' });
     const formDataUpload = new FormData();
     formDataUpload.append('image', file);
 
@@ -115,8 +115,8 @@ export default function AdminRightSidebarPromoCardPage() {
         localStorage.setItem('karviyam_right_sidebar_promo_card', JSON.stringify(payload));
       } catch (e) {}
 
-      window.dispatchEvent(new Event('karviyam_right_sidebar_promo_card_updated'));
-      window.dispatchEvent(new Event('karviyam_homepage_sections_updated'));
+      window.dispatchEvent(new window.Event('karviyam_right_sidebar_promo_card_updated'));
+      window.dispatchEvent(new window.Event('karviyam_homepage_sections_updated'));
 
       toast.success('Right sidebar promotional card updated successfully!');
     } catch (e) {
@@ -329,7 +329,7 @@ export default function AdminRightSidebarPromoCardPage() {
                     const file = e.target.files?.[0];
                     if (!file) return;
 
-                    const reader = new FileReader();
+                    const reader = new window.FileReader();
                     reader.onload = async (event) => {
                       const base64Url = event.target.result;
                       if (base64Url) {
