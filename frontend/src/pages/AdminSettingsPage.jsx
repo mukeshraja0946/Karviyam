@@ -107,7 +107,7 @@ export default function AdminSettingsPage() {
       await api.post('/homepage-sections/admin', { sections: reordered });
       setProductSections(reordered);
       toast.success('Product Section Layout Controls saved successfully!');
-      window.dispatchEvent(new Event('karviyam_homepage_sections_updated'));
+      window.dispatchEvent(new window.Event('karviyam_homepage_sections_updated'));
       broadcastSyncEvent('karviyam_homepage_sections_updated');
     } catch (e) {
       toast.error('Failed to save section configurations.');
@@ -121,7 +121,7 @@ export default function AdminSettingsPage() {
     try {
       await api.post('/homepage-sections/admin', { sections: DEFAULT_PRODUCT_SECTIONS });
       toast.success('Reset to default section layout settings!');
-      window.dispatchEvent(new Event('karviyam_homepage_sections_updated'));
+      window.dispatchEvent(new window.Event('karviyam_homepage_sections_updated'));
       broadcastSyncEvent('karviyam_homepage_sections_updated');
     } catch (e) {}
   };
@@ -374,7 +374,7 @@ export default function AdminSettingsPage() {
         const newPhoto = res.data.data.photoUrl;
         setAdminPhotoUrl(newPhoto);
         localStorage.setItem('karviyam_admin_photo', newPhoto);
-        window.dispatchEvent(new Event('karviyam_admin_photo_updated'));
+        window.dispatchEvent(new window.Event('karviyam_admin_photo_updated'));
       } else {
         toast.error(res.data?.message || 'Photo upload failed', { id: toastId });
       }
@@ -393,7 +393,7 @@ export default function AdminSettingsPage() {
         toast.success('Admin profile photo removed', { id: toastId });
         setAdminPhotoUrl('');
         localStorage.removeItem('karviyam_admin_photo');
-        window.dispatchEvent(new Event('karviyam_admin_photo_updated'));
+        window.dispatchEvent(new window.Event('karviyam_admin_photo_updated'));
       }
     } catch (err) {
       toast.error('Failed to remove photo', { id: toastId });
@@ -525,13 +525,13 @@ export default function AdminSettingsPage() {
   };
 
   const notifyChanges = () => {
-    window.dispatchEvent(new Event('karviyam_logo_updated'));
-    window.dispatchEvent(new Event('karviyam_maintenance_updated'));
-    window.dispatchEvent(new Event('karviyam_footer_updated'));
-    window.dispatchEvent(new Event('karviyam_settings_updated'));
-    window.dispatchEvent(new Event('karviyam_category_nav_updated'));
-    window.dispatchEvent(new Event('karviyam_section_layouts_updated'));
-    window.dispatchEvent(new Event('karviyam_mobile_homepage_updated'));
+    window.dispatchEvent(new window.Event('karviyam_logo_updated'));
+    window.dispatchEvent(new window.Event('karviyam_maintenance_updated'));
+    window.dispatchEvent(new window.Event('karviyam_footer_updated'));
+    window.dispatchEvent(new window.Event('karviyam_settings_updated'));
+    window.dispatchEvent(new window.Event('karviyam_category_nav_updated'));
+    window.dispatchEvent(new window.Event('karviyam_section_layouts_updated'));
+    window.dispatchEvent(new window.Event('karviyam_mobile_homepage_updated'));
   };
 
   const handleLogoUpload = (e) => {
@@ -541,7 +541,7 @@ export default function AdminSettingsPage() {
         toast.error('Logo file size must be less than 5MB');
         return;
       }
-      const reader = new FileReader();
+      const reader = new window.FileReader();
       reader.onload = () => {
         const base64Logo = reader.result;
         setSettings(prev => ({ ...prev, logoUrl: base64Logo }));
@@ -562,7 +562,7 @@ export default function AdminSettingsPage() {
         toast.error('Email logo file size must be less than 5MB');
         return;
       }
-      const reader = new FileReader();
+      const reader = new window.FileReader();
       reader.onload = () => {
         const base64Logo = reader.result;
         setSettings(prev => ({ ...prev, emailLogoUrl: base64Logo }));
@@ -780,8 +780,8 @@ export default function AdminSettingsPage() {
       localStorage.setItem('karviyam_section_layouts', JSON.stringify(layoutConfig));
       localStorage.setItem('karviyam_mobile_homepage_sections', JSON.stringify(mobileSections));
 
-      window.dispatchEvent(new Event('karviyam_auto_change_updated'));
-      window.dispatchEvent(new Event('karviyam_settings_updated'));
+      window.dispatchEvent(new window.Event('karviyam_auto_change_updated'));
+      window.dispatchEvent(new window.Event('karviyam_settings_updated'));
       notifyChanges();
       toast.success('Settings saved successfully.');
     } catch (e) {
@@ -1142,7 +1142,7 @@ export default function AdminSettingsPage() {
                       const updated = { ...settings, codEnabled: e.target.checked };
                       setSettings(updated);
                       localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
-                      window.dispatchEvent(new Event('karviyam_settings_updated'));
+                      window.dispatchEvent(new window.Event('karviyam_settings_updated'));
                     }}
                     className="sr-only peer"
                   />
@@ -1163,7 +1163,7 @@ export default function AdminSettingsPage() {
                       const updated = { ...settings, onlinePaymentEnabled: e.target.checked };
                       setSettings(updated);
                       localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
-                      window.dispatchEvent(new Event('karviyam_settings_updated'));
+                      window.dispatchEvent(new window.Event('karviyam_settings_updated'));
                     }}
                     className="sr-only peer"
                   />
@@ -1182,7 +1182,7 @@ export default function AdminSettingsPage() {
                         const updated = { ...settings, razorpayEnabled: e.target.checked };
                         setSettings(updated);
                         localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
-                        window.dispatchEvent(new Event('karviyam_settings_updated'));
+                        window.dispatchEvent(new window.Event('karviyam_settings_updated'));
                       }}
                       className="w-4 h-4 accent-[#B71C1C] cursor-pointer"
                     />
@@ -1200,7 +1200,7 @@ export default function AdminSettingsPage() {
                         const updated = { ...settings, stripeEnabled: e.target.checked };
                         setSettings(updated);
                         localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
-                        window.dispatchEvent(new Event('karviyam_settings_updated'));
+                        window.dispatchEvent(new window.Event('karviyam_settings_updated'));
                       }}
                       className="w-4 h-4 accent-[#B71C1C] cursor-pointer"
                     />
@@ -1217,7 +1217,7 @@ export default function AdminSettingsPage() {
                     const updated = { ...settings, defaultPaymentMethod: e.target.value };
                     setSettings(updated);
                     localStorage.setItem('karviyam_system_settings', JSON.stringify(updated));
-                    window.dispatchEvent(new Event('karviyam_settings_updated'));
+                    window.dispatchEvent(new window.Event('karviyam_settings_updated'));
                   }}
                   className="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl outline-none font-bold text-xs cursor-pointer"
                 >
@@ -1943,7 +1943,7 @@ export default function AdminSettingsPage() {
                       const val = e.target.checked;
                       setSettings({ ...settings, maintenanceMode: val });
                       localStorage.setItem('karviyam_maintenance_mode', String(val));
-                      window.dispatchEvent(new Event('karviyam_maintenance_updated'));
+                      window.dispatchEvent(new window.Event('karviyam_maintenance_updated'));
                     }}
                     className="sr-only peer"
                   />
@@ -1989,7 +1989,7 @@ export default function AdminSettingsPage() {
                       onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
-                          const reader = new FileReader();
+                          const reader = new window.FileReader();
                           reader.onloadend = () => {
                             setSettings({ ...settings, maintenanceLogoUrl: reader.result });
                           };

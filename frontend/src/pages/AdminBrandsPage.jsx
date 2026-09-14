@@ -16,7 +16,7 @@ const BRAND_EXPORT_HEADERS = [
 
 const compressImage = (file, maxWidth = 400, maxHeight = 400, quality = 0.8) => {
   return new Promise((resolve) => {
-    const reader = new FileReader();
+    const reader = new window.FileReader();
     reader.onload = (event) => {
       const img = new window.Image();
       img.onload = () => {
@@ -159,7 +159,7 @@ export default function AdminBrandsPage() {
         return updated;
       });
 
-      window.dispatchEvent(new Event('karviyam_categories_updated'));
+      window.dispatchEvent(new window.Event('karviyam_categories_updated'));
       try { await fetchBrands(); } catch (eFetch) {}
     } catch (e) {
       console.error(e);
@@ -189,7 +189,7 @@ export default function AdminBrandsPage() {
           return updated;
         });
         setSelectedIds(prev => prev.filter(i => String(i) !== strId));
-        window.dispatchEvent(new Event('karviyam_categories_updated'));
+        window.dispatchEvent(new window.Event('karviyam_categories_updated'));
         toast.success('Brand deleted successfully!', { id: 'brand-del-toast' });
         await fetchBrands();
       } else {
@@ -253,7 +253,7 @@ export default function AdminBrandsPage() {
         setSelectedIds([]);
         setIsAllDatasetSelected(false);
         try { localStorage.removeItem('karviyam_admin_brands'); } catch (e) {}
-        window.dispatchEvent(new Event('karviyam_categories_updated'));
+        window.dispatchEvent(new window.Event('karviyam_categories_updated'));
         toast.success(`Successfully deleted ${deletedCount} selected brands.`, { id: 'brand-batch-toast' });
         await fetchBrands();
       } else {
@@ -281,7 +281,7 @@ export default function AdminBrandsPage() {
         setSelectedIds([]);
         setIsAllDatasetSelected(false);
         try { localStorage.removeItem('karviyam_admin_brands'); } catch (e) {}
-        window.dispatchEvent(new Event('karviyam_categories_updated'));
+        window.dispatchEvent(new window.Event('karviyam_categories_updated'));
         toast.success(`Successfully deleted ${deletedCount} brands.`, { id: 'brand-toast' });
         setClearAllModalOpen(false);
         await fetchBrands();

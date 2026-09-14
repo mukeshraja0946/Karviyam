@@ -86,8 +86,8 @@ export default function AdminPromoCardsPage() {
   };
 
   const notifyUpdate = () => {
-    window.dispatchEvent(new Event('karviyam_promo_cards_updated'));
-    window.dispatchEvent(new Event('karviyam_banners_updated'));
+    window.dispatchEvent(new window.Event('karviyam_promo_cards_updated'));
+    window.dispatchEvent(new window.Event('karviyam_banners_updated'));
   };
 
   const handleOpenAddModal = () => {

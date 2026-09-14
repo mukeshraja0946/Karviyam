@@ -662,7 +662,7 @@ export default function AdminOrdersPage() {
             onClick={async () => {
               try {
                 const response = await api.get('/admin/excel/orders/export', { responseType: 'blob' });
-                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const url = window.URL.createObjectURL(new window.Blob([response.data]));
                 const link = document.createElement('a');
                 link.href = url;
                 link.setAttribute('download', 'karviyam_orders_export.xlsx');

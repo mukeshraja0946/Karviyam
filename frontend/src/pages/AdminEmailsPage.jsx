@@ -180,7 +180,7 @@ export default function AdminEmailsPage() {
   const fetchEmailLogs = async () => {
     setLogsLoading(true);
     try {
-      const params = new URLSearchParams();
+      const params = new window.URLSearchParams();
       if (logFilters.eventType !== 'ALL') params.append('eventType', logFilters.eventType);
       if (logFilters.status !== 'ALL') params.append('status', logFilters.status);
       if (logFilters.search) params.append('search', logFilters.search);
@@ -256,7 +256,7 @@ export default function AdminEmailsPage() {
   const handleExportExcel = async () => {
     const toastId = toast.loading('Generating Excel audit log file...');
     try {
-      const params = new URLSearchParams();
+      const params = new window.URLSearchParams();
       if (logFilters.eventType !== 'ALL') params.append('eventType', logFilters.eventType);
       if (logFilters.status !== 'ALL') params.append('status', logFilters.status);
       if (logFilters.search) params.append('search', logFilters.search);
@@ -265,7 +265,7 @@ export default function AdminEmailsPage() {
         responseType: 'blob'
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new window.Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `Karviyam_Email_Audit_Logs_${Date.now()}.xlsx`);
@@ -281,7 +281,7 @@ export default function AdminEmailsPage() {
   const handleExportPdf = async () => {
     const toastId = toast.loading('Generating PDF audit log report...');
     try {
-      const params = new URLSearchParams();
+      const params = new window.URLSearchParams();
       if (logFilters.eventType !== 'ALL') params.append('eventType', logFilters.eventType);
       if (logFilters.status !== 'ALL') params.append('status', logFilters.status);
       if (logFilters.search) params.append('search', logFilters.search);
@@ -290,7 +290,7 @@ export default function AdminEmailsPage() {
         responseType: 'blob'
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new window.Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `Karviyam_Email_Audit_Report_${Date.now()}.pdf`);

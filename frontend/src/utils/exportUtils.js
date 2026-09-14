@@ -66,7 +66,7 @@ export const exportToExcel = (filename, headers, data) => {
   </body>
   </html>`;
 
-  const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const blob = new window.Blob([tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

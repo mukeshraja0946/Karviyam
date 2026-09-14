@@ -272,7 +272,7 @@ export default function AdminPincodesPage() {
 
   const handleDownloadTemplate = (format = 'csv') => {
     const csvContent = `pincode,area,city,district,state,isDeliveryAvailable,isCodAvailable,estimatedDeliveryDays,isActive\n600001,Parrys,Chennai,Chennai,Tamil Nadu,true,true,2,true\n600002,Anna Salai,Chennai,Chennai,Tamil Nadu,true,true,2,true\n638001,Main Market,Erode,Erode,Tamil Nadu,true,true,3,true\n110001,Connaught Place,New Delhi,Central Delhi,Delhi,true,true,4,true`;
-    const blob = new Blob([csvContent], { type: format === 'excel' ? 'application/vnd.ms-excel' : 'text/csv' });
+    const blob = new window.Blob([csvContent], { type: format === 'excel' ? 'application/vnd.ms-excel' : 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -318,7 +318,7 @@ export default function AdminPincodesPage() {
   const parseUploadedFile = (file) => {
     if (!file) return;
     const fileName = file.name.toLowerCase();
-    const reader = new FileReader();
+    const reader = new window.FileReader();
 
     if (fileName.endsWith('.csv') || fileName.endsWith('.txt')) {
       reader.onload = (e) => processRawTextData(e.target.result);

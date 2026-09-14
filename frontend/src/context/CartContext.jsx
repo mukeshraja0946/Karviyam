@@ -167,7 +167,7 @@ export const CartProvider = ({ children }) => {
         });
       }
 
-      window.dispatchEvent(new Event('karviyam_cart_updated'));
+      window.dispatchEvent(new window.Event('karviyam_cart_updated'));
       toast.success('Added to your bag! 🛍️');
       return true;
     } catch (err) {
@@ -191,7 +191,7 @@ export const CartProvider = ({ children }) => {
         localStorage.setItem('karviyam_cart_items', JSON.stringify(updated));
         return { items: updated };
       });
-      window.dispatchEvent(new Event('karviyam_cart_updated'));
+      window.dispatchEvent(new window.Event('karviyam_cart_updated'));
     } catch (err) {
       console.error('Update quantity error:', err);
     }
@@ -208,7 +208,7 @@ export const CartProvider = ({ children }) => {
         localStorage.setItem('karviyam_cart_items', JSON.stringify(updated));
         return { items: updated };
       });
-      window.dispatchEvent(new Event('karviyam_cart_updated'));
+      window.dispatchEvent(new window.Event('karviyam_cart_updated'));
       toast.success('Item removed from bag');
     } catch (err) {
       console.error('Remove item error:', err);
@@ -222,12 +222,12 @@ export const CartProvider = ({ children }) => {
       }
       setCart({ items: [] });
       localStorage.setItem('karviyam_cart_items', JSON.stringify([]));
-      window.dispatchEvent(new Event('karviyam_cart_updated'));
+      window.dispatchEvent(new window.Event('karviyam_cart_updated'));
     } catch (err) {
       console.error('Clear cart error:', err);
       setCart({ items: [] });
       localStorage.setItem('karviyam_cart_items', JSON.stringify([]));
-      window.dispatchEvent(new Event('karviyam_cart_updated'));
+      window.dispatchEvent(new window.Event('karviyam_cart_updated'));
     }
   };
 

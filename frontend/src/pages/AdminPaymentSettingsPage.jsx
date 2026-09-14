@@ -70,7 +70,7 @@ export default function AdminPaymentSettingsPage() {
       if (resData?.success || res?.status === 200) {
         toast.success('Payment settings saved successfully! 🎉', { id: 'admin-pay-toast' });
         localStorage.setItem('karviyam_admin_payment_settings', JSON.stringify(paymentSettings));
-        window.dispatchEvent(new Event('karviyam_settings_updated'));
+        window.dispatchEvent(new window.Event('karviyam_settings_updated'));
         fetchPaymentSettings();
       } else {
         toast.error(resData?.message || 'Failed to save payment settings.', { id: 'admin-pay-toast' });

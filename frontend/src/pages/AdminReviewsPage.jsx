@@ -124,7 +124,7 @@ export default function AdminReviewsPage() {
         return updated;
       });
 
-      window.dispatchEvent(new Event('karviyam_products_updated'));
+      window.dispatchEvent(new window.Event('karviyam_products_updated'));
     } catch (err) {
       console.error(err);
       toast.error('Failed to update review status');

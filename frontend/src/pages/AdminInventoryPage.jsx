@@ -110,7 +110,7 @@ export default function AdminInventoryPage() {
       setInventory(prev => prev.map(item => selectedIds.includes(item.id) ? { ...item, stock: 0, status: 'Out of Stock' } : item));
       setSelectedIds([]);
       setIsAllDatasetSelected(false);
-      window.dispatchEvent(new Event('karviyam_products_updated'));
+      window.dispatchEvent(new window.Event('karviyam_products_updated'));
       toast.success(`Successfully reset stock to 0 for ${count} items.`, { id: 'inv-batch-toast' });
       await fetchInventory();
     } catch (e) {
@@ -132,7 +132,7 @@ export default function AdminInventoryPage() {
       setInventory(prev => prev.map(i => ({ ...i, stock: 0, status: 'Out of Stock' })));
       setSelectedIds([]);
       setIsAllDatasetSelected(false);
-      window.dispatchEvent(new Event('karviyam_products_updated'));
+      window.dispatchEvent(new window.Event('karviyam_products_updated'));
       toast.success(`Successfully reset stock to 0 across ${count} inventory items.`, { id: 'inv-del-toast' });
       setClearAllModalOpen(false);
       await fetchInventory();
@@ -159,7 +159,7 @@ export default function AdminInventoryPage() {
       
       if (apiData.success || res.status === 200) {
         toast.success(`Updated stock for ${item.name} to ${nextStock} units! 📦`);
-        window.dispatchEvent(new Event('karviyam_products_updated'));
+        window.dispatchEvent(new window.Event('karviyam_products_updated'));
         fetchInventory();
       } else {
         toast.error('Failed to update stock in database');

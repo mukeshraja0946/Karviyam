@@ -178,7 +178,7 @@ export default function ShopPage() {
       const sort = newFilters.sortBy !== undefined ? newFilters.sortBy : sortBy;
       const page = newFilters.page !== undefined ? newFilters.page : currentPage;
 
-      const params = new URLSearchParams();
+      const params = new window.URLSearchParams();
       if (cats.length > 0) params.set('categories', cats.join(','));
       if (brds.length > 0) params.set('brands', brds.join(','));
       if (prices.length > 0) params.set('priceRanges', prices.join(','));
@@ -768,7 +768,7 @@ export default function ShopPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    const p = new URLSearchParams(searchParams);
+                    const p = new window.URLSearchParams(searchParams);
                     p.delete('promotion');
                     p.delete('promo');
                     p.delete('maxDiscount');
@@ -796,7 +796,7 @@ export default function ShopPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    const p = new URLSearchParams(searchParams);
+                    const p = new window.URLSearchParams(searchParams);
                     p.delete('maxPrice');
                     p.delete('minPrice');
                     setSearchParams(p, { replace: true });

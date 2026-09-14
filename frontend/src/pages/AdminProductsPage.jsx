@@ -24,7 +24,7 @@ const PRODUCT_EXPORT_HEADERS = [
 ];
 const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.85) => {
   return new Promise((resolve) => {
-    const reader = new FileReader();
+    const reader = new window.FileReader();
     reader.onload = (event) => {
       const img = new window.Image();
       img.onload = () => {
@@ -286,7 +286,7 @@ export default function AdminProductsPage() {
         setSelectedIds([]);
         setIsAllDatasetSelected(false);
         try { localStorage.removeItem('karviyam_admin_products'); } catch (e) {}
-        window.dispatchEvent(new Event('karviyam_products_updated'));
+        window.dispatchEvent(new window.Event('karviyam_products_updated'));
         toast.success(`Successfully deleted ${deletedCount} selected products.`, { id: 'prd-batch-toast' });
         await fetchProducts();
       } else {
@@ -315,7 +315,7 @@ export default function AdminProductsPage() {
         setSelectedIds([]);
         setIsAllDatasetSelected(false);
         try { localStorage.removeItem('karviyam_admin_products'); } catch (e) {}
-        window.dispatchEvent(new Event('karviyam_products_updated'));
+        window.dispatchEvent(new window.Event('karviyam_products_updated'));
         toast.success(`Successfully deleted ${deletedCount} products.`, { id: 'prd-del-all-toast' });
         setClearAllModalOpen(false);
         await fetchProducts();
@@ -1778,7 +1778,7 @@ export default function AdminProductsPage() {
         activeTab={exportActiveTab}
         customExcelHandler={async () => {
           const response = await api.get('/admin/excel/products/export', { responseType: 'blob' });
-          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const url = window.URL.createObjectURL(new window.Blob([response.data]));
           const link = document.createElement('a');
           link.href = url;
           link.setAttribute('download', 'karviyam_products_export.xlsx');

@@ -28,7 +28,7 @@ export default function ImageUploadCropperModal({
   useEffect(() => {
     if (!imageFile) return;
 
-    const reader = new FileReader();
+    const reader = new window.FileReader();
     reader.onload = (e) => {
       const img = new window.Image();
       img.onload = () => {

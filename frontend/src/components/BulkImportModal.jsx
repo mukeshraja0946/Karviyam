@@ -90,7 +90,7 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
         responseType: 'blob'
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new window.Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `karviyam_${type}_import_template.xlsx`);
@@ -134,11 +134,11 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
         }
 
         // Broadcast global update events so all components across the app update immediately
-        window.dispatchEvent(new CustomEvent(`karviyam_${type}_updated`));
-        window.dispatchEvent(new CustomEvent('karviyam_products_updated'));
-        window.dispatchEvent(new CustomEvent('karviyam_categories_updated'));
-        window.dispatchEvent(new CustomEvent('karviyam_parent_categories_updated'));
-        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new window.CustomEvent(`karviyam_${type}_updated`));
+        window.dispatchEvent(new window.CustomEvent('karviyam_products_updated'));
+        window.dispatchEvent(new window.CustomEvent('karviyam_categories_updated'));
+        window.dispatchEvent(new window.CustomEvent('karviyam_parent_categories_updated'));
+        window.dispatchEvent(new window.Event('storage'));
 
         // Refresh parent page table dataset immediately
         if (onImportSuccess) {
@@ -165,7 +165,7 @@ export default function BulkImportModal({ isOpen, onClose, type = 'products', on
         responseType: 'blob'
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new window.Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `import_error_report_${Date.now()}.xlsx`);

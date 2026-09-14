@@ -199,7 +199,7 @@ export default function ProductReviewsSection({ productId, onRatingUpdated }) {
       setUserRating(5);
 
       await fetchReviews();
-      window.dispatchEvent(new Event('karviyam_products_updated'));
+      window.dispatchEvent(new window.Event('karviyam_products_updated'));
     } catch (err) {
       console.error('[Submit Review Error]:', err);
       toast.error(err.response?.data?.message || 'Please log in to submit a review');

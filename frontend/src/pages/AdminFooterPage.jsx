@@ -180,7 +180,7 @@ export default function AdminFooterPage() {
       return;
     }
 
-    const reader = new FileReader();
+    const reader = new window.FileReader();
     reader.onload = () => {
       setFormData(prev => ({ ...prev, logoUrl: reader.result }));
       toast.success('Logo uploaded successfully. Click Save Changes!');
@@ -207,9 +207,9 @@ export default function AdminFooterPage() {
         } else {
           localStorage.removeItem('karviyam_logo');
         }
-        window.dispatchEvent(new Event('karviyam_footer_updated'));
-        window.dispatchEvent(new Event('karviyam_logo_updated'));
-        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new window.Event('karviyam_footer_updated'));
+        window.dispatchEvent(new window.Event('karviyam_logo_updated'));
+        window.dispatchEvent(new window.Event('storage'));
         fetchFooterData();
       } else {
         toast.error(res?.data?.message || 'Failed to save footer settings', { id: 'footer-save-toast' });

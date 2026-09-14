@@ -39,7 +39,7 @@ export default function BulkCategoryImportModal({ isOpen, onClose, onSuccess }) 
     setIsProcessing(true);
 
     const fileName = fileObj.name.toLowerCase();
-    const reader = new FileReader();
+    const reader = new window.FileReader();
 
     reader.onload = (evt) => {
       try {
@@ -213,9 +213,9 @@ export default function BulkCategoryImportModal({ isOpen, onClose, onSuccess }) 
         setImportResult(result);
         toast.success(`Import Complete! Created: ${created}, Updated: ${updated}, Failed: ${failed}`);
 
-        window.dispatchEvent(new CustomEvent('karviyam_categories_updated'));
-        window.dispatchEvent(new CustomEvent('karviyam_parent_categories_updated'));
-        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new window.CustomEvent('karviyam_categories_updated'));
+        window.dispatchEvent(new window.CustomEvent('karviyam_parent_categories_updated'));
+        window.dispatchEvent(new window.Event('storage'));
 
         if (onSuccess) {
           await onSuccess(result);
@@ -244,7 +244,7 @@ Women,Kanjeevaram Sarees,Sarees,Authentic Kanjeevaram soft silk sarees,2,Active,
 Men,Shirts,Men,Casual and formal men shirts,1,Active,,,,"Men Shirts","men-shirts","Casual & formal linen shirts","men shirts, linen, formal"
 Kids & Baby,Toys,Kids & Baby,Action toys and remote control cars,1,Active,,,,"Kids Toys","kids-toys","Fun toys for children","toys, rc cars, dolls"`;
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new window.Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

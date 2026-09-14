@@ -240,8 +240,8 @@ export default function AdminReportsPage() {
     saveReportData(ZERO_REPORT_DATA);
     try {
       localStorage.setItem('karviyam_admin_reports_reset', 'true');
-      window.dispatchEvent(new Event('karviyam_analytics_reset'));
-      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new window.Event('karviyam_analytics_reset'));
+      window.dispatchEvent(new window.Event('storage'));
     } catch (e) {}
     toast.success('Reports reset! All metrics cleared to 0.');
   };
@@ -251,8 +251,8 @@ export default function AdminReportsPage() {
     saveReportData(INITIAL_REPORT_DATA);
     try {
       localStorage.setItem('karviyam_admin_reports_reset', 'false');
-      window.dispatchEvent(new Event('karviyam_analytics_reset'));
-      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new window.Event('karviyam_analytics_reset'));
+      window.dispatchEvent(new window.Event('storage'));
     } catch (e) {}
     toast.success('Sample report data restored!');
   };
@@ -474,7 +474,7 @@ export default function AdminReportsPage() {
       }
 
       const csvString = csvRows.map((e) => e.join(',')).join('\n');
-      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const blob = new window.Blob([csvString], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       
       const link = document.createElement('a');

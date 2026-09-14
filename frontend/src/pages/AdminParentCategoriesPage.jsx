@@ -78,8 +78,8 @@ export default function AdminParentCategoriesPage() {
 
   const notifyUpdate = () => {
     try { localStorage.removeItem('karviyam_admin_parent_categories'); } catch (e) {}
-    window.dispatchEvent(new Event('karviyam_parent_categories_updated'));
-    window.dispatchEvent(new Event('karviyam_categories_updated'));
+    window.dispatchEvent(new window.Event('karviyam_parent_categories_updated'));
+    window.dispatchEvent(new window.Event('karviyam_categories_updated'));
   };
 
   const handleOpenAddModal = () => {

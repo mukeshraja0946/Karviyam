@@ -59,8 +59,8 @@ export default function DeliveryLocationModal({ isOpen, onClose, currentPincode,
     localStorage.setItem('karviyam_user_pincode', cleanPin);
     localStorage.setItem('karviyam_user_city', targetCity);
     
-    window.dispatchEvent(new CustomEvent('karviyam_location_updated', { detail: { pincode: cleanPin, city: targetCity } }));
-    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new window.CustomEvent('karviyam_location_updated', { detail: { pincode: cleanPin, city: targetCity } }));
+    window.dispatchEvent(new window.Event('storage'));
 
     setLoading(false);
     if (onSelectLocation) {

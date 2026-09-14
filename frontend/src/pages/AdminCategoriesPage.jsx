@@ -23,7 +23,7 @@ const CLASSIFICATION_OPTIONS = [
 
 const compressImage = (file, maxWidth = 600, maxHeight = 600, quality = 0.85) => {
   return new Promise((resolve) => {
-    const reader = new FileReader();
+    const reader = new window.FileReader();
     reader.onload = (event) => {
       const img = new window.Image();
       img.onload = () => {
@@ -410,7 +410,7 @@ export default function AdminCategoriesPage() {
             return updated;
           });
           try { await fetchCategories(); } catch (eFetch) {}
-          window.dispatchEvent(new Event('karviyam_categories_updated'));
+          window.dispatchEvent(new window.Event('karviyam_categories_updated'));
           setModalOpen(false);
         } else {
           throw new Error(apiData?.message || 'Failed to update category');
@@ -433,7 +433,7 @@ export default function AdminCategoriesPage() {
             return updated;
           });
           try { await fetchCategories(); } catch (eFetch) {}
-          window.dispatchEvent(new Event('karviyam_categories_updated'));
+          window.dispatchEvent(new window.Event('karviyam_categories_updated'));
           setModalOpen(false);
         } else {
           throw new Error(apiData?.message || 'Failed to create category');
@@ -472,7 +472,7 @@ export default function AdminCategoriesPage() {
           return updated;
         });
         setSelectedIds(prev => prev.filter(i => String(i) !== strId));
-        window.dispatchEvent(new Event('karviyam_categories_updated'));
+        window.dispatchEvent(new window.Event('karviyam_categories_updated'));
         toast.success('Category deleted successfully from database!', { id: 'cat-del-toast' });
         await fetchCategories();
       } else {
@@ -517,7 +517,7 @@ export default function AdminCategoriesPage() {
 
         toast.success(`Category ${finalActive ? 'enabled' : 'disabled'} successfully!`, { id: 'cat-toggle-toast' });
         await fetchCategories();
-        window.dispatchEvent(new Event('karviyam_categories_updated'));
+        window.dispatchEvent(new window.Event('karviyam_categories_updated'));
       } else {
         throw new Error(apiData?.message || 'Failed to toggle category status');
       }
@@ -1144,7 +1144,7 @@ export default function AdminCategoriesPage() {
         activeTab={exportActiveTab}
         customExcelHandler={async () => {
           const response = await api.get('/admin/excel/categories/export', { responseType: 'blob' });
-          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const url = window.URL.createObjectURL(new window.Blob([response.data]));
           const link = document.createElement('a');
           link.href = url;
           link.setAttribute('download', 'karviyam_categories_export.xlsx');

@@ -133,7 +133,7 @@ export default function AdminHomepageSectionsPage() {
 
       if (res?.data?.success || res?.status === 200) {
         toast.success('Homepage section configurations saved successfully! 🎉', { id: 'admin-sec-toast' });
-        window.dispatchEvent(new Event('karviyam_homepage_sections_updated'));
+        window.dispatchEvent(new window.Event('karviyam_homepage_sections_updated'));
         broadcastSyncEvent('karviyam_homepage_sections_updated');
         await fetchSections();
       } else {
@@ -151,7 +151,7 @@ export default function AdminHomepageSectionsPage() {
     try {
       await api.post('/homepage-sections/admin', { sections: DEFAULT_PRODUCT_SECTIONS });
       toast.success('Reset all sections to default configuration!');
-      window.dispatchEvent(new Event('karviyam_homepage_sections_updated'));
+      window.dispatchEvent(new window.Event('karviyam_homepage_sections_updated'));
       broadcastSyncEvent('karviyam_homepage_sections_updated');
     } catch (e) {}
   };

@@ -21,7 +21,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const searchParams = new URLSearchParams(location.search);
+  const searchParams = new window.URLSearchParams(location.search);
   const redirectTarget = location.state?.from || searchParams.get('redirect') || '';
 
   // Redirect authenticated user if visiting /login
