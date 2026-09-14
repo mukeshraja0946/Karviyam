@@ -136,7 +136,10 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
                 src={resolvedLogoUrl} 
                 alt="Karviyam Logo" 
                 className="h-20 sm:h-36 max-h-40 w-auto object-contain max-w-full transition-all" 
-                onError={() => setLogoFailed(true)}
+                onError={(e) => {
+                  console.error('[MaintenancePage] Maintenance logo failed to load:', resolvedLogoUrl, e);
+                  setLogoFailed(true);
+                }}
               />
             ) : (
               <div className="flex items-center gap-3 bg-red-50/70 px-4 sm:px-6 py-3 sm:py-4 rounded-3xl border border-red-100/80 shadow-2xs">

@@ -8,10 +8,11 @@ const ensureSettingsTable = async () => {
       CREATE TABLE IF NOT EXISTS settings (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
         setting_key VARCHAR(100) UNIQUE NOT NULL,
-        setting_value TEXT,
+        setting_value LONGTEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `);
+    await pool.query(`ALTER TABLE settings MODIFY COLUMN setting_value LONGTEXT`);
   } catch (e) {}
 };
 

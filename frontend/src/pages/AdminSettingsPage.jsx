@@ -2040,14 +2040,30 @@ export default function AdminSettingsPage() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files[0];
                         if (file) {
-                          const reader = new window.FileReader();
-                          reader.onloadend = () => {
-                            setSettings({ ...settings, maintenanceLogoUrl: reader.result });
-                          };
-                          reader.readAsDataURL(file);
+                          const formData = new FormData();
+                          formData.append('file', file);
+                          try {
+                            toast.loading('Uploading maintenance logo...', { id: 'm-logo-upload' });
+                            const res = await api.post('/upload', formData, {
+                              headers: { 'Content-Type': 'multipart/form-data' }
+                            });
+                            const url = res.data?.data?.url || res.data?.url || res.data?.filePath || res.data?.data?.filePath;
+                            if (url) {
+                              setSettings(prev => ({ ...prev, maintenanceLogoUrl: url }));
+                              toast.success('Maintenance logo uploaded successfully!', { id: 'm-logo-upload' });
+                            }
+                          } catch (err) {
+                            console.error('File upload error:', err);
+                            toast.error('Upload failed. Using fallback file reader.', { id: 'm-logo-upload' });
+                            const reader = new window.FileReader();
+                            reader.onloadend = () => {
+                              setSettings(prev => ({ ...prev, maintenanceLogoUrl: reader.result }));
+                            };
+                            reader.readAsDataURL(file);
+                          }
                         }
                       }}
                       className="w-full bg-white border border-slate-200 p-2 rounded-xl text-xs"
