@@ -111,8 +111,8 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
   const resolvedLogoUrl = effectiveLogo ? resolveImageUrl(effectiveLogo) : '';
 
   return (
-    <div className={`min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4 py-8 sm:py-12 select-none ${previewMode ? 'py-4 min-h-0 bg-transparent' : ''}`}>
-      <div className="w-full max-w-[460px] bg-white p-7 sm:p-11 rounded-[36px] border border-gray-100/90 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] text-center space-y-6 mx-auto relative">
+    <div className={`w-full flex flex-col items-center justify-center bg-[#F8FAFC] px-4 select-none ${previewMode ? 'min-h-full flex-1 py-6' : 'min-h-screen py-8 sm:py-12'}`}>
+      <div className="w-full max-w-[460px] bg-white p-7 sm:p-11 rounded-[36px] border border-gray-100/90 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] text-center space-y-6 mx-auto relative shrink-0">
         
         {previewMode && (
           <div className="pb-1">

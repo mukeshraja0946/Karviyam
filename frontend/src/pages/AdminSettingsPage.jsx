@@ -2447,16 +2447,18 @@ export default function AdminSettingsPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-100/80 flex items-center justify-center min-h-[450px]">
+            <div className="p-0 overflow-y-auto flex-1 bg-[#F8FAFC] flex flex-col items-center justify-center relative min-h-[480px]">
               {previewDeviceMode === 'desktop' ? (
-                <div className="w-full max-w-4xl bg-[#F8FAFC] rounded-3xl shadow-xl overflow-hidden border border-slate-200 p-4">
+                <div className="w-full flex-1 min-h-[500px] flex flex-col items-center justify-center bg-[#F8FAFC] p-4 sm:p-8 overflow-y-auto">
                   <MaintenancePage previewMode={true} previewSettings={settings} />
                 </div>
               ) : (
-                <div className="w-[375px] max-w-full bg-[#F8FAFC] rounded-[40px] shadow-2xl border-[10px] border-slate-900 overflow-hidden my-4 relative">
-                  {/* Smartphone Notch */}
-                  <div className="w-28 h-4 bg-slate-900 mx-auto rounded-b-2xl mb-1"></div>
-                  <MaintenancePage previewMode={true} previewSettings={settings} />
+                <div className="w-full flex-1 flex items-center justify-center bg-slate-200/80 p-4 sm:p-6 overflow-y-auto">
+                  <div className="w-[375px] h-[667px] max-h-[78vh] bg-[#F8FAFC] border-[10px] border-slate-900 rounded-[44px] shadow-2xl overflow-y-auto relative flex flex-col shrink-0 my-auto">
+                    {/* Smartphone Notch */}
+                    <div className="w-28 h-4 bg-slate-900 mx-auto rounded-b-2xl shrink-0"></div>
+                    <MaintenancePage previewMode={true} previewSettings={settings} />
+                  </div>
                 </div>
               )}
             </div>
