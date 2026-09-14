@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import { resolveImageUrl, handleImageError } from '../utils/imageUtils';
 import ImageUploadCropperModal from './ImageUploadCropperModal';
 import CreateReviewModal from './CreateReviewModal';
 
