@@ -4,15 +4,11 @@ import api from '../utils/api';
 import { resolveImageUrl } from '../utils/imageUtils';
 
 export default function MaintenancePage({ previewMode = false, previewSettings = null }) {
-  const [maintenanceLogo, setMaintenanceLogo] = useState(() => 
-    localStorage.getItem('karviyam_maintenance_logo') || localStorage.getItem('karviyam_logo') || ''
-  );
+  const [maintenanceLogo, setMaintenanceLogo] = useState('');
   const [logoFailed, setLogoFailed] = useState(false);
   const [title, setTitle] = useState("We'll Be Right Back!");
   const [subtitle, setSubtitle] = useState("SYSTEM UNDER MAINTENANCE");
-  const [message, setMessage] = useState(() => 
-    localStorage.getItem('karviyam_maintenance_message') || 'Karviyam is currently undergoing scheduled platform maintenance to bring you exciting new drops! We will be back online shortly.'
-  );
+  const [message, setMessage] = useState('Karviyam is currently undergoing scheduled platform maintenance to bring you exciting new drops! We will be back online shortly.');
   const [estimatedTime, setEstimatedTime] = useState("Estimated Uptime: Back Online Soon");
   const [supportEmail, setSupportEmail] = useState("vanakkam@karviyam.com");
   const [showTimer, setShowTimer] = useState(true);
@@ -21,19 +17,21 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
     if (previewMode) return;
     fetchLiveMaintenanceSettings();
     const handleUpdate = () => {
-      const storedLogo = localStorage.getItem('karviyam_maintenance_logo') || localStorage.getItem('karviyam_logo') || '';
-      setMaintenanceLogo(storedLogo);
-      setLogoFailed(false);
-      const storedMsg = localStorage.getItem('karviyam_maintenance_message');
-      if (storedMsg) setMessage(storedMsg);
+      fetchLiveMaintenanceSettings();
     };
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('karviyam_maintenance_updated', handleUpdate);
     window.addEventListener('karviyam_logo_updated', handleUpdate);
+    window.addEventListener('karviyam_settings_updated', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+    window.addEventListener('visibilitychange', handleUpdate);
     return () => {
       window.removeEventListener('storage', handleUpdate);
       window.removeEventListener('karviyam_maintenance_updated', handleUpdate);
       window.removeEventListener('karviyam_logo_updated', handleUpdate);
+      window.removeEventListener('karviyam_settings_updated', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
+      window.removeEventListener('visibilitychange', handleUpdate);
     };
   }, [previewMode]);
 
@@ -42,44 +40,35 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
       const res = await api.get('/settings');
       const dataObj = res.data?.data || res.data || res;
       
-        let dataMap = {};
-        if (Array.isArray(dataObj)) {
-          dataObj.forEach(s => {
-            const k = s.settingKey || s.setting_key || s.key;
-            const v = s.settingValue !== undefined ? s.settingValue : (s.setting_value !== undefined ? s.setting_value : s.value);
-            if (k) dataMap[k] = v;
-          });
-        } else {
-          dataMap = dataObj;
-        }
+      let dataMap = {};
+      if (Array.isArray(dataObj)) {
+        dataObj.forEach(s => {
+          const k = s.settingKey || s.setting_key || s.key;
+          const v = s.settingValue !== undefined ? s.settingValue : (s.setting_value !== undefined ? s.setting_value : s.value);
+          if (k) dataMap[k] = v;
+        });
+      } else {
+        dataMap = dataObj;
+      }
 
-        const logo = dataMap.maintenanceLogoUrl || dataMap.maintenance_logo_url || dataMap.logoUrl || dataMap.logo_url;
-        const t = dataMap.maintenanceTitle || dataMap.maintenance_title;
-        const sub = dataMap.maintenanceSubtitle || dataMap.maintenance_subtitle;
-        const msg = dataMap.maintenanceMessage || dataMap.maintenance_message;
-        const est = dataMap.maintenanceEstimatedTime || dataMap.maintenance_estimated_time;
-        const email = dataMap.supportEmail || dataMap.support_email;
-        const timer = dataMap.maintenanceShowTimer !== false && dataMap.maintenance_show_timer !== false && dataMap.maintenanceShowTimer !== 'false';
+      const logo = dataMap.maintenanceLogoUrl || dataMap.maintenance_logo_url || dataMap.logoUrl || dataMap.logo_url;
+      const t = dataMap.maintenanceTitle || dataMap.maintenance_title;
+      const sub = dataMap.maintenanceSubtitle || dataMap.maintenance_subtitle;
+      const msg = dataMap.maintenanceMessage || dataMap.maintenance_message;
+      const est = dataMap.maintenanceEstimatedTime || dataMap.maintenance_estimated_time;
+      const email = dataMap.supportEmail || dataMap.support_email;
+      const timer = dataMap.maintenanceShowTimer !== false && dataMap.maintenance_show_timer !== false && dataMap.maintenanceShowTimer !== 'false';
 
-        if (logo) {
-          setMaintenanceLogo(logo);
-          setLogoFailed(false);
-          localStorage.setItem('karviyam_maintenance_logo', logo);
-        } else {
-          const generalLogo = localStorage.getItem('karviyam_logo');
-          if (generalLogo) {
-            setMaintenanceLogo(generalLogo);
-            setLogoFailed(false);
-          }
-        }
-
-
-        if (t) setTitle(t);
-        if (sub) setSubtitle(sub);
-        if (msg) setMessage(msg);
-        if (est) setEstimatedTime(est);
-        if (email) setSupportEmail(email);
-        setShowTimer(timer);
+      if (logo) {
+        setMaintenanceLogo(logo);
+        setLogoFailed(false);
+      }
+      if (t) setTitle(t);
+      if (sub) setSubtitle(sub);
+      if (msg) setMessage(msg);
+      if (est) setEstimatedTime(est);
+      if (email) setSupportEmail(email);
+      setShowTimer(timer);
     } catch (e) {
       console.error('[MaintenancePage] Settings fetch error:', e);
     }
