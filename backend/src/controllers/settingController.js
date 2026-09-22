@@ -395,10 +395,17 @@ const saveBase64Image = (base64Str, prefix = 'logo') => {
     return base64Str;
   }
   try {
-    const matches = base64Str.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+    const matches = base64Str.match(/^data:image\/([a-zA-Z0-9\+\-\.]+);base64,([\s\S]+)$/);
     if (!matches) return base64Str;
-    const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-    const base64Data = matches[2];
+    let rawExt = matches[1].toLowerCase();
+    let ext = 'png';
+    if (rawExt.includes('jpeg') || rawExt.includes('jpg')) ext = 'jpg';
+    else if (rawExt.includes('svg')) ext = 'svg';
+    else if (rawExt.includes('webp')) ext = 'webp';
+    else if (rawExt.includes('gif')) ext = 'gif';
+    else if (rawExt.includes('png')) ext = 'png';
+
+    const base64Data = matches[2].replace(/\s+/g, '');
     const fileName = `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}.${ext}`;
 
     const buffer = Buffer.from(base64Data, 'base64');

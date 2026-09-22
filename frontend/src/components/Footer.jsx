@@ -23,6 +23,7 @@ import OrderTrackingModal from './OrderTrackingModal';
 export default function Footer() {
   const navigate = useNavigate();
   const [logoFailed, setLogoFailed] = useState(false);
+  const [devLogoFailed, setDevLogoFailed] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Modals state
@@ -149,6 +150,7 @@ export default function Footer() {
     const handleSync = () => {
       fetchFooterSettings();
       setLogoFailed(false);
+      setDevLogoFailed(false);
     };
 
     window.addEventListener('storage', handleSync);
@@ -527,22 +529,24 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-slate-800 hover:text-[#B71C1C] transition-colors font-semibold"
                 >
-                  {footerConfig.developerLogoUrl && isValidImageUrl(footerConfig.developerLogoUrl) && (
+                  {footerConfig.developerLogoUrl && isValidImageUrl(footerConfig.developerLogoUrl) && !devLogoFailed && (
                     <img
                       src={resolveImageUrl(footerConfig.developerLogoUrl)}
                       alt={footerConfig.developerName || 'CraftLoop'}
-                      className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
+                      onError={() => setDevLogoFailed(true)}
+                      className="h-5 sm:h-6 w-auto max-w-[120px] object-contain shrink-0"
                     />
                   )}
                   <span>{footerConfig.developerName || 'CraftLoop'}</span>
                 </a>
               ) : (
                 <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
-                  {footerConfig.developerLogoUrl && isValidImageUrl(footerConfig.developerLogoUrl) && (
+                  {footerConfig.developerLogoUrl && isValidImageUrl(footerConfig.developerLogoUrl) && !devLogoFailed && (
                     <img
                       src={resolveImageUrl(footerConfig.developerLogoUrl)}
                       alt={footerConfig.developerName || 'CraftLoop'}
-                      className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
+                      onError={() => setDevLogoFailed(true)}
+                      className="h-5 sm:h-6 w-auto max-w-[120px] object-contain shrink-0"
                     />
                   )}
                   <span>{footerConfig.developerName || 'CraftLoop'}</span>

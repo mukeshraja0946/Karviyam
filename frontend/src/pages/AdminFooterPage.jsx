@@ -181,7 +181,7 @@ export default function AdminFooterPage() {
     fetchDbCategories();
   }, []);
 
-  const handleLogoUpload = (e) => {
+  const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -190,15 +190,40 @@ export default function AdminFooterPage() {
       return;
     }
 
-    const reader = new window.FileReader();
-    reader.onload = () => {
-      setFormData(prev => ({ ...prev, logoUrl: reader.result }));
-      toast.success('Logo uploaded successfully. Click Save Changes!');
-    };
-    reader.readAsDataURL(file);
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+    toast.loading('Uploading brand logo...', { id: 'brand-logo-toast' });
+
+    try {
+      const res = await api.post('/upload', uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const data = res.data?.data || res.data;
+      const uploadedUrl = data?.url || data?.fileUrl || (data?.filename ? `/uploads/${data.filename}` : '');
+
+      if (uploadedUrl) {
+        setFormData(prev => ({ ...prev, logoUrl: uploadedUrl }));
+        toast.success('Logo uploaded successfully! Click Save Changes.', { id: 'brand-logo-toast' });
+      } else {
+        const reader = new window.FileReader();
+        reader.onload = () => {
+          setFormData(prev => ({ ...prev, logoUrl: reader.result }));
+          toast.success('Logo loaded! Click Save Changes.', { id: 'brand-logo-toast' });
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err) {
+      console.error('Brand logo upload error:', err);
+      const reader = new window.FileReader();
+      reader.onload = () => {
+        setFormData(prev => ({ ...prev, logoUrl: reader.result }));
+        toast.success('Logo loaded! Click Save Changes.', { id: 'brand-logo-toast' });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleDeveloperLogoUpload = (e) => {
+  const handleDeveloperLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -207,12 +232,37 @@ export default function AdminFooterPage() {
       return;
     }
 
-    const reader = new window.FileReader();
-    reader.onload = () => {
-      setFormData(prev => ({ ...prev, developerLogoUrl: reader.result }));
-      toast.success('Developer Logo uploaded successfully. Click Save Footer Settings!');
-    };
-    reader.readAsDataURL(file);
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+    toast.loading('Uploading developer logo...', { id: 'dev-logo-toast' });
+
+    try {
+      const res = await api.post('/upload', uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const data = res.data?.data || res.data;
+      const uploadedUrl = data?.url || data?.fileUrl || (data?.filename ? `/uploads/${data.filename}` : '');
+
+      if (uploadedUrl) {
+        setFormData(prev => ({ ...prev, developerLogoUrl: uploadedUrl }));
+        toast.success('Developer logo uploaded successfully! Click Save Footer Settings.', { id: 'dev-logo-toast' });
+      } else {
+        const reader = new window.FileReader();
+        reader.onload = () => {
+          setFormData(prev => ({ ...prev, developerLogoUrl: reader.result }));
+          toast.success('Developer logo loaded! Click Save Footer Settings.', { id: 'dev-logo-toast' });
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err) {
+      console.error('Developer logo upload error:', err);
+      const reader = new window.FileReader();
+      reader.onload = () => {
+        setFormData(prev => ({ ...prev, developerLogoUrl: reader.result }));
+        toast.success('Developer logo loaded! Click Save Footer Settings.', { id: 'dev-logo-toast' });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSaveAll = async (e) => {
