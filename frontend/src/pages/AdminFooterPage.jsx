@@ -42,7 +42,12 @@ export default function AdminFooterPage() {
     phone: '+91 93443 30782',
     email: 'vanakkam@karviyam.com',
     logoUrl: '',
-    copyright: '© 2026 Karviyam E-Commerce Platform. All Rights Reserved. Built for Enterprise Performance.',
+    copyrightText: '© 2026 Karviyam. All rights reserved.',
+    copyright: '© 2026 Karviyam. All rights reserved.',
+    developerEnabled: false,
+    developerName: 'CraftLoop',
+    developerLogoUrl: '',
+    developerLink: '',
     stayUpdatedTitle: 'STAY UPDATED',
     stayUpdatedDescription: 'Subscribe to get special drop alerts, VIP coupons & discounts.',
     newsletterEnabled: true,
@@ -146,7 +151,12 @@ export default function AdminFooterPage() {
           phone: data.phone || data.supportPhone || prev.phone,
           email: data.email || data.supportEmail || prev.email,
           logoUrl: data.logoUrl || prev.logoUrl,
-          copyright: data.copyright || data.copyrightText || prev.copyright,
+          copyrightText: data.copyrightText !== undefined ? data.copyrightText : (data.copyright || prev.copyrightText),
+          copyright: data.copyrightText !== undefined ? data.copyrightText : (data.copyright || prev.copyright),
+          developerEnabled: data.developerEnabled !== undefined ? Boolean(data.developerEnabled) : prev.developerEnabled,
+          developerName: data.developerName !== undefined ? data.developerName : prev.developerName,
+          developerLogoUrl: data.developerLogoUrl !== undefined ? data.developerLogoUrl : prev.developerLogoUrl,
+          developerLink: data.developerLink !== undefined ? data.developerLink : prev.developerLink,
           stayUpdatedTitle: data.stayUpdatedTitle || prev.stayUpdatedTitle,
           stayUpdatedDescription: data.stayUpdatedDescription || prev.stayUpdatedDescription,
           newsletterEnabled: data.newsletterEnabled !== undefined ? Boolean(data.newsletterEnabled) : prev.newsletterEnabled,
@@ -184,6 +194,23 @@ export default function AdminFooterPage() {
     reader.onload = () => {
       setFormData(prev => ({ ...prev, logoUrl: reader.result }));
       toast.success('Logo uploaded successfully. Click Save Changes!');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDeveloperLogoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload a valid image file (PNG, JPG, SVG, WEBP)');
+      return;
+    }
+
+    const reader = new window.FileReader();
+    reader.onload = () => {
+      setFormData(prev => ({ ...prev, developerLogoUrl: reader.result }));
+      toast.success('Developer Logo uploaded successfully. Click Save Footer Settings!');
     };
     reader.readAsDataURL(file);
   };
@@ -478,7 +505,163 @@ export default function AdminFooterPage() {
         >
           Newsletter Config
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('bottom')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'bottom' ? 'bg-[#B71C1C] text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
+          Footer Bottom / Copyright & Developer
+        </button>
       </div>
+
+      {/* TAB: FOOTER BOTTOM / COPYRIGHT & DEVELOPER */}
+      {(activeTab === 'general' || activeTab === 'bottom') && (
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-6">
+          <h3 className="font-display font-bold text-base text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-[#B71C1C]" />
+              <span>FOOTER BOTTOM / COPYRIGHT & DEVELOPER</span>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+              Admin Managed
+            </span>
+          </h3>
+
+          <div className="space-y-6">
+            {/* Copyright Text */}
+            <div className="space-y-2 bg-slate-50 p-4.5 rounded-2xl border border-slate-200/80">
+              <label className="block text-xs font-bold text-slate-800">Copyright Text</label>
+              <input
+                type="text"
+                value={formData.copyrightText}
+                onChange={(e) => setFormData(prev => ({ ...prev, copyrightText: e.target.value, copyright: e.target.value }))}
+                placeholder="© 2026 Karviyam. All rights reserved."
+                className="w-full bg-white border border-slate-200 text-xs px-4 py-2.5 rounded-xl font-medium outline-none focus:border-[#B71C1C]"
+              />
+              <p className="text-[11px] text-slate-500 font-medium">
+                Customer footer bottom left will display this exact text.
+              </p>
+            </div>
+
+            {/* Developed By Section */}
+            <div className="space-y-4 bg-slate-50 p-4.5 rounded-2xl border border-slate-200/80">
+              <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
+                <div>
+                  <h4 className="font-bold text-xs text-slate-900">Developed By Section</h4>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    Display developer/agency branding on the bottom-right of the customer footer.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, developerEnabled: !prev.developerEnabled }))}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black cursor-pointer transition-all ${
+                    formData.developerEnabled
+                      ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                      : 'bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {formData.developerEnabled ? <ToggleRight className="w-5 h-5 text-emerald-600" /> : <ToggleLeft className="w-5 h-5 text-slate-400" />}
+                  <span>Enable Developed By: {formData.developerEnabled ? 'ON' : 'OFF'}</span>
+                </button>
+              </div>
+
+              {formData.developerEnabled && (
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start pt-1">
+                  {/* Developer Logo Upload / Preview */}
+                  <div className="md:col-span-4 space-y-3 bg-white p-4 rounded-xl border border-slate-200">
+                    <label className="block text-xs font-bold text-slate-800">Developer Logo</label>
+                    <div className="w-full h-20 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center p-2 relative overflow-hidden">
+                      {formData.developerLogoUrl && isValidImageUrl(formData.developerLogoUrl) ? (
+                        <img
+                          src={resolveImageUrl(formData.developerLogoUrl)}
+                          alt="Developer Logo"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <span className="text-xs text-slate-400 font-medium italic">No Logo Uploaded</span>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-600">Developer Logo URL</label>
+                      <input
+                        type="text"
+                        value={formData.developerLogoUrl}
+                        onChange={(e) => setFormData(prev => ({ ...prev, developerLogoUrl: e.target.value }))}
+                        placeholder="https://... or /uploads/..."
+                        className="w-full bg-slate-50 border border-slate-200 text-xs px-3 py-2 rounded-xl outline-none focus:border-[#B71C1C]"
+                      />
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                      <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-bold text-xs py-2 px-3 rounded-xl cursor-pointer text-center flex items-center justify-center gap-1.5">
+                        <Upload className="w-3.5 h-3.5 text-[#B71C1C]" />
+                        <span>Upload Logo</span>
+                        <input type="file" accept="image/*" onChange={handleDeveloperLogoUpload} className="hidden" />
+                      </label>
+                      {formData.developerLogoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, developerLogoUrl: '' }))}
+                          className="bg-red-50 text-[#B71C1C] hover:bg-red-100 font-bold text-xs px-3 py-2 rounded-xl border border-red-200 cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Developer Name & Developer Link */}
+                  <div className="md:col-span-8 space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1">Developer Name</label>
+                      <input
+                        type="text"
+                        value={formData.developerName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, developerName: e.target.value }))}
+                        placeholder="CraftLoop"
+                        className="w-full bg-white border border-slate-200 text-xs px-4 py-2.5 rounded-xl font-bold outline-none focus:border-[#B71C1C]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1">Developer Link (Optional URL)</label>
+                      <input
+                        type="url"
+                        value={formData.developerLink}
+                        onChange={(e) => setFormData(prev => ({ ...prev, developerLink: e.target.value }))}
+                        placeholder="https://..."
+                        className="w-full bg-white border border-slate-200 text-xs px-4 py-2.5 rounded-xl font-medium outline-none focus:border-[#B71C1C]"
+                      />
+                      <p className="text-[11px] text-slate-500 font-medium mt-1">
+                        Optional link opened when user clicks the logo/name in the footer.
+                      </p>
+                    </div>
+
+                    {/* Live Preview Box */}
+                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 text-xs text-slate-600 font-medium flex items-center gap-2">
+                      <span className="font-bold text-slate-400 uppercase text-[10px]">Customer Footer Live Preview:</span>
+                      <span>Developed by</span>
+                      {formData.developerLogoUrl && isValidImageUrl(formData.developerLogoUrl) && (
+                        <img
+                          src={resolveImageUrl(formData.developerLogoUrl)}
+                          alt="preview"
+                          className="w-5 h-5 object-contain shrink-0"
+                        />
+                      )}
+                      <span className="font-semibold text-slate-900">{formData.developerName || 'CraftLoop'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: GENERAL & LOGO */}
       {activeTab === 'general' && (

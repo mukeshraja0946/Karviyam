@@ -612,7 +612,12 @@ exports.getFooterSettings = async (req, res, next) => {
       phone: settingsObj.supportPhone || settingsObj.phone || '+91 93443 30782',
       email: settingsObj.supportEmail || settingsObj.email || 'vanakkam@karviyam.com',
       logoUrl: settingsObj.logoUrl || settingsObj.logo || '',
-      copyright: settingsObj.copyrightText || settingsObj.copyright || '© 2026 Karviyam E-Commerce Platform. All Rights Reserved. Built for Enterprise Performance.',
+      copyrightText: settingsObj.copyrightText !== undefined ? String(settingsObj.copyrightText) : (settingsObj.copyright ? String(settingsObj.copyright) : '© 2026 Karviyam. All rights reserved.'),
+      copyright: settingsObj.copyrightText !== undefined ? String(settingsObj.copyrightText) : (settingsObj.copyright ? String(settingsObj.copyright) : '© 2026 Karviyam. All rights reserved.'),
+      developerEnabled: settingsObj.developerEnabled !== undefined ? (settingsObj.developerEnabled === true || settingsObj.developerEnabled === 'true' || settingsObj.developerEnabled === 1 || settingsObj.developerEnabled === '1') : false,
+      developerName: settingsObj.developerName !== undefined ? String(settingsObj.developerName) : 'CraftLoop',
+      developerLogoUrl: settingsObj.developerLogoUrl !== undefined ? String(settingsObj.developerLogoUrl) : '',
+      developerLink: settingsObj.developerLink !== undefined ? String(settingsObj.developerLink) : '',
       stayUpdatedTitle: settingsObj.stayUpdatedTitle || 'STAY UPDATED',
       stayUpdatedDescription: settingsObj.stayUpdatedDescription || 'Subscribe to get special drop alerts, VIP coupons & discounts.',
       newsletterEnabled: settingsObj.newsletterEnabled !== undefined ? Boolean(settingsObj.newsletterEnabled) : true,
@@ -662,7 +667,18 @@ exports.updateFooterSettings = async (req, res, next) => {
       }
       updates['logoUrl'] = lUrl;
     }
+    if (data.copyrightText !== undefined) updates['copyrightText'] = String(data.copyrightText);
     if (data.copyright !== undefined) updates['copyrightText'] = String(data.copyright);
+    if (data.developerEnabled !== undefined) updates['developerEnabled'] = String(Boolean(data.developerEnabled));
+    if (data.developerName !== undefined) updates['developerName'] = String(data.developerName);
+    if (data.developerLogoUrl !== undefined) {
+      let devLogo = String(data.developerLogoUrl);
+      if (devLogo.startsWith('data:image/')) {
+        devLogo = saveBase64Image(devLogo, 'developer-logo');
+      }
+      updates['developerLogoUrl'] = devLogo;
+    }
+    if (data.developerLink !== undefined) updates['developerLink'] = String(data.developerLink);
     if (data.stayUpdatedTitle !== undefined) updates['stayUpdatedTitle'] = String(data.stayUpdatedTitle);
     if (data.stayUpdatedDescription !== undefined) updates['stayUpdatedDescription'] = String(data.stayUpdatedDescription);
     if (data.newsletterEnabled !== undefined) updates['newsletterEnabled'] = String(Boolean(data.newsletterEnabled));

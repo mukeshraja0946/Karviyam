@@ -49,7 +49,12 @@ export default function Footer() {
     phone: '+91 93443 30782',
     email: 'vanakkam@karviyam.com',
     logoUrl: '',
-    copyright: '© 2026 Karviyam E-Commerce Platform. All Rights Reserved. Built for Enterprise Performance.',
+    copyrightText: '© 2026 Karviyam. All rights reserved.',
+    copyright: '© 2026 Karviyam. All rights reserved.',
+    developerEnabled: false,
+    developerName: 'CraftLoop',
+    developerLogoUrl: '',
+    developerLink: '',
     stayUpdatedTitle: 'STAY UPDATED',
     stayUpdatedDescription: 'Subscribe to get special drop alerts, VIP coupons & discounts.',
     newsletterEnabled: true,
@@ -104,10 +109,15 @@ export default function Footer() {
           phone: data.phone || data.supportPhone || prev.phone,
           email: data.email || data.supportEmail || prev.email,
           logoUrl: data.logoUrl || data.logo || '',
-          copyright: data.copyright || data.copyrightText || prev.copyright,
+          copyrightText: data.copyrightText !== undefined ? data.copyrightText : (data.copyright || prev.copyrightText),
+          copyright: data.copyrightText !== undefined ? data.copyrightText : (data.copyright || prev.copyright),
+          developerEnabled: data.developerEnabled !== undefined ? Boolean(data.developerEnabled) : prev.developerEnabled,
+          developerName: data.developerName !== undefined ? data.developerName : prev.developerName,
+          developerLogoUrl: data.developerLogoUrl !== undefined ? data.developerLogoUrl : prev.developerLogoUrl,
+          developerLink: data.developerLink !== undefined ? data.developerLink : prev.developerLink,
           stayUpdatedTitle: data.stayUpdatedTitle || prev.stayUpdatedTitle,
           stayUpdatedDescription: data.stayUpdatedDescription || prev.stayUpdatedDescription,
-          newsletterEnabled: data.newsletterEnabled !== undefined ? Boolean(data.newsletterEnabled) : true,
+          newsletterEnabled: data.newsletterEnabled !== undefined ? Boolean(data.newsletterEnabled) : prev.newsletterEnabled,
           columns: Array.isArray(data.columns) && data.columns.length > 0 ? data.columns : prev.columns,
           socialLinks: (data.socialLinks && typeof data.socialLinks === 'object') ? data.socialLinks : prev.socialLinks,
           aboutUsContent: data.aboutUsContent || prev.aboutUsContent,
@@ -498,9 +508,49 @@ export default function Footer() {
 
       </div>
 
-      {/* Bottom Copyright Bar */}
-      <div className="bg-slate-50 border-t border-slate-200 py-2.5 px-4 pb-16 lg:pb-3 text-center text-xs sm:text-sm text-slate-600 font-medium">
-        {footerConfig.copyright}
+      {/* Bottom Copyright & Developed By Bar */}
+      <div className="bg-slate-50 border-t border-slate-200 py-3 px-4 sm:px-8 pb-16 lg:pb-3 text-xs sm:text-sm text-slate-600 font-medium">
+        <div className="max-w-[1640px] w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-2.5 text-center md:text-left">
+          {/* LEFT: Copyright Text */}
+          <div>
+            {footerConfig.copyrightText || footerConfig.copyright}
+          </div>
+
+          {/* RIGHT: Developed By */}
+          {footerConfig.developerEnabled && (
+            <div className="flex items-center justify-center md:justify-end gap-1.5 text-slate-600">
+              <span>Developed by</span>
+              {footerConfig.developerLink ? (
+                <a
+                  href={footerConfig.developerLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-slate-800 hover:text-[#B71C1C] transition-colors font-semibold"
+                >
+                  {footerConfig.developerLogoUrl && isValidImageUrl(footerConfig.developerLogoUrl) && (
+                    <img
+                      src={resolveImageUrl(footerConfig.developerLogoUrl)}
+                      alt={footerConfig.developerName || 'CraftLoop'}
+                      className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
+                    />
+                  )}
+                  <span>{footerConfig.developerName || 'CraftLoop'}</span>
+                </a>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
+                  {footerConfig.developerLogoUrl && isValidImageUrl(footerConfig.developerLogoUrl) && (
+                    <img
+                      src={resolveImageUrl(footerConfig.developerLogoUrl)}
+                      alt={footerConfig.developerName || 'CraftLoop'}
+                      className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
+                    />
+                  )}
+                  <span>{footerConfig.developerName || 'CraftLoop'}</span>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* MODAL DIALOG POPUPS */}
