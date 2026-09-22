@@ -52,36 +52,51 @@ export const resolveImageUrl = (path, fallbackSeed = 0, updatedAt = null) => {
 
   let trimmed = path.trim();
 
-  // Strip localhost/127.0.0.1 prefixes so URLs resolve against production base URL
-  if (trimmed.startsWith('http://localhost') || trimmed.startsWith('https://localhost') || trimmed.startsWith('http://127.0.0.1') || trimmed.startsWith('https://127.0.0.1')) {
-    trimmed = trimmed.replace(/^https?:\/\/[^\/]+/, '');
+  // Return base64 data URLs and blob URLs directly
+  if (trimmed.startsWith('data:image/') || trimmed.startsWith('blob:')) {
+    return trimmed;
   }
 
-  // If path is an absolute URL containing /uploads/ (e.g. legacy https://karviyam.com/uploads/file.png),
-  // extract /uploads/... so it resolves against current environment's API base URL.
-  if ((trimmed.startsWith('http://') || trimmed.startsWith('https://')) && trimmed.includes('/uploads/')) {
+  // Strip duplicate domain prefixes (e.g. https://karviyam.com/https://karviyam.com/uploads/...)
+  if (trimmed.match(/^(https?:\/\/[^\/]+){2,}/)) {
     const match = trimmed.match(/\/uploads\/.+$/);
     if (match) {
       trimmed = match[0];
     }
   }
 
-  let baseResolvedUrl = trimmed;
+  // Strip localhost/127.0.0.1 origin prefixes when running in production
+  const isLocalHost = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/') || trimmed.startsWith('blob:')) {
-    baseResolvedUrl = trimmed;
-  } else {
-    const relativePath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-    const viteApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
-    if (viteApiUrl && (viteApiUrl.startsWith('http://') || viteApiUrl.startsWith('https://'))) {
-      const origin = viteApiUrl.replace(/\/api\/?$/, '');
-      baseResolvedUrl = `${origin}${relativePath}`;
-    } else if (typeof window !== 'undefined' && window.location && window.location.origin) {
-      baseResolvedUrl = `${window.location.origin}${relativePath}`;
-    } else {
-      baseResolvedUrl = relativePath;
-    }
+  if (!isLocalHost && (trimmed.startsWith('http://localhost') || trimmed.startsWith('https://localhost') || trimmed.startsWith('http://127.0.0.1') || trimmed.startsWith('https://127.0.0.1'))) {
+    trimmed = trimmed.replace(/^https?:\/\/[^\/]+/, '');
   }
+
+  // If path is an absolute URL containing /uploads/
+  if ((trimmed.startsWith('http://') || trimmed.startsWith('https://')) && trimmed.includes('/uploads/')) {
+    const match = trimmed.match(/\/uploads\/.+$/);
+    if (match) {
+      trimmed = match[0];
+    } else {
+      return trimmed;
+    }
+  } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  // Resolve relative path against current environment origin / API host
+  const relativePath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  const viteApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
+  let origin = '';
+
+  if (viteApiUrl && (viteApiUrl.startsWith('http://') || viteApiUrl.startsWith('https://'))) {
+    origin = viteApiUrl.replace(/\/api\/?$/, '');
+  } else if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    origin = window.location.origin;
+  }
+
+  const baseResolvedUrl = origin ? `${origin}${relativePath}` : relativePath;
 
   if (updatedAt && !baseResolvedUrl.includes('data:image/') && !baseResolvedUrl.includes('blob:')) {
     const timeVer = new Date(updatedAt).getTime();

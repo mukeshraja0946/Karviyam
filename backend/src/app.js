@@ -146,31 +146,34 @@ app.use(morgan('dev'));
 // STATIC UPLOADS
 // --------------------------------------------------
 
-const primaryUploadsDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
-const altUploadsDir = path.join(__dirname, '../../uploads');
+const uploadDirectories = [
+  process.env.UPLOAD_DIR ? path.resolve(process.cwd(), process.env.UPLOAD_DIR) : null,
+  path.resolve(process.cwd(), 'uploads'),
+  path.resolve(process.cwd(), 'backend/uploads'),
+  path.resolve(process.cwd(), 'public/uploads'),
+  path.resolve(process.cwd(), 'dist/uploads'),
+  path.join(__dirname, '../uploads'),
+  path.join(__dirname, '../../uploads'),
+  path.join(__dirname, '../../public/uploads'),
+  path.join(__dirname, '../../dist/uploads')
+].filter(Boolean);
 
-if (!fs.existsSync(primaryUploadsDir)) {
-  fs.mkdirSync(primaryUploadsDir, { recursive: true });
-}
-
-app.use('/uploads', express.static(primaryUploadsDir, {
-  maxAge: '30d',
-  setHeaders: (res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  }
-}));
-
-if (fs.existsSync(altUploadsDir) && altUploadsDir !== primaryUploadsDir) {
-  app.use('/uploads', express.static(altUploadsDir, {
-    maxAge: '30d',
-    setHeaders: (res) => {
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+const registeredUploadDirs = new Set();
+uploadDirectories.forEach(dirPath => {
+  if (dirPath && !registeredUploadDirs.has(dirPath)) {
+    registeredUploadDirs.add(dirPath);
+    if (!fs.existsSync(dirPath)) {
+      try { fs.mkdirSync(dirPath, { recursive: true }); } catch (e) {}
     }
-  }));
-}
-
+    app.use('/uploads', express.static(dirPath, {
+      maxAge: '30d',
+      setHeaders: (res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      }
+    }));
+  }
+});
 
 // Fallback for missing upload files: return default product placeholder image instead of SPA index.html
 app.use('/uploads/*', (req, res) => {
