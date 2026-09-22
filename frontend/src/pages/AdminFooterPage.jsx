@@ -123,6 +123,7 @@ export default function AdminFooterPage() {
   // New Column Modal / Inline State
   const [newColTitle, setNewColTitle] = useState('');
   const [showAddColInput, setShowAddColInput] = useState(false);
+  const [devLogoPreviewFailed, setDevLogoPreviewFailed] = useState(false);
 
   const [dbCategories, setDbCategories] = useState([]);
 
@@ -625,14 +626,17 @@ export default function AdminFooterPage() {
                   <div className="md:col-span-4 space-y-3 bg-white p-4 rounded-xl border border-slate-200">
                     <label className="block text-xs font-bold text-slate-800">Developer Logo</label>
                     <div className="w-full h-20 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center p-2 relative overflow-hidden">
-                      {formData.developerLogoUrl && isValidImageUrl(formData.developerLogoUrl) ? (
+                      {formData.developerLogoUrl && isValidImageUrl(formData.developerLogoUrl) && !devLogoPreviewFailed ? (
                         <img
                           src={resolveImageUrl(formData.developerLogoUrl)}
                           alt="Developer Logo"
+                          onError={() => setDevLogoPreviewFailed(true)}
                           className="max-h-full max-w-full object-contain"
                         />
                       ) : (
-                        <span className="text-xs text-slate-400 font-medium italic">No Logo Uploaded</span>
+                        <span className="text-xs text-slate-400 font-medium italic">
+                          {devLogoPreviewFailed ? 'Image File Not Found or Unreachable' : 'No Logo Uploaded'}
+                        </span>
                       )}
                     </div>
 
@@ -641,7 +645,10 @@ export default function AdminFooterPage() {
                       <input
                         type="text"
                         value={formData.developerLogoUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, developerLogoUrl: e.target.value }))}
+                        onChange={(e) => {
+                          setDevLogoPreviewFailed(false);
+                          setFormData(prev => ({ ...prev, developerLogoUrl: e.target.value }));
+                        }}
                         placeholder="https://... or /uploads/..."
                         className="w-full bg-slate-50 border border-slate-200 text-xs px-3 py-2 rounded-xl outline-none focus:border-[#B71C1C]"
                       />

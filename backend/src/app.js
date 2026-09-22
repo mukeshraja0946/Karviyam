@@ -146,33 +146,30 @@ app.use(morgan('dev'));
 // STATIC UPLOADS
 // --------------------------------------------------
 
-const uploadDirectories = [
-  process.env.UPLOAD_DIR ? path.resolve(process.cwd(), process.env.UPLOAD_DIR) : null,
-  path.resolve(process.cwd(), 'uploads'),
-  path.resolve(process.cwd(), 'backend/uploads'),
-  path.resolve(process.cwd(), 'public/uploads'),
-  path.resolve(process.cwd(), 'dist/uploads'),
-  path.join(__dirname, '../uploads'),
-  path.join(__dirname, '../../uploads'),
-  path.join(__dirname, '../../public/uploads'),
-  path.join(__dirname, '../../dist/uploads')
-].filter(Boolean);
+const { syncAllExistingUploads } = require('./utils/fileSync');
+try {
+  syncAllExistingUploads();
+} catch (e) {}
 
-const registeredUploadDirs = new Set();
-uploadDirectories.forEach(dirPath => {
-  if (dirPath && !registeredUploadDirs.has(dirPath)) {
-    registeredUploadDirs.add(dirPath);
-    if (!fs.existsSync(dirPath)) {
-      try { fs.mkdirSync(dirPath, { recursive: true }); } catch (e) {}
-    }
-    app.use('/uploads', express.static(dirPath, {
-      maxAge: '30d',
-      setHeaders: (res) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-      }
-    }));
+const staticUploadDirs = Array.from(new Set([
+  path.join(__dirname, '../../uploads'),                 // root/uploads
+  path.join(__dirname, '../uploads'),                    // backend/uploads
+  path.join(__dirname, '../../frontend/dist/uploads'),    // frontend/dist/uploads
+  path.join(__dirname, '../../dist/uploads'),            // dist/uploads
+  path.join(__dirname, '../../public/uploads')           // public/uploads
+]));
+
+staticUploadDirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    try { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}
   }
+  app.use('/uploads', express.static(dir, {
+    maxAge: '30d',
+    setHeaders: (res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+  }));
 });
 
 // Fallback for missing upload files: return default product placeholder image instead of SPA index.html

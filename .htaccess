@@ -22,16 +22,13 @@ DirectoryIndex index.html
   RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule ^ - [L]
 
-  # 4. Serve uploads: If physical file exists in DocumentRoot, serve directly; otherwise pass /uploads/ to Node.js backend (server.js)
-  RewriteCond %{REQUEST_URI} ^/uploads/ [NC]
+  # 4. If upload request file exists, serve directly; if missing, forward to Node.js backend
   RewriteCond %{REQUEST_FILENAME} -f
+  RewriteCond %{REQUEST_URI} ^/(uploads|assets)/ [NC]
   RewriteRule ^ - [L]
 
   RewriteCond %{REQUEST_URI} ^/uploads/ [NC]
   RewriteRule ^ server.js [QSA,L]
-
-  RewriteCond %{REQUEST_URI} ^/assets/ [NC]
-  RewriteRule ^ - [L]
 
   # 5. SPA Fallback: Route all client-side paths (/checkout, /shop, /admin/*, /cart, /wishlist) to index.html
   RewriteCond %{DOCUMENT_ROOT}/frontend/dist/index.html -f
