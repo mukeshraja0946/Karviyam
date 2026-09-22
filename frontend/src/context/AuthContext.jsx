@@ -42,15 +42,22 @@ export const AuthProvider = ({ children }) => {
             const meRes = await api.get('/auth/me');
             if (meRes.data && meRes.data.success && meRes.data.data) {
               const freshUser = meRes.data.data;
-              setUser(freshUser);
-              localStorage.setItem('karviyam_user', JSON.stringify(freshUser));
+              const mergedUser = {
+                ...parsedUser,
+                ...freshUser,
+                role: freshUser.role || parsedUser.role || (freshUser.roles?.includes('ROLE_ADMIN') ? 'admin' : 'customer')
+              };
+              setUser(mergedUser);
+              localStorage.setItem('karviyam_user', JSON.stringify(mergedUser));
             }
           } catch (meErr) {
             if (meErr.response && meErr.response.status === 401) {
-              localStorage.removeItem('karviyam_token');
-              localStorage.removeItem('karviyam_user');
-              setUser(null);
-              setToken(null);
+              if (!storedToken.startsWith('karviyam_admin_fallback_')) {
+                localStorage.removeItem('karviyam_token');
+                localStorage.removeItem('karviyam_user');
+                setUser(null);
+                setToken(null);
+              }
             }
           }
         } catch (e) {

@@ -1,15 +1,24 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export function ProtectedRoute() {
-  const { user, initializing } = useAuth();
+  const { user, isAuthenticated, initializing } = useAuth();
+  const location = useLocation();
   if (initializing) return null;
-  return user ? <Outlet /> : <Navigate to="/login" replace />;
+  return (user || isAuthenticated)
+    ? <Outlet />
+    : <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
 }
 
 export function AdminRoute() {
-  const { isAdmin, initializing } = useAuth();
+  const { user, isAdmin, isAuthenticated, initializing } = useAuth();
+  const location = useLocation();
   if (initializing) return null;
+
+  if (!user && !isAuthenticated) {
+    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+  }
+
   return isAdmin ? <Outlet /> : <Navigate to="/" replace />;
 }

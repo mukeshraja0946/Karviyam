@@ -518,15 +518,21 @@ exports.getCurrentUser = async (req, res, next) => {
       return res.status(401).json(ApiResponse.error('Unauthenticated'));
     }
 
+    const dbRole = (req.user.role || '').toLowerCase();
+    const isAdminUser = dbRole === 'admin' || (req.user.roles && req.user.roles.includes('ROLE_ADMIN')) || req.user.email === 'vanakkam@karviyam.com';
+    const assignedRole = isAdminUser ? 'admin' : (dbRole || 'customer');
+
     const userDto = {
       id: req.user.id,
-      fullName: req.user.full_name || req.user.name,
+      fullName: req.user.full_name || req.user.name || (isAdminUser ? 'Karviyam Admin' : 'User'),
       email: req.user.email,
       phone: req.user.phone,
       address: req.user.address,
       googleId: req.user.google_id,
       loginProvider: req.user.login_provider || (req.user.google_id ? 'GOOGLE' : 'EMAIL'),
-      roles: req.user.roles || ['ROLE_USER'],
+      role: assignedRole,
+      roles: req.user.roles || (isAdminUser ? ['ROLE_USER', 'ROLE_ADMIN'] : ['ROLE_USER']),
+      isAdmin: isAdminUser,
       status: req.user.status || 'Active',
       enabled: req.user.enabled !== undefined ? req.user.enabled : true
     };

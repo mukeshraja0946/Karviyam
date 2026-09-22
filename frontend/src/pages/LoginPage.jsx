@@ -168,10 +168,12 @@ export default function LoginPage() {
     }
   };
 
+  const isAdminPortal = location.pathname === '/admin/login' || (redirectTarget && redirectTarget.startsWith('/admin'));
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-[#FAFAFA]">
       <div className={`bg-white border border-[#E5E7EB] shadow-2xl ${
-        isMaintenanceMode 
+        isMaintenanceMode || isAdminPortal
           ? 'w-full max-w-lg p-8 md:p-12 rounded-3xl space-y-6' 
           : 'w-full max-w-md p-6 sm:p-8 rounded-3xl space-y-5'
       }`}>
@@ -183,24 +185,27 @@ export default function LoginPage() {
               <img 
                 src={customLogo} 
                 alt="Karviyam Logo" 
-                className={`${isMaintenanceMode ? 'h-14 max-w-[220px]' : 'h-11 max-w-[180px]'} w-auto object-contain`} 
+                className={`${isMaintenanceMode || isAdminPortal ? 'h-14 max-w-[220px]' : 'h-11 max-w-[180px]'} w-auto object-contain`} 
               />
             ) : (
-              <div className={`${isMaintenanceMode ? 'w-16 h-16 text-3xl' : 'w-12 h-12 text-2xl'} rounded-2xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-black flex items-center justify-center shadow-md`}>
-                <svg className={`${isMaintenanceMode ? 'w-9 h-9' : 'w-7 h-7'} fill-current`} viewBox="0 0 24 24">
+              <div className={`${isMaintenanceMode || isAdminPortal ? 'w-16 h-16 text-3xl' : 'w-12 h-12 text-2xl'} rounded-2xl bg-gradient-to-tr from-[#D32F2F] to-[#B71C1C] text-white font-black flex items-center justify-center shadow-md`}>
+                <svg className={`${isMaintenanceMode || isAdminPortal ? 'w-9 h-9' : 'w-7 h-7'} fill-current`} viewBox="0 0 24 24">
                   <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3zm0 4a3 3 0 110 6 3 3 0 010-6zm-4 9.5c0-2 4-3.1 4-3.1s4 1.1 4 3.1V16H8v-0.5z"/>
                 </svg>
               </div>
             )}
           </div>
 
-          <h2 className={`font-display font-black text-slate-900 tracking-tight ${isMaintenanceMode ? 'text-3xl' : 'text-2xl'}`}>
-            {isMaintenanceMode ? 'Authentication Portal' : 'Welcome Back'}
+          <h2 className={`font-display font-black text-slate-900 tracking-tight ${isMaintenanceMode || isAdminPortal ? 'text-3xl' : 'text-2xl'}`}>
+            {isAdminPortal ? 'Admin Control Center' : (isMaintenanceMode ? 'Authentication Portal' : 'Welcome Back')}
           </h2>
           <p className="text-xs text-slate-500 mt-1 font-medium">
-            {isMaintenanceMode 
-              ? 'Store is in maintenance mode. Sign in to continue.' 
-              : 'Sign in to access your orders, bag & wishlist'
+            {isAdminPortal
+              ? 'Sign in with administrator credentials to access Admin Management'
+              : (isMaintenanceMode 
+                ? 'Store is in maintenance mode. Sign in to continue.' 
+                : 'Sign in to access your orders, bag & wishlist'
+              )
             }
           </p>
         </div>
