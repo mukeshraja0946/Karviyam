@@ -8,12 +8,13 @@ const path = require('path');
 const getTargetUploadDirs = () => {
   const rootDir = process.cwd();
   return Array.from(new Set([
-    path.resolve(__dirname, '../../uploads'),                 // root/uploads
-    path.resolve(__dirname, '../uploads'),                    // backend/uploads
-    path.resolve(__dirname, '../../frontend/dist/uploads'),    // frontend/dist/uploads
-    path.resolve(__dirname, '../../dist/uploads'),            // dist/uploads
-    path.resolve(__dirname, '../../public/uploads'),          // public/uploads
+    path.resolve(__dirname, '../../../uploads'),                // root/uploads
+    path.resolve(__dirname, '../../uploads'),                 // backend/uploads
+    path.resolve(__dirname, '../../../frontend/dist/uploads'), // frontend/dist/uploads
+    path.resolve(__dirname, '../../../dist/uploads'),          // dist/uploads
+    path.resolve(__dirname, '../../../public/uploads'),        // public/uploads
     path.resolve(rootDir, 'uploads'),
+    path.resolve(rootDir, '../uploads'),
     path.resolve(rootDir, 'backend/uploads'),
     path.resolve(rootDir, 'dist/uploads'),
     path.resolve(rootDir, 'public/uploads')

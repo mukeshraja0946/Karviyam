@@ -133,8 +133,11 @@ exports.login = async (req, res, next) => {
                             errCode === 'ER_ACCESS_DENIED_ERROR' ||
                             errCode === 'ER_BAD_DB_ERROR' ||
                             dbConnectionError.message?.includes('connect');
+      const currentUser = process.env.DB_USER || 'root';
+      const currentHost = process.env.DB_HOST || 'localhost';
+      const currentPort = process.env.DB_PORT || '3306';
       const errMessage = isConnRefused
-        ? `Database connection error (${errCode}): Please configure DB_PASSWORD for user u202296270_karviyam_user in Hostinger hPanel Node.js Environment Variables.`
+        ? `Database connection error (${errCode}): Could not connect to MySQL at ${currentHost}:${currentPort} for user '${currentUser}'. Please ensure MySQL / XAMPP is running.`
         : `Database error (${errCode}): ${dbConnectionError.message}`;
       return res.status(500).json(ApiResponse.error(errMessage));
     }

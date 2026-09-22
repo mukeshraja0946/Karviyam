@@ -2,10 +2,11 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const rootUploadDir = path.resolve(__dirname, '../../uploads');
-const backendUploadDir = path.resolve(__dirname, '../uploads');
+const rootUploadDir = path.resolve(__dirname, '../../../uploads');
+const backendUploadDir = path.resolve(__dirname, '../../uploads');
+const distUploadDir = path.resolve(__dirname, '../../../frontend/dist/uploads');
 
-[rootUploadDir, backendUploadDir].forEach(d => {
+[rootUploadDir, backendUploadDir, distUploadDir].forEach(d => {
   if (!fs.existsSync(d)) {
     try { fs.mkdirSync(d, { recursive: true }); } catch (e) {}
   }
