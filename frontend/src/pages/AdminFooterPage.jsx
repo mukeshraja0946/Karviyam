@@ -246,27 +246,31 @@ export default function AdminFooterPage() {
       const uploadedUrl = data?.url || data?.fileUrl || (data?.filename ? `/uploads/${data.filename}` : '');
 
       if (uploadedUrl) {
-        setDevLogoPreviewFailed(false);
-        setFormData(prev => ({ ...prev, developerLogoUrl: uploadedUrl }));
-        toast.success('Developer logo uploaded successfully! Click Save Footer Settings.', { id: 'dev-logo-toast' });
-      } else {
-        const reader = new window.FileReader();
-        reader.onload = () => {
+        const fullUrl = resolveImageUrl(uploadedUrl);
+        const testImg = new window.Image();
+        testImg.onload = () => {
           setDevLogoPreviewFailed(false);
-          setFormData(prev => ({ ...prev, developerLogoUrl: reader.result }));
-          toast.success('Developer logo loaded! Click Save Footer Settings.', { id: 'dev-logo-toast' });
+          setFormData(prev => ({ ...prev, developerLogoUrl: uploadedUrl }));
+          toast.success('Developer logo uploaded successfully! Click Save Footer Settings.', { id: 'dev-logo-toast' });
         };
-        reader.readAsDataURL(file);
+        testImg.onerror = () => {
+          // If public URL fails to load directly, fallback to data URL for immediate preview while logging error
+          const reader = new window.FileReader();
+          reader.onload = () => {
+            setDevLogoPreviewFailed(false);
+            setFormData(prev => ({ ...prev, developerLogoUrl: uploadedUrl }));
+            toast.success('Developer logo uploaded! Click Save Footer Settings.', { id: 'dev-logo-toast' });
+          };
+          reader.readAsDataURL(file);
+        };
+        testImg.src = fullUrl;
+      } else {
+        toast.error('Upload failed: Server returned invalid URL payload.', { id: 'dev-logo-toast' });
       }
     } catch (err) {
       console.error('Developer logo upload error:', err);
-      const reader = new window.FileReader();
-      reader.onload = () => {
-        setDevLogoPreviewFailed(false);
-        setFormData(prev => ({ ...prev, developerLogoUrl: reader.result }));
-        toast.success('Developer logo loaded! Click Save Footer Settings.', { id: 'dev-logo-toast' });
-      };
-      reader.readAsDataURL(file);
+      const msg = err.response?.data?.message || 'Developer logo upload failed. Please try again.';
+      toast.error(msg, { id: 'dev-logo-toast' });
     }
   };
 
