@@ -143,6 +143,7 @@ export default function AdminFooterPage() {
       const res = await api.get('/footer-settings');
       const data = res.data?.data || res.data || {};
       if (data && typeof data === 'object') {
+        setDevLogoPreviewFailed(false);
         setFormData(prev => ({
           ...prev,
           footerEnabled: data.footerEnabled !== undefined ? Boolean(data.footerEnabled) : prev.footerEnabled,
@@ -245,11 +246,13 @@ export default function AdminFooterPage() {
       const uploadedUrl = data?.url || data?.fileUrl || (data?.filename ? `/uploads/${data.filename}` : '');
 
       if (uploadedUrl) {
+        setDevLogoPreviewFailed(false);
         setFormData(prev => ({ ...prev, developerLogoUrl: uploadedUrl }));
         toast.success('Developer logo uploaded successfully! Click Save Footer Settings.', { id: 'dev-logo-toast' });
       } else {
         const reader = new window.FileReader();
         reader.onload = () => {
+          setDevLogoPreviewFailed(false);
           setFormData(prev => ({ ...prev, developerLogoUrl: reader.result }));
           toast.success('Developer logo loaded! Click Save Footer Settings.', { id: 'dev-logo-toast' });
         };
@@ -259,6 +262,7 @@ export default function AdminFooterPage() {
       console.error('Developer logo upload error:', err);
       const reader = new window.FileReader();
       reader.onload = () => {
+        setDevLogoPreviewFailed(false);
         setFormData(prev => ({ ...prev, developerLogoUrl: reader.result }));
         toast.success('Developer logo loaded! Click Save Footer Settings.', { id: 'dev-logo-toast' });
       };

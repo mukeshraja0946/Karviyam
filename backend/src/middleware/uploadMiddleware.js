@@ -18,7 +18,14 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
+    let ext = path.extname(file.originalname).toLowerCase();
+    if (!ext) {
+      if (file.mimetype === 'image/png' || file.mimetype === 'image/x-png') ext = '.png';
+      else if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg') ext = '.jpg';
+      else if (file.mimetype === 'image/webp') ext = '.webp';
+      else if (file.mimetype === 'image/gif') ext = '.gif';
+      else if (file.mimetype === 'image/svg+xml') ext = '.svg';
+    }
     cb(null, file.fieldname + '-' + uniqueSuffix + ext);
   }
 });
@@ -29,11 +36,17 @@ const fileFilter = (req, file, cb) => {
     '.xlsx', '.xls', '.csv', '.pdf',
     '.mp4', '.webm', '.mov', '.ogg', '.m4v', '.avi'
   ];
+  const allowedMimeTypes = [
+    'image/png', 'image/x-png', 'image/jpeg', 'image/jpg', 'image/pjpeg', 'image/gif', 'image/webp', 'image/svg+xml',
+    'application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv'
+  ];
   const ext = path.extname(file.originalname).toLowerCase();
-  if (allowedExtensions.includes(ext) || file.mimetype.startsWith('video/') || file.mimetype.startsWith('image/')) {
+  const mime = (file.mimetype || '').toLowerCase();
+
+  if (allowedExtensions.includes(ext) || allowedMimeTypes.includes(mime) || mime.startsWith('image/') || mime.startsWith('video/')) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Allowed: Images, Videos (MP4, WEBM, MOV), PDFs, Spreadsheets.'), false);
+    cb(new Error('Invalid file type. Allowed: Images (PNG, JPG, WEBP, SVG, GIF), Videos (MP4, WEBM, MOV), PDFs, Spreadsheets.'), false);
   }
 };
 
