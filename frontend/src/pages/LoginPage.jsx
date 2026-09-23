@@ -27,15 +27,18 @@ export default function LoginPage() {
   // Redirect authenticated user if visiting /login
   useEffect(() => {
     if (isAuthenticated) {
+      const isExplicitAdminLoginRoute = location.pathname === '/admin/login' || location.pathname.startsWith('/admin');
       if (isAdmin) {
         navigate('/admin', { replace: true });
-      } else if (redirectTarget) {
-        navigate(redirectTarget, { replace: true });
-      } else {
-        navigate('/', { replace: true });
+      } else if (!isExplicitAdminLoginRoute) {
+        if (redirectTarget) {
+          navigate(redirectTarget, { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
       }
     }
-  }, [isAuthenticated, isAdmin, redirectTarget, navigate]);
+  }, [isAuthenticated, isAdmin, redirectTarget, navigate, location.pathname]);
 
   // Custom Admin Uploaded Logo
   const [customLogo, setCustomLogo] = useState(() => localStorage.getItem('karviyam_logo') || '');
