@@ -14,6 +14,7 @@ const checkMaintenanceMode = async (req, res, next) => {
     req.path.startsWith('/api/admin') ||
     req.path.startsWith('/api/auth') ||
     req.path.startsWith('/api/settings') ||
+    req.path.startsWith('/api/upload') ||
     req.path.startsWith('/uploads') ||
     req.path.startsWith('/assets')
   ) {
