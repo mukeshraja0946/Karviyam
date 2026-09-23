@@ -103,8 +103,10 @@ export default function LoginPage() {
     try {
       const res = await login(email, password);
       if (res && res.success) {
-        if (res.isAdmin) {
-          window.location.href = '/admin';
+        const isExplicitAdminPortal = location.pathname === '/admin/login' || location.pathname.startsWith('/admin') || (redirectTarget && redirectTarget.startsWith('/admin'));
+        const targetAdminUrl = (redirectTarget && redirectTarget.startsWith('/admin')) ? redirectTarget : '/admin';
+        if (res.isAdmin || isExplicitAdminPortal) {
+          window.location.href = targetAdminUrl;
         } else if (redirectTarget) {
           window.location.href = redirectTarget;
         } else {
@@ -156,8 +158,10 @@ export default function LoginPage() {
     try {
       const res = await verifyOTP(email.trim(), otp.trim());
       if (res && res.success) {
-        if (res.isAdmin) {
-          window.location.href = '/admin';
+        const isExplicitAdminPortal = location.pathname === '/admin/login' || location.pathname.startsWith('/admin') || (redirectTarget && redirectTarget.startsWith('/admin'));
+        const targetAdminUrl = (redirectTarget && redirectTarget.startsWith('/admin')) ? redirectTarget : '/admin';
+        if (res.isAdmin || isExplicitAdminPortal) {
+          window.location.href = targetAdminUrl;
         } else if (redirectTarget) {
           window.location.href = redirectTarget;
         } else {

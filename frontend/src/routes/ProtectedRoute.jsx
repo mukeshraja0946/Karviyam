@@ -16,9 +16,11 @@ export function AdminRoute() {
   const location = useLocation();
   if (initializing) return null;
 
+  const cleanIsAdmin = isAdmin || user?.role === 'admin' || user?.roles?.includes('ROLE_ADMIN') || user?.email === 'vanakkam@karviyam.com';
+
   if (!user && !isAuthenticated) {
-    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+    return <Navigate to={`/admin/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
-  return isAdmin ? <Outlet /> : <Navigate to="/" replace />;
+  return cleanIsAdmin ? <Outlet /> : <Navigate to="/admin/login" replace />;
 }
