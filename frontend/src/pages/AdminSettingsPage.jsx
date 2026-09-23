@@ -329,6 +329,10 @@ export default function AdminSettingsPage() {
     maintenanceShowTimer: true,
     maintenanceShowSocial: true,
     maintenanceAllowSearchEngines: true,
+    maintenanceDeveloperEnabled: true,
+    maintenanceDeveloperLogoUrl: '',
+    maintenanceDeveloperName: 'CraftLoop',
+    maintenanceDeveloperLink: '',
   });
 
   const [adminPhotoUrl, setAdminPhotoUrl] = useState(() => localStorage.getItem('karviyam_admin_photo') || '');
@@ -528,6 +532,10 @@ export default function AdminSettingsPage() {
           maintenanceShowTimer: dataMap.maintenanceShowTimer !== 'false',
           maintenanceShowSocial: dataMap.maintenanceShowSocial !== 'false',
           maintenanceAllowSearchEngines: dataMap.maintenanceAllowSearchEngines !== 'false',
+          maintenanceDeveloperEnabled: checkB(dataMap.maintenanceDeveloperEnabled !== undefined ? dataMap.maintenanceDeveloperEnabled : dataMap.maintenance_developer_enabled, true),
+          maintenanceDeveloperLogoUrl: dataMap.maintenanceDeveloperLogoUrl || dataMap.maintenance_developer_logo_url || prev.maintenanceDeveloperLogoUrl || '',
+          maintenanceDeveloperName: dataMap.maintenanceDeveloperName || dataMap.maintenance_developer_name || prev.maintenanceDeveloperName || 'CraftLoop',
+          maintenanceDeveloperLink: dataMap.maintenanceDeveloperLink || dataMap.maintenance_developer_link || prev.maintenanceDeveloperLink || '',
         }));
 
       }
@@ -707,6 +715,14 @@ export default function AdminSettingsPage() {
         maintenanceShowTimer: String(settings.maintenanceShowTimer),
         maintenanceShowSocial: String(settings.maintenanceShowSocial),
         maintenanceAllowSearchEngines: String(settings.maintenanceAllowSearchEngines),
+        maintenanceDeveloperEnabled: String(settings.maintenanceDeveloperEnabled),
+        maintenance_developer_enabled: String(settings.maintenanceDeveloperEnabled),
+        maintenanceDeveloperLogoUrl: settings.maintenanceDeveloperLogoUrl || '',
+        maintenance_developer_logo_url: settings.maintenanceDeveloperLogoUrl || '',
+        maintenanceDeveloperName: settings.maintenanceDeveloperName || 'CraftLoop',
+        maintenance_developer_name: settings.maintenanceDeveloperName || 'CraftLoop',
+        maintenanceDeveloperLink: settings.maintenanceDeveloperLink || '',
+        maintenance_developer_link: settings.maintenanceDeveloperLink || '',
         karviyam_mobile_homepage_sections: JSON.stringify(mobileSections),
         mobile_homepage_sections: JSON.stringify(mobileSections),
         karviyam_section_layouts: JSON.stringify({
@@ -2166,6 +2182,146 @@ export default function AdminSettingsPage() {
                     onChange={(e) => setSettings({ ...settings, maintenanceAllowSearchEngines: e.target.checked })}
                     className="w-4 h-4 accent-[#B71C1C] cursor-pointer"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Maintenance Page Developed By Configuration Card */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#B71C1C]" />
+                    <span>Maintenance Page Developed By</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Configure the "Developed by [Logo] Name" branding shown at the bottom-right of the Maintenance Page. Managed separately from Customer Footer.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-xs font-black uppercase tracking-wider ${settings.maintenanceDeveloperEnabled ? 'text-[#B71C1C]' : 'text-slate-400'}`}>
+                    {settings.maintenanceDeveloperEnabled ? 'ON' : 'OFF'}
+                  </span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!settings.maintenanceDeveloperEnabled}
+                      onChange={(e) => setSettings({ ...settings, maintenanceDeveloperEnabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#B71C1C]" />
+                  </label>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* 1. Developer Logo Upload & Preview */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                      <label className="block font-bold text-slate-800 text-xs">Developer Logo</label>
+                      <p className="text-[11px] text-slate-500">Upload CraftLoop PNG/JPG/JPEG/WEBP logo. Preserves original aspect ratio & transparency.</p>
+                    </div>
+                    {settings.maintenanceDeveloperLogoUrl && (
+                      <div className="shrink-0 p-2 bg-white border border-slate-200 rounded-xl flex items-center gap-2">
+                        <img src={resolveImageUrl(settings.maintenanceDeveloperLogoUrl)} alt="Dev Logo Preview" className="h-8 w-auto max-w-[140px] object-contain" />
+                        <button
+                          type="button"
+                          onClick={() => setSettings({ ...settings, maintenanceDeveloperLogoUrl: '' })}
+                          className="text-[10px] text-red-600 font-bold hover:underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Upload Developer Logo File</label>
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 5 * 1024 * 1024) {
+                              toast.error('File size must be less than 5MB');
+                              return;
+                            }
+                            const reader = new window.FileReader();
+                            reader.onloadend = () => {
+                              setSettings(prev => ({ ...prev, maintenanceDeveloperLogoUrl: reader.result }));
+                            };
+                            reader.readAsDataURL(file);
+
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            api.post('/upload', formData, {
+                              headers: { 'Content-Type': 'multipart/form-data' }
+                            }).then(res => {
+                              const url = res.data?.data?.url || res.data?.url || res.data?.filePath || res.data?.data?.filePath;
+                              if (url) {
+                                setSettings(prev => ({ ...prev, maintenanceDeveloperLogoUrl: url }));
+                                toast.success('Developer logo uploaded successfully!');
+                              }
+                            }).catch(err => {
+                              console.warn('[AdminSettingsPage] Developer logo upload error:', err);
+                            });
+                          }
+                        }}
+                        className="w-full bg-white border border-slate-200 p-2 rounded-xl text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Or Developer Logo URL</label>
+                      <input
+                        type="text"
+                        value={settings.maintenanceDeveloperLogoUrl}
+                        onChange={(e) => setSettings({ ...settings, maintenanceDeveloperLogoUrl: e.target.value })}
+                        placeholder="https://example.com/craftloop-logo.png"
+                        className="w-full bg-white border border-slate-200 p-2.5 rounded-xl outline-none font-medium text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* 2. Developer Name */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Developer Name *</label>
+                    <input
+                      type="text"
+                      value={settings.maintenanceDeveloperName}
+                      onChange={(e) => setSettings({ ...settings, maintenanceDeveloperName: e.target.value })}
+                      placeholder="CraftLoop"
+                      className="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl outline-none font-bold text-xs"
+                    />
+                  </div>
+
+                  {/* 3. Developer Link */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Developer Link (Optional)</label>
+                    <input
+                      type="text"
+                      value={settings.maintenanceDeveloperLink}
+                      onChange={(e) => setSettings({ ...settings, maintenanceDeveloperLink: e.target.value })}
+                      placeholder="https://craftloop.io"
+                      className="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl outline-none font-medium text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Save Maintenance Settings</span>
+                  </button>
                 </div>
               </div>
             </div>

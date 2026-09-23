@@ -108,6 +108,26 @@ exports.getSettings = async (req, res, next) => {
       settingsObj.maintenance_logo_url = mainLogoVal;
     }
 
+    // Maintenance Page Developer Settings
+    const mDevEnabledVal = settingsObj.maintenanceDeveloperEnabled !== undefined 
+      ? settingsObj.maintenanceDeveloperEnabled 
+      : settingsObj.maintenance_developer_enabled;
+    const isMDevEnabled = mDevEnabledVal === undefined ? true : (mDevEnabledVal === true || mDevEnabledVal === 'true' || mDevEnabledVal === 1 || mDevEnabledVal === '1');
+    settingsObj.maintenanceDeveloperEnabled = isMDevEnabled;
+    settingsObj.maintenance_developer_enabled = isMDevEnabled;
+
+    const mDevLogoVal = settingsObj.maintenanceDeveloperLogoUrl || settingsObj.maintenance_developer_logo_url || '';
+    settingsObj.maintenanceDeveloperLogoUrl = mDevLogoVal;
+    settingsObj.maintenance_developer_logo_url = mDevLogoVal;
+
+    const mDevNameVal = settingsObj.maintenanceDeveloperName || settingsObj.maintenance_developer_name || 'CraftLoop';
+    settingsObj.maintenanceDeveloperName = mDevNameVal;
+    settingsObj.maintenance_developer_name = mDevNameVal;
+
+    const mDevLinkVal = settingsObj.maintenanceDeveloperLink || settingsObj.maintenance_developer_link || '';
+    settingsObj.maintenanceDeveloperLink = mDevLinkVal;
+    settingsObj.maintenance_developer_link = mDevLinkVal;
+
     // Login Popup Settings
     const lpEnabledVal = settingsObj.loginPopupEnabled !== undefined
       ? settingsObj.loginPopupEnabled
@@ -436,7 +456,7 @@ exports.updateSettings = async (req, res, next) => {
     for (const [key, value] of Object.entries(settingsData)) {
       if (value !== undefined && value !== null) {
         let strVal = typeof value === 'object' ? JSON.stringify(value) : String(value);
-        if (['emailLogoUrl', 'email_logo_url', 'logoUrl', 'maintenanceLogoUrl', 'maintenance_logo_url'].includes(key) && strVal.startsWith('data:image/')) {
+        if (['emailLogoUrl', 'email_logo_url', 'logoUrl', 'maintenanceLogoUrl', 'maintenance_logo_url', 'maintenanceDeveloperLogoUrl', 'maintenance_developer_logo_url'].includes(key) && strVal.startsWith('data:image/')) {
           strVal = saveBase64Image(strVal, key.toLowerCase());
         }
         await pool.query(

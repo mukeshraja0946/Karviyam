@@ -13,6 +13,13 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
   const [supportEmail, setSupportEmail] = useState("vanakkam@karviyam.com");
   const [showTimer, setShowTimer] = useState(true);
 
+  // Maintenance Page Developed By state
+  const [developerEnabled, setDeveloperEnabled] = useState(true);
+  const [developerLogoUrl, setDeveloperLogoUrl] = useState('');
+  const [developerName, setDeveloperName] = useState('CraftLoop');
+  const [developerLink, setDeveloperLink] = useState('');
+  const [devLogoFailed, setDevLogoFailed] = useState(false);
+
   useEffect(() => {
     if (previewMode) return;
     fetchLiveMaintenanceSettings();
@@ -59,6 +66,21 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
       const email = dataMap.supportEmail || dataMap.support_email;
       const timer = dataMap.maintenanceShowTimer !== false && dataMap.maintenance_show_timer !== false && dataMap.maintenanceShowTimer !== 'false';
 
+      // Developer settings
+      const devEnabledVal = dataMap.maintenanceDeveloperEnabled !== undefined ? dataMap.maintenanceDeveloperEnabled : dataMap.maintenance_developer_enabled;
+      const isDevEnabled = devEnabledVal === undefined ? true : (devEnabledVal === true || devEnabledVal === 'true' || devEnabledVal === 1 || devEnabledVal === '1');
+      setDeveloperEnabled(isDevEnabled);
+
+      const devLogo = dataMap.maintenanceDeveloperLogoUrl || dataMap.maintenance_developer_logo_url || '';
+      setDeveloperLogoUrl(devLogo);
+      setDevLogoFailed(false);
+
+      const devName = dataMap.maintenanceDeveloperName || dataMap.maintenance_developer_name || 'CraftLoop';
+      setDeveloperName(devName);
+
+      const devLink = dataMap.maintenanceDeveloperLink || dataMap.maintenance_developer_link || '';
+      setDeveloperLink(devLink);
+
       if (logo) {
         setMaintenanceLogo(logo);
         setLogoFailed(false);
@@ -102,15 +124,38 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
     ? (previewSettings?.maintenanceShowTimer !== false)
     : showTimer;
 
-  // Reset logo failure state when effectiveLogo changes
+  const effectiveDeveloperEnabled = previewMode
+    ? (previewSettings?.maintenanceDeveloperEnabled !== undefined 
+        ? (previewSettings.maintenanceDeveloperEnabled === true || previewSettings.maintenanceDeveloperEnabled === 'true' || previewSettings.maintenanceDeveloperEnabled === 1 || previewSettings.maintenanceDeveloperEnabled === '1')
+        : true)
+    : developerEnabled;
+
+  const effectiveDeveloperLogoUrl = previewMode
+    ? (previewSettings?.maintenanceDeveloperLogoUrl || previewSettings?.maintenance_developer_logo_url || '')
+    : developerLogoUrl;
+
+  const effectiveDeveloperName = previewMode
+    ? (previewSettings?.maintenanceDeveloperName || previewSettings?.maintenance_developer_name || 'CraftLoop')
+    : (developerName || 'CraftLoop');
+
+  const effectiveDeveloperLink = previewMode
+    ? (previewSettings?.maintenanceDeveloperLink || previewSettings?.maintenance_developer_link || '')
+    : developerLink;
+
+  // Reset logo failure state when effective logo changes
   useEffect(() => {
     setLogoFailed(false);
   }, [effectiveLogo]);
 
+  useEffect(() => {
+    setDevLogoFailed(false);
+  }, [effectiveDeveloperLogoUrl]);
+
   const resolvedLogoUrl = effectiveLogo ? resolveImageUrl(effectiveLogo) : '';
+  const resolvedDevLogoUrl = effectiveDeveloperLogoUrl ? resolveImageUrl(effectiveDeveloperLogoUrl) : '';
 
   return (
-    <div className={`w-full flex flex-col items-center justify-center bg-[#F8FAFC] px-3 sm:px-4 select-none ${previewMode ? 'min-h-full flex-1 py-2 sm:py-6' : 'min-h-[100dvh] py-6 sm:py-12'}`}>
+    <div className={`w-full flex flex-col items-center justify-center bg-[#F8FAFC] px-3 sm:px-4 select-none relative ${previewMode ? 'min-h-full flex-1 py-2 sm:py-6' : 'min-h-[100dvh] py-6 sm:py-12'}`}>
       <div className="w-full max-w-[460px] bg-white p-4 sm:p-11 rounded-[28px] sm:rounded-[36px] border border-gray-100/90 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] text-center space-y-3.5 sm:space-y-6 mx-auto relative shrink-0">
         
         {previewMode && (
@@ -210,6 +255,52 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
         )}
 
       </div>
+
+      {/* Developed By Branding (Positioned at bottom-right corner of entire page outside maintenance card) */}
+      {effectiveDeveloperEnabled && (
+        <div className={`${previewMode ? 'absolute bottom-3 right-4 sm:bottom-4 sm:right-6' : 'fixed bottom-4 right-4 sm:bottom-5 sm:right-7'} z-50 pointer-events-auto flex items-center`}>
+          {effectiveDeveloperLink ? (
+            <a
+              href={effectiveDeveloperLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 sm:gap-2.5 hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <span className="text-slate-500 font-medium text-xs sm:text-[13px] tracking-tight">Developed by</span>
+              {resolvedDevLogoUrl && !devLogoFailed ? (
+                <img
+                  src={resolvedDevLogoUrl}
+                  alt={effectiveDeveloperName}
+                  className="h-7 sm:h-9 max-h-9 w-auto object-contain shrink-0"
+                  onError={() => setDevLogoFailed(true)}
+                />
+              ) : (
+                <svg className="h-6 sm:h-8 w-auto text-[#0066FF] shrink-0" viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M30 10C18.95 10 10 18.95 10 30C10 41.05 18.95 50 30 50C38.2 50 45.2 45.1 48.3 38.1C51.4 45.1 58.4 50 66.6 50C77.65 50 86.6 41.05 86.6 30C86.6 18.95 77.65 10 66.6 10C58.4 10 51.4 14.9 48.3 21.9C45.2 14.9 38.2 10 30 10ZM30 20C35.52 20 40 24.48 40 30C40 35.52 35.52 40 30 40C24.48 40 20 35.52 20 30C20 24.48 24.48 20 30 20ZM66.6 20C72.12 20 76.6 24.48 76.6 30C76.6 35.52 72.12 40 66.6 40C61.08 40 56.6 35.52 56.6 30C56.6 24.48 61.08 20 66.6 20Z" fill="currentColor"/>
+                </svg>
+              )}
+              <span className="text-slate-800 font-bold text-xs sm:text-[14px] tracking-tight">{effectiveDeveloperName}</span>
+            </a>
+          ) : (
+            <div className="inline-flex items-center gap-2 sm:gap-2.5">
+              <span className="text-slate-500 font-medium text-xs sm:text-[13px] tracking-tight">Developed by</span>
+              {resolvedDevLogoUrl && !devLogoFailed ? (
+                <img
+                  src={resolvedDevLogoUrl}
+                  alt={effectiveDeveloperName}
+                  className="h-7 sm:h-9 max-h-9 w-auto object-contain shrink-0"
+                  onError={() => setDevLogoFailed(true)}
+                />
+              ) : (
+                <svg className="h-6 sm:h-8 w-auto text-[#0066FF] shrink-0" viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M30 10C18.95 10 10 18.95 10 30C10 41.05 18.95 50 30 50C38.2 50 45.2 45.1 48.3 38.1C51.4 45.1 58.4 50 66.6 50C77.65 50 86.6 41.05 86.6 30C86.6 18.95 77.65 10 66.6 10C58.4 10 51.4 14.9 48.3 21.9C45.2 14.9 38.2 10 30 10ZM30 20C35.52 20 40 24.48 40 30C40 35.52 35.52 40 30 40C24.48 40 20 35.52 20 30C20 24.48 24.48 20 30 20ZM66.6 20C72.12 20 76.6 24.48 76.6 30C76.6 35.52 72.12 40 66.6 40C61.08 40 56.6 35.52 56.6 30C56.6 24.48 61.08 20 66.6 20Z" fill="currentColor"/>
+                </svg>
+              )}
+              <span className="text-slate-800 font-bold text-xs sm:text-[14px] tracking-tight">{effectiveDeveloperName}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
