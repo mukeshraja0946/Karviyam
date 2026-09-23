@@ -606,6 +606,15 @@ export default function AdminSettingsPage() {
       return;
     }
 
+    if ((settings.maintenanceDeveloperLogoUrl || '').startsWith('blob:')) {
+      toast.error('Cannot save settings: Developer Logo contains an unpersisted temporary blob URL. Please upload the file again or enter a valid URL.');
+      return;
+    }
+    if ((settings.maintenanceLogoUrl || '').startsWith('blob:')) {
+      toast.error('Cannot save settings: Maintenance Logo contains an unpersisted temporary blob URL. Please upload the file again or enter a valid URL.');
+      return;
+    }
+
     // Frontend Validations
     if (!settings.storeName || !settings.storeName.trim()) {
       toast.error('Company Display Name is required');
@@ -2282,7 +2291,8 @@ export default function AdminSettingsPage() {
                             return;
                           }
 
-                          // 1. Instant tiny local blob preview for 0ms UI lag
+                          const previousUrl = settings.maintenanceDeveloperLogoUrl;
+                          // 1. Instant local preview (0ms UI lag)
                           const blobUrl = URL.createObjectURL(file);
                           setSettings(prev => ({
                             ...prev,
@@ -2300,8 +2310,13 @@ export default function AdminSettingsPage() {
                               headers: { 'Content-Type': 'multipart/form-data' }
                             });
 
-                            const serverUrl = res.data?.data?.url || res.data?.url || res.data?.filePath || res.data?.data?.filePath;
-                            if (serverUrl) {
+                            const dataObj = res.data?.data || res.data || {};
+                            const serverUrl = dataObj.url || dataObj.fileUrl || dataObj.filePath ||
+                                             res.data?.url || res.data?.fileUrl || res.data?.filePath ||
+                                             (dataObj.filename ? `/uploads/${dataObj.filename}` : '') ||
+                                             (res.data?.filename ? `/uploads/${res.data.filename}` : '');
+
+                            if (serverUrl && typeof serverUrl === 'string' && serverUrl.length > 0 && !serverUrl.startsWith('blob:')) {
                               setSettings(prev => ({
                                 ...prev,
                                 maintenanceDeveloperLogoUrl: serverUrl,
@@ -2309,13 +2324,22 @@ export default function AdminSettingsPage() {
                               }));
                               toast.success('Developer logo uploaded successfully! Click Save Maintenance Settings.', { id: toastId });
                             } else {
-                              toast.error('Upload completed but no server URL returned.', { id: toastId });
+                              setSettings(prev => ({
+                                ...prev,
+                                maintenanceDeveloperLogoUrl: (previousUrl && !previousUrl.startsWith('blob:')) ? previousUrl : ''
+                              }));
+                              toast.error('Upload completed but server returned an invalid URL payload. Preview discarded.', { id: toastId });
                             }
                           } catch (err) {
                             console.error('[AdminSettingsPage] Developer logo upload error:', err);
+                            setSettings(prev => ({
+                              ...prev,
+                              maintenanceDeveloperLogoUrl: (previousUrl && !previousUrl.startsWith('blob:')) ? previousUrl : ''
+                            }));
                             toast.error(err.response?.data?.message || 'Failed to upload developer logo.', { id: toastId });
                           } finally {
                             setUploadingDevLogo(false);
+                            try { URL.revokeObjectURL(blobUrl); } catch (e) {}
                           }
                         }}
                         className="w-full bg-white border border-slate-200 p-2 rounded-xl text-xs disabled:opacity-50"

@@ -82,6 +82,8 @@ exports.uploadFile = async (req, res, next) => {
 
       return res.status(200).json(ApiResponse.success({
         url: fileUrl,
+        fileUrl: fileUrl,
+        filePath: fileUrl,
         filename: req.file.filename,
         originalName: req.file.originalname,
         size: req.file.size,
