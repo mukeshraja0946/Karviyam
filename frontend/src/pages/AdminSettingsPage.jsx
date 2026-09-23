@@ -339,6 +339,7 @@ export default function AdminSettingsPage() {
   const [uploadingAdminPhoto, setUploadingAdminPhoto] = useState(false);
   const [systemHealth, setSystemHealth] = useState(null);
   const [loadingHealth, setLoadingHealth] = useState(false);
+  const [uploadingDevLogo, setUploadingDevLogo] = useState(false);
 
   const fetchSystemHealth = async () => {
     setLoadingHealth(true);
@@ -600,6 +601,11 @@ export default function AdminSettingsPage() {
   const handleSave = async (e) => {
     e.preventDefault();
 
+    if (uploadingDevLogo || uploadingAdminPhoto) {
+      toast.error('Image upload is currently in progress. Please wait a moment for the upload to complete before saving.');
+      return;
+    }
+
     // Frontend Validations
     if (!settings.storeName || !settings.storeName.trim()) {
       toast.error('Company Display Name is required');
@@ -706,8 +712,8 @@ export default function AdminSettingsPage() {
         emailLogoUrl: settings.emailLogoUrl || '',
         maxProductImages: String(settings.maxProductImages),
         maintenanceMode: String(settings.maintenanceMode),
-        maintenanceLogoUrl: settings.maintenanceLogoUrl || '',
-        maintenance_logo_url: settings.maintenanceLogoUrl || '',
+        maintenanceLogoUrl: (settings.maintenanceLogoUrl || '').startsWith('blob:') ? '' : (settings.maintenanceLogoUrl || ''),
+        maintenance_logo_url: (settings.maintenanceLogoUrl || '').startsWith('blob:') ? '' : (settings.maintenanceLogoUrl || ''),
         maintenanceTitle: settings.maintenanceTitle,
         maintenanceSubtitle: settings.maintenanceSubtitle,
         maintenanceMessage: settings.maintenanceMessage,
@@ -717,8 +723,8 @@ export default function AdminSettingsPage() {
         maintenanceAllowSearchEngines: String(settings.maintenanceAllowSearchEngines),
         maintenanceDeveloperEnabled: String(settings.maintenanceDeveloperEnabled),
         maintenance_developer_enabled: String(settings.maintenanceDeveloperEnabled),
-        maintenanceDeveloperLogoUrl: settings.maintenanceDeveloperLogoUrl || '',
-        maintenance_developer_logo_url: settings.maintenanceDeveloperLogoUrl || '',
+        maintenanceDeveloperLogoUrl: (settings.maintenanceDeveloperLogoUrl || '').startsWith('blob:') ? '' : (settings.maintenanceDeveloperLogoUrl || ''),
+        maintenance_developer_logo_url: (settings.maintenanceDeveloperLogoUrl || '').startsWith('blob:') ? '' : (settings.maintenanceDeveloperLogoUrl || ''),
         maintenanceDeveloperName: settings.maintenanceDeveloperName || 'CraftLoop',
         maintenance_developer_name: settings.maintenanceDeveloperName || 'CraftLoop',
         maintenanceDeveloperLink: settings.maintenanceDeveloperLink || '',
@@ -2266,35 +2272,53 @@ export default function AdminSettingsPage() {
                       <input
                         type="file"
                         accept="image/png, image/jpeg, image/jpg, image/webp"
-                        onChange={(e) => {
+                        disabled={uploadingDevLogo}
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
-                          if (file) {
-                            if (file.size > 5 * 1024 * 1024) {
-                              toast.error('File size must be less than 5MB');
-                              return;
-                            }
-                            const reader = new window.FileReader();
-                            reader.onloadend = () => {
-                              setSettings(prev => ({ ...prev, maintenanceDeveloperLogoUrl: reader.result }));
-                            };
-                            reader.readAsDataURL(file);
+                          if (!file) return;
 
+                          if (file.size > 5 * 1024 * 1024) {
+                            toast.error('File size must be less than 5MB');
+                            return;
+                          }
+
+                          // 1. Instant tiny local blob preview for 0ms UI lag
+                          const blobUrl = URL.createObjectURL(file);
+                          setSettings(prev => ({
+                            ...prev,
+                            maintenanceDeveloperLogoUrl: blobUrl
+                          }));
+
+                          // 2. Upload file directly to backend server
+                          const toastId = toast.loading('Uploading developer logo to server storage...');
+                          setUploadingDevLogo(true);
+
+                          try {
                             const formData = new FormData();
                             formData.append('file', file);
-                            api.post('/upload', formData, {
+                            const res = await api.post('/upload', formData, {
                               headers: { 'Content-Type': 'multipart/form-data' }
-                            }).then(res => {
-                              const url = res.data?.data?.url || res.data?.url || res.data?.filePath || res.data?.data?.filePath;
-                              if (url) {
-                                setSettings(prev => ({ ...prev, maintenanceDeveloperLogoUrl: url }));
-                                toast.success('Developer logo uploaded successfully!');
-                              }
-                            }).catch(err => {
-                              console.warn('[AdminSettingsPage] Developer logo upload error:', err);
                             });
+
+                            const serverUrl = res.data?.data?.url || res.data?.url || res.data?.filePath || res.data?.data?.filePath;
+                            if (serverUrl) {
+                              setSettings(prev => ({
+                                ...prev,
+                                maintenanceDeveloperLogoUrl: serverUrl,
+                                maintenance_developer_logo_url: serverUrl
+                              }));
+                              toast.success('Developer logo uploaded successfully! Click Save Maintenance Settings.', { id: toastId });
+                            } else {
+                              toast.error('Upload completed but no server URL returned.', { id: toastId });
+                            }
+                          } catch (err) {
+                            console.error('[AdminSettingsPage] Developer logo upload error:', err);
+                            toast.error(err.response?.data?.message || 'Failed to upload developer logo.', { id: toastId });
+                          } finally {
+                            setUploadingDevLogo(false);
                           }
                         }}
-                        className="w-full bg-white border border-slate-200 p-2 rounded-xl text-xs"
+                        className="w-full bg-white border border-slate-200 p-2 rounded-xl text-xs disabled:opacity-50"
                       />
                     </div>
 
@@ -2340,10 +2364,11 @@ export default function AdminSettingsPage() {
                 <div className="pt-2 flex justify-end">
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#B71C1C] hover:bg-[#900C0C] text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+                    disabled={uploadingDevLogo}
+                    className="px-5 py-2.5 bg-[#B71C1C] hover:bg-[#900C0C] disabled:opacity-50 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
                   >
-                    <Save className="w-4 h-4" />
-                    <span>Save Maintenance Settings</span>
+                    {uploadingDevLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>{uploadingDevLogo ? 'Uploading Logo...' : 'Save Maintenance Settings'}</span>
                   </button>
                 </div>
               </div>

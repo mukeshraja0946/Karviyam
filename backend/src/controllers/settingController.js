@@ -452,6 +452,21 @@ exports.updateSettings = async (req, res, next) => {
     if (settingsData.maintenance_logo_url !== undefined) {
       settingsData.maintenanceLogoUrl = String(settingsData.maintenance_logo_url);
     }
+    if (settingsData.maintenanceDeveloperLogoUrl !== undefined) {
+      settingsData.maintenance_developer_logo_url = String(settingsData.maintenanceDeveloperLogoUrl);
+    }
+    if (settingsData.maintenance_developer_logo_url !== undefined) {
+      settingsData.maintenanceDeveloperLogoUrl = String(settingsData.maintenance_developer_logo_url);
+    }
+    if (settingsData.maintenanceDeveloperEnabled !== undefined) {
+      settingsData.maintenance_developer_enabled = String(settingsData.maintenanceDeveloperEnabled);
+    }
+    if (settingsData.maintenanceDeveloperName !== undefined) {
+      settingsData.maintenance_developer_name = String(settingsData.maintenanceDeveloperName);
+    }
+    if (settingsData.maintenanceDeveloperLink !== undefined) {
+      settingsData.maintenance_developer_link = String(settingsData.maintenanceDeveloperLink);
+    }
 
     for (const [key, value] of Object.entries(settingsData)) {
       if (value !== undefined && value !== null) {
