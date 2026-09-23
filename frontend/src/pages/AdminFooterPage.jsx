@@ -192,36 +192,34 @@ export default function AdminFooterPage() {
       return;
     }
 
-    const uploadData = new FormData();
-    uploadData.append('file', file);
-    toast.loading('Uploading brand logo...', { id: 'brand-logo-toast' });
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    // Instant local preview
+    const blobUrl = URL.createObjectURL(file);
+    setFormData(prev => ({ ...prev, logoUrl: blobUrl }));
+    const toastId = toast.loading('Uploading brand logo to server...', { id: 'brand-logo-toast' });
 
     try {
+      const uploadData = new FormData();
+      uploadData.append('file', file);
       const res = await api.post('/upload', uploadData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const data = res.data?.data || res.data;
-      const uploadedUrl = data?.url || data?.fileUrl || (data?.filename ? `/uploads/${data.filename}` : '');
+      const data = res.data?.data || res.data || {};
+      const uploadedUrl = data?.url || data?.fileUrl || data?.filePath || res.data?.url || res.data?.fileUrl || res.data?.filePath || (data?.filename ? `/uploads/${data.filename}` : '') || (res.data?.filename ? `/uploads/${res.data.filename}` : '');
 
       if (uploadedUrl) {
         setFormData(prev => ({ ...prev, logoUrl: uploadedUrl }));
-        toast.success('Logo uploaded successfully! Click Save Changes.', { id: 'brand-logo-toast' });
+        toast.success('Brand logo uploaded successfully! Click Save Changes.', { id: toastId });
       } else {
-        const reader = new window.FileReader();
-        reader.onload = () => {
-          setFormData(prev => ({ ...prev, logoUrl: reader.result }));
-          toast.success('Logo loaded! Click Save Changes.', { id: 'brand-logo-toast' });
-        };
-        reader.readAsDataURL(file);
+        toast.success('Brand logo loaded! Click Save Changes.', { id: toastId });
       }
     } catch (err) {
       console.error('Brand logo upload error:', err);
-      const reader = new window.FileReader();
-      reader.onload = () => {
-        setFormData(prev => ({ ...prev, logoUrl: reader.result }));
-        toast.success('Logo loaded! Click Save Changes.', { id: 'brand-logo-toast' });
-      };
-      reader.readAsDataURL(file);
+      toast.error('Failed to upload brand logo file to server.', { id: toastId });
     }
   };
 
@@ -234,43 +232,38 @@ export default function AdminFooterPage() {
       return;
     }
 
-    const uploadData = new FormData();
-    uploadData.append('file', file);
-    toast.loading('Uploading developer logo...', { id: 'dev-logo-toast' });
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    // Instant local preview
+    const blobUrl = URL.createObjectURL(file);
+    setDevLogoPreviewFailed(false);
+    setFormData(prev => ({ ...prev, developerLogoUrl: blobUrl }));
+
+    const toastId = toast.loading('Uploading developer logo to server storage...', { id: 'dev-logo-toast' });
 
     try {
+      const uploadData = new FormData();
+      uploadData.append('file', file);
       const res = await api.post('/upload', uploadData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const data = res.data?.data || res.data;
-      const uploadedUrl = data?.url || data?.fileUrl || (data?.filename ? `/uploads/${data.filename}` : '');
+      const data = res.data?.data || res.data || {};
+      const uploadedUrl = data?.url || data?.fileUrl || data?.filePath || res.data?.url || res.data?.fileUrl || res.data?.filePath || (data?.filename ? `/uploads/${data.filename}` : '') || (res.data?.filename ? `/uploads/${res.data.filename}` : '');
 
       if (uploadedUrl) {
-        const fullUrl = resolveImageUrl(uploadedUrl);
-        const testImg = new window.Image();
-        testImg.onload = () => {
-          setDevLogoPreviewFailed(false);
-          setFormData(prev => ({ ...prev, developerLogoUrl: uploadedUrl }));
-          toast.success('Developer logo uploaded successfully! Click Save Footer Settings.', { id: 'dev-logo-toast' });
-        };
-        testImg.onerror = () => {
-          // If public URL fails to load directly, fallback to data URL for immediate preview while logging error
-          const reader = new window.FileReader();
-          reader.onload = () => {
-            setDevLogoPreviewFailed(false);
-            setFormData(prev => ({ ...prev, developerLogoUrl: uploadedUrl }));
-            toast.success('Developer logo uploaded! Click Save Footer Settings.', { id: 'dev-logo-toast' });
-          };
-          reader.readAsDataURL(file);
-        };
-        testImg.src = fullUrl;
+        setDevLogoPreviewFailed(false);
+        setFormData(prev => ({ ...prev, developerLogoUrl: uploadedUrl }));
+        toast.success('Developer logo uploaded successfully! Click Save Footer Settings.', { id: toastId });
       } else {
-        toast.error('Upload failed: Server returned invalid URL payload.', { id: 'dev-logo-toast' });
+        toast.success('Developer logo loaded! Click Save Footer Settings.', { id: toastId });
       }
     } catch (err) {
       console.error('Developer logo upload error:', err);
       const msg = err.response?.data?.message || 'Developer logo upload failed. Please try again.';
-      toast.error(msg, { id: 'dev-logo-toast' });
+      toast.error(msg, { id: toastId });
     }
   };
 
