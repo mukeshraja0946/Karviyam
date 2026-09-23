@@ -772,24 +772,42 @@ export default function AdminSettingsPage() {
         defaultPaymentMethod: settings.defaultPaymentMethod
       }).catch(() => null);
 
-      // Cache locally for offline UI synchronization
-      localStorage.setItem('karviyam_system_settings', JSON.stringify(settings));
-      localStorage.setItem('karviyam_logo', settings.logoUrl || '');
-      localStorage.setItem('karviyam_store_name', settings.storeName);
-      localStorage.setItem('karviyam_legal_company_name', settings.legalCompanyName);
-      localStorage.setItem('karviyam_support_email', settings.supportEmail);
-      localStorage.setItem('karviyam_support_phone', settings.supportPhone);
-      localStorage.setItem('karviyam_address', settings.address);
-      localStorage.setItem('karviyam_footer_about', settings.footerAbout);
-      localStorage.setItem('karviyam_gst_no', settings.gstNo);
-      localStorage.setItem('karviyam_pan_no', settings.panNo);
-      localStorage.setItem('karviyam_state_code', settings.stateCode);
-      localStorage.setItem('karviyam_signatory_name', settings.signatoryName);
-      localStorage.setItem('karviyam_maintenance_mode', String(settings.maintenanceMode));
-      localStorage.setItem('karviyam_maintenance_logo', settings.maintenanceLogoUrl || '');
-      localStorage.setItem('karviyam_maintenance_message', settings.maintenanceMessage);
-      localStorage.setItem('karviyam_product_image_auto_change', String(settings.productImageAutoChange));
-      localStorage.setItem('karviyam_product_image_change_interval', String(settings.productImageChangeInterval));
+      // Cache locally for offline UI synchronization (sanitize large base64 image data to prevent QuotaExceededError)
+      try {
+        const sanitizedSettings = { ...settings };
+        Object.keys(sanitizedSettings).forEach(k => {
+          if (typeof sanitizedSettings[k] === 'string' && sanitizedSettings[k].startsWith('data:image/')) {
+            sanitizedSettings[k] = '';
+          }
+        });
+        localStorage.setItem('karviyam_system_settings', JSON.stringify(sanitizedSettings));
+      } catch (e) {
+        console.warn('[localStorage Quota Warning]:', e);
+      }
+
+      const safeLocalSet = (k, v) => {
+        try {
+          if (typeof v === 'string' && v.startsWith('data:image/')) return;
+          localStorage.setItem(k, v || '');
+        } catch (e) {}
+      };
+
+      safeLocalSet('karviyam_logo', settings.logoUrl);
+      safeLocalSet('karviyam_store_name', settings.storeName);
+      safeLocalSet('karviyam_legal_company_name', settings.legalCompanyName);
+      safeLocalSet('karviyam_support_email', settings.supportEmail);
+      safeLocalSet('karviyam_support_phone', settings.supportPhone);
+      safeLocalSet('karviyam_address', settings.address);
+      safeLocalSet('karviyam_footer_about', settings.footerAbout);
+      safeLocalSet('karviyam_gst_no', settings.gstNo);
+      safeLocalSet('karviyam_pan_no', settings.panNo);
+      safeLocalSet('karviyam_state_code', settings.stateCode);
+      safeLocalSet('karviyam_signatory_name', settings.signatoryName);
+      safeLocalSet('karviyam_maintenance_mode', String(settings.maintenanceMode));
+      safeLocalSet('karviyam_maintenance_logo', settings.maintenanceLogoUrl);
+      safeLocalSet('karviyam_maintenance_message', settings.maintenanceMessage);
+      safeLocalSet('karviyam_product_image_auto_change', String(settings.productImageAutoChange));
+      safeLocalSet('karviyam_product_image_change_interval', String(settings.productImageChangeInterval));
 
       // Section Scrolling & Layout Configuration (Independent Desktop & Mobile Objects)
       const layoutConfig = {
@@ -807,8 +825,13 @@ export default function AdminSettingsPage() {
         removeGreyBox: settings.removeImageGreyBox !== false
       };
 
-      localStorage.setItem('karviyam_section_layouts', JSON.stringify(layoutConfig));
-      localStorage.setItem('karviyam_mobile_homepage_sections', JSON.stringify(mobileSections));
+      try {
+        localStorage.setItem('karviyam_section_layouts', JSON.stringify(layoutConfig));
+        localStorage.setItem('karviyam_mobile_homepage_sections', JSON.stringify(mobileSections));
+      } catch (e) {}
+
+      // Re-fetch settings from backend to populate permanent image URLs (replacing temporary base64 preview strings)
+      await fetchSettings();
 
       window.dispatchEvent(new window.Event('karviyam_auto_change_updated'));
       window.dispatchEvent(new window.Event('karviyam_settings_updated'));
@@ -2002,7 +2025,7 @@ export default function AdminSettingsPage() {
                     onChange={(e) => {
                       const val = e.target.checked;
                       setSettings({ ...settings, maintenanceMode: val });
-                      localStorage.setItem('karviyam_maintenance_mode', String(val));
+                      try { localStorage.setItem('karviyam_maintenance_mode', String(val)); } catch (err) {}
                       window.dispatchEvent(new window.Event('karviyam_maintenance_updated'));
                     }}
                     className="sr-only peer"
