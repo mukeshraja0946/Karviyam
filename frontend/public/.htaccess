@@ -6,9 +6,17 @@ DirectoryIndex index.html
   PassengerStartupFile server.js
 </IfModule>
 
+<IfModule mod_env.c>
+  SetEnv no-recaptcha 1
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+
+  # Disable LiteSpeed Anti-DDoS reCAPTCHA & WAF blocking for API and uploads
+  RewriteCond %{REQUEST_URI} ^/(api|uploads|assets)/ [NC]
+  RewriteRule .* - [E=no-recaptcha:1]
 
   # 1. Redirect legacy maintenance.php URL to React route /maintenance
   RewriteCond %{REQUEST_URI} ^/maintenance\.php$ [NC]
