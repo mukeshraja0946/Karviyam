@@ -81,6 +81,13 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
       const devLink = dataMap.maintenanceDeveloperLink || dataMap.maintenance_developer_link || '';
       setDeveloperLink(devLink);
 
+      // Safe logging (Requirement 14)
+      console.log('[MAINTENANCE SETTINGS]', {
+        developer_enabled: isDevEnabled,
+        developer_name: devName,
+        developer_logo_url: devLogo
+      });
+
       if (logo) {
         setMaintenanceLogo(logo);
         setLogoFailed(false);
@@ -267,34 +274,32 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
               className="inline-flex items-center gap-2 sm:gap-2.5 hover:opacity-80 transition-opacity cursor-pointer"
             >
               <span className="text-slate-500 font-medium text-xs sm:text-[13px] tracking-tight">Developed by</span>
-              {resolvedDevLogoUrl && !devLogoFailed ? (
+              {resolvedDevLogoUrl && !devLogoFailed && (
                 <img
                   src={resolvedDevLogoUrl}
                   alt={effectiveDeveloperName}
                   className="h-7 sm:h-9 max-h-9 w-auto object-contain shrink-0"
-                  onError={() => setDevLogoFailed(true)}
+                  onError={() => {
+                    console.warn('[MaintenancePage] Developer logo image failed to load:', resolvedDevLogoUrl);
+                    setDevLogoFailed(true);
+                  }}
                 />
-              ) : (
-                <svg className="h-6 sm:h-8 w-auto text-[#0066FF] shrink-0" viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M30 10C18.95 10 10 18.95 10 30C10 41.05 18.95 50 30 50C38.2 50 45.2 45.1 48.3 38.1C51.4 45.1 58.4 50 66.6 50C77.65 50 86.6 41.05 86.6 30C86.6 18.95 77.65 10 66.6 10C58.4 10 51.4 14.9 48.3 21.9C45.2 14.9 38.2 10 30 10ZM30 20C35.52 20 40 24.48 40 30C40 35.52 35.52 40 30 40C24.48 40 20 35.52 20 30C20 24.48 24.48 20 30 20ZM66.6 20C72.12 20 76.6 24.48 76.6 30C76.6 35.52 72.12 40 66.6 40C61.08 40 56.6 35.52 56.6 30C56.6 24.48 61.08 20 66.6 20Z" fill="currentColor"/>
-                </svg>
               )}
               <span className="text-slate-800 font-bold text-xs sm:text-[14px] tracking-tight">{effectiveDeveloperName}</span>
             </a>
           ) : (
             <div className="inline-flex items-center gap-2 sm:gap-2.5">
               <span className="text-slate-500 font-medium text-xs sm:text-[13px] tracking-tight">Developed by</span>
-              {resolvedDevLogoUrl && !devLogoFailed ? (
+              {resolvedDevLogoUrl && !devLogoFailed && (
                 <img
                   src={resolvedDevLogoUrl}
                   alt={effectiveDeveloperName}
                   className="h-7 sm:h-9 max-h-9 w-auto object-contain shrink-0"
-                  onError={() => setDevLogoFailed(true)}
+                  onError={() => {
+                    console.warn('[MaintenancePage] Developer logo image failed to load:', resolvedDevLogoUrl);
+                    setDevLogoFailed(true);
+                  }}
                 />
-              ) : (
-                <svg className="h-6 sm:h-8 w-auto text-[#0066FF] shrink-0" viewBox="0 0 100 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M30 10C18.95 10 10 18.95 10 30C10 41.05 18.95 50 30 50C38.2 50 45.2 45.1 48.3 38.1C51.4 45.1 58.4 50 66.6 50C77.65 50 86.6 41.05 86.6 30C86.6 18.95 77.65 10 66.6 10C58.4 10 51.4 14.9 48.3 21.9C45.2 14.9 38.2 10 30 10ZM30 20C35.52 20 40 24.48 40 30C40 35.52 35.52 40 30 40C24.48 40 20 35.52 20 30C20 24.48 24.48 20 30 20ZM66.6 20C72.12 20 76.6 24.48 76.6 30C76.6 35.52 72.12 40 66.6 40C61.08 40 56.6 35.52 56.6 30C56.6 24.48 61.08 20 66.6 20Z" fill="currentColor"/>
-                </svg>
               )}
               <span className="text-slate-800 font-bold text-xs sm:text-[14px] tracking-tight">{effectiveDeveloperName}</span>
             </div>
