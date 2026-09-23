@@ -272,7 +272,7 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
 
       {/* Developed By Branding (Positioned at bottom-right corner of entire page outside maintenance card) */}
       {effectiveDeveloperEnabled && (
-        <div className={`${previewMode ? 'absolute bottom-3 right-4 sm:bottom-4 sm:right-6' : 'fixed bottom-4 right-4 sm:bottom-5 sm:right-7'} z-50 pointer-events-auto flex items-center`}>
+        <div className={`${previewMode ? 'absolute bottom-1.5 right-4 sm:bottom-2.5 sm:right-6' : 'fixed bottom-1.5 right-4 sm:bottom-2.5 sm:right-7'} z-50 pointer-events-auto flex items-center`}>
           {effectiveDeveloperLink ? (
             <a
               href={effectiveDeveloperLink}
