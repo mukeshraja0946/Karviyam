@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Mail, Lock } from 'lucide-react';
+import { Clock, Mail } from 'lucide-react';
 import api from '../utils/api';
 import { resolveImageUrl } from '../utils/imageUtils';
 
@@ -253,20 +253,13 @@ export default function MaintenancePage({ previewMode = false, previewSettings =
         </div>
 
 
-        {/* Support Contact & Admin Access */}
-        <div className="pt-1 text-slate-500 text-xs font-medium flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-          {effectiveSupportEmail && (
-            <div className="flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-slate-400" />
-              <span>Need help? <a href={`mailto:${effectiveSupportEmail}`} className="text-[#B91C1C] font-bold hover:underline">{effectiveSupportEmail}</a></span>
-            </div>
-          )}
-          {effectiveSupportEmail && <span className="text-slate-300">•</span>}
-          <a href="/admin/login" className="inline-flex items-center gap-1 text-slate-500 hover:text-[#B91C1C] font-bold transition-colors cursor-pointer">
-            <Lock className="w-3.5 h-3.5 text-slate-400" />
-            <span>Admin Login</span>
-          </a>
-        </div>
+        {/* Support Contact Details */}
+        {effectiveSupportEmail && (
+          <div className="pt-1 text-slate-500 text-xs font-medium flex items-center justify-center gap-1.5">
+            <Mail className="w-3.5 h-3.5 text-slate-400" />
+            <span>Need help? <a href={`mailto:${effectiveSupportEmail}`} className="text-[#B91C1C] font-bold hover:underline">{effectiveSupportEmail}</a></span>
+          </div>
+        )}
 
       </div>
 
